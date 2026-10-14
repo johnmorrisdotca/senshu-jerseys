@@ -15,7 +15,7 @@ async function bundle(contents: string): Promise<{ text: string; bytes: number; 
 
 // Measured 2026-10-14 (esbuild 0.25, minified, gzipped). A limit has room for an edit and not for a regression.
 // The jersey is the drawing of a shirt in seven cuts with its own letters, so it weighs about 17 kB (with the kit, which takes the cap and the helmet); a league of presets is about 5 kB for 180 teams.
-const LIMITS = { jersey: 18 * 1024, cap: 5.5 * 1024, helmet: 6.3 * 1024, banner: 14.5 * 1024, turn: 15.5 * 1024, element: 21 * 1024, league: 7.5 * 1024, nhl: 9 * 1024 };
+const LIMITS = { jersey: 18 * 1024, cap: 5.5 * 1024, helmet: 6.3 * 1024, banner: 14.5 * 1024, turn: 15.5 * 1024, element: 21 * 1024, league: 7.5 * 1024, nhl: 7 * 1024, nhlAll: 12.5 * 1024 };
 
 test("the jersey alone, bundled by itself, stays small and leaves the turn, the element and the presets out", async () => {
   const b = await bundle(`import { renderJersey } from "./src/index.ts"; console.log(renderJersey({ number: 9 }));`);
@@ -54,6 +54,9 @@ test("one league's presets are small: the data is a few bytes a preset, and a pa
     assert.ok(b.gzip < limit, `${name}: ${b.gzip} bytes gzipped`);
   }
   assert.ok(Object.keys(sizes).length >= 4);
+  // The whole NHL, both modules and what they share, a few dozen bytes a preset (about 30 bytes gzipped for each of more than four hundred).
+  const nhl = await bundle(`import { NHL } from "./src/presets/nhl.ts"; import { NHL_CLASSIC } from "./src/presets/nhl-classic.ts"; console.log(NHL.length + NHL_CLASSIC.length);`);
+  assert.ok(nhl.gzip < LIMITS.nhlAll, `the whole NHL: ${nhl.gzip} bytes gzipped`);
   // Importing one league leaves the others' rows out.
   const mlb = await bundle(`import { MLB } from "./src/presets/mlb.ts"; console.log(MLB.length);`);
   assert.ok(!mlb.text.includes("Los Angeles Lakers"), "another league came along");

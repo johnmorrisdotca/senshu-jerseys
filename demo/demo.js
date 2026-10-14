@@ -111,16 +111,15 @@ function buildControls() {
   rows.length = 0;
   const host = $("controls");
   host.replaceChildren();
-  const group = (title) => host.append(el("h3", { text: title }));
+  const group = (title) => host.append(title === undefined ? el("hr", { class: "sep" }) : el("h3", { text: title }));
   const add = (r) => host.append(r.wrap);
 
-  group(say("preset"));
   const pr = row("preset", () => el("select", { class: "fam-field wide", id: "preset", "data-testid": "preset", "aria-label": say("preset") }));
   pr.control.append(el("option", { value: "", text: say("presetNone") }));
   pr.control.addEventListener("change", () => applyPreset(pr.control.value));
   add(pr);
 
-  group(say("cut"));
+  group();
   add(row("cut", () => seg("cut", CUT_IDS, (v) => say(`cutShort_${v}`))));
   add(row("view", () => seg("view", ["front", "back", "both"], (v) => say(`view_${v}`))));
   add(row("look", () => seg("look", ["cloth", "flat", "line"], (v) => say(`look_${v}`))));
@@ -128,7 +127,7 @@ function buildControls() {
   group(say("colours"));
   for (const [key, label] of [["body", "body"], ["trim", "trim"], ["accent", "accent"], ["number-fill", "numberFill"], ["number-outline", "numberOutline"]]) add(row(label, () => colour(key)));
 
-  group(say("pattern"));
+  group();
   add(row("pattern", () => select("pattern", PATTERN_IDS, (v) => say(`pattern_${v}`))));
   add(row("collar", () => select("collar", ["auto", "crew", "v", "lace-up", "polo", "round", "wishbone", "band"], (v) => (v === "auto" ? say("auto") : say(`collar_${v}`)))));
   add(row("sleeve", () => seg("sleeve", ["auto", "long", "elbow", "short", "none"], (v) => (v === "auto" ? say("auto") : say(`sleeve_${v}`)))));
@@ -140,7 +139,7 @@ function buildControls() {
   add(row("hemStripes", () => seg("hem-stripes", ["auto", "0", "1", "2", "3"], (v) => (v === "auto" ? say("auto") : v))));
   add(row("chestBand", () => toggle("chest-band", say("on"))));
 
-  group(say("number"));
+  group();
   add(row("number", () => text("number", { inputmode: "numeric", maxlength: "2", placeholder: "23" })));
   add(row("nameField", () => text("name", { maxlength: "18", placeholder: "Morris" })));
   add(row("nameArch", () => seg("name-arch", ["arched", "straight"], (v) => say(`arch_${v}`))));
@@ -291,9 +290,28 @@ const RAFTERS = [
   { team: "River Valley Rams", shape: "rectangle", colors: ["#7a1f2b", "#f4f0e4", "#e8b900"], number: 7, name: "Okafor", years: "1966-1980", cut: "rugby" },
   { team: "Bay Street Bears", shape: "shield", colors: ["#1b2a6b", "#c8102e", "#f4f0e4"], number: 21, name: "Moreau", years: "1955-1971", cut: "handball" },
 ];
+// A banner in a real team's colours, from a preset: the made-up player's number, name and years on it, the preset's own sweater above.
+const PRESET_RAFTERS = [
+  ["nhl:montreal-1917-1927-home", "rectangle", 9, "Beaumont", "1948-1963"],
+  ["mlb:redsox-1930-1969-home", "shield", 9, "Larkin", "1939-1960"],
+  ["nba:celtics-1950-1996-home", "rectangle", 6, "Kowalski", "1956-1969"],
+  ["nba:lakers-1967-1977-home", "pennant", 33, "Brennan", "Retired 1989"],
+  ["nfl:packers-1959-1979-home", "shield", 15, "Delacroix", "1956-1971"],
+  ["cfl:argonauts-1950s-home", "rectangle", 77, "Tremblay", "1951-1962"],
+];
 function drawRafters() {
   const grid = $("rafters-grid");
   grid.replaceChildren();
+  for (const [id, shape, number, name, years] of PRESET_RAFTERS) {
+    const p = presetsApi?.byId.get(id);
+    if (p === undefined) continue;
+    const o = p.options;
+    const colors = [o.body ?? "#1f3a8a", o.trim ?? "#f4f0e4", o.accent ?? o.trim ?? "#c8102e"];
+    const fig = el("figure", { class: "banner" });
+    fig.innerHTML = renderBanner({ shape, colors, number, name, years, sweater: shape === "pennant" ? false : { ...o, colors: undefined, body: colors[1], trim: colors[0], accent: colors[2], look: "flat" }, size: 150, language: lang() });
+    fig.append(el("figcaption", { text: `${lang() === "ja" ? p.ja : p.team}, ${p.years}` }));
+    grid.append(fig);
+  }
   for (const r of RAFTERS) {
     const svg = renderBanner({ shape: r.shape, colors: r.colors, number: r.number, name: r.name, years: r.years, sweater: r.shape !== "pennant" ? { cut: r.cut, colors: [r.colors[1], r.colors[0], r.colors[2]], pattern: r.cut === "baseball" ? "pinstripes" : "solid" } : false, size: 150, language: lang() });
     const fig = el("figure", { class: "banner" });
@@ -379,6 +397,8 @@ async function copyText(t) {
 
 // ----- The wall.
 let wallBuilt = false;
+const PAGE = 96;
+let wallLimit = PAGE;
 const decade = (years) => {
   const m = /(\d{4})/.exec(years);
   if (m === null) return 0;
@@ -393,15 +413,15 @@ function buildWall() {
   const bar = $("wallbar");
   bar.replaceChildren();
   const chips = el("div", { class: "chips", role: "group", "aria-label": say("league") });
-  const chip = (id, label, n) => el("button", { type: "button", class: "fam-chip", "data-league": id, "aria-pressed": String(ui.wl === id), "data-testid": `chip-${id}`, text: `${label} ${n}`, onclick: () => { ui.wl = id; filterWall(); syncUrl(); } });
+  const chip = (id, label, n) => el("button", { type: "button", class: "fam-chip", "data-league": id, "aria-pressed": String(ui.wl === id), "data-testid": `chip-${id}`, text: `${label} ${n}`, onclick: () => { ui.wl = id; wallLimit = PAGE; filterWall(); syncUrl(); } });
   chips.append(chip("all", say("allLeagues"), PRESETS.length));
   for (const l of LEAGUES) chips.append(chip(l.id, leagueName(l.id), l.presets.length));
   const eras = [...new Set(PRESETS.map(eraOf))].sort((a, b) => (a === "before-1930" ? -1 : b === "before-1930" ? 1 : Number(a) - Number(b)));
   const eraSel = el("select", { class: "fam-field", id: "wall-era", "data-testid": "wall-era", "aria-label": say("era") }, el("option", { value: "all", text: `${say("era")}: ${say("allEras")}` }), ...eras.map((e) => el("option", { value: e, text: eraName(e) })));
   eraSel.value = ui.we;
-  eraSel.addEventListener("change", () => { ui.we = eraSel.value; filterWall(); syncUrl(); });
+  eraSel.addEventListener("change", () => { ui.we = eraSel.value; wallLimit = PAGE; filterWall(); syncUrl(); });
   const q = el("input", { type: "search", class: "fam-field", id: "wall-q", "data-testid": "wall-q", placeholder: say("searchHint"), "aria-label": say("search"), autocomplete: "off", value: ui.wq });
-  q.addEventListener("input", () => { ui.wq = q.value; filterWall(); syncUrl(); });
+  q.addEventListener("input", () => { ui.wq = q.value; wallLimit = PAGE; filterWall(); syncUrl(); });
   bar.append(chips, el("div", { class: "fam-row" }, eraSel, q));
   const grid = $("wallgrid");
   grid.replaceChildren();
@@ -436,17 +456,23 @@ function filterWall() {
   if (!wallBuilt) return;
   const { PRESETS, LEAGUES } = presetsApi;
   const word = ui.wq.trim().toLowerCase();
+  let matched = 0;
   let shown = 0;
   const idOf = new Map(LEAGUES.flatMap((l) => l.presets.map((p) => [p.id, l.id])));
   for (const li of $("wallgrid").children) {
     const ok = (ui.wl === "all" || idOf.get(li.dataset.id) === ui.wl) && (ui.we === "all" || li.dataset.era === ui.we) && (word === "" || li.dataset.search.includes(word));
-    li.hidden = !ok;
-    if (ok) {
+    if (ok) matched++;
+    const visible = ok && matched <= wallLimit;
+    li.hidden = !visible;
+    if (visible) {
       shown++;
       if (li.querySelector(".wsvg").childElementCount === 0) observer.observe(li);
     }
   }
-  $("wall-count").textContent = say("wallCount").replace("{n}", String(shown)).replace("{total}", String(PRESETS.length));
+  $("wall-count").textContent = say("wallCount").replace("{n}", String(matched)).replace("{total}", String(PRESETS.length));
+  const more = $("wall-more");
+  more.hidden = matched <= shown;
+  more.textContent = say("wallMore").replace("{n}", String(Math.min(PAGE, matched - shown)));
   for (const b of $("wallbar").querySelectorAll("[data-league]")) b.setAttribute("aria-pressed", String(b.dataset.league === ui.wl));
 }
 
@@ -484,6 +510,7 @@ async function loadPresets() {
     return;
   }
   fillPresetSelects();
+  drawRafters();
   if (ui.preset !== "" && presetsApi.byId.has(ui.preset) && Object.keys(attrs).length <= Object.keys(DEFAULTS).length + 1 && !params.has("body")) applyPreset(ui.preset);
   buildWall();
   drawBuilders();
@@ -525,6 +552,7 @@ $("l-field").addEventListener("click", () => { ui.lfield = ui.lfield === "1" ? "
 for (const f of ["4-4-2", "4-3-3", "3-5-2", "4-2-3-1", "5-3-2"]) $("l-form").append(el("option", { value: f, text: f }));
 $("l-form").value = ui.lf;
 $("l-form").addEventListener("change", () => { ui.lf = $("l-form").value; drawBuilders(); syncUrl(); });
+$("wall-more").addEventListener("click", () => { wallLimit += PAGE; filterWall(); });
 $("embed-turnable").addEventListener("click", () => { ui.etn = ui.etn === "1" ? "0" : "1"; drawEmbed(); syncUrl(); });
 $("embed-copy").addEventListener("click", async () => {
   await copyText(fullCode);

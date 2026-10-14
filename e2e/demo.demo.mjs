@@ -159,7 +159,7 @@ test("a preset sets the colours and the cut, and the wall lists every preset, fi
 
 test("the hall of rafters, the matchup, the lineup and the caps draw", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator('[data-testid="rafters"] svg')).toHaveCount(8);
+  await expect.poll(() => page.locator('[data-testid="rafters"] svg').count()).toBeGreaterThanOrEqual(14);
   await expect(page.locator('[data-testid="m-out"] svg')).toBeVisible();
   await expect(page.locator('[data-testid="l-out"] svg')).toBeVisible();
   await expect(page.locator('[data-testid="caps"] svg')).toHaveCount(6);
@@ -196,7 +196,7 @@ test("the copy tabs show the code for the jersey, and copy it", async ({ page, c
 test("in Japanese the words change, and nothing scrolls sideways", async ({ page }) => {
   await page.goto("/?lang=ja");
   await expect(page.locator("#try-h")).toHaveText("試してみる");
-  await expect(page.locator('[data-testid="seg-cut"] button[data-value="hockey"]')).toHaveText("ホッケー");
+  await expect(page.locator('[data-testid="seg-cut"] button[data-value="hockey"]')).toHaveText("アイスホッケー");
   await expect(page.locator("#stage svg title")).toContainText("アイスホッケーのジャージ");
   await expect(page.locator("#wall-h")).toHaveText("ユニフォーム一覧");
   expect(await noSideways(page)).toBe(true);

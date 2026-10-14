@@ -165,11 +165,11 @@ export const NHL_CLASSIC = defineLeague("nhl", "hockey",
     ["pirates", "1929-1930", "home", "ee9a4a 000 - 000 - p=a ss=14.0.2.1.3.0.2.1 hs=0 co=c pt=000"], // unsure: the diagonal is a sash here
     ["quakers", "1930-1931", "home", "ee9a45 000 - 000 - ss=3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1 hs=2.1.4.0.2.1.4.0.2.1 co=c pt=000"],
     // https://en.wikipedia.org/wiki/Montreal_Maroons#Uniforms
-    ["maroons", "1924-1925", "home", "5c1420 fff - fff - ss=0 hs=10.1 co=c pt=c19a5b"],
-    ["maroons", "1925-1929", "home", "5c1420 fff - fff - ss=3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1 hs=5.1.3.0.2.1.3.0.2.1 co=c pt=c19a5b"],
-    ["maroons", "1929-1931", "home", "5c1420 fff - fff - ss=3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1 hs=2.1.2.0.2.1.2.0.2.1.2.0.2.1 co=c pt=c19a5b"],
-    ["maroons", "1931-1935", "home", "5c1420 fff - fff - ss=16.0.3.1.3.0.3.1.3.0.5.1 hs=5.1.3.0.2.1.3.0.2.1 co=c pt=c19a5b"],
-    ["maroons", "1935-1938", "home", "5c1420 fff - fff - ss=14.0.4.1.4.0.8.1 hs=10.1.3.0.3.1 co=c pt=c19a5b"],
+    ["maroons", "1924-1925", "home", "5c1420 fff - fff - ss=0 hs=18.1 co=c pt=c19a5b"],
+    ["maroons", "1925-1929", "home", "5c1420 fff - fff - ss=3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1 hs=9.1.5.0.4.1.5.0.4.1 co=c pt=c19a5b"],
+    ["maroons", "1929-1931", "home", "5c1420 fff - fff - ss=3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1.3.0.3.1 hs=4.1.4.0.4.1.4.0.4.1.4.0.4.1 co=c pt=c19a5b"],
+    ["maroons", "1931-1935", "home", "5c1420 fff - fff - ss=16.0.3.1.3.0.3.1.3.0.5.1 hs=9.1.5.0.4.1.5.0.4.1 co=c pt=c19a5b"],
+    ["maroons", "1935-1938", "home", "5c1420 fff - fff - ss=14.0.4.1.4.0.8.1 hs=18.1.5.0.5.1 co=c pt=c19a5b"],
     // https://en.wikipedia.org/wiki/New_York_Americans#Uniforms (red, white and blue; the stars are left out)
     ["americans", "1925-1926", "home", "fff 002868 c8102e 002868 - p=y y=c ss=8.2.4.0.8.1.4.0.8.2.4.0.8.1.4.0 hs=7.2.5.0.7.2.5.0.7.2.5.0.7.2.5.0 cb=2.0.4.1 co=c pt=c19a5b"],
     ["americans", "1926-1927", "home", "fff c8102e 002868 002868 - p=y y=c ss=8.2.4.0.8.1.4.0.8.2.4.0.8.1.4.0 hs=7.2.5.0.7.2.5.0.7.2.5.0.7.2.5.0 co=c pt=c19a5b"],

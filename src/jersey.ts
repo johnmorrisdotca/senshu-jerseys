@@ -1,7 +1,7 @@
 // A jersey, front or back: its silhouette from the cut's measures, what the cut carries (collar, sleeves, stripes, panels), its pattern, the cloth's folds and edge, and the
 // number, name and crest. Every drawing is a pure function of its options; every id in it comes from a hash of them, so two drawings on one page never share one by accident.
 import { CUTS, type CollarId, type CutSpec } from "./cuts.ts";
-import { BLACK, WHITE, blend, contrast, esc, hashOf, hexOf, inkOn, lum, shade, worst, type Rgb } from "./colour.ts";
+import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, type Rgb } from "./colour.ts";
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
 import { resolve, type Bands, type JerseyOptions, type Resolved } from "./options.ts";
 import { cubic, lerp, n2, poly, quad, rounded, type Pt } from "./path.ts";
@@ -106,8 +106,6 @@ function shapeOf(r: Resolved): Shape {
   if (tank) t.push(...left.slice(1, left.length - 8));
   else if (r.raglan) t.push([spec.au, ay, 3]);
   else t.push([spec.su, spec.sy, 6], [spec.au, ay, 3]);
-  const sideStart = tank ? left.length - 8 : 0;
-  void sideStart;
   const sidePts: P3[] = [];
   for (const p of quad([aU, ay], ctrl, [spec.hu, spec.hy], 7)) sidePts.push([p[0], p[1], 0]);
   sidePts.push([spec.hu, spec.hy, 5]);
@@ -194,7 +192,6 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   const trim2Hex = hexOf(r.trim2);
   const fill3 = r.fill === undefined ? trimHex : hexOf(r.fill);
   const colourOf = (c: number): string => (c === 0 ? body : c === 1 ? trimHex : c === 2 ? trim2Hex : fill3);
-  const ink = line ? "currentColor" : undefined;
   const edgeRgb = lum(r.body) > 0.1 ? shade(r.body, -0.42) : shade(r.body, 0.3);
   const edge = line ? "currentColor" : hexOf(edgeRgb);
   const seamRgb = lum(r.body) > 0.1 ? shade(r.body, -0.3) : shade(r.body, 0.22);
@@ -203,7 +200,6 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   const idt = `${uid}t`;
   const idl = `${uid}l`;
   const idr = `${uid}r`;
-  const ids = { c: idc, t: idt, l: idl, r: idr };
   const ny = spec.ny;
   const nw = sh.nw;
   const collar = r.collar;
@@ -237,7 +233,6 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   const add = (s: string): void => {
     out += s;
   };
-  const fillOf = (c: string): string => (line ? 'fill="none"' : `fill="${c}"`);
 
   // The cloth: body colour (raglan sleeves, a sleeve colour, panels and the pattern are laid over it).
   if (!line) add(useO(`fill="${body}"`));
@@ -549,7 +544,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   }
 
   // ---- Crest, patch, text and numbers. ----
-  const sleeveNum = r.number !== undefined && (r.sleeveNumbers || (r.cut === "hockey" && false));
+  const sleeveNum = r.number !== undefined && r.sleeveNumbers;
   const grounds = (where: "number" | "name" | "chest"): Rgb[] => (patternBehind(r, view, where) && !line ? [r.body, r.trim] : [r.body]);
   const tint = hexOf(r.body);
   let marks = "";
@@ -606,11 +601,6 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     defs += `<linearGradient id="${uid}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${o(0.16)}"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.2)}"/></linearGradient>`;
     defs += `<linearGradient id="${uid}h" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0"><stop offset="0" stop-color="#000" stop-opacity="${o(0.22)}"/><stop offset=".2" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset=".5" stop-color="#fff" stop-opacity="${o(0.06)}"/><stop offset=".8" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.22)}"/></linearGradient>`;
   }
-  void ids;
-  void esc;
-  void worst;
-  void ink;
-  void fillOf;
   return { defs, body: out, outline: sh.outline, outlineId: ido, edge: edge, width: JERSEY_WIDTH, height: JERSEY_HEIGHT };
 }
 

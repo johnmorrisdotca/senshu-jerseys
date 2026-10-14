@@ -111,5 +111,5 @@ export function renderKit(options?: JerseyOptions & { emblems?: EmblemRenderer }
     defs += parts.defs;
     body += `<g transform="translate(${cols.length * colW + 6} ${JERSEY_HEIGHT * 0.45}) scale(.5)">${parts.body}</g>`;
   }
-  return wrapSvg({ id: uid, w: W, h: H, width: r.size * (W / 200), title: r.language === "ja" ? `${titleOf(r)}、パンツとソックス${hasHelmet ? "とヘルメット" : ""}付き` : `${titleOf(r)}, with pants, socks${hasHelmet ? " and helmet" : ""}`, description: r.description, defs, body });
+  return wrapSvg({ id: uid, w: W, h: H, width: r.size * (W / 200), title: r.language === "ja" ? `${titleOf(r)}、パンツ・ソックス${hasHelmet ? "・ヘルメット" : ""}付き` : `${titleOf(r)}, with pants, socks${hasHelmet ? " and helmet" : ""}`, description: r.description, defs, body });
 }

@@ -2,6 +2,8 @@
 // league's rows. A preset is colours and stripes only; no crest, logo, monogram, wordmark or sponsor's mark is drawn by any of them.
 import { CFL, IFAF } from "./presets/cfl.ts";
 import { MLB } from "./presets/mlb.ts";
+import { NHL } from "./presets/nhl.ts";
+import { NHL_CLASSIC } from "./presets/nhl-classic.ts";
 import { NBA } from "./presets/nba.ts";
 import { NFL } from "./presets/nfl.ts";
 import { RUGBY } from "./presets/rugby.ts";
@@ -14,6 +16,8 @@ export type { Preset, Row, Teams } from "./presets/core.ts";
 
 /** The leagues in the order a page lists them: `id` is the module's name. */
 export const LEAGUES: readonly { id: string; presets: readonly Preset[] }[] = [
+  { id: "nhl-classic", presets: NHL_CLASSIC },
+  { id: "nhl", presets: NHL },
   { id: "mlb", presets: MLB },
   { id: "nba", presets: NBA },
   { id: "nfl", presets: NFL },
