@@ -11,18 +11,18 @@ export interface Box {
   y1: number;
 }
 
-type Matrix = readonly [number, number, number, number, number, number];
-const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
+export type Matrix = readonly [number, number, number, number, number, number];
+export const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
 const RAD = Math.PI / 180;
 
-interface Node {
+export interface Node {
   tag: string;
   attrs: Record<string, string>;
   children: Node[];
 }
 
 /** The document as a tree of tags with their attributes; the text between tags is dropped. */
-function parse(svg: string): Node {
+export function parse(svg: string): Node {
   const root: Node = { tag: "#root", attrs: {}, children: [] };
   const stack: Node[] = [root];
   const tag = /<(\/?)([A-Za-z][\w:-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g;
@@ -46,7 +46,7 @@ const num = (text: string | undefined, fallback = 0): number => {
   return Number.isFinite(v) ? v : fallback;
 };
 
-const mul = (a: Matrix, b: Matrix): Matrix => [
+export const mul = (a: Matrix, b: Matrix): Matrix => [
   a[0] * b[0] + a[2] * b[1],
   a[1] * b[0] + a[3] * b[1],
   a[0] * b[2] + a[2] * b[3],
@@ -56,7 +56,7 @@ const mul = (a: Matrix, b: Matrix): Matrix => [
 ];
 
 /** A `transform` attribute as one matrix. */
-function transformOf(text: string | undefined): Matrix {
+export function transformOf(text: string | undefined): Matrix {
   let m = IDENTITY;
   if (text === undefined) return m;
   for (const t of text.matchAll(/(\w+)\(([^)]*)\)/g)) {

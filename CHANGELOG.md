@@ -6,6 +6,11 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **The letters on a cap seen from the side are whole.** They ran off the edge of the crown ("CAN" read "CA", "USA" read "US"). They are now turned away with the front panel, narrowed to just over half and set in the middle of the panel, clear of the seam and of the crown's edge, for one to three letters and for kanji. The front view is unchanged.
+- The cap and helmet pictures in the README are made again.
+
 ### Changed
 
 - **The demo, the README and the docs show real countries instead of made-up teams.** The two-kit example is Japan against Canada (it was "Gulls" against "Bison"), the retired-number banners and the caps are in the colours of Canada, the USA and Japan (they were eight invented clubs, with names such as "Harbour City Gulls"), and the caps read CAN, USA and JPN. Colours and stripes only, as before: no crest, no federation mark, no flag. The names of the players are still made up. The banner and cap pictures are made again.

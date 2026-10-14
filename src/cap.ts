@@ -88,7 +88,9 @@ export function capParts(options?: CapOptions): { id: string; defs: string; body
     body += `<circle cx="98" cy="24" r="${line ? 0 : 4.5}" fill="${hx(button)}" stroke="${edgeOf(button)}" stroke-width="1.2"/>`;
     body += `<path d="M22 110L160 110C176 106 190 110 196 120C176 126 150 124 130 120L22 120Z" ${fill(brim)} stroke="${edgeOf(brim)}" stroke-width="${sw}" stroke-linejoin="round"/>`;
     if (cloth) body += `<path d="M30 118H184" fill="none" stroke="#000" stroke-opacity=".14" stroke-width="3"/>`;
-    body += letters(134, 74, 28, 40, two ? front : crown);
+    // The front panel is turned away from the eye: its letters are the front view's, narrowed to just over half about the middle of the panel, so that they lie on it, whole, short of the edge.
+    const mark = letters(132, 74, 28, 50, two ? front : crown);
+    if (mark !== "") body += `<g transform="translate(132 0) scale(.56 1) translate(-132 0)">${mark}</g>`;
   }
   const w = TITLE_WORDS[language];
   const title = clean(o.title, 120) ?? (language === "ja" ? `${w.cap}${initials === undefined ? "" : `（${initials}）`}` : `${w.cap}${initials === undefined ? "" : ` ${initials}`}`);
