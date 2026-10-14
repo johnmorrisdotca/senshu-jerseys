@@ -6,7 +6,7 @@ import { extname, join, normalize } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-import { renderEmbed, renderIndex } from "./page.mjs";
+import { backgroundsModule, renderEmbed, renderIndex } from "./page.mjs";
 
 const root = join(fileURLToPath(import.meta.url), "..", "..");
 const port = Number(process.env.PORT ?? 7300);
@@ -19,7 +19,7 @@ createServer(async (request, response) => {
   const file = join(base, rel);
   if (!file.startsWith(root)) { response.writeHead(403).end("no"); return; }
   try {
-    const body = rel === "index.html" ? Buffer.from(renderIndex()) : rel === "embed.html" ? Buffer.from(renderEmbed()) : await readFile(file);
+    const body = rel === "index.html" ? Buffer.from(renderIndex()) : rel === "embed.html" ? Buffer.from(renderEmbed()) : rel === "family-backgrounds.js" ? Buffer.from(backgroundsModule()) : await readFile(file);
     response.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream", "cache-control": "no-store" }).end(body);
   } catch {
     response.writeHead(404, { "content-type": "text/plain" }).end("not found");

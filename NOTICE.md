@@ -23,3 +23,7 @@ The facts are a first reading and some rows are marked `unsure` in their source 
 ## Made-up examples
 
 The demo's other teams, players and numbers are made up.
+
+## The backgrounds behind the pictures
+
+The backgrounds behind the README pictures and the demo's preview (`scripts/family-backgrounds.ts`, version 1.0.0) are the family's shared module, copied byte for byte from taisen-brackets: twenty-five backgrounds drawn in code from gradients, patterns and paths, all by this package's author, none traced from a picture, a poster, a logo, a trophy or a photograph (MIT). It is tooling: the package ships none of it, and no jersey, cap, helmet or banner is drawn on a background.

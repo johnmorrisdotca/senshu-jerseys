@@ -2,6 +2,8 @@
 // them into site/, and the dev server (dev.mjs) serves the same text, so the tests play the page that is published.
 import { readFileSync } from "node:fs";
 
+import { transformSync } from "esbuild";
+
 import { WORDS } from "../demo/words.js";
 import { FAMILY_SCRIPT, familyFooter, familyHead, familyHeader, familyUnreviewed } from "./family-template.mjs";
 
@@ -30,4 +32,9 @@ export function renderIndex() {
 /** demo/embed.html, the frame a page puts in an iframe: plain, no family blocks. */
 export function renderEmbed() {
   return readFileSync(new URL("../demo/embed.html", import.meta.url), "utf8");
+}
+
+/** The family's background module as the plain JavaScript the demo's preview imports when a background is chosen (the module is TypeScript, copied from taisen-brackets into scripts/; the demo is the only thing that loads it). */
+export function backgroundsModule() {
+  return transformSync(readFileSync(new URL("family-backgrounds.ts", import.meta.url), "utf8"), { loader: "ts", format: "esm" }).code;
 }

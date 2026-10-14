@@ -1,5 +1,12 @@
 # Officials
 
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-dark.webp">
+<img alt="Eight officials' shirts under floodlights, front above and back below: the NHL referee with orange armbands and the linesman without, a basketball referee, an NFL referee, yellow and cyan soccer referees with a chest pocket and a plain badge, a baseball umpire in navy with a chest protector and a yellow rugby referee." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-light.webp" width="760">
+</picture>
+</p>
+
 Referees, linesmen, umpires and judges, drawn from the same cuts as the players: the black-and-white stripes of hockey, basketball and football, the bright solid colours of soccer, the umpire's navy polo, and a few historic looks. `OFFICIALS` is a league of presets like any other (`@johnmorrisdotca/senshu-jerseys/presets/officials`, ids that start with `ref:`), and it is also in `PRESETS` and in the demo's Officials section and Jersey wall filter.
 
 **Colours and shapes only.** No league crest (no NHL shield), no federation badge (no FIFA badge), no maker's or sponsor's mark and no real official's name. The badge spot on a soccer referee's chest is a plain, empty shape; a page may put its own `crest` there.

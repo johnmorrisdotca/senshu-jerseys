@@ -14,18 +14,24 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 
 <p align="center">
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-dark.png">
-<img alt="Seven jerseys, one in each cut: a hockey sweater with a lace-up collar and sleeve stripes, a pinstriped baseball jersey, a basketball tank, a football jersey with sleeve stripes, a hooped soccer shirt, a rugby shirt and a handball shirt. Below them the backs, with a name and a number, and the same in one line." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-light.png" width="760">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-dark.webp">
+<img alt="Seven jerseys, one in each cut, each on the ground of its sport: a hockey sweater with a lace-up collar and sleeve stripes on ice, a pinstriped baseball jersey on an infield, a basketball tank on a hardwood floor, a football jersey with sleeve stripes on turf, a hooped soccer shirt on a pitch, a rugby shirt on turf and a handball shirt on hardwood. Below each, the back with a name and a number, and the same shirt drawn in one line." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-light.webp" width="760">
 </picture>
 </p>
 
 <table align="center">
 <tr>
 <td align="center" valign="top">
-<img alt="A hockey sweater turned through seven angles: the front foreshortens to an edge, where the thickness of the cloth shows, and then the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.png" width="470"><br><em>Turned: the front to an edge, then the back</em>
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-dark.webp">
+<img alt="A hockey sweater on ice, turned through eight angles: the front foreshortens to an edge, where the thickness of the cloth shows, and then the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.webp" width="470">
+</picture><br><em>Turned: the front to an edge, then the back</em>
 </td>
 <td align="center" valign="top">
-<img alt="Jerseys on a phone, light." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-light.png" width="200"><br><em>On a phone</em>
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-dark.webp">
+<img alt="Four jerseys on a phone, front and back, two by two: a hockey sweater on ice, a soccer shirt on a pitch, a basketball tank on hardwood and a pinstriped baseball jersey on an infield." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-light.webp" width="200">
+</picture><br><em>On a phone</em>
 </td>
 </tr>
 </table>
@@ -225,6 +231,13 @@ console.log(MLB.some((p) => p.team === "Houston Astros")); // true
 
 The officials' shirts are presets (`ref:nhl-modern-referee`, `ref:soccer-yellow`, `ref:mlb-umpire-navy`) built from options of their own: `armbands` (a colour, a width and a place on the upper arm), `pocket`, `badge` (a plain spot, never a federation's mark), `protector`, the `zip` and `point` collars, and `collarColor: 3`. [docs/officials.md](./docs/officials.md) lists them with their sources.
 
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-dark.webp">
+<img alt="Eight officials' shirts under floodlights, front above and back below: the NHL referee with orange armbands and the linesman without, a basketball referee, an NFL referee, yellow and cyan soccer referees with a chest pocket and a plain badge, a baseball umpire in navy with a chest protector and a yellow rugby referee." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-light.webp" width="760">
+</picture>
+</p>
+
 ```js
 import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
 
@@ -251,6 +264,20 @@ console.log(renderJersey({ ...set, kit: true }) === renderKit(set)); // true
 ```
 
 ### Caps, helmets and retired banners
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-dark.webp">
+<img alt="Six caps from the front and from the side, in six teams' colours, on an infield; below them, on turf, football, hockey and batting helmets facing right and left, with a number or a star." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-light.webp" width="760">
+</picture>
+</p>
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-dark.webp">
+<img alt="Twelve retired-number banners on royal purple: a rectangle, a pennant and a shield in six sets of colours with a made-up name, number and years, and the same six again with their colours turned round." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-light.webp" width="760">
+</picture>
+</p>
 
 ```js
 import { renderBanner, renderCap, renderHelmet } from "@johnmorrisdotca/senshu-jerseys";

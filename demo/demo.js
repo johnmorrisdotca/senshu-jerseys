@@ -11,11 +11,13 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "" };
+const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "" };
+const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
 for (const [k, v] of params) {
-  if (k in UI_DEFAULTS) ui[k] = v;
+  if (k === "background") ui.background = BACKGROUNDS.includes(v) ? v : "";
+  else if (k in UI_DEFAULTS) ui[k] = v;
   else if (k in DEFAULTS || k.length > 1) {
     if (v === "") delete attrs[k];
     else attrs[k] = v;
@@ -221,10 +223,43 @@ function syncControls() {
     if (document.activeElement !== i) i.value = attrs[key] ?? "";
   }
   if ($("preset") !== null) $("preset").value = ui.preset;
+  $("background").value = ui.background;
 }
 
 // ----- The stage: the jersey, turned by a drag, the keys or the Auto-turn button.
 let turn;
+let backgrounds;
+const dark = matchMedia("(prefers-color-scheme: dark)");
+/**
+ * The optional background behind the stage: one of the family's twenty-five, drawn in code (family-backgrounds.js, loaded only when one is chosen), in the dark or the light variant of the page's look,
+ * and the stage's text takes the ink it returns. It is a picture behind the stage and nothing more: the jersey the package draws is the same string with or without it.
+ */
+async function paintBackground() {
+  const stage = $("stage");
+  const name = ui.background;
+  if (name === "") {
+    stage.style.backgroundImage = "";
+    stage.style.color = "";
+    return;
+  }
+  try {
+    backgrounds ??= await import("./family-backgrounds.js");
+  } catch {
+    return;
+  }
+  // The choice may have changed while the module loaded.
+  if (ui.background !== name) return;
+  const forced = document.documentElement.dataset.theme;
+  const theme = forced === "dark" || (forced !== "light" && dark.matches) ? "dark" : "light";
+  const { defs, body, ink } = backgrounds.backgroundSvg(name, { width: 1200, height: 675, theme, id: "stage-bg" });
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" preserveAspectRatio="xMidYMid slice"><defs>${defs}</defs><rect width="1200" height="675" fill="${ink.base}"/>${body}</svg>`;
+  stage.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  stage.style.backgroundSize = "cover";
+  stage.style.backgroundPosition = "center";
+  stage.style.color = ink.text;
+}
+dark.addEventListener("change", () => { if (ui.background !== "") paintBackground(); });
+new MutationObserver(() => { if (ui.background !== "") paintBackground(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 function stageOptions() {
   return { ...options(), size: 300, language: attrs.language ?? lang() };
 }
@@ -593,6 +628,7 @@ function render() {
 }
 
 // ----- Wire the page.
+$("background").addEventListener("change", () => { ui.background = $("background").value; syncUrl(); paintBackground(); });
 $("yaw").addEventListener("input", () => {
   turn?.pause();
   syncPlay();
@@ -644,6 +680,7 @@ window.addEventListener("senshu-language", everything);
 
 buildControls();
 render();
+paintBackground();
 drawRafters();
 drawBuilders();
 loadPresets();

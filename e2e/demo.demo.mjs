@@ -291,11 +291,42 @@ test("in Japanese the words change, and nothing scrolls sideways", async ({ page
 test("44 pixels is the least a control gives a finger", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('[data-testid="chip-mlb"]')).toBeVisible();
-  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #officials-sports button, #teams select, #teams button, #embed button").all();
+  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #background, #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #officials-sports button, #teams select, #teams button, #embed button").all();
   expect(controls.length).toBeGreaterThan(40);
   for (const control of controls) {
     if (!(await control.isVisible())) continue;
     const box = await control.boundingBox();
     expect(box.height, await control.evaluate((n) => n.outerHTML.slice(0, 90))).toBeGreaterThanOrEqual(43.5);
   }
+});
+
+test("the background is off by default, and a chosen one is a picture behind the stage that leaves the jersey as it was", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/?cut=hockey&number=9&name=Beaumont");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  const background = () => page.locator("#stage").evaluate((stage) => stage.style.backgroundImage);
+  // The jersey string without turning in it: the "both" view is drawn once and does not move.
+  const jersey = () => page.locator("#stage > svg").evaluate((svg) => svg.outerHTML);
+  await page.getByRole("group", { name: "View" }).getByRole("button", { name: "Both" }).click();
+  const plain = await jersey();
+  expect(await background()).toBe("");
+  await page.locator("#background").selectOption("ice");
+  await expect.poll(background).toContain("data:image/svg+xml");
+  expect(page.url()).toContain("background=ice");
+  expect(await jersey()).toBe(plain);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect.poll(background).toContain("data:image/svg+xml");
+  expect(await jersey()).toBe(plain);
+  // The address says which, and None takes it away again.
+  await page.goto("/?background=floodlights&view=both");
+  await expect(page.locator("#background")).toHaveValue("floodlights");
+  await expect.poll(background).toContain("data:image/svg+xml");
+  await page.locator("#background").selectOption("");
+  await expect.poll(background).toBe("");
+  expect(page.url()).not.toContain("background");
+  await page.goto("/?background=nope");
+  await expect(page.locator("#background")).toHaveValue("");
+  expect(await noSideways(page)).toBe(true);
+  expect(errors).toEqual([]);
 });
