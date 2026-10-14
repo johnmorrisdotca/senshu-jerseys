@@ -96,16 +96,20 @@ export function helmetParts(options?: HelmetOptions): { id: string; defs: string
     if (!line) g += `<circle cx="${EAR[0]}" cy="${EAR[1]}" r="3" fill="${hx(shade(shell, -0.6))}"/>`;
   }
   g += `<path d="${SHELL}" fill="none" stroke="${edgeOf(shell)}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-  // The facemask or the cage.
+  // The facemask or the cage: the opening dark behind its bars.
   if (kind === "football") {
     const m = hx(mask);
     const stroke = line ? "currentColor" : m;
-    const w = line ? 6 : 4.4;
-    g += `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M172 84C196 88 200 116 190 134L170 150L128 150" stroke="${line ? "currentColor" : edgeOf(mask)}" stroke-width="${w + 2}"/><path d="M182 86C196 90 200 116 190 134M180 106H198M176 124H196M186 88V138" stroke="${stroke}" stroke-width="${w - 1.4}"/><path d="M172 84C196 88 200 116 190 134L170 150L128 150" stroke="${stroke}" stroke-width="${w}"/></g>`;
+    const rim = line ? "currentColor" : edgeOf(mask);
+    const w = line ? 6 : 4;
+    if (!line) g += `<path d="M158 82L190 90C196 104 196 122 188 136L164 148L138 148L150 112Z" fill="#101318" fill-opacity=".62"/>`;
+    g += `<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M164 80C192 84 200 112 192 134L166 150L128 150" stroke="${rim}" stroke-width="${w + 1.8}"/><path d="M160 98H196M156 114H197M152 130H192M180 84V146" stroke="${rim}" stroke-width="${w - 0.6}"/><path d="M164 80C192 84 200 112 192 134L166 150L128 150M160 98H196M156 114H197M152 130H192M180 84V146" stroke="${stroke}" stroke-width="${w - 2.2}"/></g>`;
   } else if (kind === "hockey") {
     const m = hx(mask);
-    g += line ? "" : `<path d="M160 96C178 98 188 108 190 124L186 136" fill="none" stroke="${m}" stroke-width="3.2" stroke-linecap="round"/><path d="M170 92V132M180 94V132M166 108H188M164 122H186" stroke="${m}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".9"/>`;
-    if (line) g += `<path d="M160 96C178 98 188 108 190 124L186 136" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>`;
+    if (!line) {
+      g += `<path d="M158 92L184 96C190 108 190 124 184 136L160 138Z" fill="#101318" fill-opacity=".45"/>`;
+      g += `<path d="M158 92C184 94 192 110 190 128L184 140M168 94V138M178 96V138M160 108H190M160 122H189" fill="none" stroke="${m}" stroke-width="2.4" stroke-linecap="round"/>`;
+    } else g += `<path d="M158 92C184 94 192 110 190 128L184 140M170 94V138M160 114H190" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>`;
   }
   if (mark === "number" && num !== undefined && num !== "") {
     const run = layout(num, mx, my, { height: 30, maxWidth: 40, weight: "black" });

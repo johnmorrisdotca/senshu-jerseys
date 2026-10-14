@@ -417,14 +417,16 @@ export const NHL = defineLeague(
     ["ducks", "2006-2024", "away", "fff f47a38 000 000 f47a38 ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=v pt=000"],
 
     // https://en.wikipedia.org/wiki/Vegas_Golden_Knights#Logos,_colors,_and_uniforms
-    // 2017-: steel grey at home, white away, both with gold and black stripes (unsure: the order)
+    // 2017-: steel grey at home, white away, with gold, black and red stripes (red is not drawn; unsure: the order); the gold alternate (2020) became the main jersey in 2022
     ["knights", "2017-", "home", "333f42 b4975a 000 fff 000 ss=4.0.3.2.10.1.3.2 hs=4.0.3.2.10.1.3.2 co=l pt=333f42 he=333f42"],
     ["knights", "2017-", "away", "fff b4975a 000 000 b4975a ss=4.0.3.2.10.1.3.2 hs=4.0.3.2.10.1.3.2 co=l pt=333f42 he=333f42"],
-    ["knights", "2018-", "alt", "b4975a 000 333f42 000 333f42 ss=4.0.3.2.10.1.3.2 hs=4.0.3.2.10.1.3.2 co=l pt=000"],
+    ["knights", "2020-", "alt", "b4975a 000 333f42 000 333f42 ss=4.0.3.2.10.1.3.2 hs=4.0.3.2.10.1.3.2 co=l pt=000"],
 
     // https://en.wikipedia.org/wiki/Seattle_Kraken#Logo_and_uniforms
     // 2021-: deep sea blue with ice blue and boundless blue; unsure: the stripe layout
     ["kraken", "2021-", "home", "001628 99d9d9 355464 fff 99d9d9 ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
-    ["kraken", "2021-", "away", "99d9d9 001628 355464 001628 - ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
+    // away is white with deep sea blue and ice blue stripes (unsure: order); Reverse Retro 2022-23: ice blue base with deep sea blue stripes
+    ["kraken", "2021-", "away", "fff 001628 99d9d9 001628 99d9d9 ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
+    ["kraken", "2022-2023", "alt", "99d9d9 001628 355464 001628 - ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
   ],
 );

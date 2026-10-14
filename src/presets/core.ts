@@ -52,6 +52,7 @@ export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
       case "c": o.cut = CUT_CODES[v] ?? o.cut; break;
       case "p": o.pattern = PATTERN_CODES[v as keyof typeof PATTERN_CODES] ?? "solid"; break;
       case "r": o.repeat = bandsOf(dotted(v)); break;
+      case "as": o.armStripes = bandsOf(dotted(v)); break;
       case "n": o.stripeCount = Number(v); break;
       case "ps": o.patternSleeves = v !== "0"; break;
       case "ss": o.sleeveStripes = stripes(v); break;

@@ -39,6 +39,8 @@ export interface JerseyOptions {
   repeat?: Bands;
   /** For `stripes`: how many equal bands (2 to 24) run across the torso, the first the trim's, instead of a `repeat`. */
   stripeCount?: number;
+  /** Bands down the length of each sleeve, centred on its middle (width and colour pairs): a stripe from the shoulder to the cuff. */
+  armStripes?: Bands;
   /** Whether the pattern carries onto the sleeves (true by default); false leaves them the body's colour. */
   patternSleeves?: boolean;
   collar?: CollarId;
@@ -100,6 +102,7 @@ export interface Resolved {
   pattern: PatternId;
   repeat?: Bands;
   stripeCount?: number;
+  armBands: Bands;
   patternSleeves: boolean;
   collar: CollarId;
   sleeve: SleeveId;
@@ -205,6 +208,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     pattern: pick(PATTERN_IDS, o.pattern, "solid"),
     repeat: bandsOf(o.repeat),
     stripeCount: typeof o.stripeCount === "number" && Number.isInteger(o.stripeCount) && o.stripeCount >= 2 && o.stripeCount <= 24 ? o.stripeCount : undefined,
+    armBands: bandsOf(o.armStripes) ?? [],
     patternSleeves: o.patternSleeves !== false,
     collar,
     sleeve,

@@ -138,14 +138,14 @@ export function jerseyLineup(players: readonly LineupPlayer[], options?: LineupO
   const scale = 0.34;
   let defs = "";
   let body = "";
-  if (o.field === true) body += `<g fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="2"><rect x="6" y="6" width="${W - 12}" height="${H - 12}" rx="6"/><path d="M6 ${H / 2}H${W - 6}"/><circle cx="${W / 2}" cy="${H / 2}" r="30"/></g>`;
+  if (o.field === true) body += `<g fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="2"><rect x="6" y="6" width="${W - 12}" height="${H - 12}" rx="6"/><path d="M6 ${H / 2}H${W - 6}"/></g>`;
   let k = 0;
   rows.forEach((n, ri) => {
     for (let i = 0; i < n; i++) {
       const p = seq[k++];
       if (p === undefined) continue;
       const { name, role, ...own } = p;
-      const r = resolve({ ...o.jersey, ...own, name: undefined, view: o.view === "back" ? "back" : "front", language: undefined, size: undefined });
+      const r = resolve({ ...o.jersey, ...own, name: undefined, view: o.view === "back" ? "back" : "front", language: undefined, size: undefined, frontNumber: o.view === "back" ? undefined : (o.jersey?.frontNumber ?? true) });
       const cx = 10 + (W - 20) / 2 + (i - (n - 1) / 2) * cellW;
       const x = cx - (JERSEY_WIDTH * scale) / 2;
       const y = 10 + ri * cellH;

@@ -1,6 +1,7 @@
 // Turning: the jersey as a thin piece of cloth that turns about its vertical axis. The front foreshortens as it turns, to an edge at 90 degrees where the cloth's thickness
 // shows (at the shoulders and the hem and down the sides), and the back, with its name and number, shows from 90 to 270 degrees. 2.5D: flat drawings on a turning plane,
 // each a string of SVG. `jerseyFrame` is one angle; `bindTurn` is the pointer, the keys and the automatic turn, in a container.
+import { CUTS } from "./cuts.ts";
 import { hexOf, shade } from "./colour.ts";
 import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyView, uidOf } from "./jersey.ts";
 import { resolve, type JerseyOptions } from "./options.ts";
@@ -32,6 +33,8 @@ export interface TurnState {
   front: { visible: boolean; matrix: string; shade: number };
   back: { visible: boolean; matrix: string; shade: number };
   slices: string[];
+  /** The edge-on profile of the cloth, a narrow upright slab: its left side and its width. */
+  slab: { x: number; width: number };
 }
 
 export function turnState(yawDeg: unknown, thickness = 14): TurnState {
@@ -48,8 +51,10 @@ export function turnState(yawDeg: unknown, thickness = 14): TurnState {
     const z = (-0.5 + i / (SLICES - 1)) * t;
     slices.push(m(c, cx - cx * c + s * z));
   }
+  const slabWidth = Math.max(2, t * Math.abs(s));
   return {
     yaw,
+    slab: { x: Math.round((cx - slabWidth / 2) * 100) / 100, width: Math.round(slabWidth * 100) / 100 },
     front: { visible: c > 0.0005, matrix: m(c, cx - cx * c + (s * t) / 2), shade: shadeOf(c) },
     back: { visible: c < -0.0005, matrix: m(-c, cx + cx * c - (s * t) / 2), shade: shadeOf(c) },
     slices,
@@ -72,18 +77,23 @@ export function jerseyFrame(options?: TurnOptions): string {
   st.slices.forEach((matrix, i) => {
     slices += `<use href="#${front.outlineId}" data-turn="slice" fill="${line ? "none" : i % 2 === 0 ? edge : edgeLit}" ${line ? 'stroke="currentColor" stroke-width="3" ' : ""}transform="${matrix}"/>`;
   });
+  const spec = CUTS[rf.cut];
+  const slab = `<rect data-turn="slab" x="${st.slab.x}" y="${spec.ny - 5}" width="${st.slab.width}" height="${spec.hy - spec.ny + 5}" rx="2.5" fill="${line ? "none" : edge}"${line ? ' stroke="currentColor" stroke-width="3"' : ""}/>`;
   const face = (which: "front" | "back", v: typeof front, s: TurnState["front"]): string =>
     `<g data-turn="${which}" transform="${s.matrix}"${s.visible ? "" : ' display="none"'}>${v.body}<use href="#${v.outlineId}" data-turn="${which}-shade" fill="#000" fill-opacity="${s.shade}" stroke="none"/></g>`;
   const w = rf.size;
   const h = Math.round(((w * JERSEY_HEIGHT) / JERSEY_WIDTH) * 100) / 100;
   const id = uidOf(rf, "turn");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${JERSEY_WIDTH} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(st.yaw)}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}</defs><g data-turn="edge">${slices}</g>${face("front", front, st.front)}${face("back", back, st.back)}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${JERSEY_WIDTH} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(st.yaw)}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}</defs><g data-turn="edge">${slab}${slices}</g>${face("front", front, st.front)}${face("back", back, st.back)}</svg>`;
 }
 
 /** Move an SVG made by `jerseyFrame` to an angle without redrawing it: only the transforms change. */
 export function applyTurn(svg: Element, yawDeg: unknown, thickness = 14): number {
   const st = turnState(yawDeg, thickness);
   svg.setAttribute("data-yaw", n2(st.yaw));
+  const slab = svg.querySelector('[data-turn="slab"]');
+  slab?.setAttribute("x", String(st.slab.x));
+  slab?.setAttribute("width", String(st.slab.width));
   const slices = svg.querySelectorAll('[data-turn="slice"]');
   slices.forEach((el, i) => el.setAttribute("transform", st.slices[i] ?? ""));
   for (const which of ["front", "back"] as const) {

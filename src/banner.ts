@@ -79,7 +79,7 @@ export function renderBanner(options?: BannerOptions): string {
   }
   body += `<path d="${OUT}" fill="none" stroke="${edge}" stroke-width="${line ? 6 : 1.6}" stroke-linejoin="round"/>`;
   // What is written on it.
-  const zone = shape === "pennant" ? { nx: 100, ny: 92, nh: 56, nw: 60, namey: 150, nameh: 11, namew: 54, yy: 170, yh: 9, yw: 46 } : { nx: 100, ny: sweaterOpts === undefined ? 112 : 150, nh: sweaterOpts === undefined ? 84 : 66, nw: 82, namey: sweaterOpts === undefined ? 180 : 192, nameh: 14, namew: 104, yy: sweaterOpts === undefined ? 202 : 212, yh: 10, yw: 90 };
+  const zone = shape === "pennant" ? { nx: 100, ny: 80, nh: 52, nw: 56, namey: 122, nameh: 10, namew: 62, yy: 140, yh: 8, yw: 52 } : { nx: 100, ny: sweaterOpts === undefined ? 112 : 158, nh: sweaterOpts === undefined ? 84 : 56, nw: 82, namey: sweaterOpts === undefined ? 180 : 196, nameh: 14, namew: 104, yy: sweaterOpts === undefined ? 202 : 214, yh: 10, yw: 90 };
   const mark = (text: string, cx: number, cy: number, h: number, w: number, weight: "bold" | "black"): string => {
     const run = layout(text, cx, cy, { height: h, maxWidth: w, weight, tracking: 0.4 });
     if (line) return drawRun(run, "currentColor", undefined, undefined);
@@ -90,7 +90,7 @@ export function renderBanner(options?: BannerOptions): string {
     const r = resolve({ ...sweaterOpts, view: "front", look: line ? "line" : "flat" });
     const view = jerseyView(r, "front", uidOf(r, "banner"));
     defs += view.defs;
-    body += `<g transform="translate(66 54) scale(.34)">${view.body}</g>`;
+    body += `<g transform="translate(72 44) scale(.28)">${view.body}</g>`;
   }
   if (num !== undefined && num !== "") body += mark(num, zone.nx, zone.ny, zone.nh, zone.nw, "black");
   if (name !== undefined) body += mark(name, 100, zone.namey, zone.nameh, zone.namew, "bold");

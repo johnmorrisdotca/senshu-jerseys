@@ -192,7 +192,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   const body = hexOf(r.body);
   const trimHex = hexOf(r.trim);
   const trim2Hex = hexOf(r.trim2);
-  const colourOf = (c: number): string => (c === 0 ? body : c === 1 ? trimHex : c === 2 ? trim2Hex : trimHex);
+  const fill3 = r.fill === undefined ? trimHex : hexOf(r.fill);
+  const colourOf = (c: number): string => (c === 0 ? body : c === 1 ? trimHex : c === 2 ? trim2Hex : fill3);
   const ink = line ? "currentColor" : undefined;
   const edgeRgb = lum(r.body) > 0.1 ? shade(r.body, -0.42) : shade(r.body, 0.3);
   const edge = line ? "currentColor" : hexOf(edgeRgb);
@@ -284,15 +285,20 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       torsoPattern = `<path d="M${n2(100 - spec.su + 4)} ${n2(spec.sy - 4)}L${n2(100 - spec.su + 34)} ${n2(spec.sy - 4)}L${n2(100 + spec.hu + 10)} ${n2(spec.hy + 6)}L${n2(100 + spec.hu - 24)} ${n2(spec.hy + 6)}Z" fill="${trimHex}"/>`;
       if (r.trim2Given) torsoPattern += `<path d="M${n2(100 - spec.su + 34)} ${n2(spec.sy - 4)}L${n2(100 + spec.hu + 10)} ${n2(spec.hy + 6)}M${n2(100 - spec.su + 4)} ${n2(spec.sy - 4)}L${n2(100 + spec.hu - 24)} ${n2(spec.hy + 6)}" stroke="${trim2Hex}" stroke-width="2.4" fill="none"/>`;
     } else if (pat === "chevron" && view === "front") {
-      const y0 = Math.round(spec.ay - 6);
-      for (let k = 0; k < 2; k++) {
-        const y = y0 + k * 26;
-        torsoPattern += `<path d="M${n2(100 - spec.su - 6)} ${y}L100 ${y + 44}L${n2(100 + spec.su + 6)} ${y}V${y + 14}L100 ${y + 58}L${n2(100 - spec.su - 6)} ${y + 14}Z" fill="${k === 1 && r.trim2Given ? trim2Hex : trimHex}"/>`;
+      const y0 = Math.round(r.chestY ?? spec.ay - 6);
+      const seqc: Bands = r.repeat ?? [14, 1, 12, 0, 14, r.trim2Given ? 2 : 1];
+      let y = y0;
+      for (let i = 0; i + 1 < seqc.length; i += 2) {
+        const w = seqc[i] as number;
+        const c = seqc[i + 1] as number;
+        if (c !== 0) torsoPattern += `<path d="M${n2(100 - spec.su - 6)} ${n2(y)}L100 ${n2(y + 44)}L${n2(100 + spec.su + 6)} ${n2(y)}V${n2(y + w)}L100 ${n2(y + 44 + w)}L${n2(100 - spec.su - 6)} ${n2(y + w)}Z" fill="${colourOf(c)}"/>`;
+        y += w;
       }
     } else if (pat === "pinstripes") {
       const w = 0.9;
+      const gap = r.repeat === undefined ? 8 : Math.max(3, r.repeat.reduce((a, v, i) => (i % 2 === 0 ? a + v : a), 0));
       let d = "";
-      for (let x = 100 - 8 * 14; x <= 100 + 8 * 14; x += 8) d += `M${n2(x)} 0V${JERSEY_HEIGHT}`;
+      for (let x = 100 - gap * Math.ceil(120 / gap); x <= 100 + gap * Math.ceil(120 / gap); x += gap) d += `M${n2(x)} 0V${JERSEY_HEIGHT}`;
       torsoPattern = `<path d="${d}" stroke="${patternInk(1)}" stroke-width="${w}" fill="none" stroke-opacity=".9"/>`;
     } else if (pat === "yoke") {
       // The yoke is drawn below with the others.
@@ -315,12 +321,23 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
         } else if (pat === "stripes") local = patternLayer(true, 0, -140, 140);
         else if (pat === "pinstripes") {
           let d = "";
-          for (let x = -60; x <= 60; x += 8) d += `M${x} -10V140`;
+          const gap = r.repeat === undefined ? 8 : Math.max(3, r.repeat.reduce((a, v, i) => (i % 2 === 0 ? a + v : a), 0));
+          for (let x = -gap * Math.ceil(60 / gap); x <= gap * Math.ceil(60 / gap); x += gap) d += `M${x} -10V140`;
           local = `<path d="${d}" stroke="${patternInk(1)}" stroke-width="0.9" fill="none" stroke-opacity=".9"/>`;
         } else if (pat === "hoops" && r.patternSleeves) {
           const total = seq.reduce((sum, v, i) => (i % 2 === 0 ? sum + v : sum), 0) || 28;
           const bands = repeatBands(seq, -total, 160, undefined);
           for (const c of [1, 2, 3]) for (const [a, b] of bands[c] as [number, number][]) local += `<path d="M-90 ${n2(a)}H90V${n2(b)}H-90Z" fill="${colourOf(c)}"/>`;
+        }
+        if (r.armBands.length > 0) {
+          const total = r.armBands.reduce((a, v, i) => (i % 2 === 0 ? a + v : a), 0);
+          let at = -total / 2;
+          for (let i = 0; i + 1 < r.armBands.length; i += 2) {
+            const w = r.armBands[i] as number;
+            const c = r.armBands[i + 1] as number;
+            if (c !== 0) local += `<path d="M${n2(at)} -4H${n2(at + w)}V150H${n2(at)}Z" fill="${colourOf(c)}"/>`;
+            at += w;
+          }
         }
         if (local !== "") layer += `<g transform="translate(${n2(s.S[0])} ${n2(s.S[1])}) rotate(${n2(phi)})">${local}</g>`;
         if (!r.patternSleeves) {
@@ -418,9 +435,10 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   if (cloth) {
     addIn(
       useO(`fill="url(#${uid}v)"`) + useO(`fill="url(#${uid}h)"`) +
-        (L !== undefined && R !== undefined ? `<path d="${L.poly}" fill="#000" fill-opacity=".1"/><path d="${R.poly}" fill="#000" fill-opacity=".1"/>` : ""),
+        (L !== undefined && R !== undefined ? `<path d="${L.poly}" fill="#000" fill-opacity="${lum(r.body) > 0.4 ? 0.05 : 0.1}"/><path d="${R.poly}" fill="#000" fill-opacity="${lum(r.body) > 0.4 ? 0.05 : 0.1}"/>` : ""),
     );
-    const fold = (d: string, w: number, o: number): string => `<path d="${d}" fill="none" stroke="#000" stroke-opacity="${o}" stroke-width="${w}" stroke-linecap="round"/>`;
+    const fk = lum(r.body) > 0.4 ? 0.55 : 1;
+    const fold = (d: string, w: number, o: number): string => `<path d="${d}" fill="none" stroke="#000" stroke-opacity="${Math.round(o * fk * 100) / 100}" stroke-width="${w}" stroke-linecap="round"/>`;
     const lite = (d: string, w: number, o: number): string => `<path d="${d}" fill="none" stroke="#fff" stroke-opacity="${o}" stroke-width="${w}" stroke-linecap="round"/>`;
     const ay = sh.ay;
     let folds = "";
@@ -490,8 +508,9 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       }
       add(`<path d="${lace}" stroke="${trimHex}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`);
     } else if (collar === "polo") {
-      const leaf = (sd: 1 | -1): string => `M${n2(100 + sd * (nw + 3))} ${n2(ny + 1)}L${n2(100 + sd * (nw - 1))} ${n2(ny + 10)}L${n2(100 + sd * 1)} ${n2(ny + 23)}L${n2(100 + sd * 6)} ${n2(ny + 4)}Z`;
-      add(`<path d="${leaf(-1)}${leaf(1)}" fill="${collarC}" stroke="${hexOf(shade(collarIdx === 0 ? r.body : collarIdx === 1 ? r.trim : r.trim2, -0.3))}" stroke-width=".9" stroke-linejoin="round"/>`);
+      const leaf = (sd: 1 | -1): string => `M${n2(100 + sd * (nw + 2))} ${n2(ny + 1)}L${n2(100 + sd * (nw + 7))} ${n2(ny + 12)}L${n2(100 + sd * 4)} ${n2(ny + 25)}L${n2(100 + sd * 1.5)} ${n2(ny + 8)}L${n2(100 + sd * (nw - 3))} ${n2(ny + 2)}Z`;
+      const leafEdge = hexOf(shade(collarIdx === 0 ? r.body : collarIdx === 1 ? r.trim : r.trim2, lum(collarIdx === 0 ? r.body : collarIdx === 1 ? r.trim : r.trim2) > 0.3 ? -0.35 : 0.35));
+      add(`<path d="${leaf(-1)}${leaf(1)}" fill="${collarC}" stroke="${leafEdge}" stroke-width=".9" stroke-linejoin="round"/>`);
       add(`<path d="M100 ${ny + 14}V${ny + 42}" stroke="${seam}" stroke-width="1" fill="none"/><circle cx="100" cy="${ny + 26}" r="1.7" fill="${hexOf(shade(r.body, 0.5))}"/>`);
     } else if (collar === "band" && r.closure === "button" && r.cut === "baseball") {
       let buttons = "";
@@ -581,8 +600,11 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
 
   // ---- The defs that need the colours. ----
   if (cloth) {
-    defs += `<linearGradient id="${uid}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>`;
-    defs += `<linearGradient id="${uid}h" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".2" stop-color="#000" stop-opacity=".02"/><stop offset=".5" stop-color="#fff" stop-opacity=".06"/><stop offset=".8" stop-color="#000" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>`;
+    // A light shirt takes less shade, or it reads as dirty.
+    const k = lum(r.body) > 0.4 ? 0.5 : 1;
+    const o = (v: number): string => String(Math.round(v * k * 100) / 100);
+    defs += `<linearGradient id="${uid}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${o(0.16)}"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.2)}"/></linearGradient>`;
+    defs += `<linearGradient id="${uid}h" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0"><stop offset="0" stop-color="#000" stop-opacity="${o(0.22)}"/><stop offset=".2" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset=".5" stop-color="#fff" stop-opacity="${o(0.06)}"/><stop offset=".8" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.22)}"/></linearGradient>`;
   }
   void ids;
   void esc;

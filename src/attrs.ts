@@ -8,7 +8,7 @@ export const OPTION_ATTRIBUTES = [
   "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
   "patch", "sleeve-numbers", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
-  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves",
+  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes",
 ] as const;
 
 const bare = (v: string): string => (/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i.test(v) ? `#${v}` : v);
@@ -51,7 +51,7 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
     if (chest === "" || chest === "true") o.chestBand = true;
     else if (chest !== "false") o.chestBand = bandsOf(list(chest));
   }
-  for (const [name, key] of [["repeat", "repeat"], ["pants-bands", "pantsBands"], ["socks-bands", "socksBands"]] as const) {
+  for (const [name, key] of [["repeat", "repeat"], ["arm-stripes", "armStripes"], ["pants-bands", "pantsBands"], ["socks-bands", "socksBands"]] as const) {
     const v = read(name);
     if (v !== null && v.trim() !== "") o[key] = bandsOf(list(v));
   }
@@ -92,7 +92,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   for (const [k, v] of [["sleeve-stripes", o.sleeveStripes], ["hem-stripes", o.hemStripes]] as const) if (v !== undefined) out[k] = Array.isArray(v) ? v.join(" ") : String(v);
   if (o.chestBand === true) out["chest-band"] = "true";
   else if (Array.isArray(o.chestBand)) out["chest-band"] = o.chestBand.join(" ");
-  for (const [k, v] of [["repeat", o.repeat], ["pants-bands", o.pantsBands], ["socks-bands", o.socksBands]] as const) if (v !== undefined && v.length > 0) out[k] = v.join(" ");
+  for (const [k, v] of [["repeat", o.repeat], ["arm-stripes", o.armStripes], ["pants-bands", o.pantsBands], ["socks-bands", o.socksBands]] as const) if (v !== undefined && v.length > 0) out[k] = v.join(" ");
   set("chest-y", o.chestY);
   set("collar-color", o.collarColor);
   set("sleeve-color", o.sleeveColor);
