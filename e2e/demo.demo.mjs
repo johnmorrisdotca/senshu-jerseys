@@ -61,6 +61,49 @@ test("dragging turns the jersey from the front to the back, and the keys do too"
   expect(await yawOf(page)).toBe(0);
 });
 
+// Which way the jersey turns, measured: the front face is the near one, so when the jersey turns with the hand (a drag to the right) the front goes to the right of the middle of the cloth and the
+// edge shows on the left, and the Right arrow does the same.
+const frontOffset = (page) =>
+  page.locator("#stage").evaluate((node) => {
+    const middle = (sel) => {
+      const b = node.querySelector(sel).getBoundingClientRect();
+      return (b.left + b.right) / 2;
+    };
+    return middle('[data-turn="front"]') - middle('[data-turn="edge"]');
+  });
+
+test("a drag to the right takes the front of the jersey to the right, a drag to the left to the left, and the arrows do the same", async ({ page }) => {
+  await page.goto("/?cut=hockey&number=9&name=Gray");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg")).toBeVisible();
+  // Pointer events on the stage, as in the test above, so that it is the same on every project whatever is scrolled into view.
+  const dragTo = (from, to) =>
+    stage.evaluate((node, [a, b]) => {
+      const box = node.getBoundingClientRect();
+      const at = (type, f) => node.dispatchEvent(new PointerEvent(type, { pointerId: 5, pointerType: "mouse", isPrimary: true, bubbles: true, clientX: box.left + box.width * f, clientY: box.top + box.height / 2, button: 0 }));
+      at("pointerdown", a);
+      for (let i = 1; i <= 6; i++) at("pointermove", a + ((b - a) * i) / 6);
+      at("pointerup", b);
+    }, [from, to]);
+  await dragTo(0.4, 0.5);
+  expect(await yawOf(page)).toBeGreaterThan(10);
+  expect(await frontOffset(page)).toBeGreaterThan(1);
+  await stage.focus();
+  await page.keyboard.press("Home");
+  expect(await yawOf(page)).toBe(0);
+  await dragTo(0.5, 0.4);
+  expect(await yawOf(page)).toBeLessThan(-10);
+  expect(await frontOffset(page)).toBeLessThan(-1);
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowRight");
+  expect(await yawOf(page)).toBeGreaterThan(0);
+  expect(await frontOffset(page)).toBeGreaterThan(0.3);
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowLeft");
+  expect(await yawOf(page)).toBeLessThan(0);
+  expect(await frontOffset(page)).toBeLessThan(-0.3);
+});
+
 test("nothing moves until Play is pressed, then it turns, and Pause stops it", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#stage svg")).toBeVisible();

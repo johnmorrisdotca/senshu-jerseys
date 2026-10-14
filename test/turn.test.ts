@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { JERSEY_WIDTH } from "../src/jersey.ts";
 import { applyTurn, jerseyFrame, normalYaw, turnState } from "../src/turn-entry.ts";
 import { wellFormed } from "./helpers.ts";
 
@@ -30,6 +31,18 @@ test("the front shows from -90 to 90, the back from 90 to 270, and at 90 degrees
   assert.equal(s(90).front.visible, false);
   assert.equal(s(90).back.visible, false);
   assert.equal(s(-90).front.visible, false);
+});
+
+test("a positive yaw takes the front to the right and the back to the left, so a drag to the right (a positive yaw) turns the jersey with the hand", () => {
+  const middle = (matrix: string): number => {
+    const [a, , , , e] = (/matrix\(([^)]+)\)/.exec(matrix)?.[1] ?? "").split(" ").map(Number) as [number, number, number, number, number];
+    return a * (JERSEY_WIDTH / 2) + e;
+  };
+  for (const yaw of [20, 45, 70]) {
+    assert.ok(middle(turnState(yaw).front.matrix) > JERSEY_WIDTH / 2, `${yaw}: the front is right of the middle`);
+    assert.ok(middle(turnState(-yaw).front.matrix) < JERSEY_WIDTH / 2, `-${yaw}: and left of it for a turn the other way`);
+    assert.ok(middle(turnState(180 - yaw).back.matrix) < JERSEY_WIDTH / 2, `${180 - yaw}: the back that comes round is left of the middle`);
+  }
 });
 
 test("the front foreshortens by the cosine, and at the edge the cloth's thickness is what shows", () => {

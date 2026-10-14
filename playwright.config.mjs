@@ -2,6 +2,8 @@
 // The server is scripts/dev.mjs on port 7301: this package's block of ports is 7300 to 7399, and tests use 7301 and up.
 import { defineConfig, devices } from "@playwright/test";
 
+// This package's ports are 7300 to 7399; tests use 7301 unless TEST_PORT names another (a worktree takes its own).
+const port = Number(process.env.TEST_PORT ?? 7301);
 const phone = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
 
 export default defineConfig({
@@ -10,8 +12,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   reporter: "list",
-  use: { baseURL: "http://127.0.0.1:7301", reducedMotion: "no-preference", locale: "en-US" },
-  webServer: { command: "node scripts/dev.mjs", env: { PORT: "7301" }, url: "http://127.0.0.1:7301/", reuseExistingServer: false },
+  use: { baseURL: `http://127.0.0.1:${port}`, reducedMotion: "no-preference", locale: "en-US" },
+  webServer: { command: "node scripts/dev.mjs", env: { PORT: String(port) }, url: `http://127.0.0.1:${port}/`, reuseExistingServer: false },
   projects: [
     { name: "chromium-phone", use: { ...devices["Desktop Chrome"], ...phone } },
     { name: "chromium-desk", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 900 } } },
