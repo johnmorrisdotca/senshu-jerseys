@@ -262,6 +262,27 @@ const players = Array.from({ length: 11 }, (_, i) => ({ number: i + 1, name: `Pl
 console.log(jerseyLineup(players, { formation: "4-4-2", jersey: { cut: "soccer", colors: ["#c8102e", "#ffffff"] } }).includes("Lineup, 4-4-2")); // true
 ```
 
+Neighbouring shirts tuck under each other by default, like shirts hung on a rail: each is drawn over the one on its left, with a soft shadow where it overlaps. `overlap` is a fraction of a shirt's width, from 0 to 0.4.
+
+| Option | Where | What it does |
+| --- | --- | --- |
+| `overlap` | `jerseyLineup` | How far each shirt in a row tucks under the next. 0.15 by default; 0 leaves the shirts apart, not touching. |
+| `overlap` | `kitMatchup` | The same, for each side's back and front in the `both` view (a single view has nothing to tuck). 0.15 by default. |
+| `overlap` | `renderJersey` | The same, for `view: "both"`. 0 by default, so the two shirts stay side by side unless asked. |
+
+```js
+import { jerseyLineup, renderJersey } from "@johnmorrisdotca/senshu-jerseys";
+
+const players = Array.from({ length: 11 }, (_, i) => ({ number: i + 1 }));
+const apart = jerseyLineup(players, { rows: [5, 6], overlap: 0 });
+const tucked = jerseyLineup(players, { rows: [5, 6], overlap: 0.25 });
+console.log(apart.includes("<filter")); // false
+console.log(tucked.includes("<filter")); // true
+console.log(renderJersey({ view: "both", overlap: 0.2 }).includes("<filter")); // true
+```
+
+More in [docs/overlap.md](docs/overlap.md).
+
 ### Turn a jersey
 
 `jerseyFrame` is the jersey at one angle: 0 is the front, 90 an edge where the cloth's thickness shows, 180 the back. `bindTurn` makes a container turn.
@@ -306,7 +327,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `renderJersey(options)`, `renderKit(options)` | A jersey (or the whole uniform) as SVG. |
 | `titleOf(resolved)` | The accessible title a drawing gets, in `language`. |
 | `renderCap`, `renderHelmet`, `renderBanner` | A cap, a helmet, a retired-number banner. |
-| `kitMatchup`, `kitClash`, `jerseyLineup`, `formationRows` | Two kits face to face, whether they clash, a formation of shirts, and the rows a formation means. |
+| `kitMatchup`, `kitClash`, `jerseyLineup`, `formationRows` | Two kits face to face, whether they clash, a formation of shirts (tucked under each other with `overlap`), and the rows a formation means. |
 | `useEmblems` | Plug in an emblem renderer so that `crest` can be an id. |
 | `usePresets`, `presetOf`, `presetOptions`, `loadedPresets`, `decode`, `defineLeague` | Load presets, find one, and read or write a preset's one-line spec. |
 | `embedCode`, `EMBED_KINDS`, `SITE`, `CDN` | The text that puts a jersey in a page: element, iframe, module, SVG or data address. |

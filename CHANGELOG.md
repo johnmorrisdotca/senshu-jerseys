@@ -6,6 +6,15 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`overlap`** for `jerseyLineup`, `kitMatchup` and the `both` view of `renderJersey`: neighbouring shirts tuck under each other, like shirts hung on a rail. It is a fraction of a shirt's width, 0 to 0.4 (anything else is clamped, and a value that is not a number is the default). Each shirt is drawn over the one on its left, so its body covers the last one's sleeve, with a soft shadow (one SVG filter) where it overlaps; the first shirt of a row casts none, and the document is as much narrower as the shirts moved. The default is 0.15 for a lineup and a matchup (its front and back in the `both` view): the sleeves slip under the next body and no number or collar is covered, where 0.25 begins to hide the shoulder and 0.35 the sleeve and part of the body. Pass `overlap: 0` for the spacing 0.1.1 drew. `renderJersey`'s `both` view stays side by side by default (`overlap: 0`), as the element, the embeds and the turn draw it. `docs/overlap.md`, `test/overlap.test.ts`.
+
+### Changed
+
+- A lineup and a matchup in the `both` view are tucked by 0.15 by default, so their documents are narrower than in 0.1.1 (a row of five by 9 percent); set `overlap: 0` for the old spacing.
+- The size limit for the custom element's bundle is 22 kB gzipped (it was 21), for the shadow.
+
 ## [0.1.1] - 2026-10-14
 
 ### Added

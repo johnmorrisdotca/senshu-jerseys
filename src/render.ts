@@ -5,11 +5,14 @@ import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox, jerseyView, uidOf, type View } 
 import { resolve, type JerseyOptions, type Resolved } from "./options.ts";
 import { renderKit } from "./uniform.ts";
 import type { EmblemRenderer } from "./emblems.ts";
+import { overlapOf, shadowAttr, shadowDefs, tuck } from "./overlap.ts";
 import { n2 } from "./path.ts";
 
 /** The options' own `emblems` renderer, for the drawing of one crest. */
 export interface RenderExtras {
   emblems?: EmblemRenderer;
+  /** In the `both` view, how far the back tucks under the front, as a fraction of a shirt's width, 0 to 0.4 (0 by default: side by side). The back is drawn over the front, with a soft shadow. */
+  overlap?: number;
 }
 
 /** The drawing's views, each as its own markup. */
@@ -32,12 +35,15 @@ export function renderJersey(options?: JerseyOptions & RenderExtras): string {
   const gap = 24;
   const n = views.length;
   const box = jerseyBox(r.cut);
-  const W = n * box.w + (n - 1) * gap;
+  const overlap = n > 1 ? overlapOf(options?.overlap) : 0;
+  const pitch = tuck(box.w + gap, JERSEY_WIDTH, overlap);
+  const W = (n - 1) * pitch + box.w;
   const px = Math.round(r.size * (W / JERSEY_WIDTH) * 100) / 100;
   const h = Math.round(((r.size * JERSEY_HEIGHT) / JERSEY_WIDTH) * 100) / 100;
   const title = titleOf(r);
   const tid = `${views[0]?.uid ?? "sj"}T`;
-  const parts = views.map(({ view }, i) => `<g${i > 0 ? ` transform="translate(${n2(i * (box.w + gap))} 0)"` : ""}>${view.body}</g>`).join("");
+  const sid = `${views[0]?.uid ?? "sj"}S`;
+  const parts = views.map(({ view }, i) => `<g${i > 0 ? ` transform="translate(${n2(i * pitch)} 0)"` : ""}${shadowAttr(sid, overlap > 0 ? i : 0)}>${view.body}</g>`).join("");
   const desc = r.description === undefined ? "" : `<desc>${esc(r.description)}</desc>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(W)} ${JERSEY_HEIGHT}" width="${px}" height="${h}" role="img" aria-labelledby="${tid}"><title id="${tid}">${esc(title)}</title>${desc}<defs>${views.map((v) => v.view.defs).join("")}</defs>${parts}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(W)} ${JERSEY_HEIGHT}" width="${px}" height="${h}" role="img" aria-labelledby="${tid}"><title id="${tid}">${esc(title)}</title>${desc}<defs>${views.map((v) => v.view.defs).join("")}${overlap > 0 ? shadowDefs(sid) : ""}</defs>${parts}</svg>`;
 }
