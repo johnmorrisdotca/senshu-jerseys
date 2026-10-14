@@ -24,6 +24,7 @@ Bug reports and ideas go in the
   sheet (`node scripts/preset-sheet.mjs <module> out.png`) before you commit.
 - **Japanese names are read** by someone who reads Japanese before they ship (the demo's `WORDS.ja`, `src/names.ts`, and each
   preset team's Japanese name).
+- **Docs pages are single-language.** Every page of the README and of `docs/` is in one language: one page per language, made from one source where that is practical, the Japanese one named `<name>.ja.md`, and the two linked at the top with a line such as `日本語 · English`. No page mixes English and Japanese in a table or in its prose, and a demo switches language with a control. Proper nouns and code identifiers (an id such as `gear:judogi`, a constant) stay as they are on both pages, and a Japanese term that is itself the subject (the package's own name, a knot) may appear once on an English page as a quoted name. The exception is a page about the translations themselves (`docs/strings-ja.md`, a terminology reference), which may show both languages side by side. A test, `docs-language.test`, holds the docs to this and lists each exception with its reason.
 - **Test what you change.** Tests sit in `test/`. A rule you change has a test that would have caught it. `test/size.test.ts` holds
   the drawing, a cap, a helmet, a banner, the turn, the element and one league of presets to a size.
 - **The README's examples run**: `pnpm test:readme` runs every `js` block of the README and of `docs/` against the built
