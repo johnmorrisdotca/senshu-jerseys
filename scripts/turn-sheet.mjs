@@ -42,7 +42,7 @@ for (const cut of CUTS) {
 }
 html += `<h2>Two views, a matchup and a whole uniform of the widest cut.</h2><div class="row">`;
 html += cell(D.renderJersey({ cut: "football", colors, number: 23, sleeve: "elbow", view: "both", size: 110 }), "football, both views");
-html += cell(D.kitMatchup({ away: { cut: "football", colors: ["#ffffff", "#1b2a6b"], sleeve: "elbow", label: "Gulls", number: 7 }, home: { cut: "football", colors, sleeve: "elbow", label: "Bison", number: 9 }, view: "front", size: 420 }), "football matchup");
+html += cell(D.kitMatchup({ away: { cut: "football", colors: ["#ffffff", "#1b2a6b"], sleeve: "elbow", label: "Japan", number: 7 }, home: { cut: "football", colors, sleeve: "elbow", label: "Canada", number: 9 }, view: "front", size: 420 }), "football matchup");
 html += cell(D.renderJersey({ cut: "football", colors, sleeve: "elbow", kit: true, helmet: "#1b2a6b", size: 150 }), "football kit");
 html += cell(D.renderJersey({ cut: "basketball", colors, kit: true, size: 150 }), "basketball kit");
 html += `</div>`;

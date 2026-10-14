@@ -268,23 +268,23 @@ console.log(renderJersey({ ...set, kit: true }) === renderKit(set)); // true
 <p align="center">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-dark.webp">
-<img alt="Six caps from the front and from the side, in six teams' colours, on an infield; below them, on turf, football, hockey and batting helmets facing right and left, with a number or a star." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-light.webp" width="760">
+<img alt="Six caps from the front and from the side, in the colours of Canada, the USA and Japan, lettered CAN, USA and JPN, on an infield; below them, on turf, football, hockey and batting helmets facing right and left, with a number or a star." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-light.webp" width="760">
 </picture>
 </p>
 
 <p align="center">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-dark.webp">
-<img alt="Twelve retired-number banners on royal purple: a rectangle, a pennant and a shield in six sets of colours with a made-up name, number and years, and the same six again with their colours turned round." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-light.webp" width="760">
+<img alt="Twelve retired-number banners on royal purple: a rectangle, a pennant and a shield in the colours of Canada, the USA and Japan with a made-up name, number and years, and the same six again with their colours turned round." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-light.webp" width="760">
 </picture>
 </p>
 
 ```js
 import { renderBanner, renderCap, renderHelmet } from "@johnmorrisdotca/senshu-jerseys";
 
-const cap = renderCap({ colors: ["#c8102e", "#1b2a6b", "#f4f0e4"], tone: "two-tone", initials: "RS" });
+const cap = renderCap({ colors: ["#d52b1e", "#0b2a6a", "#ffffff"], tone: "two-tone", initials: "CAN" });
 const helmet = renderHelmet({ kind: "football", colors: ["#1f3a8a", "#f4f0e4"], mark: "number", number: 12, facing: "left" });
-const banner = renderBanner({ shape: "shield", colors: ["#1f3a8a", "#f4f0e4", "#c8102e"], number: 9, name: "Beaumont", years: "1948-1963", sweater: true });
+const banner = renderBanner({ shape: "shield", colors: ["#d52b1e", "#ffffff", "#0b2a6a"], number: 9, name: "Beaumont", years: "1948-1963", sweater: true });
 
 console.log(cap.includes("<title")); // true
 console.log(helmet.includes("<title")); // true
@@ -298,9 +298,9 @@ A caller's own letters go on a cap (up to three) and a banner. No helmet, cap or
 ```js
 import { jerseyLineup, kitClash, kitMatchup } from "@johnmorrisdotca/senshu-jerseys";
 
-const away = { cut: "soccer", colors: ["#1f3a8a", "#ffffff"], label: "Gulls" };
-const home = { cut: "soccer", colors: ["#c8102e", "#ffffff"], label: "Bison" };
-console.log(kitMatchup({ away, home }).includes("Gulls vs Bison")); // true
+const away = { cut: "soccer", colors: ["#1f3a8a", "#ffffff"], label: "Japan" };
+const home = { cut: "soccer", colors: ["#d52b1e", "#ffffff"], label: "Canada" };
+console.log(kitMatchup({ away, home }).includes("Japan vs Canada")); // true
 console.log(kitClash(away, home)); // false
 console.log(kitClash({ colors: ["#c8102e"] }, { colors: ["#c8102f"] })); // true
 

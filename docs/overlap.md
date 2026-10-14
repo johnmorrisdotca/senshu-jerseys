@@ -6,8 +6,8 @@
 import { jerseyLineup, kitMatchup, renderJersey } from "@johnmorrisdotca/senshu-jerseys";
 
 const players = Array.from({ length: 11 }, (_, i) => ({ number: i + 1 }));
-const away = { cut: "soccer", colors: ["#1f3a8a", "#ffffff"], label: "Gulls" };
-const home = { cut: "soccer", colors: ["#c8102e", "#ffffff"], label: "Bison" };
+const away = { cut: "soccer", colors: ["#1f3a8a", "#ffffff"], label: "Japan" };
+const home = { cut: "soccer", colors: ["#d52b1e", "#ffffff"], label: "Canada" };
 
 const lineup = jerseyLineup(players, { formation: "4-4-2", jersey: { cut: "soccer" }, overlap: 0.25 });
 const matchup = kitMatchup({ away, home, view: "both", overlap: 0.25 });

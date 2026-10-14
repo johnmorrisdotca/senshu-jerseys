@@ -124,11 +124,11 @@ try {
     const one = (id, i, view) => `<figure style="margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center">${S.renderJersey({ ...S.presetOptions(id), number: 14 + i * 7, name: names[i], nameArch: "straight", view, size: 158 })}${view === "front" ? `<figcaption style="margin-top:2px;color:var(--muted);font-size:11px">${id.slice(4)}</figcaption>` : ""}</figure>`;
     return ids.map((id, i) => one(id, i, "front")).join("") + ids.map((id, i) => one(id, i, "back")).join("");
   };
-  // Caps (front, side), then football, hockey and batting helmets facing both ways, in six team colours.
+  // Caps (front, side), then football, hockey and batting helmets facing both ways, in the colours of Canada, the USA and Japan.
   const gear = (S) => {
-    const teams = [["#1f3a8a", "#f4f0e4", "#c8102e"], ["#c8102e", "#1b2a6b", "#f4f0e4"], ["#14181c", "#e8b900", "#f4f0e4"], ["#0b6e4f", "#f4f0e4", "#e8b900"], ["#6c2fa0", "#f4f0e4", "#e8b900"], ["#00808c", "#f4f0e4", "#1b2a6b"]];
+    const teams = [["#d52b1e", "#ffffff", "#0b2a6a"], ["#0b2a6a", "#ffffff", "#c8102e"], ["#ffffff", "#bc002d", "#1b2a6b"], ["#ffffff", "#d52b1e", "#d52b1e"], ["#c8102e", "#0b2a6a", "#ffffff"], ["#1f3a8a", "#ffffff", "#bc002d"]];
     const tones = ["solid", "two-tone", "solid", "two-tone", "solid", "two-tone"];
-    const letters = ["HC", "RS", "A", "KB", "LH", "NL"];
+    const letters = ["CAN", "USA", "JPN", "CAN", "USA", "JPN"];
     const kinds = ["football", "hockey", "batting"];
     const f = (svg) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${svg}</figure>`;
     return teams.map((c, i) => f(S.renderCap({ colors: c, tone: tones[i], initials: letters[i], size: 150 }))).join("")
@@ -139,12 +139,12 @@ try {
   // Retired-number banners: three shapes in six sets of colours, the sweater above where the shape has room, and the same six again with the colours turned round.
   const banners = (S) => {
     const sets = [
-      ["rectangle", ["#1f3a8a", "#f4f0e4", "#c8102e"], 9, "Beaumont", "1948-1963", "hockey"],
-      ["pennant", ["#0b6e4f", "#f4f0e4", "#e8b900"], 12, "Larocque", "Retired 1972", "football"],
-      ["shield", ["#6c2fa0", "#f4f0e4", "#e8b900"], 33, "Fontaine", "1979-1996", "basketball"],
-      ["rectangle", ["#14181c", "#e8b900", "#f4f0e4"], 4, "Ashworth", "1931-1947", "baseball"],
-      ["shield", ["#b5452c", "#f4f0e4", "#1b2a6b"], 10, "Tanaka", "2001-2016", "soccer"],
-      ["pennant", ["#00808c", "#f4f0e4", "#1b2a6b"], 99, "Lindqvist", "Retired 1999", "hockey"],
+      ["rectangle", ["#d52b1e", "#ffffff", "#0b2a6a"], 9, "Beaumont", "1948-1963", "hockey"],
+      ["pennant", ["#0b2a6a", "#ffffff", "#c8102e"], 12, "Brennan", "Retired 1972", "football"],
+      ["shield", ["#1f3a8a", "#ffffff", "#bc002d"], 10, "Tanaka", "2001-2016", "soccer"],
+      ["rectangle", ["#0b2a6a", "#ffffff", "#c8102e"], 4, "Ashworth", "1931-1947", "baseball"],
+      ["shield", ["#d52b1e", "#ffffff", "#0b2a6a"], 33, "Fontaine", "1979-1996", "basketball"],
+      ["pennant", ["#bc002d", "#ffffff", "#1b2a6b"], 99, "Suzuki", "Retired 1999", "hockey"],
     ];
     const one = ([shape, colors, number, name, years, cut], flip) => {
       const c = flip ? [colors[1], colors[0], colors[2]] : colors;

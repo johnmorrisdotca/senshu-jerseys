@@ -6,6 +6,11 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The demo, the README and the docs show real countries instead of made-up teams.** The two-kit example is Japan against Canada (it was "Gulls" against "Bison"), the retired-number banners and the caps are in the colours of Canada, the USA and Japan (they were eight invented clubs, with names such as "Harbour City Gulls"), and the caps read CAN, USA and JPN. Colours and stripes only, as before: no crest, no federation mark, no flag. The names of the players are still made up. The banner and cap pictures are made again.
+- The demo's banners are captioned with the country, in Japanese too (カナダ代表, アメリカ代表, 日本代表, as in the national-team presets).
+
 ## [0.3.3] - 2026-10-14
 
 ### Fixed

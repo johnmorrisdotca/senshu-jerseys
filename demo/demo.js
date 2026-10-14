@@ -328,14 +328,14 @@ function applyPreset(id) {
 // ----- The outputs under the stage.
 const FIRST = ["Beaumont", "Larocque", "Fontaine", "Ashworth", "Kowalski", "Tanaka", "Delacroix", "Brennan", "Okafor", "Lindqvist", "Moreau"];
 const RAFTERS = [
-  { team: "Harbour City Gulls", shape: "rectangle", colors: ["#1f3a8a", "#f4f0e4", "#c8102e"], number: 9, name: "Beaumont", years: "1948-1963", cut: "hockey" },
-  { team: "Prairie Ridge Bison", shape: "pennant", colors: ["#0b6e4f", "#f4f0e4", "#e8b900"], number: 12, name: "Larocque", years: "Retired 1972", cut: "football" },
-  { team: "Lakeshore Herons", shape: "shield", colors: ["#6c2fa0", "#f4f0e4", "#e8b900"], number: 33, name: "Fontaine", years: "1979-1996", cut: "basketball" },
-  { team: "Mill Town Millers", shape: "rectangle", colors: ["#14181c", "#e8b900", "#f4f0e4"], number: 4, name: "Ashworth", years: "1931-1947", cut: "baseball" },
-  { team: "Copper Hill Foxes", shape: "shield", colors: ["#b5452c", "#f4f0e4", "#1b2a6b"], number: 10, name: "Tanaka", years: "2001-2016", cut: "soccer" },
-  { team: "Northern Lights", shape: "pennant", colors: ["#00808c", "#f4f0e4", "#1b2a6b"], number: 99, name: "Lindqvist", years: "Retired 1999", cut: "hockey" },
-  { team: "River Valley Rams", shape: "rectangle", colors: ["#7a1f2b", "#f4f0e4", "#e8b900"], number: 7, name: "Okafor", years: "1966-1980", cut: "rugby" },
-  { team: "Bay Street Bears", shape: "shield", colors: ["#1b2a6b", "#c8102e", "#f4f0e4"], number: 21, name: "Moreau", years: "1955-1971", cut: "handball" },
+  { team: "Canada", ja: "カナダ代表", shape: "rectangle", colors: ["#d52b1e", "#ffffff", "#0b2a6a"], number: 9, name: "Beaumont", years: "1948-1963", cut: "hockey" },
+  { team: "United States", ja: "アメリカ代表", shape: "pennant", colors: ["#0b2a6a", "#ffffff", "#c8102e"], number: 12, name: "Brennan", years: "Retired 1972", cut: "football" },
+  { team: "Japan", ja: "日本代表", shape: "shield", colors: ["#1f3a8a", "#ffffff", "#bc002d"], number: 10, name: "Tanaka", years: "2001-2016", cut: "soccer" },
+  { team: "United States", ja: "アメリカ代表", shape: "rectangle", colors: ["#0b2a6a", "#ffffff", "#c8102e"], number: 4, name: "Ashworth", years: "1931-1947", cut: "baseball" },
+  { team: "Canada", ja: "カナダ代表", shape: "shield", colors: ["#d52b1e", "#ffffff", "#0b2a6a"], number: 33, name: "Fontaine", years: "1979-1996", cut: "basketball" },
+  { team: "Japan", ja: "日本代表", shape: "pennant", colors: ["#bc002d", "#ffffff", "#1b2a6b"], number: 99, name: "Suzuki", years: "Retired 1999", cut: "hockey" },
+  { team: "Japan", ja: "日本代表", shape: "rectangle", colors: ["#1b2a6b", "#ffffff", "#bc002d"], number: 1, name: "Sato", years: "1960-1974", cut: "baseball" },
+  { team: "United States", ja: "アメリカ代表", shape: "shield", colors: ["#0b2a6a", "#ffffff", "#c8102e"], number: 7, name: "Hollis", years: "1966-1980", cut: "hockey" },
 ];
 // A banner in a real team's colours, from a preset: the made-up player's number, name and years on it, the preset's own sweater above.
 const PRESET_RAFTERS = [
@@ -363,7 +363,7 @@ function drawRafters() {
     const svg = renderBanner({ shape: r.shape, colors: r.colors, number: r.number, name: r.name, years: r.years, sweater: r.shape !== "pennant" ? { cut: r.cut, colors: [r.colors[1], r.colors[0], r.colors[2]], pattern: r.cut === "baseball" ? "pinstripes" : "solid" } : false, size: 150, language: lang() });
     const fig = el("figure", { class: "banner" });
     fig.innerHTML = svg;
-    fig.append(el("figcaption", { text: r.team }));
+    fig.append(el("figcaption", { text: lang() === "ja" ? r.ja : r.team }));
     grid.append(fig);
   }
 }
@@ -376,9 +376,9 @@ function drawCaps() {
   const [body, trim, accent] = colorsOf(o);
   const host = $("caps-grid");
   host.innerHTML = [
-    renderCap({ colors: [body, trim], initials: "HC", size: 130, look: o.look }),
-    renderCap({ colors: [body, accent, trim], tone: "two-tone", initials: "RS", size: 130, look: o.look }),
-    renderCap({ colors: [trim, body], initials: "KB", view: "side", size: 130, look: o.look }),
+    renderCap({ colors: [body, trim], initials: "CAN", size: 130, look: o.look }),
+    renderCap({ colors: [body, accent, trim], tone: "two-tone", initials: "USA", size: 130, look: o.look }),
+    renderCap({ colors: [trim, body], initials: "JPN", view: "side", size: 130, look: o.look }),
     renderHelmet({ kind: "football", colors: [body, trim], mark: "number", number: o.number ?? 12, size: 130, look: o.look }),
     renderHelmet({ kind: "hockey", colors: [body, trim], size: 130, look: o.look, facing: "left" }),
     renderHelmet({ kind: "batting", colors: [body, accent], mark: "ring", size: 130, look: o.look }),
