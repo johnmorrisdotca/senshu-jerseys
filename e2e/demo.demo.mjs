@@ -1,0 +1,217 @@
+import { expect, test } from "@playwright/test";
+
+const noSideways = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+const yawOf = (page) => page.locator("#stage svg").getAttribute("data-yaw").then(Number);
+
+test("the page draws a jersey, loads the presets, and does not scroll sideways", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  await page.goto("/");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  await expect(page.locator("#wallgrid li").first()).toBeAttached();
+  expect(await noSideways(page)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test("the controls change the drawing, and the address says so", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('[data-testid="seg-cut"] button[data-value="soccer"]').click();
+  await expect(page).toHaveURL(/cut=soccer/);
+  await expect(page.locator("#stage svg title")).toContainText("Soccer shirt");
+  await page.locator('[data-testid="in-number"]').fill("10");
+  await expect(page.locator("#stage svg title")).toContainText("number 10");
+  await page.locator('[data-testid="seg-look"] button[data-value="line"]').click();
+  await expect(page.locator("#stage svg").first()).toBeVisible();
+  expect(await page.locator("#stage").innerHTML()).toContain("currentColor");
+  await page.locator('[data-testid="sel-pattern"]').selectOption("hoops");
+  await expect(page).toHaveURL(/pattern=hoops/);
+  // The address is the whole state: a fresh page from it draws the same.
+  const url = page.url();
+  await page.goto(url);
+  await expect(page.locator("#stage svg title")).toContainText("Soccer shirt, number 10");
+  await expect(page.locator('[data-testid="sel-pattern"]')).toHaveValue("hoops");
+  await expect(page.locator('[data-testid="in-number"]')).toHaveValue("10");
+});
+
+test("dragging turns the jersey from the front to the back, and the keys do too", async ({ page }) => {
+  await page.goto("/?cut=hockey&number=9&name=Gray");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg")).toBeVisible();
+  expect(await yawOf(page)).toBe(0);
+  // A finger, or a mouse: pointer events either way, so the same on every project.
+  await stage.evaluate(async (node) => {
+    const box = node.getBoundingClientRect();
+    const at = (type, x) => node.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: "touch", isPrimary: true, bubbles: true, clientX: x, clientY: box.top + box.height / 2, button: 0 }));
+    at("pointerdown", box.left + box.width * 0.2);
+    for (let i = 1; i <= 8; i++) at("pointermove", box.left + box.width * (0.2 + 0.075 * i));
+    at("pointerup", box.left + box.width * 0.8);
+  });
+  const turned = await yawOf(page);
+  expect(Math.abs(turned)).toBeGreaterThan(60);
+  await stage.focus();
+  await page.keyboard.press("Home");
+  expect(await yawOf(page)).toBe(0);
+  for (let i = 0; i < 12; i++) await page.keyboard.press("ArrowRight");
+  expect(Math.abs(await yawOf(page))).toBe(180);
+  // The back shows, with its name and number.
+  await expect(stage.locator('[data-turn="back"]')).not.toHaveAttribute("display", "none");
+  await expect(stage.locator('[data-turn="front"]')).toHaveAttribute("display", "none");
+  await page.getByTestId("front").click();
+  expect(await yawOf(page)).toBe(0);
+});
+
+test("nothing moves until Play is pressed, then it turns, and Pause stops it", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  await page.waitForTimeout(700);
+  expect(await yawOf(page)).toBe(0);
+  const play = page.locator('[data-testid="play"]');
+  await play.click();
+  await expect(play).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(0);
+  await play.click();
+  await expect(play).toHaveAttribute("aria-pressed", "false");
+  const stopped = await yawOf(page);
+  await page.waitForTimeout(500);
+  expect(await yawOf(page)).toBe(stopped);
+  // Space on the focused stage toggles it too.
+  await page.locator("#stage").focus();
+  await page.keyboard.press("Space");
+  await expect(play).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Space");
+  await expect(play).toHaveAttribute("aria-pressed", "false");
+});
+
+test("a reader who prefers reduced motion gets a still jersey from the element and from the frame", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.goto("/embed.html?cut=hockey&number=9&turn=auto");
+  await expect(page.locator("#frame svg")).toBeVisible();
+  await page.waitForTimeout(600);
+  expect(Number(await page.locator("#frame svg").getAttribute("data-yaw"))).toBe(0);
+  await context.close();
+});
+
+test("the embed frame draws what its address says, and turns when asked", async ({ page }) => {
+  await page.goto("/embed.html?cut=basketball&colors=1f3a8a,f4f0e4&number=33&view=back");
+  await expect(page.locator("#frame svg title")).toContainText("Basketball jersey, number 33, back");
+  await page.goto("/embed.html?cut=hockey&number=9&turn=auto");
+  await expect(page.locator("#frame svg")).toBeVisible();
+  await expect.poll(async () => Number(await page.locator("#frame svg").getAttribute("data-yaw")), { timeout: 4000 }).not.toBe(0);
+});
+
+test("<senshu-jersey> draws from attributes, redraws when one changes, turns by hand, and cleans up", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    await import("/dist/element-define.js");
+    const el = document.createElement("senshu-jersey");
+    el.setAttribute("cut", "rugby");
+    el.setAttribute("colors", "#1f3a8a,#f4f0e4");
+    el.setAttribute("number", "8");
+    document.body.append(el);
+    await new Promise((r) => setTimeout(r, 30));
+    const first = el.shadowRoot.querySelector("svg title")?.textContent;
+    el.setAttribute("number", "15");
+    await new Promise((r) => setTimeout(r, 30));
+    const second = el.shadowRoot.querySelector("svg title")?.textContent;
+    el.setAttribute("turnable", "");
+    el.setAttribute("autoplay", "");
+    await new Promise((r) => setTimeout(r, 30));
+    const turnable = el.shadowRoot.querySelector(".box")?.getAttribute("role");
+    el.remove();
+    await new Promise((r) => setTimeout(r, 30));
+    return { first, second, turnable, left: el.shadowRoot.querySelector(".box")?.childElementCount };
+  });
+  expect(result.first).toContain("Rugby shirt, number 8");
+  expect(result.second).toContain("number 15");
+  expect(result.turnable).toBe("group");
+  expect(result.left).toBe(0);
+});
+
+test("a preset sets the colours and the cut, and the wall lists every preset, filters them and tries one", async ({ page }) => {
+  await page.goto("/");
+  const count = page.locator('[data-testid="wall-count"]');
+  await expect(count).toContainText("presets");
+  const total = await page.locator("#wallgrid li").count();
+  expect(total).toBeGreaterThanOrEqual(200);
+  // A league chip and a search.
+  await page.locator('[data-testid="chip-mlb"]').click();
+  const league = await page.locator("#wallgrid li:not([hidden])").count();
+  expect(league).toBeGreaterThan(0);
+  expect(league).toBeLessThan(total);
+  await expect(page).toHaveURL(/wl=mlb/);
+  await page.locator('[data-testid="wall-q"]').fill("yankees");
+  const found = await page.locator("#wallgrid li:not([hidden])").count();
+  expect(found).toBeGreaterThan(0);
+  expect(found).toBeLessThan(league);
+  // The cards draw as they come into view.
+  await page.locator("#wallgrid li:not([hidden])").first().scrollIntoViewIfNeeded();
+  await expect(page.locator("#wallgrid li:not([hidden]) svg").first()).toBeVisible();
+  // Trying one loads it into the playground.
+  const first = page.locator("#wallgrid li:not([hidden]) button").first();
+  await first.click();
+  await expect(page).toHaveURL(/cut=baseball/);
+  await expect(page.locator("#stage svg")).toBeVisible();
+  expect(await page.locator('[data-testid="preset"]').inputValue()).not.toBe("");
+  expect(await noSideways(page)).toBe(true);
+});
+
+test("the hall of rafters, the matchup, the lineup and the caps draw", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('[data-testid="rafters"] svg')).toHaveCount(8);
+  await expect(page.locator('[data-testid="m-out"] svg')).toBeVisible();
+  await expect(page.locator('[data-testid="l-out"] svg')).toBeVisible();
+  await expect(page.locator('[data-testid="caps"] svg')).toHaveCount(6);
+  await page.locator('[data-testid="l-form"]').selectOption("4-3-3");
+  await expect(page).toHaveURL(/lf=4-3-3/);
+  await page.locator('[data-testid="m-view"] button[data-value="both"]').click();
+  await expect(page).toHaveURL(/mv=both/);
+  await page.locator('[data-testid="l-labels"] button[data-value="number"]').click();
+  await expect(page).toHaveURL(/ll=number/);
+  expect(await noSideways(page)).toBe(true);
+});
+
+test("the copy tabs show the code for the jersey, and copy it", async ({ page, context, browserName }) => {
+  if (browserName === "chromium") await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/?cut=hockey&number=9");
+  const code = page.locator('[data-testid="embed-code"]');
+  await expect(code).toContainText("<senshu-jersey");
+  await expect(code).toContainText('cut="hockey"');
+  await page.locator('[data-testid="tab-iframe"]').click();
+  await expect(code).toContainText("embed.html?");
+  await expect(code).toContainText("cut=hockey");
+  await page.locator('[data-testid="tab-module"]').click();
+  await expect(code).toContainText("renderJersey(");
+  await page.locator('[data-testid="tab-svg"]').click();
+  await expect(code).toContainText("<svg");
+  await page.locator('[data-testid="tab-data"]').click();
+  await expect(code).toContainText("data:image/svg+xml");
+  await page.locator('[data-testid="tab-element"]').click();
+  await page.locator('[data-testid="embed-copy"]').click();
+  await expect(page.locator("#embed-status")).toHaveText("Copied");
+  expect(await noSideways(page)).toBe(true);
+});
+
+test("in Japanese the words change, and nothing scrolls sideways", async ({ page }) => {
+  await page.goto("/?lang=ja");
+  await expect(page.locator("#try-h")).toHaveText("試してみる");
+  await expect(page.locator('[data-testid="seg-cut"] button[data-value="hockey"]')).toHaveText("ホッケー");
+  await expect(page.locator("#stage svg title")).toContainText("アイスホッケーのジャージ");
+  await expect(page.locator("#wall-h")).toHaveText("ユニフォーム一覧");
+  expect(await noSideways(page)).toBe(true);
+  await page.getByRole("button", { name: "English", exact: true }).click();
+  await expect(page.locator("#try-h")).toHaveText("Try it");
+});
+
+test("44 pixels is the least a control gives a finger", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('[data-testid="chip-mlb"]')).toBeVisible();
+  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #teams select, #teams button, #embed button").all();
+  expect(controls.length).toBeGreaterThan(40);
+  for (const control of controls) {
+    if (!(await control.isVisible())) continue;
+    const box = await control.boundingBox();
+    expect(box.height, await control.evaluate((n) => n.outerHTML.slice(0, 90))).toBeGreaterThanOrEqual(43.5);
+  }
+});

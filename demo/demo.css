@@ -1,0 +1,57 @@
+/* Senshu's own part of the demo: the controls, the stage, the wall, the banners and the code. family.css is the shared look. */
+.jump { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; }
+.jump a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 22px; background: var(--surface); text-decoration: none; font-size: .9rem; font-weight: 600; }
+.jump a:hover { border-color: var(--ink); }
+.fam-fine { color: var(--muted); font-size: .8rem; margin: 0; }
+.try { display: grid; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .try { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); } .stagebox { position: sticky; top: 8px; align-self: start; } }
+.controls { padding: 14px; gap: 8px; border-bottom: 1px solid var(--rule); }
+@media (min-width: 900px) { .controls { border-bottom: 0; border-right: 1px solid var(--rule); } }
+.controls h3 { margin: 10px 0 0; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.controls .fam-row { gap: 6px 10px; }
+.controls .fam-label { min-width: 5.5rem; }
+.controls .fam-seg button { min-width: 44px; }
+.controls .wide, .controls select.fam-field { max-width: 100%; }
+.controls select.fam-field { min-width: 10rem; }
+.controls input.fam-field { width: 12rem; max-width: 100%; }
+.colour { display: inline-flex; gap: 6px; align-items: center; }
+.swatch { width: 44px; height: 44px; padding: 2px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); cursor: pointer; }
+.swatch.unset { opacity: .45; }
+.stagebox { padding: 14px; display: grid; gap: 10px; }
+.stage { display: grid; justify-items: center; align-items: center; min-height: 340px; padding: 10px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 4%, var(--surface)); overflow-x: auto; outline-offset: 3px; }
+.stage svg { display: block; max-width: 100%; height: auto; }
+.stage:focus-visible { outline: 2px solid var(--ink); }
+.turnbar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.range { flex: 1 1 8rem; min-width: 7rem; height: 44px; margin: 0; -webkit-appearance: none; appearance: none; background: transparent; }
+.range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--rule); }
+.range::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rule); }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: var(--felt); border: 2px solid var(--surface); }
+.range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--felt); border: 2px solid var(--surface); }
+.range:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+output { min-width: 3.5rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.wallbar { display: grid; gap: 10px; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips .fam-chip { font-weight: 600; }
+.chips .fam-chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.wallbar .fam-row select, .wallbar .fam-row input { max-width: 100%; }
+.wallgrid { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.wallgrid li[hidden] { display: none; }
+.wcard { width: 100%; min-height: 176px; display: grid; justify-items: center; align-content: start; gap: 2px; padding: 8px 6px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); text-align: center; }
+.wcard:hover { border-color: var(--ink); }
+.wsvg { display: block; min-height: 116px; }
+.wsvg svg { display: block; }
+.wname { font-size: .78rem; font-weight: 700; line-height: 1.2; }
+.wyears { font-size: .72rem; color: var(--muted); }
+.rafters, .capsrow { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
+.banner { margin: 0; text-align: center; font-size: .8rem; color: var(--muted); }
+.banner svg, .cap svg { display: block; margin: 0 auto 4px; max-width: 100%; height: auto; }
+.builders { display: grid; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .builders { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .builders > .fam-panel + .fam-panel { border-left: 1px solid var(--rule); } }
+.out { display: grid; justify-items: center; overflow-x: auto; }
+.out svg { max-width: 100%; height: auto; display: block; }
+.builders select.fam-field { max-width: 100%; min-width: 0; flex: 1 1 12rem; }
+.codebox { margin: 0; padding: 12px; border: 1px solid var(--rule); border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, var(--surface)); overflow: auto; max-height: 22rem; font-family: var(--mono); font-size: .78rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.embed .fam-tabs button { min-width: 44px; }
+.credits { margin-top: 18px; }
+select.fam-field { max-width: 100%; height: 44px; -webkit-appearance: none; appearance: none; padding-right: 34px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 18px) 19px, calc(100% - 13px) 19px; background-size: 5px 5px; background-repeat: no-repeat; }
+input.fam-field { height: 44px; }

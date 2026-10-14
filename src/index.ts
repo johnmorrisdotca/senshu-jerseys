@@ -1,0 +1,29 @@
+// The pure entry point: functions that take options and return SVG strings, and nothing else. No timer, no DOM, no network. Turning is `./turn`, the custom element `./element`
+// (or `./define`), and the presets of each league `./presets/<league>`.
+export { renderJersey } from "./render.ts";
+export { titleOf } from "./title.ts";
+export { renderCap } from "./cap.ts";
+export type { CapOptions } from "./cap.ts";
+export { HELMET_KINDS, HELMET_MARKS, renderHelmet } from "./helmet.ts";
+export type { HelmetKind, HelmetMark, HelmetOptions } from "./helmet.ts";
+export { BANNER_SHAPES, renderBanner } from "./banner.ts";
+export type { BannerOptions, BannerShape } from "./banner.ts";
+export { formationRows, jerseyLineup, kitClash, kitMatchup } from "./kit.ts";
+export type { KitSide, LineupOptions, LineupPlayer, MatchupOptions } from "./kit.ts";
+export { renderKit } from "./uniform.ts";
+export { useEmblems } from "./emblems.ts";
+export type { EmblemDrawOptions, EmblemRenderer, EmblemStyleName } from "./emblems.ts";
+export { decode, defineLeague } from "./presets/core.ts";
+export type { Preset, Row, Teams } from "./presets/core.ts";
+export { loadedPresets, presetOf, presetOptions, usePresets } from "./registry.ts";
+export { CDN, EMBED_KINDS, SITE, embedCode } from "./embed.ts";
+export type { EmbedKind, EmbedSettings } from "./embed.ts";
+export { OPTION_ATTRIBUTES, attributesFromOptions, jerseyFromParams, jerseyToParams, optionsFromAttributes } from "./attrs.ts";
+export { COLLAR_IDS, CUT_IDS, CUTS, SLEEVE_IDS } from "./cuts.ts";
+export type { CollarId, CutId, CutSpec, SleeveId, Spot } from "./cuts.ts";
+export { ARCH_IDS, CLOSURE_IDS, LANGUAGE_IDS, LOOK_IDS, PATCH_IDS, PATTERN_IDS, VIEW_IDS, YOKE_IDS } from "./options.ts";
+export type { ArchId, Bands, ClosureId, JerseyOptions, LanguageId, LookId, PatchId, PatternId, ViewId, YokeId } from "./options.ts";
+export { CUT_NAMES, PATTERN_NAMES } from "./names.ts";
+export { contrast, readColour } from "./colour.ts";
+export { JERSEY_HEIGHT, JERSEY_WIDTH } from "./jersey.ts";
+export { VERSION } from "./version.ts";
