@@ -6,6 +6,20 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-14
+
+The README's pictures are redone, because npm shows only the README that was published: every picture now stands on one of the family's shared backgrounds, and the demo can put one behind the stage.
+
+### Changed
+
+- **Every README picture stands on a background** from the family's shared set (`scripts/family-backgrounds.ts`, version 1.0.0, copied byte for byte from taisen-brackets and held to its sha256 by `test/family-backgrounds.test.ts`), in a light and a dark twin: each of the seven cuts on the ground of its sport (ice, infield, hardwood, turf, pitch), the officials under floodlights (midnight in the dark), the caps on an infield and the helmets on turf, the retired-number banners on royal purple (crimson in the dark), the phone's four jerseys on four grounds and the turned sweater on ice. Line drawings and labels take the ink the background returns, and every grid is full and runs edge to edge.
+- The pictures are webp now (1.3 MB in all, they were PNG). The officials, the caps and helmets and the banners have a picture of their own, in the README and in `docs/officials.md`; the turned sweater has a dark twin (`turn-desk-dark.webp`).
+- `pnpm screenshots` makes every picture in one run, on port 7302 or `TEST_PORT` (`ONLY=name,name` takes some, `PRESET=name` tries one background, `IMAGES_OUT` writes elsewhere).
+
+### Added
+
+- **A Background menu in the demo's preview**, off by default (`?background=ice`): one of the twenty-five, in the dark or light variant of the page's look, behind the stage, with the stage's text in the ink it returns. It is presentation only: the jersey the package draws is the same string with or without it (an end-to-end test checks it), and the background module is loaded only when one is chosen. The package has no new code and still no dependency.
+
 ## [0.3.1] - 2026-10-14
 
 ### Added
