@@ -5,7 +5,7 @@ A preset is a team's uniform of one era written as colours and stripes: the body
 are still owned and sold today. The colours and the stripe layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes and recorded here as data; no picture is copied.
 They are an honest reading, not a proof: where a layout could not be said with the stripes the renderer draws, the nearest plain one is used.
 
-Made from the built package by `node scripts/make-presets-doc.mjs`; `pnpm test:readme` checks that it is current. 1473 presets in 11 modules.
+Made from the built package by `node scripts/make-presets-doc.mjs`; `pnpm test:readme` checks that it is current. 1513 presets in 12 modules.
 
 ## What the one-line spec can say
 
@@ -18,6 +18,10 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | `as=` | `armStripes` | Bands down the length of the sleeve, from the shoulder to the cuff. |
 | `y=`, `p=y` | `yoke`, `pattern: "yoke"` | A shoulder yoke (curved, square or full-arm). |
 | `sn=1` | `sleeveNumbers` | The number on the upper arm, where the cut puts it. |
+| `ab=` | `armbands` | Armbands: `ab=2.12.30` is a band in the second trim, 12 units wide, 30 percent down the sleeve (an official's); `ab=2` takes the defaults. |
+| `pk=1`, `bd=` | `pocket`, `badge` | A chest pocket, and a plain badge spot on it: `r` round, `s` shield, `q` square. |
+| `pr=1`, `na=s` | `protector`, `nameArch: "straight"` | An umpire's chest protector; the name set straight, as officials wear it. |
+| `co=z`, `co=t` | `collar: "zip"`, `collar: "point"` | A zip collar, and a long-point dress collar (the other collar words are `l` lace-up, `v`, `c` crew, `p` polo, `r` round, `w` wishbone, `b` band). |
 
 **Multi-colour stripe sets** need no new word: a stripe set is a list with a gap and as many bands as you like, in as many colours as there are indexes. The Flames' elbow set of yellow, white and yellow with the red of the body showing between is `ss=20.0.4.1.3.0.8.2.3.0.4.1`: a gap of 20 from the cuff, a yellow band of 4, a gap of 3, a white band of 8, a gap of 3, a yellow band of 4.
 
@@ -38,6 +42,9 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | `SOCCER` | `@johnmorrisdotca/senshu-jerseys/presets/soccer` | 165 |
 | `SOCCER_NATIONS` | `@johnmorrisdotca/senshu-jerseys/presets/soccer-nations` | 85 |
 | `RUGBY` | `@johnmorrisdotca/senshu-jerseys/presets/rugby` | 54 |
+| `OFFICIALS` | `@johnmorrisdotca/senshu-jerseys/presets/officials` | 40 |
+
+The officials' shirts (`OFFICIALS`, ids that start with `ref:`) are described, with their sources, in [officials.md](./officials.md).
 
 ## NHL_CLASSIC
 
@@ -1566,3 +1573,48 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | `rugby:biarritz-1990-2000-home` | Biarritz | 1990-2000 | `#fff` `#7ae` |
 | `rugby:auckland-1950-2000-home` | Auckland | 1950-2000 | `#fff` `#13a` |
 | `rugby:canterbury-1950-2000-home` | Canterbury | 1950-2000 | `#d11` `#000` |
+
+## OFFICIALS
+
+| Id | Team | Years | Colours (body, trim, second trim) |
+| --- | --- | --- | --- |
+| `ref:nhl-modern-referee` | NHL referee | 1955- | `#fff` `#101010` `#f58220` |
+| `ref:nhl-modern-referee-zip` | NHL referee, zip collar | 1955- | `#fff` `#101010` `#f58220` |
+| `ref:nhl-modern-linesman` | NHL linesman | 1955- | `#fff` `#101010` `#f58220` |
+| `ref:nhl-modern-linesman-zip` | NHL linesman, zip collar | 1955- | `#fff` `#101010` `#f58220` |
+| `ref:hockey-canada-referee` | Hockey Canada referee | 2000s | `#fff` `#101010` `#d52b1e` |
+| `ref:pwhl-referee` | PWHL referee | 2024- | `#fff` `#101010` `#5a2d82` |
+| `ref:nhl-1950s-candy` | NHL referee, candy stripes | 1950s | `#fff` `#c8102e` `#1d1d1d` |
+| `ref:nhl-1950s-orange` | NHL referee, orange half-zip | 1950-1955 | `#f26b21` `#101010` |
+| `ref:nhl-1930s-cream` | NHL referee, cream sweater | 1930-1950 | `#efe6c8` `#101010` |
+| `ref:nba-classic` | NBA referee, striped | 1950s | `#fff` `#101010` |
+| `ref:nba-modern` | NBA referee | 1971- | `#b9bec3` `#fff` `#111` |
+| `ref:nba-summer-league` | NBA Summer League referee | 2010s | `#b9bec3` `#fff` `#111` |
+| `ref:wnba` | WNBA referee | 1997- | `#b9bec3` `#fff` `#111` |
+| `ref:fiba` | FIBA referee | 2010s | `#9ea3a8` `#111` |
+| `ref:euroleague` | EuroLeague referee | 2010s | `#f26b21` `#111` |
+| `ref:nbl-australia` | Australian NBL referee | 2010s | `#2f9e44` `#111` |
+| `ref:ncaa-basketball-men` | NCAA men's basketball referee | 2019- | `#fff` `#101010` |
+| `ref:ncaa-basketball-women` | NCAA women's basketball referee | 2019- | `#b9bec3` `#fff` `#111` |
+| `ref:football-1910s-white` | Football official, plain white | 1900-1920 | `#fff` `#101010` |
+| `ref:nfl` | NFL official | 1945- | `#fff` `#101010` |
+| `ref:cfl` | CFL official | 2000s | `#fff` `#101010` |
+| `ref:ncaa-football` | NCAA football official | 1950- | `#fff` `#101010` |
+| `ref:highschool-football` | High school football official | 1950- | `#fff` `#101010` |
+| `ref:soccer-black-classic` | Soccer referee, black | 1900-1994 | `#111` `#4a4a4a` |
+| `ref:soccer-red-classic` | Soccer referee, red | 1900-1994 | `#c8102e` `#111` |
+| `ref:soccer-green-1994` | Soccer referee, green | 1994-1999 | `#2e8b3d` `#111` |
+| `ref:soccer-burgundy-1994` | Soccer referee, burgundy | 1994 | `#6d1f2f` `#111` |
+| `ref:soccer-yellow` | Soccer referee, yellow | 1994- | `#f7e017` `#111` |
+| `ref:soccer-lime` | Soccer referee, lime | 2010s | `#a6e22e` `#111` |
+| `ref:soccer-coral` | Soccer referee, coral | 2019- | `#ff7a70` `#111` |
+| `ref:soccer-cyan` | Soccer referee, cyan | 2019- | `#19c9e6` `#111` |
+| `ref:soccer-turquoise` | Soccer referee, turquoise | 2025- | `#20c5b5` `#111` |
+| `ref:soccer-purple` | Soccer referee, purple | 2025- | `#7b3fa0` `#eee` |
+| `ref:mlb-umpire-navy` | MLB umpire | 1996- | `#14213d` `#c8102e` `#fff` |
+| `ref:mlb-umpire-navy-protector` | MLB plate umpire, protector | 1996- | `#14213d` `#c8102e` `#fff` |
+| `ref:mlb-umpire-lightblue` | MLB umpire, light blue | 1980-1995 | `#9ec5e3` `#14213d` |
+| `ref:mlb-umpire-black-2000` | MLB umpire, black polo | 2000 | `#111` `#888` |
+| `ref:rugby-union-yellow` | Rugby union referee, yellow | 2020s | `#f7e017` `#111` |
+| `ref:lacrosse-boys` | Lacrosse official, boys' game | 2020s | `#fff` `#101010` |
+| `ref:lacrosse-girls` | Lacrosse official, girls' game | 2020s | `#fff` `#101010` |

@@ -4,6 +4,7 @@ import { CFL, IFAF } from "./presets/cfl.ts";
 import { HOCKEY_NATIONS } from "./presets/hockey-nations.ts";
 import { MLB } from "./presets/mlb.ts";
 import { NHL } from "./presets/nhl.ts";
+import { OFFICIALS } from "./presets/officials.ts";
 import { NHL_CLASSIC } from "./presets/nhl-classic.ts";
 import { NBA } from "./presets/nba.ts";
 import { NFL } from "./presets/nfl.ts";
@@ -28,6 +29,7 @@ export const LEAGUES: readonly { id: string; presets: readonly Preset[] }[] = [
   { id: "soccer", presets: SOCCER },
   { id: "soccer-nations", presets: SOCCER_NATIONS },
   { id: "rugby", presets: RUGBY },
+  { id: "officials", presets: OFFICIALS },
 ];
 
 /** Every preset of every league. */

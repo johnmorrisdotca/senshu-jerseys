@@ -43,6 +43,12 @@ output { min-width: 3.5rem; font-variant-numeric: tabular-nums; color: var(--mut
 .wsvg svg { display: block; }
 .wname { font-size: .78rem; font-weight: 700; line-height: 1.2; }
 .wyears { font-size: .72rem; color: var(--muted); }
+.officialgrid { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.officialgrid li[hidden] { display: none; }
+.ocard { width: 100%; display: grid; justify-items: center; align-content: start; gap: 2px; padding: 8px 6px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); text-align: center; }
+.ocard:hover { border-color: var(--ink); }
+.ocard svg { display: block; max-width: 100%; height: auto; }
+#officials-sports { margin-bottom: 8px; }
 .rafters, .capsrow { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-start; }
 .banner { margin: 0; text-align: center; font-size: .8rem; color: var(--muted); }
 .banner svg, .cap svg { display: block; margin: 0 auto 4px; max-width: 100%; height: auto; }

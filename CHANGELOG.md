@@ -6,6 +6,21 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Officials' shirts**: a new preset module, `OFFICIALS` (`@johnmorrisdotca/senshu-jerseys/presets/officials`, ids `ref:...`, also in `PRESETS` and in the demo's Officials section and Jersey wall filter), of referees, linesmen and umpires, each sourced in `src/presets/officials.ts` and marked `// unsure:` where a colour, an era or a layout is a reading. Hockey: `ref:nhl-modern-referee` and `ref:nhl-modern-linesman` (the orange armbands are the difference), their zip-collar variants, Hockey Canada's red and the PWHL's purple armbands, the orange half-zip and the cream sweater of the 1930s to the 1950s, and `ref:nhl-1950s-candy` (red-and-white stripes, from a photograph, marked unsure). Basketball: `ref:nba-classic`, `ref:nba-modern` (grey with white pin-stripes, black sleeves, a red collar), the Summer League, WNBA, FIBA, EuroLeague, Australian NBL and NCAA shirts. Football: `ref:nfl`, `ref:cfl`, `ref:ncaa-football`, high school and the plain white shirt before the 1920s. Soccer: `ref:soccer-black-classic`, `-yellow`, `-lime`, `-coral`, `-cyan` and the red, green, burgundy, turquoise and purple of other eras, with a chest pocket and a plain badge spot (never the FIFA badge). Baseball: `ref:mlb-umpire-navy`, with a chest protector, the 1980 light blue shirt and the 2000 black polo. Rugby union and lacrosse officials. `docs/officials.md` lists them with their sources; `node scripts/officials-sheet.mjs <out.png>` draws a contact sheet of every one, front and back.
+- **`armbands`** (spec word `ab=colour.width.at`): a band round each upper arm, square to the sleeve, in any look: a colour (1 trim, 2 second trim, 3 number's fill), a width in drawing units (3 to 30) and a place down the sleeve in percent (10 to 80). Also the `armbands` attribute and query word.
+- **`pocket`** (`pk=1`) and **`badge`** (`bd=r`, `s` or `q`; `BADGE_IDS`): a patch pocket on the wearer's left chest, and a badge spot on it, a plain round, shield or square patch that never holds a mark; a caller's `crest` takes the spot's place.
+- **`protector`** (`pr=1`): an umpire's chest protector over the front of a shirt.
+- **Collars `zip` and `point`** (`co=z`, `co=t`): a stand collar over a zipper with its teeth and slider, and a dress collar with long points and three buttons. The hockey, baseball, football, soccer and rugby cuts take them (the baseball and football cuts also take `polo`).
+- **`collarColor: 3`**: the collar in the number's fill colour. **`na=s`** in a spec: the name set straight.
+- Tests (`test/officials.test.ts`) for the armbands, pocket, badge, zip and point collars, the preset decoding and the stripe widths, and demo tests for the Officials section, the wall filter and the new controls.
+
+### Changed
+
+- A number whose fill and outline are both given is kept over stripes of two colours when together they read on both (a black number with a white edge on black-and-white stripes), where before the pair was replaced by one ink that read on neither.
+- The size limits are 20 kB gzipped for the drawing (it was 18), 16 for a banner (14.5), 17 for the turn (15.5) and 24 for the element (22), for the new parts of the shirt.
+
 ## [0.2.0] - 2026-10-14
 
 ### Added

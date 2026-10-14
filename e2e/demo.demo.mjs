@@ -200,6 +200,47 @@ test("a preset sets the colours and the cut, and the wall lists every preset, fi
   expect(await noSideways(page)).toBe(true);
 });
 
+test("the officials section lists every referee, filters by sport and tries one, and the wall has an Officials filter", async ({ page }) => {
+  await page.goto("/");
+  const cards = page.locator('[data-testid="officials"] li');
+  await expect(cards.first()).toBeAttached();
+  const total = await cards.count();
+  expect(total).toBeGreaterThanOrEqual(30);
+  await expect(page.locator('[data-testid="officials"] svg').first()).toBeAttached();
+  await page.locator('[data-testid="osport-hockey"]').click();
+  await expect(page).toHaveURL(/os=hockey/);
+  const hockey = await page.locator('[data-testid="officials"] li:not([hidden])').count();
+  expect(hockey).toBeGreaterThan(3);
+  expect(hockey).toBeLessThan(total);
+  await expect(page.locator('[data-testid="officials-count"]')).toContainText(`${hockey} officials`);
+  // A referee: the armbands are in the drawing, the linesman's are not.
+  await page.locator('[data-testid="officials"] li[data-id="ref:nhl-modern-referee"] button').click();
+  await expect(page).toHaveURL(/armbands=/);
+  expect(await page.locator("#stage").innerHTML()).toContain('fill="#f58220"');
+  await page.goto("/?preset=ref:nhl-modern-linesman");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  expect(await page.locator("#stage").innerHTML()).not.toContain('fill="#f58220"');
+  // The wall's own filter.
+  await page.locator('[data-testid="chip-officials"]').click();
+  await expect(page).toHaveURL(/wl=officials/);
+  expect(await page.locator("#wallgrid li:not([hidden])").count()).toBe(total);
+  expect(await noSideways(page)).toBe(true);
+});
+
+test("the controls take the officials' parts: armbands, a pocket, a badge spot and a zip collar", async ({ page }) => {
+  await page.goto("/?cut=soccer&number=5");
+  await page.locator('[data-testid="tog-pocket"]').click();
+  await expect(page).toHaveURL(/pocket=true/);
+  await page.locator('[data-testid="seg-badge"] button[data-value="shield"]').click();
+  await expect(page).toHaveURL(/badge=shield/);
+  await page.locator('[data-testid="tog-armbands"]').click();
+  await expect(page).toHaveURL(/armbands=true/);
+  await page.locator('[data-testid="sel-collar"]').selectOption("zip");
+  await expect(page).toHaveURL(/collar=zip/);
+  await expect(page.locator("#stage svg")).toBeVisible();
+  expect(await noSideways(page)).toBe(true);
+});
+
 test("the hall of rafters, the matchup, the lineup and the caps draw", async ({ page }) => {
   await page.goto("/");
   await expect.poll(() => page.locator('[data-testid="rafters"] svg').count()).toBeGreaterThanOrEqual(14);
@@ -250,7 +291,7 @@ test("in Japanese the words change, and nothing scrolls sideways", async ({ page
 test("44 pixels is the least a control gives a finger", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator('[data-testid="chip-mlb"]')).toBeVisible();
-  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #teams select, #teams button, #embed button").all();
+  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #officials-sports button, #teams select, #teams button, #embed button").all();
   expect(controls.length).toBeGreaterThan(40);
   for (const control of controls) {
     if (!(await control.isVisible())) continue;

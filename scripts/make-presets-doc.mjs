@@ -14,7 +14,7 @@ for (const file of modules) {
   const mod = await import(`${dir}${file}`);
   for (const [name, list] of Object.entries(mod)) if (Array.isArray(list) && list.length > 0 && list[0].options !== undefined) groups.push({ name, file, list });
 }
-const order = ["NHL_CLASSIC", "NHL", "HOCKEY_NATIONS", "MLB", "NBA", "NFL", "CFL", "IFAF", "SOCCER", "SOCCER_NATIONS", "RUGBY"];
+const order = ["NHL_CLASSIC", "NHL", "HOCKEY_NATIONS", "MLB", "NBA", "NFL", "CFL", "IFAF", "SOCCER", "SOCCER_NATIONS", "RUGBY", "OFFICIALS"];
 groups.sort((a, b) => (order.indexOf(a.name) + 1 || 99) - (order.indexOf(b.name) + 1 || 99) || a.name.localeCompare(b.name));
 const dot = (c) => (c === undefined ? "" : `\`${c}\``);
 let out = `# Presets
@@ -37,6 +37,10 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | \`as=\` | \`armStripes\` | Bands down the length of the sleeve, from the shoulder to the cuff. |
 | \`y=\`, \`p=y\` | \`yoke\`, \`pattern: "yoke"\` | A shoulder yoke (curved, square or full-arm). |
 | \`sn=1\` | \`sleeveNumbers\` | The number on the upper arm, where the cut puts it. |
+| \`ab=\` | \`armbands\` | Armbands: \`ab=2.12.30\` is a band in the second trim, 12 units wide, 30 percent down the sleeve (an official's); \`ab=2\` takes the defaults. |
+| \`pk=1\`, \`bd=\` | \`pocket\`, \`badge\` | A chest pocket, and a plain badge spot on it: \`r\` round, \`s\` shield, \`q\` square. |
+| \`pr=1\`, \`na=s\` | \`protector\`, \`nameArch: "straight"\` | An umpire's chest protector; the name set straight, as officials wear it. |
+| \`co=z\`, \`co=t\` | \`collar: "zip"\`, \`collar: "point"\` | A zip collar, and a long-point dress collar (the other collar words are \`l\` lace-up, \`v\`, \`c\` crew, \`p\` polo, \`r\` round, \`w\` wishbone, \`b\` band). |
 
 **Multi-colour stripe sets** need no new word: a stripe set is a list with a gap and as many bands as you like, in as many colours as there are indexes. The Flames' elbow set of yellow, white and yellow with the red of the body showing between is \`ss=20.0.4.1.3.0.8.2.3.0.4.1\`: a gap of 20 from the cuff, a yellow band of 4, a gap of 3, a white band of 8, a gap of 3, a yellow band of 4.
 
@@ -47,6 +51,8 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | Module | Import | Presets |
 | --- | --- | --- |
 ${groups.map((g) => `| \`${g.name}\` | \`@johnmorrisdotca/senshu-jerseys/presets/${g.file.replace(/\.js$/, "")}\` | ${g.list.length} |`).join("\n")}
+
+The officials' shirts (\`OFFICIALS\`, ids that start with \`ref:\`) are described, with their sources, in [officials.md](./officials.md).
 `;
 for (const g of groups) {
   out += `\n## ${g.name}\n\n| Id | Team | Years | Colours (body, trim, second trim) |\n| --- | --- | --- | --- |\n`;

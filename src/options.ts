@@ -1,5 +1,5 @@
 // The options of a jersey, read from outside: every value is checked against the lists below, a colour is read as `#rgb`, `#rrggbb` or `rgb()`, and text is cleaned.
-import { CUT_IDS, CUTS, type CollarId, type CutId, type SleeveId } from "./cuts.ts";
+import { COLLAR_IDS, CUT_IDS, CUTS, type CollarId, type CutId, type SleeveId } from "./cuts.ts";
 import { clean, readColour, type Rgb } from "./colour.ts";
 
 export const PATTERN_IDS = ["solid", "stripes", "hoops", "halves", "quarters", "sash", "chevron", "pinstripes", "yoke", "chest-band"] as const;
@@ -18,6 +18,9 @@ export const TEXT_ANGLE_IDS = ["straight", "arch", "diagonal-up", "diagonal-down
 export type TextAngleId = (typeof TEXT_ANGLE_IDS)[number];
 export const PATCH_IDS = ["", "C", "A"] as const;
 export type PatchId = (typeof PATCH_IDS)[number];
+/** The plain shape of a badge spot: the licence patch an official wears on the chest, drawn empty. */
+export const BADGE_IDS = ["round", "shield", "square"] as const;
+export type BadgeId = (typeof BADGE_IDS)[number];
 export const LANGUAGE_IDS = ["en", "ja"] as const;
 export type LanguageId = (typeof LANGUAGE_IDS)[number];
 
@@ -63,8 +66,21 @@ export interface JerseyOptions {
    * number's fill. A knit seam shows where the cuff starts. It is drawn over the sleeve's stripes, so the two can be used together.
    */
   cuffs?: number | readonly number[];
-  /** The collar's colour: 1 the trim (the default), 0 the body, 2 the second trim. */
-  collarColor?: 0 | 1 | 2;
+  /**
+   * Bands round the upper arms, an official's armbands (the referee's orange): a colour index (1 the trim, 2 the second trim or 3 the number's fill) alone, or `[colour, width, at]` with the width in
+   * drawing units (3 to 30, 12 by default) and `at` how far down the sleeve its middle lies, in percent (10 to 80, 30 by default). Drawn over the sleeve's stripes, under the sleeve number.
+   */
+  armbands?: number | readonly number[];
+  /** A patch pocket on the wearer's left chest (the soccer referee's), with a stitched edge. */
+  pocket?: boolean;
+  /**
+   * A badge spot on the left chest, on the pocket if there is one: a plain shape in the trim colour that stands for the licence patch and never for a mark. A `crest` takes its place when there is one.
+   */
+  badge?: BadgeId;
+  /** An umpire's outside chest protector over the front: a padded shape in a dark shade of the body, with its straps. */
+  protector?: boolean;
+  /** The collar's colour: 1 the trim (the default), 0 the body, 2 the second trim, 3 the number's fill. */
+  collarColor?: 0 | 1 | 2 | 3;
   /** The sleeves' colour apart from the pattern: 0 body, 1 trim, 2 trim2. */
   sleeveColor?: 0 | 1 | 2;
   /** The side panels of a tank, and the shoulder panels, in this colour index (1 or 2). */
@@ -126,8 +142,12 @@ export interface Resolved {
   hemBands: Bands;
   chestBands: Bands;
   cuffs?: { len: number; c: 1 | 2 | 3 };
+  armbands?: { c: 1 | 2 | 3; w: number; at: number };
+  pocket: boolean;
+  badge?: BadgeId;
+  protector: boolean;
   chestY?: number;
-  collarColor: 0 | 1 | 2;
+  collarColor: 0 | 1 | 2 | 3;
   sleeveColor?: 0 | 1 | 2;
   panels: 0 | 1 | 2;
   number?: string;
@@ -162,6 +182,7 @@ const digits = (v: unknown, max: number): string | undefined => {
   return d === undefined || d === "" ? undefined : d;
 };
 const idx = (v: unknown, fallback: 0 | 1 | 2): 0 | 1 | 2 => (v === 0 || v === 1 || v === 2 ? v : fallback);
+const idx3 = (v: unknown, fallback: 0 | 1 | 2 | 3): 0 | 1 | 2 | 3 => (v === 0 || v === 1 || v === 2 || v === 3 ? v : fallback);
 
 /** Stripes as bands: the usual widths, edged by the second trim when there is one. */
 export function stripesOf(count: number, edged: boolean): Bands {
@@ -194,6 +215,13 @@ export function cuffsOf(v: unknown): { len: number; c: 1 | 2 | 3 } | undefined {
   return { len: Math.round(w * 10) / 10, c };
 }
 
+/** The armbands from outside: a colour index (1 to 3) alone, or a colour, a width (3 to 30) and a place down the sleeve in percent (10 to 80). */
+export function armbandsOf(v: unknown): { c: 1 | 2 | 3; w: number; at: number } | undefined {
+  const [c, w = 12, at = 30] = typeof v === "number" ? [v] : Array.isArray(v) ? v.map(Number) : [];
+  if (c === undefined || !(c === 1 || c === 2 || c === 3) || !Number.isFinite(w) || w < 3 || w > 30 || !Number.isFinite(at) || at < 10 || at > 80) return undefined;
+  return { c, w: Math.round(w * 10) / 10, at: Math.round(at) };
+}
+
 /** Read the options: anything wrong is replaced by the default, never thrown. */
 export function resolve(options: JerseyOptions | undefined): Resolved {
   const o: JerseyOptions = options !== null && typeof options === "object" ? options : {};
@@ -208,7 +236,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
   if (cut === "basketball") sleeve = "none";
   else if (cut === "baseball" && o.sleeve === undefined && closure === "vest") sleeve = "none";
   else if (sleeve !== "none" && spec.sleeves[sleeve] === undefined) sleeve = spec.sleeve;
-  let collar = pick(["crew", "v", "lace-up", "polo", "round", "wishbone", "band"] as const, o.collar, spec.collar);
+  let collar = pick(COLLAR_IDS, o.collar, spec.collar);
   if (!spec.collars.includes(collar)) collar = spec.collar;
   if (cut === "baseball" && closure === "pullover" && collar === "band") collar = "crew";
   const edged = second !== undefined;
@@ -241,8 +269,12 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     hemBands,
     chestBands,
     cuffs: sleeve === "none" ? undefined : cuffsOf(o.cuffs),
+    armbands: sleeve === "none" ? undefined : armbandsOf(o.armbands),
+    pocket: o.pocket === true,
+    badge: (BADGE_IDS as readonly unknown[]).includes(o.badge) ? (o.badge as BadgeId) : undefined,
+    protector: o.protector === true,
     chestY: typeof o.chestY === "number" && Number.isFinite(o.chestY) ? Math.max(40, Math.min(190, o.chestY)) : undefined,
-    collarColor: idx(o.collarColor, 1),
+    collarColor: idx3(o.collarColor, 1),
     sleeveColor: o.sleeveColor === undefined ? undefined : idx(o.sleeveColor, 0),
     panels: idx(o.panels, 1),
     number: digits(o.number, 2),

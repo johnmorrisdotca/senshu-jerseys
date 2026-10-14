@@ -9,6 +9,8 @@ A preset (`src/presets/`) records a team's uniform of one era as colours and str
 | Source | What was taken | Licence of the source |
 | --- | --- | --- |
 | The uniform and logo sections of English Wikipedia articles on teams and national teams | Colour names and values, where stripes and bands sit, collar, yoke and number colours | CC BY-SA 4.0 (the text; facts are not copyrightable, and no text is copied) |
+| English Wikipedia articles on officials (ice hockey, basketball, American football, association football, baseball umpires, rugby union and rugby league referees) | The colours, stripes, collars and armbands officials wear, and the years they changed | CC BY-SA 4.0 (facts; no text is copied) |
+| The Alberta Sports Hall of Fame, the Illinois High School Association's Sports Officials Handbook, and FootyHeadlines on referee kit ranges | The year the NHL's striped sweater began, high school and lacrosse stripes, the colours of recent soccer referee kits | Facts |
 | Wikidata | Team names and colour values | CC0 |
 | Clubs' own published colour codes and brand pages | Colour values | Facts |
 

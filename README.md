@@ -1,7 +1,7 @@
 <h1 align="center">Senshu Jerseys <sub>選手</sub></h1>
 
 <p align="center"><strong>Sports jerseys, sweaters and kits as SVG strings, front and back, with optional 2.5D turning.</strong><br>
-Hockey, baseball, basketball, football, soccer, rugby and handball cuts in stripes, hoops, halves and pinstripes; caps, helmets and retired-number banners; numbers and names drawn as vectors, so they look the same everywhere; and nearly fifteen hundred presets of real teams' colours and stripes. Each one is a function that returns SVG. MIT, with no dependencies.</p>
+Hockey, baseball, basketball, football, soccer, rugby and handball cuts in stripes, hoops, halves and pinstripes; caps, helmets and retired-number banners; numbers and names drawn as vectors, so they look the same everywhere; and more than fifteen hundred presets of real teams' colours and stripes. Each one is a function that returns SVG. MIT, with no dependencies.</p>
 
 <p align="center">
   <a href="https://github.com/johnmorrisdotca/senshu-jerseys/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/johnmorrisdotca/senshu-jerseys/actions/workflows/ci.yml/badge.svg"></a>
@@ -54,7 +54,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Sports sites and apps** that show a roster, a lineup, a result or a retired number and want a shirt in the team's colours without a photograph or a licence.
 - **Scoreboards, brackets and match pages** that want a kit for each side, and the two kits to be told apart.
 - **Games and cards** that need a jersey with a number, front and back, that turns.
-- **Pages that care about weight**: the drawing is about 17 kB gzipped, the turn about 14 kB more, and a league of presets about 5 kB; the package says `sideEffects` only for the element's registration.
+- **Pages that care about weight**: the drawing is about 19 kB gzipped, the turn about 14 kB more, and a league of presets about 5 kB; the package says `sideEffects` only for the element's registration.
 
 ## Features
 
@@ -65,7 +65,8 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Caps, helmets and banners**: a solid or two-tone cap with a contrast brim; football, hockey and batting helmets; retired-number banners as a rectangle, a pennant or a shield, with an optional small sweater.
 - **A matchup and a lineup**: two kits side by side that say whether they clash; a formation of shirts, `4-4-2`, with names and numbers.
 - **Whole uniforms**: the pants or shorts, the socks and the helmet that go with the jersey.
-- **Presets**: nearly fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
+- **Presets**: more than fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
+- **Officials**: referees, linesmen and umpires of hockey, basketball, football, soccer, baseball, rugby and lacrosse, with armbands, a chest pocket, a plain badge spot, zip and long-point collars, and a few historic looks ([docs/officials.md](./docs/officials.md)).
 - **Turning** (`./turn`): drag, arrow keys, Home and Space, or an automatic turn that waits for you.
 - **A custom element** (`./element`) and an **embed page** for sites that cannot run script.
 - English and Japanese labels. TypeScript types. No dependencies.
@@ -220,6 +221,24 @@ console.log(svg.startsWith("<svg")); // true
 console.log(MLB.some((p) => p.team === "Houston Astros")); // true
 ```
 
+### Officials: referees, linesmen and umpires
+
+The officials' shirts are presets (`ref:nhl-modern-referee`, `ref:soccer-yellow`, `ref:mlb-umpire-navy`) built from options of their own: `armbands` (a colour, a width and a place on the upper arm), `pocket`, `badge` (a plain spot, never a federation's mark), `protector`, the `zip` and `point` collars, and `collarColor: 3`. [docs/officials.md](./docs/officials.md) lists them with their sources.
+
+```js
+import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
+
+// A referee: striped, a black zip collar, orange armbands. The linesman is the same without them.
+const striped = { cut: "hockey", colors: ["#ffffff", "#101010", "#f58220"], pattern: "stripes", repeat: [5, 0, 10, 1, 5, 0], sleeveStripes: 0, hemStripes: 0, collar: "zip" };
+const referee = renderJersey({ ...striped, armbands: [2, 12, 30], number: 14, name: "Beaumont", nameArch: "straight", view: "back" });
+const linesman = renderJersey({ ...striped, number: 14, name: "Beaumont", nameArch: "straight", view: "back" });
+// A soccer referee: a chest pocket with a plain shield for the badge spot.
+const soccer = renderJersey({ cut: "soccer", colors: ["#f7e017", "#111111"], pocket: true, badge: "shield", cuffs: [7, 1] });
+
+console.log(referee.length > linesman.length); // true
+console.log(soccer.startsWith("<svg")); // true
+```
+
 ### A whole uniform
 
 `kit: true` draws the pants or shorts, the socks and the helmet (or the cap) under the jersey, from `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A preset holds them where they are known. `renderKit` is the same call by name.
@@ -332,7 +351,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `usePresets`, `presetOf`, `presetOptions`, `loadedPresets`, `decode`, `defineLeague` | Load presets, find one, and read or write a preset's one-line spec. |
 | `embedCode`, `EMBED_KINDS`, `SITE`, `CDN` | The text that puts a jersey in a page: element, iframe, module, SVG or data address. |
 | `OPTION_ATTRIBUTES`, `attributesFromOptions`, `optionsFromAttributes`, `jerseyToParams`, `jerseyFromParams` | Options as attributes and as a query. |
-| `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
+| `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `BADGE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
 | `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES` | The helmets, their marks, and the banner shapes. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
@@ -340,7 +359,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 
 ### Options
 
-`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
+`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `armbands`, `pocket`, `badge`, `protector`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
 
 ## Theming
 
@@ -354,7 +373,7 @@ Every limit here is held by a test.
 - **Every colour is checked.** Only `#rgb`, `#rrggbb` and `rgb()` are taken; anything else is the default.
 - **Every text is escaped or drawn as strokes.** A crest is shown as an image, which runs no script and loads nothing.
 - **No font is used** for a Latin number or name. A name with a character that has no glyph here (a Japanese name) is set as system text.
-- **The drawing is about 17 kB gzipped; the turn about 14 kB more; a league of presets about 5 kB.**
+- **The drawing is about 19 kB gzipped; the turn about 14 kB more; a league of presets about 5 kB.**
 - **A preset is colours and stripes only.** No crest, logo, monogram, wordmark or sponsor mark.
 
 ## Accessibility
@@ -371,7 +390,7 @@ The package's own words (cut and pattern names, accessible titles) are in Englis
 
 ## Presets
 
-Nearly fifteen hundred uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
+More than fifteen hundred uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
 
 The colours and layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes, and recorded as data here; no picture is copied. Treat them as a first reading, not a proof: where a source gave only colour names the layout is the plainest one that fits, and a row that could not be confirmed is marked `unsure` in its source. Corrections with a source are welcome.
 

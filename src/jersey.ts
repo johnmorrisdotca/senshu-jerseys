@@ -56,9 +56,9 @@ interface SleeveGeo {
   poly: string;
 }
 
-const NECK_W: Record<CollarId, number> = { crew: 21, v: 22, "lace-up": 22, polo: 21, round: 25, wishbone: 24, band: 20 };
-const FRONT_DEPTH: Record<CollarId, number> = { crew: 17, v: 36, "lace-up": 40, polo: 14, round: 26, wishbone: 40, band: 10 };
-const BACK_DEPTH: Record<CollarId, number> = { crew: 7, v: 9, "lace-up": 7, polo: 6, round: 11, wishbone: 12, band: 5 };
+const NECK_W: Record<CollarId, number> = { crew: 21, v: 22, "lace-up": 22, polo: 21, round: 25, wishbone: 24, band: 20, zip: 20, point: 21 };
+const FRONT_DEPTH: Record<CollarId, number> = { crew: 17, v: 36, "lace-up": 40, polo: 14, round: 26, wishbone: 40, band: 10, zip: 16, point: 15 };
+const BACK_DEPTH: Record<CollarId, number> = { crew: 7, v: 9, "lace-up": 7, polo: 6, round: 11, wishbone: 12, band: 5, zip: 5, point: 6 };
 const BACK_RISE = 4;
 
 function sleeveGeo(spec: CutSpec, id: "long" | "elbow" | "short", side: 1 | -1, nw: number, raglan: boolean): SleeveGeo | undefined {
@@ -162,6 +162,8 @@ export function inkFor(r: Resolved, grounds: readonly Rgb[]): { fill: Rgb; outli
   const mixed = grounds.length > 1;
   // Tackle-twill: a fill that does not read on the cloth on its own (red numbers on royal blue) is kept when the outline asked for reads on the cloth and the fill reads on the outline.
   if (!mixed && r.fill !== undefined && r.outline !== undefined && worst(r.fill, grounds) < 4.5 && worst(r.outline, grounds) >= 4.5 && contrast(r.fill, r.outline) >= 3) return { fill: r.fill, outline: r.outline };
+  // Over stripes of two colours no single ink reads on both, but a fill and an outline that are given can: a black number with a white edge reads on the white stripes by its fill and on the black by its edge.
+  if (mixed && r.fill !== undefined && r.outline !== undefined && contrast(r.fill, r.outline) >= 4.5 && grounds.every((g) => Math.max(contrast(r.fill as Rgb, g), contrast(r.outline as Rgb, g)) >= 4.5)) return { fill: r.fill, outline: r.outline };
   const fill = inkOn(grounds, [r.fill, r.trim, r.trim2, WHITE, BLACK]);
   let outline: Rgb | undefined;
   if (mixed) outline = inkOn([fill], [r.outline, r.trim2, BLACK, WHITE]);
@@ -247,6 +249,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   const hole = `${neckEdge}${topArc}`;
   const insideC = hexOf(shade(r.body, lum(r.body) > 0.08 ? -0.55 : 0.12));
   const collarIdx = r.collarColor;
+  const collarRgb = collarIdx === 0 ? r.body : collarIdx === 1 ? r.trim : collarIdx === 2 ? r.trim2 : (r.fill ?? r.trim);
   const collarC = line ? "currentColor" : colourOf(collarIdx);
 
   // ---- Drawing. ----
@@ -458,6 +461,29 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       }
     }
     if (bands !== "") addIn(`<g clip-path="url(#${idc})">${bands}</g>`);
+    // Armbands: a band round each upper arm, square to the sleeve's axis, over the stripes.
+    if (r.armbands !== undefined) {
+      const ab = r.armbands;
+      const edgeInk = `stroke="${hexOf(blend(r.body, BLACK, 0.5))}" stroke-opacity=".4" stroke-width=".8" fill="none"`;
+      for (const [s, id] of [[L, idl], [R, idr]] as const) {
+        const phi = s.side === -1 ? 90 - s.a : -(90 - s.a);
+        const y0 = (ab.at / 100) * s.l - ab.w / 2;
+        addIn(`<g clip-path="url(#${id})"><g transform="translate(${n2(s.S[0])} ${n2(s.S[1])}) rotate(${n2(phi)})"><path d="M-90 ${n2(y0)}H90V${n2(y0 + ab.w)}H-90Z" fill="${colourOf(ab.c)}"/>${cloth ? `<path d="M-90 ${n2(y0)}H90M-90 ${n2(y0 + ab.w)}H90" ${edgeInk}/>` : ""}</g></g>`);
+      }
+    }
+  }
+
+  // ---- An umpire's chest protector, over the front. ----
+  if (r.protector && view === "front" && !line) {
+    const pad = hexOf(blend(r.body, [92, 98, 106], 0.8));
+    const padEdge = hexOf(blend(r.body, BLACK, 0.7));
+    const ridge = hexOf(blend(r.body, [150, 156, 164], 0.6));
+    const top = spec.ny + 8;
+    const bot = spec.ay + 70;
+    let d = `<path d="M${n2(100 - 40)} ${n2(top)}Q100 ${n2(top + 16)} ${n2(100 + 40)} ${n2(top)}L${n2(100 + 52)} ${n2(spec.ay + 6)}L${n2(100 + 44)} ${n2(bot - 14)}Q100 ${n2(bot + 12)} ${n2(100 - 44)} ${n2(bot - 14)}L${n2(100 - 52)} ${n2(spec.ay + 6)}Z" fill="${pad}" stroke="${padEdge}" stroke-width="1.3" stroke-linejoin="round"/>`;
+    for (const y of [spec.ay + 22, spec.ay + 40]) d += `<path d="M${n2(100 - 46)} ${n2(y)}Q100 ${n2(y + 8)} ${n2(100 + 46)} ${n2(y)}" stroke="${ridge}" stroke-width="2" fill="none" stroke-opacity=".7"/>`;
+    for (const sd of [-1, 1]) d += `<path d="M${n2(100 + sd * 40)} ${n2(top)}L${n2(100 + sd * 50)} ${n2(spec.sy - 2)}" stroke="${padEdge}" stroke-width="5" stroke-linecap="round" fill="none"/><path d="M${n2(100 + sd * 40)} ${n2(top)}L${n2(100 + sd * 50)} ${n2(spec.sy - 2)}" stroke="${pad}" stroke-width="3" stroke-linecap="round" fill="none"/>`;
+    addIn(d);
   }
 
   // ---- The cloth: shading, folds, and the stitched hems. ----
@@ -521,11 +547,11 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
 
   // ---- The neck: the inside, then the band. ----
   add(`<path d="${hole}" ${line ? 'fill="none"' : `fill="${insideC}"`}/>`);
-  const bandW = collar === "polo" ? 5.5 : collar === "band" ? 5 : sh.tank ? 4 : 4.6;
+  const bandW = collar === "polo" || collar === "point" ? 5.5 : collar === "zip" ? 6.2 : collar === "band" ? 5 : sh.tank ? 4 : 4.6;
   if (line) add(`<path d="${neckEdge}" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="miter"/>`);
   else {
     add(`<path d="${neckEdge}" fill="none" stroke="${collarC}" stroke-width="${bandW}" stroke-linejoin="miter" stroke-linecap="butt"/>`);
-    if (r.trim2Given && collarIdx !== 2) add(`<path d="${neckEdge}" fill="none" stroke="${trim2Hex}" stroke-width="1.2" transform="translate(0 ${bandW / 2 + 0.6})" stroke-linejoin="miter" opacity=".9"/>`);
+    if (r.trim2Given && collarIdx !== 2 && r.armbands === undefined) add(`<path d="${neckEdge}" fill="none" stroke="${trim2Hex}" stroke-width="1.2" transform="translate(0 ${bandW / 2 + 0.6})" stroke-linejoin="miter" opacity=".9"/>`);
   }
   if (view === "front" && !line) {
     if (collar === "lace-up") {
@@ -538,9 +564,28 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       add(`<path d="${lace}" stroke="${trimHex}" stroke-width="1.5" fill="none" stroke-linecap="round"/>`);
     } else if (collar === "polo") {
       const leaf = (sd: 1 | -1): string => `M${n2(100 + sd * (nw + 2))} ${n2(ny + 1)}L${n2(100 + sd * (nw + 7))} ${n2(ny + 12)}L${n2(100 + sd * 4)} ${n2(ny + 25)}L${n2(100 + sd * 1.5)} ${n2(ny + 8)}L${n2(100 + sd * (nw - 3))} ${n2(ny + 2)}Z`;
-      const leafEdge = hexOf(shade(collarIdx === 0 ? r.body : collarIdx === 1 ? r.trim : r.trim2, lum(collarIdx === 0 ? r.body : collarIdx === 1 ? r.trim : r.trim2) > 0.3 ? -0.35 : 0.35));
+      const leafRgb = collarRgb;
+      const leafEdge = hexOf(shade(leafRgb, lum(leafRgb) > 0.3 ? -0.35 : 0.35));
       add(`<path d="${leaf(-1)}${leaf(1)}" fill="${collarC}" stroke="${leafEdge}" stroke-width=".9" stroke-linejoin="round"/>`);
       add(`<path d="M100 ${ny + 14}V${ny + 42}" stroke="${seam}" stroke-width="1" fill="none"/><circle cx="100" cy="${ny + 26}" r="1.7" fill="${hexOf(shade(r.body, 0.5))}"/>`);
+    } else if (collar === "point") {
+      // A dress collar: long points that lie out over the chest, a placket and three buttons.
+      const leaf = (sd: 1 | -1): string => `M${n2(100 + sd * (nw + 2))} ${n2(ny + 1)}L${n2(100 + sd * (nw + 11))} ${n2(ny + 25)}L${n2(100 + sd * 3.5)} ${n2(ny + 15)}L${n2(100 + sd * 1.5)} ${n2(ny + 8)}L${n2(100 + sd * (nw - 3))} ${n2(ny + 2)}Z`;
+      const leafRgb = collarRgb;
+      const leafEdge = hexOf(shade(leafRgb, lum(leafRgb) > 0.3 ? -0.35 : 0.35));
+      add(`<path d="${leaf(-1)}${leaf(1)}" fill="${collarC}" stroke="${leafEdge}" stroke-width=".9" stroke-linejoin="round"/>`);
+      let buttons = "";
+      for (let k = 0; k < 3; k++) buttons += `<circle cx="100" cy="${n2(ny + 24 + k * 13)}" r="1.5" fill="${hexOf(shade(r.body, lum(r.body) > 0.5 ? -0.45 : 0.55))}"/>`;
+      add(`<path d="M100 ${ny + 15}V${ny + 56}" stroke="${seam}" stroke-width="1" fill="none"/>${buttons}`);
+    } else if (collar === "zip") {
+      // A stand collar over a zipper: the tape, its teeth, the slider and its pull.
+      const zipRgb = lum(collarRgb) > 0.3 ? shade(collarRgb, -0.5) : shade(collarRgb, 0.55);
+      const teeth = hexOf(zipRgb);
+      const y1 = ny + 46;
+      let t = "";
+      for (let y = ny + 8; y < y1; y += 3.2) t += `M98.4 ${n2(y)}h3.2`;
+      add(`<path d="M100 ${ny + 4}V${y1}" stroke="${seam}" stroke-width="3.4" fill="none" stroke-opacity=".55"/><path d="${t}" stroke="${teeth}" stroke-width="1.1" fill="none"/>`);
+      add(`<rect x="97.8" y="${ny + 3}" width="4.4" height="6.4" rx="1.2" fill="${teeth}"/><path d="M100 ${ny + 9}v6.5" stroke="${teeth}" stroke-width="1.6" stroke-linecap="round" fill="none"/>`);
     } else if (collar === "band" && r.closure === "button" && r.cut === "baseball") {
       let buttons = "";
       for (let k = 0; k < 6; k++) buttons += `<circle cx="100" cy="${n2(ny + 24 + k * 26)}" r="2.1" fill="${hexOf(shade(r.body, lum(r.body) > 0.5 ? -0.45 : 0.55))}" stroke="${seam}" stroke-width=".5"/>`;
@@ -559,6 +604,11 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
         const a = outerAt(s, 1 - 10 / s.l);
         const b = innerAt(s, 1 - 10 / s.l);
         if (r.sleeveBands.length > 0 || r.cuffs !== undefined) marks += `M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}`;
+        if (r.armbands !== undefined) {
+          const c = outerAt(s, r.armbands.at / 100);
+          const d = innerAt(s, r.armbands.at / 100);
+          marks += `M${n2(c[0])} ${n2(c[1])}L${n2(d[0])} ${n2(d[1])}`;
+        }
       }
     }
     if (r.hemBands.length > 0) marks += `M${n2(100 - spec.hu + 3)} ${spec.hy - 14}H${n2(100 + spec.hu - 3)}`;
@@ -591,7 +641,40 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   };
   if (view === "front") {
     const crestSvg = r.crest === undefined ? undefined : crestDocument(r.crest, emblems, tint, trimHex);
-    if (crestSvg !== undefined) {
+    // The left chest: a pocket, and a badge spot on it (empty and plain, or the caller's crest).
+    const hasBadge = r.badge !== undefined;
+    const px = 100 + Math.round(spec.au * 0.56);
+    const py = spec.ay + 6;
+    if (r.pocket) {
+      const pw = 30;
+      const ph = 34;
+      const x0 = px - pw / 2;
+      const y0 = py - ph / 2;
+      const d = `M${n2(x0)} ${n2(y0)}H${n2(x0 + pw)}V${n2(y0 + ph - 7)}Q${n2(x0 + pw)} ${n2(y0 + ph)} ${n2(x0 + pw - 7)} ${n2(y0 + ph)}H${n2(x0 + 7)}Q${n2(x0)} ${n2(y0 + ph)} ${n2(x0)} ${n2(y0 + ph - 7)}Z`;
+      if (line) marks += `<path d="${d}" fill="none" stroke="currentColor" stroke-width="3"/>`;
+      else {
+        marks += `<path d="${d}" fill="${hexOf(shade(r.body, lum(r.body) > 0.4 ? -0.07 : 0.1))}" fill-opacity=".85" stroke="${seam}" stroke-width="1.1" stroke-linejoin="round"/>`;
+        if (cloth) marks += `<path d="M${n2(x0 + 2.5)} ${n2(y0 + 3.5)}H${n2(x0 + pw - 2.5)}" stroke="${seam}" stroke-width=".8" stroke-dasharray="2 1.6" fill="none" stroke-opacity=".7"/>`;
+      }
+    }
+    if (hasBadge) {
+      const bx = px;
+      const by = py - (r.pocket ? 4 : 6);
+      const bs = 15;
+      if (crestSvg !== undefined) marks += crestImage(crestSvg, bx - bs / 2 - 2, by - bs / 2 - 2, bs + 4, bs + 4);
+      else {
+        const shape =
+          r.badge === "shield"
+            ? `M${n2(bx - bs / 2)} ${n2(by - bs / 2)}H${n2(bx + bs / 2)}V${n2(by + 1)}Q${n2(bx + bs / 2)} ${n2(by + bs / 2 + 1)} ${n2(bx)} ${n2(by + bs / 2 + 3)}Q${n2(bx - bs / 2)} ${n2(by + bs / 2 + 1)} ${n2(bx - bs / 2)} ${n2(by + 1)}Z`
+            : r.badge === "square"
+              ? `M${n2(bx - bs / 2)} ${n2(by - bs / 2)}H${n2(bx + bs / 2)}V${n2(by + bs / 2)}H${n2(bx - bs / 2)}Z`
+              : `M${n2(bx - bs / 2)} ${n2(by)}a${bs / 2} ${bs / 2} 0 1 0 ${bs} 0a${bs / 2} ${bs / 2} 0 1 0 -${bs} 0Z`;
+        // Plain: a patch a shade off the cloth with a darker edge, so it reads as a blank spot and not as a button.
+        const patchRgb = lum(r.body) > 0.5 ? shade(r.body, -0.16) : shade(r.body, 0.28);
+        marks += line ? `<path d="${shape}" fill="none" stroke="currentColor" stroke-width="3"/>` : `<path d="${shape}" fill="${hexOf(patchRgb)}" stroke="${hexOf(shade(patchRgb, lum(patchRgb) > 0.4 ? -0.45 : 0.45))}" stroke-width="1" stroke-linejoin="round"/>`;
+      }
+    }
+    if (crestSvg !== undefined && !hasBadge) {
       const c = spec.crest;
       marks += crestImage(crestSvg, c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
     }

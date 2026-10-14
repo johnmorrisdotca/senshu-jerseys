@@ -11,7 +11,7 @@
   <!--family:header-->
 
   <nav class="jump" id="jump" aria-label="Sections" data-say-label="navLabel">
-    <a href="#try" data-say="navTry"></a><a href="#wall" data-say="navWall"></a><a href="#rafters" data-say="navRafters"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
+    <a href="#try" data-say="navTry"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
   </nav>
 
   <section class="more" id="try" aria-labelledby="try-h">
@@ -40,6 +40,14 @@
     <p class="fam-fine" id="wall-count" role="status" aria-live="polite" data-testid="wall-count"></p>
     <ul class="wallgrid" id="wallgrid" data-testid="wall"></ul>
     <p class="wallmore"><button type="button" class="fam-button" id="wall-more" data-testid="wall-more" hidden></button></p>
+  </section>
+
+  <section class="more" id="officials" aria-labelledby="officials-h">
+    <h2 id="officials-h" data-say="officialsTitle"></h2>
+    <p data-say="officialsText"></p>
+    <div class="chips" id="officials-sports" role="group" data-testid="officials-sports"></div>
+    <p class="fam-fine" id="officials-count" role="status" aria-live="polite" data-testid="officials-count"></p>
+    <ul class="officialgrid" id="officials-grid" data-testid="officials"></ul>
   </section>
 
   <section class="more" id="rafters" aria-labelledby="rafters-h">

@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "" };
+const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "" };
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
 for (const [k, v] of params) {
@@ -129,7 +129,7 @@ function buildControls() {
 
   group();
   add(row("pattern", () => select("pattern", PATTERN_IDS, (v) => say(`pattern_${v}`))));
-  add(row("collar", () => select("collar", ["auto", "crew", "v", "lace-up", "polo", "round", "wishbone", "band"], (v) => (v === "auto" ? say("auto") : say(`collar_${v}`)))));
+  add(row("collar", () => select("collar", ["auto", "crew", "v", "lace-up", "polo", "round", "wishbone", "band", "zip", "point"], (v) => (v === "auto" ? say("auto") : say(`collar_${v}`)))));
   add(row("sleeve", () => seg("sleeve", ["auto", "long", "elbow", "short", "none"], (v) => (v === "auto" ? say("auto") : say(`sleeve_${v}`)))));
   add(row("yoke", () => select("yoke", ["none", "curved", "square", "full-arm"], (v) => say(`yoke_${v}`))));
   add(row("closure", () => seg("closure", ["button", "pullover", "vest"], (v) => say(`closure_${v}`)), () => attrs.cut === "baseball"));
@@ -150,6 +150,10 @@ function buildControls() {
   add(row("patch", () => seg("patch", ["none", "C", "A"], (v) => (v === "none" ? say("patch_none") : v)), () => true));
   add(row("sleeveNumbers", () => toggle("sleeve-numbers", say("on"))));
   add(row("crest", () => seg("crest", ["none", "ring", "star", "diamond"], (v) => say(`crest_${v}`), { onPick: (v) => setAttr("crest", v === "none" ? null : crestSvg(v)) })));
+  add(row("armbands", () => toggle("armbands", say("on"))));
+  add(row("pocket", () => toggle("pocket", say("on"))));
+  add(row("badge", () => seg("badge", ["none", "round", "shield", "square"], (v) => say(`badge_${v}`), { onPick: (v) => setAttr("badge", v === "none" ? null : v) })));
+  add(row("protector", () => toggle("protector", say("on"))));
   add(row("kit", () => toggle("kit", say("on"))));
   for (const r of rows) {
     r.wrap.firstChild.textContent = say(r.label);
@@ -194,7 +198,7 @@ function syncControls() {
   hideFor("cuffs", cut === "basketball");
   for (const box of document.querySelectorAll("#controls .fam-seg")) {
     const key = box.dataset.key;
-    const current = key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
+    const current = key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "badge" ? (attrs.badge ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
     for (const b of box.children) {
       b.setAttribute("aria-pressed", String(b.dataset.value === current));
       if (key === "sleeve") b.hidden = b.dataset.value !== "auto" && !sleevesFor(cut).includes(b.dataset.value);
@@ -484,6 +488,56 @@ function filterWall() {
   for (const b of $("wallbar").querySelectorAll("[data-league]")) b.setAttribute("aria-pressed", String(b.dataset.league === ui.wl));
 }
 
+// ----- Officials: the referees, linesmen and umpires, by sport.
+const OFFICIAL_SPORTS = ["all", "hockey", "basketball", "football", "soccer", "baseball", "rugby-lacrosse"];
+const sportOf = (id) => {
+  const key = id.slice(4);
+  if (/^(nhl|hockey|pwhl)/.test(key)) return "hockey";
+  if (/^(nba|wnba|fiba|euroleague|nbl|ncaa-basketball)/.test(key)) return "basketball";
+  if (/^(football|nfl|cfl|ncaa-football|highschool)/.test(key)) return "football";
+  if (/^soccer/.test(key)) return "soccer";
+  if (/^mlb/.test(key)) return "baseball";
+  return "rugby-lacrosse";
+};
+const MADE_UP = ["Beaumont", "Okafor", "Lindqvist", "Tanaka", "Marchetti", "Hollis", "Duval", "Reyes"];
+let officialsBuilt = false;
+function buildOfficials() {
+  const list = presetsApi.PRESETS.filter((p) => p.league === "ref");
+  const chips = $("officials-sports");
+  chips.replaceChildren();
+  chips.setAttribute("aria-label", say("sports_all"));
+  for (const sport of OFFICIAL_SPORTS) {
+    const n = sport === "all" ? list.length : list.filter((p) => sportOf(p.id) === sport).length;
+    chips.append(el("button", { type: "button", class: "fam-chip", "data-sport": sport, "aria-pressed": String(ui.os === sport), "data-testid": `osport-${sport}`, text: `${say(`sports_${sport.replace(/-/g, "_")}`)} ${n}`, onclick: () => { ui.os = sport; filterOfficials(); syncUrl(); } }));
+  }
+  const grid = $("officials-grid");
+  grid.replaceChildren();
+  list.forEach((p, i) => {
+    const li = el("li", { "data-id": p.id, "data-sport": sportOf(p.id) });
+    const svg = renderJersey({ ...p.options, view: "both", number: 4 + ((i * 11) % 90), name: MADE_UP[i % MADE_UP.length], size: 104, look: "cloth", title: `${p.team}, ${p.years}, ${p.way}` });
+    const b = el("button", { type: "button", class: "wcard ocard", "data-testid": "ocard", title: say("tryThis"), onclick: () => { applyPreset(p.id); location.hash = "#try"; $("try").scrollIntoView(); } },
+      el("span", { class: "osvg" }),
+      el("span", { class: "wname", text: lang() === "ja" ? p.ja : p.team }),
+      el("span", { class: "wyears", text: `${p.years} · ${p.way}` }));
+    b.querySelector(".osvg").innerHTML = svg;
+    li.append(b);
+    grid.append(li);
+  });
+  officialsBuilt = true;
+  filterOfficials();
+}
+function filterOfficials() {
+  if (!officialsBuilt) return;
+  let n = 0;
+  for (const li of $("officials-grid").children) {
+    const ok = ui.os === "all" || li.dataset.sport === ui.os;
+    li.hidden = !ok;
+    if (ok) n++;
+  }
+  $("officials-count").textContent = say("officialsCount").replace("{n}", String(n));
+  for (const b of $("officials-sports").children) b.setAttribute("aria-pressed", String(b.dataset.sport === ui.os));
+}
+
 // ----- Presets arrive: the selects, the wall.
 function fillPresetSelects() {
   const { LEAGUES } = presetsApi;
@@ -521,6 +575,7 @@ async function loadPresets() {
   drawRafters();
   if (ui.preset !== "" && presetsApi.byId.has(ui.preset) && Object.keys(attrs).length <= Object.keys(DEFAULTS).length + 1 && !params.has("body")) applyPreset(ui.preset);
   buildWall();
+  buildOfficials();
   drawBuilders();
   syncControls();
 }
@@ -582,6 +637,7 @@ function everything() {
   if (presetsApi !== undefined) {
     fillPresetSelects();
     buildWall();
+    buildOfficials();
   }
 }
 window.addEventListener("senshu-language", everything);

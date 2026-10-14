@@ -24,7 +24,8 @@ export type Teams = Readonly<Record<string, readonly [en: string, ja: string]>>;
 const CUT_CODES: Record<string, CutId> = { h: "hockey", b: "baseball", k: "basketball", f: "football", s: "soccer", r: "rugby", d: "handball" };
 const PATTERN_CODES = { s: "stripes", h: "hoops", "2": "halves", "4": "quarters", a: "sash", c: "chevron", p: "pinstripes", y: "yoke", b: "chest-band" } as const;
 const YOKE_CODES = { c: "curved", s: "square", f: "full-arm" } as const;
-const COLLAR_CODES = { l: "lace-up", v: "v", c: "crew", p: "polo", r: "round", w: "wishbone", b: "band" } as const;
+const COLLAR_CODES = { l: "lace-up", v: "v", c: "crew", p: "polo", r: "round", w: "wishbone", b: "band", z: "zip", t: "point" } as const;
+const BADGE_CODES = { r: "round", s: "shield", q: "square" } as const;
 const SLEEVE_CODES = { l: "long", e: "elbow", s: "short", n: "none" } as const;
 const CLOSURE_CODES = { b: "button", p: "pullover", v: "vest" } as const;
 
@@ -58,6 +59,11 @@ export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
       case "ss": o.sleeveStripes = stripes(v); break;
       case "hs": o.hemStripes = stripes(v); break;
       case "cf": o.cuffs = dotted(v).length === 1 ? dotted(v)[0] : dotted(v); break;
+      case "ab": o.armbands = dotted(v).length === 1 ? dotted(v)[0] : dotted(v); break;
+      case "pk": o.pocket = v !== "0"; break;
+      case "bd": o.badge = BADGE_CODES[v as keyof typeof BADGE_CODES]; break;
+      case "pr": o.protector = v !== "0"; break;
+      case "na": o.nameArch = v === "s" ? "straight" : "arched"; break;
       case "cb": o.chestBand = v === "1" ? true : bandsOf(dotted(v)); break;
       case "cy": o.chestY = Number(v); break;
       case "y": o.yoke = YOKE_CODES[v as keyof typeof YOKE_CODES]; break;
