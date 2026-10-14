@@ -315,11 +315,11 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
 | `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES` | The helmets, their marks, and the banner shapes. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
-| `JERSEY_WIDTH`, `JERSEY_HEIGHT`, `VERSION` | The drawing's box, and the package's version. |
+| `JERSEY_WIDTH`, `JERSEY_HEIGHT`, `jerseyBox`, `VERSION` | The body's 200 by 232 units, the box a cut is drawn in (a little wider than the body for a cut whose sleeves reach past it), and the package's version. |
 
 ### Options
 
-`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey in pixels (200 by default).
+`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
 
 ## Theming
 

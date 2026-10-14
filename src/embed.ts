@@ -1,7 +1,8 @@
 // `embedCode`: the text to put a jersey in a page, in each of the four ways: the custom element, an iframe of `embed.html`, a JavaScript module, and the SVG itself or a data address.
 import { attributesFromOptions, jerseyToParams } from "./attrs.ts";
 import { esc } from "./colour.ts";
-import type { JerseyOptions } from "./options.ts";
+import { jerseyBox } from "./jersey.ts";
+import { resolve, type JerseyOptions } from "./options.ts";
 import { renderJersey } from "./render.ts";
 
 export const EMBED_KINDS = ["element", "iframe", "module", "svg", "data"] as const;
@@ -31,7 +32,10 @@ export function embedCode(o: JerseyOptions, kind: EmbedKind = "element", s: Embe
   if (kind === "iframe") {
     const q = jerseyToParams(o, s.turnable === true ? { turn: s.autoplay === true ? "auto" : "1" } : {}).toString();
     const both = o.view === "both";
-    return `<iframe\n  ${attr("src", `${site}embed.html?${q}`)}\n  title="Jersey"\n  loading="lazy"\n  style="width:100%;max-width:${both ? 420 : 220}px;aspect-ratio:${both ? "420 / 232" : "200 / 232"};border:0"\n></iframe>`;
+    // The frame is the shape of the cut's box: the body's 200 units and the room its sleeves need (none for most cuts), once for one view and twice for both.
+    const room = Math.round((jerseyBox(resolve(o).cut).w - 200) * (both ? 2 : 1) * 10) / 10;
+    const width = (both ? 420 : 200) + room;
+    return `<iframe\n  ${attr("src", `${site}embed.html?${q}`)}\n  title="Jersey"\n  loading="lazy"\n  style="width:100%;max-width:${both ? width : width + 20}px;aspect-ratio:${width} / 232;border:0"\n></iframe>`;
   }
   if (kind === "module") {
     const body = JSON.stringify(o, null, 2);

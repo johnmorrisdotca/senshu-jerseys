@@ -1,6 +1,6 @@
 // A jersey, front or back: its silhouette from the cut's measures, what the cut carries (collar, sleeves, stripes, panels), its pattern, the cloth's folds and edge, and the
 // number, name and crest. Every drawing is a pure function of its options; every id in it comes from a hash of them, so two drawings on one page never share one by accident.
-import { CUTS, type CollarId, type CutSpec } from "./cuts.ts";
+import { CUTS, type CollarId, type CutId, type CutSpec } from "./cuts.ts";
 import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, worst, type Rgb } from "./colour.ts";
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
 import { resolve, type Bands, type JerseyOptions, type Resolved } from "./options.ts";
@@ -9,6 +9,23 @@ import { drawRun, layout } from "./text.ts";
 
 export const JERSEY_WIDTH = 200;
 export const JERSEY_HEIGHT = 232;
+
+/** The box a cut is drawn in, from y = 0 down `JERSEY_HEIGHT`: the 200 by 232 body with `reach` units more on each side, where the cut's sleeves go (still, and at every turn, thick cloth included). */
+export interface JerseyBox {
+  /** The left edge in the body's own units: minus the reach. The middle of the shirt is x = 100 whatever the box. */
+  x: number;
+  /** The width: 200 plus the reach on both sides. The box is `JERSEY_HEIGHT` tall from y = 0. */
+  w: number;
+}
+
+/**
+ * The view box of a cut. A sleeve of a football, rugby, soccer or baseball shirt, and a turn of any of them, reaches past the 200 units of the body, so these cuts have a wider box (`CUTS[cut].reach` on each
+ * side); a hockey, basketball and handball shirt almost never need more, so theirs is the body itself. It is one box per cut, whatever the sleeve, look or angle, so that a drawing does not change size.
+ */
+export function jerseyBox(cut: CutId): JerseyBox {
+  const reach = CUTS[cut].reach ?? 0;
+  return { x: -reach, w: JERSEY_WIDTH + 2 * reach };
+}
 /** The slant of diagonal chest text, in degrees. */
 const DIAGONAL = 28;
 

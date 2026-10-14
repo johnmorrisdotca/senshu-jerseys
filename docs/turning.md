@@ -20,6 +20,22 @@ console.log(jerseyFrame({ yaw: Number.NaN }) === jerseyFrame({ yaw: 0 })); // tr
 
 `thickness` (0 to 40 drawing units, 14 by default) is how thick the edge is.
 
+## The box of a turn
+
+A jersey is drawn in a box, and the body is 200 by 232 units. The sleeves of a football, rugby, soccer or baseball shirt reach past the 200 at rest, and a turn pushes the cloth's edge further out: the slices of the edge are shifted by up to half the thickness, so a sleeve goes past the body by a few units more at an angle of a few degrees either side of the front and the back. So **every cut has a box that holds its widest sleeve at every angle and thickness** (`jerseyBox(cut)`, the 200 units and `CUTS[cut].reach` more on each side), and a frame, a still, both views and the resting view of `bindTurn` are all drawn in it: nothing is cut off, and the drawing does not change size as it turns. Hockey and basketball fit the body, so their box is the body's own. `size` is still the width of the body, so a shirt is the same scale in every cut and the document is a little wider for a cut with a wider box.
+
+```js
+import { jerseyBox, renderJersey } from "@johnmorrisdotca/senshu-jerseys";
+import { jerseyFrame } from "@johnmorrisdotca/senshu-jerseys/turn";
+
+const box = (svg) => /viewBox="([^"]*)"/.exec(svg)[1];
+console.log(box(renderJersey({ cut: "football" })) === box(jerseyFrame({ cut: "football", yaw: 8, thickness: 40 }))); // true
+console.log(box(renderJersey({ cut: "football", sleeve: "short" })) === box(renderJersey({ cut: "football", sleeve: "long" }))); // true
+console.log(jerseyBox("hockey").w, jerseyBox("football").w); // 200 233.8
+```
+
+`test/jerseybox.test.ts` measures the ink of every cut, sleeve, look and view, still and turned, against the box; `node scripts/jersey-boxes.mjs` prints the `reach` a changed cut needs, to put in `src/cuts.ts`, and `node scripts/turn-sheet.mjs <out.png>` draws a sheet of the sleeves to look at.
+
 ## `bindTurn(container, options, settings)`
 
 Draws the jersey into a container and lets the reader turn it.

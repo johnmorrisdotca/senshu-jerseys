@@ -51,10 +51,12 @@ test("a drawing is a pure function of its options, and its ids differ when the d
 });
 
 test("a size, a view and a language are read: both views are wider, the title is in the language asked", () => {
-  const one = S.renderJersey({ size: 100 });
-  const two = S.renderJersey({ size: 100, view: "both" });
+  const one = S.renderJersey({ cut: "hockey", size: 100 });
+  const two = S.renderJersey({ cut: "hockey", size: 100, view: "both" });
   assert.match(one, /width="100" height="116"/);
   assert.match(two, /width="212"/);
+  // The default cut (soccer) has sleeves that reach past the body, so its box is a little wider: the shirt is the same scale and the height is the same (test/jerseybox.test.ts).
+  assert.match(S.renderJersey({ size: 100 }), /width="108\.4" height="116"/);
   assert.match(S.renderJersey({ cut: "hockey", number: 12, language: "ja" }), /<title[^>]*>アイスホッケーのジャージ、背番号12（前）<\/title>/);
   assert.match(S.renderJersey({ cut: "hockey", number: 12, view: "back" }), /<title[^>]*>Hockey sweater, number 12, back<\/title>/);
   assert.match(S.renderJersey({ title: "My shirt" }), /<title[^>]*>My shirt<\/title>/);

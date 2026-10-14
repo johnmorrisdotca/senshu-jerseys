@@ -27,6 +27,8 @@ export interface Spot {
 
 export interface CutSpec {
   id: CutId;
+  /** The room the drawing needs beyond its 200 units on each side, so that no sleeve of the cut, still or turned, is cut off by the box: the drawing is made in `-reach 0 (200 + 2 reach) 232`. Measured by `scripts/jersey-boxes.mjs`; none (absent) for a cut that fits the body. */
+  reach?: number;
   /** The top of the neck at the shoulder line, the shoulder tip, the armpit, the waist and the hem: `u` and `y` of each. */
   ny: number;
   su: number;
@@ -68,7 +70,7 @@ export const CUTS: Readonly<Record<CutId, CutSpec>> = {
     tv: { t: 0.34, h: 21 },
   },
   baseball: {
-    id: "baseball", ny: 24, su: 58, sy: 36, au: 49, ay: 84, wu: 47, hu: 51, hy: 206, drop: 0,
+    id: "baseball", reach: 7.2, ny: 24, su: 58, sy: 36, au: 49, ay: 84, wu: 47, hu: 51, hy: 206, drop: 0,
     sleeves: { long: { a: 66, l: 106, cw: 34 }, elbow: { a: 54, l: 70, cw: 38 }, short: { a: 48, l: 46, cw: 40 } },
     sleeve: "elbow", collars: ["band", "v", "crew"], collar: "band", sleeveStripes: 0, hemStripes: 0,
     number: { front: spot(128, 140, 28, 30), back: spot(100, 134, 52, 62) }, name: spot(100, 78, 86, 13), text: spot(100, 100, 76, 28), crest: spot(100, 108, 52, 52), patch: spot(134, 78, 22, 22),
@@ -82,28 +84,28 @@ export const CUTS: Readonly<Record<CutId, CutSpec>> = {
     tv: { t: 0.4, h: 16 },
   },
   football: {
-    id: "football", ny: 24, su: 74, sy: 40, au: 60, ay: 90, wu: 58, hu: 60, hy: 198, drop: 0,
+    id: "football", reach: 16.9, ny: 24, su: 74, sy: 40, au: 60, ay: 90, wu: 58, hu: 60, hy: 198, drop: 0,
     sleeves: { short: { a: 50, l: 50, cw: 44 }, elbow: { a: 58, l: 70, cw: 42 }, long: { a: 72, l: 112, cw: 36 } },
     sleeve: "short", collars: ["v", "crew", "round"], collar: "v", sleeveStripes: 2, hemStripes: 0,
     number: { front: spot(100, 118, 66, 70), back: spot(100, 128, 70, 76) }, name: spot(100, 76, 88, 14), text: spot(100, 98, 80, 16), crest: spot(132, 80, 28, 28), patch: spot(66, 80, 22, 22),
     tv: { t: 0.5, h: 14 },
   },
   soccer: {
-    id: "soccer", ny: 24, su: 60, sy: 36, au: 49, ay: 84, wu: 46, hu: 50, hy: 204, drop: 2,
+    id: "soccer", reach: 8.4, ny: 24, su: 60, sy: 36, au: 49, ay: 84, wu: 46, hu: 50, hy: 204, drop: 2,
     sleeves: { short: { a: 46, l: 58, cw: 40 }, elbow: { a: 58, l: 80, cw: 38 }, long: { a: 72, l: 108, cw: 32 } },
     sleeve: "short", collars: ["polo", "v", "crew"], collar: "polo", sleeveStripes: 0, hemStripes: 0,
     number: { front: spot(100, 128, 34, 38), back: spot(100, 128, 54, 62) }, name: spot(100, 78, 84, 13), text: spot(100, 108, 76, 16), crest: spot(128, 78, 26, 28), patch: spot(66, 80, 22, 22),
     tv: { t: 0.45, h: 15 },
   },
   rugby: {
-    id: "rugby", ny: 24, su: 64, sy: 38, au: 52, ay: 86, wu: 50, hu: 54, hy: 204, drop: 2,
+    id: "rugby", reach: 11.2, ny: 24, su: 64, sy: 38, au: 52, ay: 86, wu: 50, hu: 54, hy: 204, drop: 2,
     sleeves: { long: { a: 70, l: 106, cw: 36 }, elbow: { a: 58, l: 78, cw: 40 }, short: { a: 46, l: 56, cw: 44 } },
     sleeve: "long", collars: ["polo", "v", "crew"], collar: "polo", sleeveStripes: 0, hemStripes: 0,
     number: { front: spot(100, 130, 34, 38), back: spot(100, 130, 56, 64) }, name: spot(100, 78, 84, 13), text: spot(100, 108, 76, 16), crest: spot(128, 80, 26, 28), patch: spot(66, 80, 22, 22),
     tv: { t: 0.45, h: 15 },
   },
   handball: {
-    id: "handball", ny: 24, su: 58, sy: 36, au: 48, ay: 82, wu: 44, hu: 48, hy: 196, drop: 2,
+    id: "handball", reach: 2.2, ny: 24, su: 58, sy: 36, au: 48, ay: 82, wu: 44, hu: 48, hy: 196, drop: 2,
     sleeves: { short: { a: 46, l: 46, cw: 38 }, elbow: { a: 60, l: 76, cw: 36 }, long: { a: 74, l: 106, cw: 30 } },
     sleeve: "short", collars: ["crew", "v", "polo"], collar: "crew", sleeveStripes: 0, hemStripes: 0,
     number: { front: spot(100, 124, 32, 36), back: spot(100, 124, 54, 62) }, name: spot(100, 76, 80, 13), text: spot(100, 106, 72, 16), crest: spot(126, 78, 26, 28), patch: spot(66, 80, 22, 22),

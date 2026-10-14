@@ -3,7 +3,7 @@
 // each a string of SVG. `jerseyFrame` is one angle; `bindTurn` is the pointer, the keys and the automatic turn, in a container.
 import { CUTS } from "./cuts.ts";
 import { hexOf, shade } from "./colour.ts";
-import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyView, uidOf } from "./jersey.ts";
+import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox, jerseyView, uidOf } from "./jersey.ts";
 import { resolve, type JerseyOptions } from "./options.ts";
 import { titleOf } from "./title.ts";
 import type { EmblemRenderer } from "./emblems.ts";
@@ -81,10 +81,12 @@ export function jerseyFrame(options?: TurnOptions): string {
   const slab = `<rect data-turn="slab" x="${st.slab.x}" y="${spec.ny - 5}" width="${st.slab.width}" height="${spec.hy - spec.ny + 5}" rx="2.5" fill="${line ? "none" : edge}"${line ? ' stroke="currentColor" stroke-width="3"' : ""}/>`;
   const face = (which: "front" | "back", v: typeof front, s: TurnState["front"]): string =>
     `<g data-turn="${which}" transform="${s.matrix}"${s.visible ? "" : ' display="none"'}>${v.body}<use href="#${v.outlineId}" data-turn="${which}-shade" fill="#000" fill-opacity="${s.shade}" stroke="none"/></g>`;
-  const w = rf.size;
-  const h = Math.round(((w * JERSEY_HEIGHT) / JERSEY_WIDTH) * 100) / 100;
+  // The box of the cut, the same at every angle and every thickness and the one the still is drawn in: a sleeve swung out, or the cloth's edge, never leaves it.
+  const box = jerseyBox(rf.cut);
+  const w = n2((rf.size * box.w) / JERSEY_WIDTH);
+  const h = Math.round(((rf.size * JERSEY_HEIGHT) / JERSEY_WIDTH) * 100) / 100;
   const id = uidOf(rf, "turn");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${JERSEY_WIDTH} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(st.yaw)}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}</defs><g data-turn="edge">${slab}${slices}</g>${face("front", front, st.front)}${face("back", back, st.back)}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(box.w)} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(st.yaw)}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}</defs><g data-turn="edge">${slab}${slices}</g>${face("front", front, st.front)}${face("back", back, st.back)}</svg>`;
 }
 
 /** Move an SVG made by `jerseyFrame` to an angle without redrawing it: only the transforms change. */

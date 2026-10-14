@@ -25,5 +25,6 @@ export { ARCH_IDS, CLOSURE_IDS, LANGUAGE_IDS, LOOK_IDS, PATCH_IDS, PATTERN_IDS, 
 export type { ArchId, Bands, ClosureId, JerseyOptions, LanguageId, LookId, PatchId, PatternId, TextAngleId, ViewId, YokeId } from "./options.ts";
 export { CUT_NAMES, PATTERN_NAMES } from "./names.ts";
 export { contrast, readColour } from "./colour.ts";
-export { JERSEY_HEIGHT, JERSEY_WIDTH } from "./jersey.ts";
+export { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox } from "./jersey.ts";
+export type { JerseyBox } from "./jersey.ts";
 export { VERSION } from "./version.ts";

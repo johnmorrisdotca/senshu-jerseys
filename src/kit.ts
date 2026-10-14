@@ -1,7 +1,7 @@
 // `kitMatchup`: two kits face to face, away then home, each with a name under it. `jerseyLineup`: players' shirts in rows, a formation on a field. kyogijo-stadiums places
 // players on the field; this package draws the shirts, and the two can be put together the same way dougu-sports is.
 import { clean, contrast, hashOf } from "./colour.ts";
-import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyView, uidOf } from "./jersey.ts";
+import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox, jerseyView, uidOf } from "./jersey.ts";
 import { resolve, type JerseyOptions, type Resolved } from "./options.ts";
 import type { EmblemRenderer } from "./emblems.ts";
 import { n2 } from "./path.ts";
@@ -49,7 +49,9 @@ export function kitMatchup(options?: MatchupOptions): string {
   const sides: KitSide[] = [o.away ?? { colors: ["#1f3a8a", "#f4f0e4"] }, o.home ?? { colors: ["#c8102e", "#f4f0e4"] }];
   const size = typeof o.size === "number" && Number.isFinite(o.size) ? Math.max(8, Math.min(4000, o.size)) : 360;
   const cols = view === "both" ? 2 : 1;
-  const cell = JERSEY_WIDTH + 16;
+  // Each shirt has 8 units of room on each side, or what its cut's sleeves need if that is more (the wider of the two sides' cuts, so that both are spaced alike).
+  const pad = Math.max(8, ...sides.map((side) => Math.ceil(-jerseyBox(resolve({ ...side, language: undefined }).cut).x)));
+  const cell = JERSEY_WIDTH + 2 * pad;
   const mid = 64;
   const groupW = cols * cell;
   const W = groupW * 2 + mid;
@@ -61,7 +63,7 @@ export function kitMatchup(options?: MatchupOptions): string {
     const views: ("front" | "back")[] = view === "both" ? ["front", "back"] : [view];
     views.forEach((v, i) => {
       const r = resolve({ ...side, view: v, language: undefined });
-      const p = place(r, uidOf(r, `m${s}${i}`), x0 + i * cell + 8, 0, 1, o.emblems);
+      const p = place(r, uidOf(r, `m${s}${i}`), x0 + i * cell + pad, 0, 1, o.emblems);
       defs += p.defs;
       body += p.body;
     });

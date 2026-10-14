@@ -5,7 +5,7 @@ import { capParts } from "./cap.ts";
 import { hashOf, hexOf, lum, shade, type Rgb } from "./colour.ts";
 import type { EmblemRenderer } from "./emblems.ts";
 import { helmetParts } from "./helmet.ts";
-import { JERSEY_HEIGHT, jerseyView, uidOf } from "./jersey.ts";
+import { JERSEY_HEIGHT, jerseyBox, jerseyView, uidOf } from "./jersey.ts";
 import { resolve, type Bands, type JerseyOptions, type Resolved } from "./options.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
@@ -22,6 +22,8 @@ function shapes(cut: string): { pants: string; ph: number; sock: number } {
 }
 
 const SOCK = "M0 0H36V68C36 80 42 86 40 94H-4C-6 86 0 80 0 68Z";
+/** How tall the sock's shape is: the column is made at least this long under the pants, or the foot of a short sock's drawing is cut off. */
+const SOCK_HEIGHT = 94;
 
 /** The bands of a garment up from its bottom edge at `bottom`, as rectangles over `x0` to `x1`. */
 function hemBands(b: Bands, bottom: number, x0: number, x1: number, colour: (i: number) => string): string {
@@ -50,18 +52,20 @@ export function renderKit(options?: JerseyOptions & { emblems?: EmblemRenderer }
   const hx = hexOf;
   const edgeOf = (c: Rgb): string => (line ? "currentColor" : hx(lum(c) > 0.1 ? shade(c, -0.42) : shade(c, 0.3)));
   const uid = `su${hashOf(JSON.stringify(r))}`;
-  const colW = 220;
+  // A column is the shirt with 10 units of room on each side, or what its cut's sleeves need if that is more.
+  const pad = Math.max(10, Math.ceil(-jerseyBox(r.cut).x));
+  const colW = 200 + 2 * pad;
   const hasHelmet = r.helmet !== undefined && (r.cut === "hockey" || r.cut === "football" || r.cut === "baseball");
   const side = hasHelmet ? 110 : 0;
   const W = cols.length * colW + side;
   const yPants = JERSEY_HEIGHT - 8;
   const ySock = yPants + sh.ph - 4;
-  const H = ySock + sh.sock + 8;
+  const H = ySock + Math.max(sh.sock, SOCK_HEIGHT) + 8;
   let defs = "";
   let body = "";
   if (cloth) defs += `<linearGradient id="${uid}g" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".3" stop-color="#fff" stop-opacity=".06"/><stop offset=".7" stop-color="#000" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".24"/></linearGradient>`;
   cols.forEach((v, ci) => {
-    const x0 = ci * colW + 10;
+    const x0 = ci * colW + pad;
     const view = jerseyView(r, v, uidOf(r, `k${ci}`), options?.emblems);
     defs += view.defs;
     // Socks first (behind the pants), then the pants, then the jersey over the waist.
@@ -69,14 +73,14 @@ export function renderKit(options?: JerseyOptions & { emblems?: EmblemRenderer }
     for (const sx of [76, 124]) {
       const cid = `${uid}s${ci}${sx}`;
       defs += `<clipPath id="${cid}"><path d="${SOCK}" transform="translate(${sx - 18} ${ySock})"/></clipPath>`;
-      body += `<g transform="translate(${x0 - 10 + 10} 0)">`;
+      body += `<g transform="translate(${x0} 0)">`;
       body += line ? "" : `<path d="${SOCK}" transform="translate(${sx - 18} ${ySock})" fill="${hx(socksC)}"/>`;
       if (!line) body += `<g clip-path="url(#${cid})">${hemBands(r.socksBands, ySock + sh.sock, 0, 200, garmentColour(socksC, socksT))}</g>`;
       if (cloth) body += `<path d="${SOCK}" transform="translate(${sx - 18} ${ySock})" fill="url(#${uid}g)"/>`;
       body += `<path d="${SOCK}" transform="translate(${sx - 18} ${ySock})" fill="none" stroke="${edgeOf(socksC)}" stroke-width="${line ? 6 : 1.4}" stroke-linejoin="round"/>`;
       body += "</g>";
     }
-    body += `<g transform="translate(${x0 - 10 + 10} 0)">`;
+    body += `<g transform="translate(${x0} 0)">`;
     const pid = `${uid}p${ci}`;
     defs += `<clipPath id="${pid}"><path d="${sh.pants}" transform="translate(0 ${yPants})"/></clipPath>`;
     if (!line) {
