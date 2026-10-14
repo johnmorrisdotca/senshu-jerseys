@@ -8,7 +8,7 @@ export const OPTION_ATTRIBUTES = [
   "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
   "patch", "sleeve-numbers", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
-  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes",
+  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle",
 ] as const;
 
 const bare = (v: string): string => (/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i.test(v) ? `#${v}` : v);
@@ -31,7 +31,7 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
   const colors = read("colors");
   if (colors !== null && colors.trim() !== "") o.colors = colors.split(",").map((c) => bare(c.trim())).slice(0, 5);
   for (const [name, key] of [["body", "body"], ["trim", "trim"], ["accent", "accent"], ["number-fill", "numberFill"], ["number-outline", "numberOutline"], ["pants", "pants"], ["pants-trim", "pantsTrim"], ["socks", "socks"], ["socks-trim", "socksTrim"], ["helmet", "helmet"]] as const) colour(name, key);
-  for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "patch", "crest", "view", "look", "language", "title", "description"]) text(name);
+  for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "front-text-angle", "patch", "crest", "view", "look", "language", "title", "description"]) text(name);
   for (const name of ["raglan", "piping", "sleeve-numbers", "kit", "pattern-sleeves"]) {
     const f = flag(read(name));
     if (f !== undefined) o[name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = f;
@@ -45,6 +45,11 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
     if (v === null || v.trim() === "") continue;
     const nums = list(v);
     o[key] = nums.length === 1 ? nums[0] : (bandsOf(nums) as Bands | undefined);
+  }
+  const cuffs = read("cuffs");
+  if (cuffs !== null && cuffs.trim() !== "") {
+    const nums = list(cuffs);
+    o.cuffs = nums.length === 1 ? nums[0] : nums;
   }
   const chest = read("chest-band");
   if (chest !== null) {
@@ -82,7 +87,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   set("accent", o.accent === undefined ? undefined : c(o.accent));
   set("number-fill", o.numberFill === undefined ? undefined : c(o.numberFill));
   set("number-outline", o.numberOutline === undefined ? undefined : c(o.numberOutline));
-  for (const [k, v] of [["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["patch", o.patch], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
+  for (const [k, v] of [["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
   for (const [k, v] of [["raglan", o.raglan], ["piping", o.piping], ["sleeve-numbers", o.sleeveNumbers], ["kit", o.kit]] as const) set(k, v);
   if (o.patternSleeves === false) out["pattern-sleeves"] = "false";
   set("stripe-count", o.stripeCount);
@@ -90,6 +95,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   if (o.frontNumber === true) out["front-number"] = "true";
   else if (o.frontNumber !== undefined && o.frontNumber !== false) out["front-number"] = String(o.frontNumber);
   for (const [k, v] of [["sleeve-stripes", o.sleeveStripes], ["hem-stripes", o.hemStripes]] as const) if (v !== undefined) out[k] = Array.isArray(v) ? v.join(" ") : String(v);
+  if (o.cuffs !== undefined) out.cuffs = Array.isArray(o.cuffs) ? o.cuffs.join(" ") : String(o.cuffs);
   if (o.chestBand === true) out["chest-band"] = "true";
   else if (Array.isArray(o.chestBand)) out["chest-band"] = o.chestBand.join(" ");
   for (const [k, v] of [["repeat", o.repeat], ["arm-stripes", o.armStripes], ["pants-bands", o.pantsBands], ["socks-bands", o.socksBands]] as const) if (v !== undefined && v.length > 0) out[k] = v.join(" ");

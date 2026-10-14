@@ -26,7 +26,7 @@ test("every preset has a unique id of the form league:team-years-way, a name in 
 test("a preset is colours and stripes only: no crest, no chest lettering, no name or number", () => {
   for (const p of PRESETS) {
     const o = p.options as Record<string, unknown>;
-    for (const forbidden of ["crest", "frontText", "frontNumber", "name", "number", "patch", "title", "description"]) assert.equal(o[forbidden], undefined, `${p.id} has ${forbidden}`);
+    for (const forbidden of ["crest", "frontText", "frontTextAngle", "frontNumber", "name", "number", "patch", "title", "description"]) assert.equal(o[forbidden], undefined, `${p.id} has ${forbidden}`);
     assert.ok(readColour(o.body) !== undefined, `${p.id}: body ${String(o.body)}`);
     assert.ok(readColour(o.trim) !== undefined, `${p.id}: trim ${String(o.trim)}`);
     if (o.accent !== undefined) assert.ok(readColour(o.accent) !== undefined, `${p.id}: accent`);
@@ -84,4 +84,29 @@ test("the stripe count draws that many equal stripes across the torso, and a pat
   const stripes = (n: number): number => (S.renderJersey({ colors: ["#000000", "#ffffff"], pattern: "stripes", stripeCount: n, cut: "soccer" }).match(/<path d="M[\d.-]+ 0H[\d.-]+V232H/g) ?? []).length;
   assert.ok(stripes(9) > stripes(5));
   assert.notEqual(S.renderJersey({ pattern: "hoops", patternSleeves: false }), S.renderJersey({ pattern: "hoops" }));
+});
+
+test("the current Canadiens, Rangers, Kraken, Flames and Stars jerseys carry their cuffs, elbow stripes and number colours", () => {
+  const by = (id: string) => PRESETS.find((p) => p.id === id)?.options as Record<string, unknown>;
+  const habs = by("nhl:montreal-1967-white");
+  assert.deepEqual(habs.cuffs, [18, 1]);
+  assert.equal(habs.yoke, "curved");
+  const rangers = by("nhl:rangers-1997-blue");
+  assert.equal(rangers.numberFill, "#ce1126");
+  assert.equal(rangers.numberOutline, "#fff");
+  assert.deepEqual((rangers.sleeveStripes as number[]).slice(0, 2), [24, 0]);
+  const kraken = by("nhl:kraken-2021-home");
+  assert.deepEqual(kraken.sleeveStripes, [20, 0, 3, 2, 14, 1, 3, 2]);
+  assert.equal(kraken.accent, "#e9072b");
+  const flames = by("nhl:flames-2020-home");
+  assert.equal((flames.sleeveStripes as number[]).filter((_, i) => i % 2 === 1 && _ !== 0).length, 3);
+  assert.ok(by("nhl:flames-2020-away"));
+  const stars = by("nhl:stars-2013-home");
+  assert.equal(stars.numberFill, "#fff");
+  assert.equal(stars.numberOutline, "#000");
+});
+
+test("a spec reads the cuffs: a length alone, or a length and a colour", () => {
+  assert.equal(decode("fff af1e2d cf=14").cuffs, 14);
+  assert.deepEqual(decode("fff af1e2d cf=14.2").cuffs, [14, 2]);
 });

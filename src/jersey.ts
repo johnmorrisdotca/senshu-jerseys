@@ -1,7 +1,7 @@
 // A jersey, front or back: its silhouette from the cut's measures, what the cut carries (collar, sleeves, stripes, panels), its pattern, the cloth's folds and edge, and the
 // number, name and crest. Every drawing is a pure function of its options; every id in it comes from a hash of them, so two drawings on one page never share one by accident.
 import { CUTS, type CollarId, type CutSpec } from "./cuts.ts";
-import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, type Rgb } from "./colour.ts";
+import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, worst, type Rgb } from "./colour.ts";
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
 import { resolve, type Bands, type JerseyOptions, type Resolved } from "./options.ts";
 import { cubic, lerp, n2, poly, quad, rounded, type Pt } from "./path.ts";
@@ -9,6 +9,8 @@ import { drawRun, layout } from "./text.ts";
 
 export const JERSEY_WIDTH = 200;
 export const JERSEY_HEIGHT = 232;
+/** The slant of diagonal chest text, in degrees. */
+const DIAGONAL = 28;
 
 type P3 = [number, number, number?];
 
@@ -140,8 +142,10 @@ function repeatBands(seq: Bands, from: number, to: number, centred: number | und
 
 /** The ink for the number and the name, and the outline (or none), given what is behind them. */
 export function inkFor(r: Resolved, grounds: readonly Rgb[]): { fill: Rgb; outline: Rgb | undefined } {
-  const fill = inkOn(grounds, [r.fill, r.trim, r.trim2, WHITE, BLACK]);
   const mixed = grounds.length > 1;
+  // Tackle-twill: a fill that does not read on the cloth on its own (red numbers on royal blue) is kept when the outline asked for reads on the cloth and the fill reads on the outline.
+  if (!mixed && r.fill !== undefined && r.outline !== undefined && worst(r.fill, grounds) < 4.5 && worst(r.outline, grounds) >= 4.5 && contrast(r.fill, r.outline) >= 3) return { fill: r.fill, outline: r.outline };
+  const fill = inkOn(grounds, [r.fill, r.trim, r.trim2, WHITE, BLACK]);
   let outline: Rgb | undefined;
   if (mixed) outline = inkOn([fill], [r.outline, r.trim2, BLACK, WHITE]);
   else if (r.outline !== undefined) outline = r.outline;
@@ -423,6 +427,19 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
         at += w;
       }
     }
+    // Cuffs: the sleeve's end in a contrasting colour, over the stripes, with the knit's seam where it starts.
+    if (r.cuffs !== undefined) {
+      const seamInk = `stroke="${hexOf(blend(r.body, BLACK, 0.5))}" stroke-opacity=".5" stroke-width="1" fill="none"`;
+      for (const s of [L, R]) {
+        const len = Math.min(r.cuffs.len, s.l * 0.6);
+        bands += cuffBand(s, -2, len, r.cuffs.c);
+        if (cloth) {
+          const a = outerAt(s, 1 - len / s.l);
+          const b = innerAt(s, 1 - len / s.l);
+          bands += `<path d="M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}" ${seamInk}/>`;
+        }
+      }
+    }
     if (bands !== "") addIn(`<g clip-path="url(#${idc})">${bands}</g>`);
   }
 
@@ -524,7 +541,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       for (const s of [L, R]) {
         const a = outerAt(s, 1 - 10 / s.l);
         const b = innerAt(s, 1 - 10 / s.l);
-        if (r.sleeveBands.length > 0) marks += `M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}`;
+        if (r.sleeveBands.length > 0 || r.cuffs !== undefined) marks += `M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}`;
       }
     }
     if (r.hemBands.length > 0) marks += `M${n2(100 - spec.hu + 3)} ${spec.hy - 14}H${n2(100 + spec.hu - 3)}`;
@@ -548,8 +565,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   const grounds = (where: "number" | "name" | "chest"): Rgb[] => (patternBehind(r, view, where) && !line ? [r.body, r.trim] : [r.body]);
   const tint = hexOf(r.body);
   let marks = "";
-  const markRun = (text: string, spot: { x: number; y: number; w: number; h: number }, weight: "bold" | "black", where: "number" | "name" | "chest", arch?: number, tracking?: number): string => {
-    const run = layout(text, spot.x, spot.y, { height: spot.h, maxWidth: spot.w, weight, arch, tracking });
+  const markRun = (text: string, spot: { x: number; y: number; w: number; h: number }, weight: "bold" | "black", where: "number" | "name" | "chest", arch?: number, tracking?: number, slant?: number, maxHeight?: number): string => {
+    const run = layout(text, spot.x, spot.y, { height: spot.h, maxWidth: spot.w, weight, arch, tracking, slant, maxHeight });
     if (line) return drawRun(run, "currentColor", undefined, undefined);
     const { fill, outline } = inkFor(r, grounds(where));
     const width = outline === undefined ? 0 : Math.max(1.1, run.sw * 0.14);
@@ -561,13 +578,20 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       const c = spec.crest;
       marks += crestImage(crestSvg, c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
     }
-    if (r.frontText !== undefined) marks += markRun(r.frontText, spec.text, "bold", "chest", r.cut === "basketball" ? 140 : undefined, 0.5);
+    if (r.frontText !== undefined) {
+      if (r.frontTextAngle === "diagonal-up" || r.frontTextAngle === "diagonal-down") {
+        // Stepped on a slant across the chest: upright letters, each a step higher (or lower) than the last, fitted to the width of the chest and the height below the collar.
+        const cy = spec.ay + (spec.hy - spec.ay) * 0.36;
+        const box = { x: 100, y: cy, w: 2 * (Math.min(spec.wu, spec.au) - (sh.tank ? 16 : 12)), h: 26 };
+        marks += markRun(r.frontText, box, "bold", "chest", undefined, 0.5, r.frontTextAngle === "diagonal-up" ? DIAGONAL : -DIAGONAL, (spec.hy - spec.ay) * 0.55);
+      } else marks += markRun(r.frontText, spec.text, "bold", "chest", r.frontTextAngle === "arch" ? 140 : undefined, 0.5);
+    }
     if (r.frontNumber !== undefined) marks += markRun(r.frontNumber, crestSvg !== undefined && r.cut === "basketball" ? { ...spec.number.front, y: spec.number.front.y + 8, h: spec.number.front.h - 14 } : spec.number.front, "black", "chest");
   } else {
     if (r.name !== undefined) marks += markRun(r.name, spec.name, "bold", "name", r.nameArch === "arched" ? 110 : undefined, 0.45);
     if (r.number !== undefined) marks += markRun(r.number, spec.number.back, "black", "number");
   }
-  if (r.patch !== "") {
+  if (r.patch !== "" && view === "front") {
     const p = spec.patch;
     const patchFill = r.trim;
     const letterInk = inkOn([patchFill], [r.body, r.trim2, BLACK, WHITE]);

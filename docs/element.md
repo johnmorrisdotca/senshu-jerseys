@@ -14,8 +14,8 @@ Every option of `renderJersey` is an attribute. The drawing is in an open shadow
 | --- | --- |
 | `cut`, `colors`, `body`, `trim`, `accent`, `number-fill`, `number-outline` | The shirt and its colours (`colors` is a comma list). |
 | `pattern`, `repeat`, `stripe-count`, `pattern-sleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping` | What it carries. |
-| `sleeve-stripes`, `hem-stripes`, `chest-band`, `chest-y`, `collar-color`, `sleeve-color`, `panels` | Bands: a number, or a list of width and colour pairs. |
-| `number`, `name`, `name-arch`, `front-text`, `front-number`, `patch`, `sleeve-numbers`, `crest` | What is written on it. |
+| `sleeve-stripes`, `hem-stripes`, `arm-stripes`, `cuffs`, `chest-band`, `chest-y`, `collar-color`, `sleeve-color`, `panels` | Bands: a number, or a list of width and colour pairs (`cuffs` is a length, or a length and a colour). |
+| `number`, `name`, `name-arch`, `front-text`, `front-text-angle` (`straight`, `arch`, `diagonal-up`, `diagonal-down`), `front-number`, `patch`, `sleeve-numbers`, `crest` | What is written on it. |
 | `view`, `look`, `size`, `language`, `title`, `description` | How it is drawn. |
 | `kit`, `pants`, `pants-trim`, `pants-bands`, `socks`, `socks-trim`, `socks-bands`, `helmet` | The whole uniform. |
 | `preset` | The id of a preset loaded with `usePresets`. |

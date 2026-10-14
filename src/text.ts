@@ -13,6 +13,10 @@ export interface RunOptions {
   tracking?: number;
   /** The radius of an arch (the run follows a rainbow curve); 0 or missing is straight. */
   arch?: number;
+  /** A slant in degrees: each letter stands upright, a step higher than the one before it for a positive angle (rising to the right), lower for a negative one. */
+  slant?: number;
+  /** The most the whole run may rise, from its lowest letter's foot to its highest letter's top (with a slant); it is scaled down to fit. */
+  maxHeight?: number;
 }
 
 /** One placed run: the path of the strokes (`d`) and their width (`sw`), or the system-text characters (`chars`). */
@@ -44,6 +48,8 @@ export function layout(text: string, cx: number, cy: number, o: RunOptions): Run
   const naturalH = glyphMode ? 90 + weight : 100;
   let k = o.height / naturalH;
   if (o.maxWidth !== undefined && natural * k > o.maxWidth) k = o.maxWidth / natural;
+  const tan = Math.tan(((o.slant ?? 0) * Math.PI) / 180);
+  if (tan !== 0 && o.maxHeight !== undefined) k = Math.min(k, o.maxHeight / (naturalH + (natural - (adv[0] as number) / 2 - (adv[adv.length - 1] as number) / 2) * Math.abs(tan)));
   const width = natural * k;
   const height = naturalH * k;
   const R = o.arch !== undefined && o.arch > 0 ? o.arch : 0;
@@ -55,7 +61,7 @@ export function layout(text: string, cx: number, cy: number, o: RunOptions): Run
     const mid = x + (w * k) / 2;
     // The point on the baseline the letter stands on, and how far the letter is turned.
     let px = cx + mid;
-    let py = cy + height / 2;
+    let py = cy + height / 2 - mid * tan;
     let rot = 0;
     if (R > 0) {
       const a = mid / R;

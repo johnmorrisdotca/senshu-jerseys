@@ -4,6 +4,7 @@ import { test } from "node:test";
 import * as S from "../src/index.ts";
 import { contrast, readColour } from "../src/colour.ts";
 import { inkFor } from "../src/jersey.ts";
+import { layout } from "../src/text.ts";
 import { resolve } from "../src/options.ts";
 import { wellFormed } from "./helpers.ts";
 
@@ -164,4 +165,90 @@ test("a lineup places a formation's players: the goalkeeper last, the forwards f
 test("two kits that are too alike are a clash", () => {
   assert.equal(S.kitClash({ colors: ["#c8102e"] }, { colors: ["#c8102f"] }), true);
   assert.equal(S.kitClash({ colors: ["#c8102e"] }, { colors: ["#ffffff"] }), false);
+});
+
+test("a cuff is the sleeve's end in a contrasting colour, over the stripes, and is checked", () => {
+  const plain = S.renderJersey({ cut: "hockey", colors: ["#ffffff", "#af1e2d"], sleeveStripes: 0 });
+  const cuffed = S.renderJersey({ cut: "hockey", colors: ["#ffffff", "#af1e2d"], sleeveStripes: 0, cuffs: [14, 1] });
+  assert.notEqual(plain, cuffed);
+  assert.match(cuffed, /fill="#af1e2d"/);
+  assert.equal(wellFormed(cuffed), null);
+  assert.equal(S.renderJersey({ cut: "hockey", colors: ["#ffffff", "#af1e2d"], sleeveStripes: 0, cuffs: 14 }), cuffed);
+  assert.equal(resolve({ cuffs: [14, 1] }).cuffs?.len, 14);
+  // A length or a colour that is not allowed is no cuff; a tank has no sleeves to end.
+  for (const bad of [0, 2, 500, -4, [10, 9], [10, 0], ["x"], "14", NaN]) assert.equal(resolve({ cuffs: bad as never }).cuffs, undefined, JSON.stringify(bad));
+  assert.equal(resolve({ cut: "basketball", cuffs: 10 }).cuffs, undefined);
+  // A second colour, and every cut and look draw one.
+  for (const cut of S.CUT_IDS) for (const look of S.LOOK_IDS) {
+    const svg = S.renderJersey({ cut, look, cuffs: [10, 2], colors: ["#1f3a8a", "#f4f0e4", "#c8102e"], view: "both" });
+    assert.equal(wellFormed(svg), null, `${cut} ${look}`);
+    assert.doesNotMatch(svg, /NaN|undefined|Infinity/);
+  }
+  const line = (cuffs?: number) => S.renderJersey({ cut: "soccer", look: "line", sleeveStripes: 0, cuffs });
+  assert.notEqual(line(10), line());
+});
+
+test("diagonal chest text steps letter by letter, up to the right or down to the right, and stays on the chest and escaped", () => {
+  for (const cut of S.CUT_IDS) {
+    const spec = S.CUTS[cut];
+    for (const angle of ["diagonal-up", "diagonal-down"] as const) {
+      const svg = S.renderJersey({ cut, frontText: "HOMETOWN", frontTextAngle: angle, view: "front" });
+      assert.equal(wellFormed(svg), null);
+      assert.doesNotMatch(svg, /NaN|undefined|Infinity/);
+      assert.notEqual(svg, S.renderJersey({ cut, frontText: "HOMETOWN", frontTextAngle: "straight", view: "front" }), `${cut} ${angle}`);
+    }
+    const up = S.renderJersey({ cut, frontText: "MMMMMMMMMMMMMM", frontTextAngle: "diagonal-up", look: "line", view: "front" });
+    const down = S.renderJersey({ cut, frontText: "MMMMMMMMMMMMMM", frontTextAngle: "diagonal-down", look: "line", view: "front" });
+    // The same word in the mirror image: the run's paths fit between the sleeves and above the hem.
+    for (const svg of [up, down]) {
+      const d = [...svg.matchAll(/<path d="(M[^"]*)" fill="none" stroke-linejoin="miter"/g)].map((m) => m[1] as string).sort((a, b) => b.length - a.length)[0] as string;
+      const nums = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+      const xs = nums.filter((_, i) => i % 2 === 0);
+      const ys = nums.filter((_, i) => i % 2 === 1);
+      assert.ok(Math.min(...xs) >= 100 - spec.wu && Math.max(...xs) <= 100 + spec.wu, `${cut}: x ${Math.min(...xs)} to ${Math.max(...xs)}`);
+      assert.ok(Math.min(...ys) > spec.ay - 10 && Math.max(...ys) < spec.hy, `${cut}: y ${Math.min(...ys)} to ${Math.max(...ys)}`);
+    }
+    assert.notEqual(up, down);
+  }
+  // A system-text run (Japanese): the second letter is higher than the first rising up, lower going down.
+  const rise = (slant: number) => layout("選手", 100, 100, { height: 20, slant }).chars.map((c) => c.y);
+  assert.ok((rise(30)[1] as number) < (rise(30)[0] as number));
+  assert.ok((rise(-30)[1] as number) > (rise(-30)[0] as number));
+  assert.equal(rise(0)[1], rise(0)[0]);
+  // The text is still cleaned and escaped.
+  const hostile = S.renderJersey({ frontText: `<script>alert(1)</script>"`, frontTextAngle: "diagonal-up" });
+  assert.doesNotMatch(hostile, /<script/);
+  assert.equal(wellFormed(hostile), null);
+  assert.equal(resolve({ frontTextAngle: "sideways" as never }).frontTextAngle, "straight");
+  assert.equal(resolve({ cut: "basketball" }).frontTextAngle, "arch");
+  assert.equal(resolve({ cut: "basketball", frontTextAngle: "straight" }).frontTextAngle, "straight");
+});
+
+test("the new options travel as attributes and as a query", () => {
+  const options = { cut: "hockey", cuffs: [14, 2], frontText: "HOMETOWN", frontTextAngle: "diagonal-down" } as const;
+  const attrs = S.attributesFromOptions(options);
+  assert.equal(attrs.cuffs, "14 2");
+  assert.equal(attrs["front-text-angle"], "diagonal-down");
+  const back = S.optionsFromAttributes((name) => attrs[name] ?? null);
+  assert.equal(S.renderJersey(back), S.renderJersey(options));
+  assert.equal(S.jerseyFromParams(S.jerseyToParams(options)).frontTextAngle, "diagonal-down");
+  assert.equal(S.optionsFromAttributes((n) => (n === "cuffs" ? "12" : null)).cuffs, 12);
+  assert.ok(S.OPTION_ATTRIBUTES.includes("cuffs") && S.OPTION_ATTRIBUTES.includes("front-text-angle"));
+  assert.deepEqual([...S.TEXT_ANGLE_IDS], ["straight", "arch", "diagonal-up", "diagonal-down"]);
+});
+
+test("a number may be red on royal blue when its white outline reads, and a patch is on the front only", () => {
+  const blue = { cut: "hockey", colors: ["#0038a8", "#ffffff", "#ce1126", "#ce1126", "#ffffff"], number: 9, view: "back" } as const;
+  const ink = inkFor(resolve(blue), [readColour("#0038a8") as never]);
+  assert.equal(ink.fill.join(), readColour("#ce1126")?.join());
+  assert.equal(ink.outline?.join(), readColour("#ffffff")?.join());
+  // Without an outline that reads, the old rule holds: the fill is replaced by one that reads.
+  const lone = inkFor(resolve({ colors: ["#0038a8", "#ffffff", "#ce1126", "#ce1126"] }), [readColour("#0038a8") as never]);
+  assert.ok(contrast(lone.fill, readColour("#0038a8") as never) >= 4.5);
+  const front = S.renderJersey({ cut: "hockey", patch: "A", view: "front" });
+  const back = S.renderJersey({ cut: "hockey", patch: "A", view: "back" });
+  assert.notEqual(front, S.renderJersey({ cut: "hockey", view: "front" }));
+  const ids = (svg: string): string => svg.replace(/sj[0-9a-z]+/g, "X");
+  // The back carries no patch: it is the same drawing as without one, apart from the ids.
+  assert.equal(ids(back), ids(S.renderJersey({ cut: "hockey", view: "back" })));
 });

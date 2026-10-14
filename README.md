@@ -58,7 +58,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 
 ## Features
 
-- **Seven cuts**: hockey (lace-up, V or crew collar; curved, square or full-arm yoke; chest band, hem and sleeve stripes; shoulder numbers; a C or A patch), baseball (button front, pullover or vest; pinstripes, piping, raglan sleeves; chest letters), basketball (a tank with a round, V or wishbone neck and side panels), football (wide shoulders, sleeve stripes, shoulder numbers), soccer, rugby and handball.
+- **Seven cuts**: hockey (lace-up, V or crew collar; curved, square or full-arm yoke; chest band, hem and sleeve stripes; upper-arm numbers; a C or A patch), baseball (button front, pullover or vest; pinstripes, piping, raglan sleeves; chest letters), basketball (a tank with a round, V or wishbone neck and side panels), football (wide shoulders, sleeve stripes, shoulder numbers), soccer, rugby and handball.
 - **Ten patterns**: solid, stripes, hoops, halves, quarters, sash, chevron, pinstripes, yoke and chest band; stripes and hoops take any repeat of widths and colours.
 - **Front, back, or both**, in three styles: `cloth` (soft folds, stitched numbers, a self-toned edge), `flat`, and `line` (one colour, legible at 16 pixels).
 - **Numbers and names that read**: each gets an ink with 4.5 to 1 contrast against what is behind it, and an outline over stripes. The letters are drawn here, as block strokes: no font file and no system font. A Japanese name is set as system text.
@@ -149,6 +149,29 @@ const svg = renderJersey({ cut: "hockey", colors: ["#af1e2d", "#ffffff", "#19216
 
 console.log(svg.includes("<title")); // true
 ```
+
+### Cuffs, diagonal text and wide arm bands
+
+`cuffs` is the sleeve's end in a contrasting colour: a length in drawing units, or `[length, colour]` with the colour `1` the trim, `2` the second trim or `3` the number's fill. A seam shows where the knit starts, and it is drawn over the sleeve's stripes. `frontTextAngle` sets how the chest text runs: `"straight"`, `"arch"` (the basketball default), `"diagonal-up"` (each letter a step higher than the last, rising to the right) or `"diagonal-down"`. The letters are stepped along the slant, upright, and fitted to the chest of whichever cut it is. A wide band with thin edges at the elbow, and a set of three colours, need no new option: they are `sleeveStripes` and `hemStripes` lists, where the first pair is the gap from the cuff.
+
+```js
+import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
+
+// Red tips: a white shirt with a red yoke and red cuffs 18 units long.
+const tips = renderJersey({ cut: "hockey", colors: ["#ffffff", "#af1e2d", "#192168"], pattern: "yoke", yoke: "curved", cuffs: [18, 1], sleeveStripes: 0 });
+// The caller's own word on a slant, rising to the right, and falling to the right.
+const up = renderJersey({ cut: "hockey", colors: ["#0038a8", "#ffffff", "#ce1126"], frontText: "HOMETOWN", frontTextAngle: "diagonal-up" });
+const down = renderJersey({ cut: "hockey", colors: ["#0038a8", "#ffffff", "#ce1126"], frontText: "HOMETOWN", frontTextAngle: "diagonal-down" });
+// A wide ice-blue band at the elbow with thin red edges (a gap of 20, an edge, the band, an edge), and the same at the hem.
+const band = renderJersey({ cut: "hockey", colors: ["#001628", "#99d9d9", "#e9072b"], sleeveStripes: [20, 0, 3, 2, 14, 1, 3, 2], hemStripes: [3, 0, 3, 2, 8, 1, 3, 2] });
+// A set of three: yellow, white and yellow, with the body showing between.
+const set = renderJersey({ cut: "hockey", colors: ["#c8102e", "#f1be48", "#ffffff"], sleeveStripes: [20, 0, 4, 1, 3, 0, 8, 2, 3, 0, 4, 1] });
+
+console.log(up !== down); // true
+console.log([tips, band, set].every((svg) => svg.startsWith("<svg"))); // true
+```
+
+The upper-arm number is `sleeveNumbers: true`: it sits where the cut puts the number on a sleeve (hockey: a third of the way down the arm; the other cuts: near the middle of it), turned to the sleeve's slant. A `patch` (`"C"` or `"A"`) is on the front only, on the wearer's left chest.
 
 ### Numbers and names that read
 
@@ -288,7 +311,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `usePresets`, `presetOf`, `presetOptions`, `loadedPresets`, `decode`, `defineLeague` | Load presets, find one, and read or write a preset's one-line spec. |
 | `embedCode`, `EMBED_KINDS`, `SITE`, `CDN` | The text that puts a jersey in a page: element, iframe, module, SVG or data address. |
 | `OPTION_ATTRIBUTES`, `attributesFromOptions`, `optionsFromAttributes`, `jerseyToParams`, `jerseyFromParams` | Options as attributes and as a query. |
-| `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `PATTERN_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
+| `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
 | `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES` | The helmets, their marks, and the banner shapes. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
@@ -296,7 +319,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 
 ### Options
 
-`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `sleeveStripes`, `hemStripes`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontNumber`, `patch`, `sleeveNumbers`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey in pixels (200 by default).
+`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey in pixels (200 by default).
 
 ## Theming
 
@@ -334,7 +357,7 @@ The colours and layouts are facts taken from the uniform sections of Wikipedia a
 ## Roadmap
 
 - More eras, and the real count of stripes where a source gives it.
-- Diagonal and checked patterns, argyle, and more than three colours in a band.
+- Checked patterns and argyle.
 - A cuff and a collar in a second colour for the tank cut.
 - Kit view for turning.
 

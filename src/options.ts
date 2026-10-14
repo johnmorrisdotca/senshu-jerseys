@@ -14,6 +14,8 @@ export const LOOK_IDS = ["cloth", "flat", "line"] as const;
 export type LookId = (typeof LOOK_IDS)[number];
 export const ARCH_IDS = ["arched", "straight"] as const;
 export type ArchId = (typeof ARCH_IDS)[number];
+export const TEXT_ANGLE_IDS = ["straight", "arch", "diagonal-up", "diagonal-down"] as const;
+export type TextAngleId = (typeof TEXT_ANGLE_IDS)[number];
 export const PATCH_IDS = ["", "C", "A"] as const;
 export type PatchId = (typeof PATCH_IDS)[number];
 export const LANGUAGE_IDS = ["en", "ja"] as const;
@@ -56,6 +58,11 @@ export interface JerseyOptions {
   chestBand?: boolean | Bands;
   /** Where the chest band starts, down from the top. */
   chestY?: number;
+  /**
+   * Contrasting sleeve ends, the Canadiens' red tips: a length in drawing units (3 to 48) alone, or `[length, colour]` with the colour 1 (the default) the trim, 2 the second trim or 3 the
+   * number's fill. A knit seam shows where the cuff starts. It is drawn over the sleeve's stripes, so the two can be used together.
+   */
+  cuffs?: number | readonly number[];
   /** The collar's colour: 1 the trim (the default), 0 the body, 2 the second trim. */
   collarColor?: 0 | 1 | 2;
   /** The sleeves' colour apart from the pattern: 0 body, 1 trim, 2 trim2. */
@@ -66,6 +73,11 @@ export interface JerseyOptions {
   name?: string;
   nameArch?: ArchId;
   frontText?: string;
+  /**
+   * How the chest text runs: `straight`, on an `arch` (the basketball default), or stepped on a slant, letter by letter, rising to the right (`diagonal-up`, the Rangers way) or to the left
+   * (`diagonal-down`). Straight is the default for every cut but basketball.
+   */
+  frontTextAngle?: TextAngleId;
   frontNumber?: boolean | string | number;
   patch?: PatchId;
   sleeveNumbers?: boolean;
@@ -113,6 +125,7 @@ export interface Resolved {
   sleeveBands: Bands;
   hemBands: Bands;
   chestBands: Bands;
+  cuffs?: { len: number; c: 1 | 2 | 3 };
   chestY?: number;
   collarColor: 0 | 1 | 2;
   sleeveColor?: 0 | 1 | 2;
@@ -121,6 +134,7 @@ export interface Resolved {
   name?: string;
   nameArch: ArchId;
   frontText?: string;
+  frontTextAngle: TextAngleId;
   frontNumber?: string;
   patch: PatchId;
   sleeveNumbers: boolean;
@@ -173,6 +187,13 @@ export function bandsOf(v: unknown): Bands | undefined {
   return out;
 }
 
+/** The cuffs from outside: a length alone, or a length and a colour index (1 to 3). */
+export function cuffsOf(v: unknown): { len: number; c: 1 | 2 | 3 } | undefined {
+  const [w, c = 1] = typeof v === "number" ? [v] : Array.isArray(v) ? v.map(Number) : [];
+  if (typeof w !== "number" || !Number.isFinite(w) || w < 3 || w > 48 || !(c === 1 || c === 2 || c === 3)) return undefined;
+  return { len: Math.round(w * 10) / 10, c };
+}
+
 /** Read the options: anything wrong is replaced by the default, never thrown. */
 export function resolve(options: JerseyOptions | undefined): Resolved {
   const o: JerseyOptions = options !== null && typeof options === "object" ? options : {};
@@ -219,6 +240,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     sleeveBands,
     hemBands,
     chestBands,
+    cuffs: sleeve === "none" ? undefined : cuffsOf(o.cuffs),
     chestY: typeof o.chestY === "number" && Number.isFinite(o.chestY) ? Math.max(40, Math.min(190, o.chestY)) : undefined,
     collarColor: idx(o.collarColor, 1),
     sleeveColor: o.sleeveColor === undefined ? undefined : idx(o.sleeveColor, 0),
@@ -227,6 +249,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     name: clean(o.name, 18)?.toUpperCase(),
     nameArch: pick(ARCH_IDS, o.nameArch, "arched"),
     frontText: clean(o.frontText, 14)?.toUpperCase(),
+    frontTextAngle: pick(TEXT_ANGLE_IDS, o.frontTextAngle, cut === "basketball" ? "arch" : "straight"),
     frontNumber: o.frontNumber === true ? digits(o.number, 2) : o.frontNumber === false || o.frontNumber === undefined ? undefined : digits(o.frontNumber, 2),
     patch: pick(PATCH_IDS, o.patch, ""),
     sleeveNumbers: o.sleeveNumbers === true,

@@ -57,6 +57,7 @@ export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
       case "ps": o.patternSleeves = v !== "0"; break;
       case "ss": o.sleeveStripes = stripes(v); break;
       case "hs": o.hemStripes = stripes(v); break;
+      case "cf": o.cuffs = dotted(v).length === 1 ? dotted(v)[0] : dotted(v); break;
       case "cb": o.chestBand = v === "1" ? true : bandsOf(dotted(v)); break;
       case "cy": o.chestY = Number(v); break;
       case "y": o.yoke = YOKE_CODES[v as keyof typeof YOKE_CODES]; break;

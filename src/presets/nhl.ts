@@ -45,8 +45,8 @@ export const NHL = defineLeague(
     // https://en.wikipedia.org/wiki/Montreal_Canadiens#Team_identity
     // red: blue-and-white stripe on each arm, across the chest and at the waist; white: red yoke, red cuffs, red-blue-red waist stripe
     ["montreal", "1967-", "red", "af1e2d fff 192168 fff 192168 ss=4.0.5.1.10.2.5.1 hs=4.0.5.1.10.2.5.1 cb=3.1.6.2.3.1 cy=104 pt=192168 sk=af1e2d skt=192168 sb=6.0.3.2.6.1.3.2"],
-    // unsure: number colours on the white jersey
-    ["montreal", "1967-", "white", "fff af1e2d 192168 192168 af1e2d ss=14.1 hs=4.0.5.1.8.2.5.1 p=y y=c pa=1 pt=192168 sk=af1e2d"],
+    // unsure: number colours on the white jersey; the red cuffs are `cf`, not a sleeve stripe
+    ["montreal", "1967-", "white", "fff af1e2d 192168 192168 af1e2d ss=0 cf=18.1 hs=4.0.5.1.8.2.5.1 p=y y=c pa=1 co=l pt=192168 sk=af1e2d"],
     // Reverse Retro 2020-21: the red template with blue as the base; Reverse Retro 2022-23: light blue base (unsure: the exact light blue)
     ["montreal", "2020-2021", "alt", "192168 fff af1e2d fff af1e2d ss=4.0.5.1.10.2.5.1 hs=4.0.5.1.10.2.5.1 cb=3.1.6.2.3.1 cy=104 pt=af1e2d"],
     ["montreal", "2022-2023", "alt", "9bcbeb fff 192168 fff 192168 ss=4.0.5.1.10.2.5.1 hs=4.0.5.1.10.2.5.1 cb=3.1.6.2.3.1 cy=104"],
@@ -101,8 +101,9 @@ export const NHL = defineLeague(
     ["rangers", "1967-1975", "white", "fff 0038a8 ce1126 0038a8 ce1126 ss=4.0.3.2.8.1.3.2 hs=4.0.3.2.8.1.3.2 co=v pt=ce1126"],
     // 1978-97: bolder arm and waist stripes, red-white-red V neck; unsure: the exact widths
     ["rangers", "1978-1997", "blue", "0038a8 fff ce1126 fff ce1126 ss=4.0.5.2.3.0.5.1 hs=4.0.5.2.3.0.5.1 co=v cc=2 pt=ce1126"],
-    ["rangers", "1997-", "blue", "0038a8 fff ce1126 fff ce1126 ss=4.0.3.1.8.2.3.1 hs=4.0.3.1.8.2.3.1 co=l pt=ce1126"],
-    ["rangers", "1997-", "white", "fff 0038a8 ce1126 0038a8 ce1126 ss=4.0.3.2.8.1.3.2 hs=4.0.3.2.8.1.3.2 co=l pt=ce1126"],
+    // 1997-: the stripes sit at the elbow (`ss` starts with a gap of 24 from the cuff); red numbers with white trim on the blue jersey. The diagonal team word on the chest is a wordmark, so it is not drawn
+    ["rangers", "1997-", "blue", "0038a8 fff ce1126 ce1126 fff ss=24.0.4.1.10.2.4.1 hs=4.0.3.1.8.2.3.1 co=l pt=ce1126"],
+    ["rangers", "1997-", "white", "fff 0038a8 ce1126 0038a8 ce1126 ss=24.0.4.2.10.1.4.2 hs=4.0.3.2.8.1.3.2 co=l pt=ce1126"],
     // 1996-2007 navy alternate; unsure: stripes
     ["rangers", "1996-2007", "third", "001a4d ce1126 c0c0c0 fff ce1126 ss=4.0.5.1.7.2.5.1 hs=4.0.5.1.7.2.5.1 co=v pt=001a4d"],
     // 2012 Winter Classic: cream with blue and red stripes
@@ -258,7 +259,9 @@ export const NHL = defineLeague(
     // 1980-94 (and from 2020): white with red shoulders and red-and-yellow stripes; red with yellow and white stripes
     ["flames", "1980-1994", "white", "fff c8102e f1be48 c8102e f1be48 ss=4.0.3.2.8.1.3.2 hs=4.0.3.2.8.1.3.2 p=y y=c pa=1 co=v pt=c8102e he=c8102e"],
     ["flames", "1980-1994", "red", "c8102e f1be48 fff f1be48 fff ss=4.0.3.2.8.1.3.2 hs=4.0.3.2.8.1.3.2 co=v pt=c8102e he=c8102e"],
-    ["flames", "2020-", "home", "c8102e f1be48 fff f1be48 fff ss=4.0.3.2.8.1.3.2 hs=4.0.3.2.8.1.3.2 co=l pt=c8102e he=c8102e"],
+    // 2020-: a set of yellow, white and red (the body showing between) at the elbow and at the hem; white numbers with yellow trim. unsure: the away is the 1980 white with the new stripes
+    ["flames", "2020-", "home", "c8102e f1be48 fff fff f1be48 ss=20.0.4.1.3.0.8.2.3.0.4.1 hs=4.0.4.1.3.0.8.2.3.0.4.1 co=l pt=c8102e he=c8102e"],
+    ["flames", "2020-", "away", "fff c8102e f1be48 c8102e f1be48 p=y y=c pa=1 ss=20.0.4.2.3.0.8.1.3.0.4.2 hs=4.0.4.2.3.0.8.1.3.0.4.2 co=l pt=c8102e he=c8102e"],
     // 1994-2000: red and white with black and yellow stripes (unsure: stripe order)
     ["flames", "1994-2000", "red", "c8102e 000 f1be48 fff 000 ss=4.0.5.1.5.2.5.1 hs=4.0.5.1.5.2.5.1 co=v pt=c8102e he=c8102e"],
     ["flames", "1994-2000", "white", "fff 000 f1be48 c8102e 000 ss=4.0.5.1.5.2.5.1 hs=4.0.5.1.5.2.5.1 co=v pt=c8102e he=c8102e"],
@@ -296,8 +299,9 @@ export const NHL = defineLeague(
     ["stars", "2007-2013", "black", "000 ffc72c 006847 fff 006847 ss=4.0.5.2.7.1.5.2 hs=4.0.5.2.7.1.5.2 co=v pt=000"],
     ["stars", "2007-2013", "white", "fff 006847 ffc72c 006847 ffc72c ss=4.0.5.2.7.1.5.2 hs=4.0.5.2.7.1.5.2 co=v pt=000"],
     // 2013-: Victory Green home with black and white stripes; white away with a green yoke
-    ["stars", "2013-", "home", "006847 000 fff fff 000 ss=4.0.5.1.7.2.5.1 hs=4.0.5.1.7.2.5.1 co=l pt=006847 he=006847"],
-    ["stars", "2013-", "away", "fff 006847 000 006847 000 p=y y=c pa=1 ss=4.0.5.2.7.1.5.2 hs=4.0.5.2.7.1.5.2 co=l pt=006847 he=006847"],
+    // black and white stripe sets (black, white, black) at the elbow and the hem; white numbers with black trim
+    ["stars", "2013-", "home", "006847 000 fff fff 000 ss=20.0.5.1.7.2.5.1 hs=4.0.5.1.7.2.5.1 co=l pt=006847 he=006847"],
+    ["stars", "2013-", "away", "fff 006847 000 006847 000 p=y y=c pa=1 ss=20.0.5.2.7.1.5.2 hs=4.0.5.2.7.1.5.2 co=l pt=006847 he=006847"],
 
     // https://en.wikipedia.org/wiki/Colorado_Avalanche
     // 1995-2007: burgundy, steel blue, black and silver. unsure: the stripes (the curved mountain lines are drawn as plain stripes)
@@ -424,9 +428,10 @@ export const NHL = defineLeague(
 
     // https://en.wikipedia.org/wiki/Seattle_Kraken#Logo_and_uniforms
     // 2021-: deep sea blue with ice blue and boundless blue; unsure: the stripe layout
-    ["kraken", "2021-", "home", "001628 99d9d9 355464 fff 99d9d9 ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
+    // home: a wide ice-blue band at the elbow with thin red edges (`ss` is a gap of 20, red 3, ice 14, red 3), and an ice-blue and red hem stripe; ice-blue numbers (the outline given is the fill itself, so none is drawn)
+    ["kraken", "2021-", "home", "001628 99d9d9 e9072b 99d9d9 99d9d9 ss=20.0.3.2.14.1.3.2 hs=3.0.3.2.8.1.3.2 co=l pt=001628"],
     // away is white with deep sea blue and ice blue stripes (unsure: order); Reverse Retro 2022-23: ice blue base with deep sea blue stripes
-    ["kraken", "2021-", "away", "fff 001628 99d9d9 001628 99d9d9 ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
+    ["kraken", "2021-", "away", "fff 001628 99d9d9 001628 99d9d9 ss=20.0.3.2.14.1.3.2 hs=3.0.3.2.8.1.3.2 co=l pt=001628"],
     ["kraken", "2022-2023", "alt", "99d9d9 001628 355464 001628 - ss=4.0.5.1.5.2 hs=4.0.5.1.5.2 co=l pt=001628"],
   ],
 );

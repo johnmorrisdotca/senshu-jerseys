@@ -138,12 +138,14 @@ function buildControls() {
   add(row("sleeveStripes", () => seg("sleeve-stripes", ["auto", "0", "1", "2", "3"], (v) => (v === "auto" ? say("auto") : v))));
   add(row("hemStripes", () => seg("hem-stripes", ["auto", "0", "1", "2", "3"], (v) => (v === "auto" ? say("auto") : v))));
   add(row("chestBand", () => toggle("chest-band", say("on"))));
+  add(row("cuffs", () => seg("cuffs", ["auto", "10", "18", "26"], (v) => (v === "auto" ? say("off") : v))));
 
   group();
   add(row("number", () => text("number", { inputmode: "numeric", maxlength: "2", placeholder: "23" })));
   add(row("nameField", () => text("name", { maxlength: "18", placeholder: "Morris" })));
   add(row("nameArch", () => seg("name-arch", ["arched", "straight"], (v) => say(`arch_${v}`))));
   add(row("frontText", () => text("front-text", { maxlength: "14" })));
+  add(row("frontTextAngle", () => seg("front-text-angle", ["auto", "straight", "arch", "diagonal-up", "diagonal-down"], (v) => (v === "auto" ? say("auto") : say(`textAngle_${v}`)))));
   add(row("frontNumber", () => toggle("front-number", say("on"))));
   add(row("patch", () => seg("patch", ["none", "C", "A"], (v) => (v === "none" ? say("patch_none") : v)), () => true));
   add(row("sleeveNumbers", () => toggle("sleeve-numbers", say("on"))));
@@ -189,9 +191,10 @@ function syncControls() {
   const hideFor = (label, hidden) => rows.find((r) => r.label === label)?.wrap.toggleAttribute("hidden", hidden);
   hideFor("sleeve", cut === "basketball");
   hideFor("sleeveNumbers", cut === "basketball");
+  hideFor("cuffs", cut === "basketball");
   for (const box of document.querySelectorAll("#controls .fam-seg")) {
     const key = box.dataset.key;
-    const current = key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
+    const current = key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
     for (const b of box.children) {
       b.setAttribute("aria-pressed", String(b.dataset.value === current));
       if (key === "sleeve") b.hidden = b.dataset.value !== "auto" && !sleevesFor(cut).includes(b.dataset.value);
