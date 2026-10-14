@@ -12,7 +12,7 @@ A preset (`src/presets/`) records a team's uniform of one era as colours and str
 | Wikidata | Team names and colour values | CC0 |
 | Clubs' own published colour codes and brand pages | Colour values | Facts |
 
-No picture is taken from Wikimedia Commons or anywhere else: uniform images are looked at only as a reference, never traced or copied.
+No picture is taken from Wikimedia Commons or anywhere else: uniform images and diagrams (including the kit diagrams on Wikimedia Commons and the era pages of nhluniforms.com, which the NHL and national hockey presets were checked against) are looked at only as a reference, never traced or copied.
 
 **What a preset does not hold.** No crest, logo, monogram, wordmark, sponsor mark or manufacturer mark of a team, a club, a league or a federation, whether the team plays today or is defunct (the marks of defunct teams are still owned and sold). A jersey whose identity is mostly its chest mark still reads by its colours and stripes, and a caller may add their own `crest`. Team names appear as names, to say which uniform is meant; they are the property of their owners, and nothing here is endorsed by or affiliated with any team or league.
 

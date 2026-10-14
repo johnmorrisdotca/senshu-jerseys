@@ -149,7 +149,12 @@ function buildControls() {
   add(row("sleeveNumbers", () => toggle("sleeve-numbers", say("on"))));
   add(row("crest", () => seg("crest", ["none", "ring", "star", "diamond"], (v) => say(`crest_${v}`), { onPick: (v) => setAttr("crest", v === "none" ? null : crestSvg(v)) })));
   add(row("kit", () => toggle("kit", say("on"))));
-  for (const r of rows) r.wrap.firstChild.textContent = say(r.label);
+  for (const r of rows) {
+    r.wrap.firstChild.textContent = say(r.label);
+    // The label is a word beside the control: the control says it too, for a screen reader.
+    for (const c of r.wrap.querySelectorAll("select, input[type=text], .fam-seg")) if (!c.hasAttribute("aria-label")) c.setAttribute("aria-label", say(r.label));
+    for (const c of r.wrap.querySelectorAll("button[data-key]:not([data-value])")) c.setAttribute("aria-label", say(r.label));
+  }
   // The seg for the patch: "none" is no attribute.
   const patch = host.querySelector('[data-key="patch"]');
   patch.onclick = null;

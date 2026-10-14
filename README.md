@@ -1,7 +1,7 @@
 <h1 align="center">Senshu Jerseys <sub>選手</sub></h1>
 
 <p align="center"><strong>Sports jerseys, sweaters and kits as SVG strings, front and back, with optional 2.5D turning.</strong><br>
-Hockey, baseball, basketball, football, soccer, rugby and handball cuts in stripes, hoops, halves and pinstripes; caps, helmets and retired-number banners; numbers and names drawn as vectors, so they look the same everywhere; and more than a thousand presets of real teams' colours and stripes. Each one is a function that returns SVG. MIT, with no dependencies.</p>
+Hockey, baseball, basketball, football, soccer, rugby and handball cuts in stripes, hoops, halves and pinstripes; caps, helmets and retired-number banners; numbers and names drawn as vectors, so they look the same everywhere; and nearly fifteen hundred presets of real teams' colours and stripes. Each one is a function that returns SVG. MIT, with no dependencies.</p>
 
 <p align="center">
   <a href="https://github.com/johnmorrisdotca/senshu-jerseys/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/johnmorrisdotca/senshu-jerseys/actions/workflows/ci.yml/badge.svg"></a>
@@ -65,7 +65,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Caps, helmets and banners**: a solid or two-tone cap with a contrast brim; football, hockey and batting helmets; retired-number banners as a rectangle, a pennant or a shield, with an optional small sweater.
 - **A matchup and a lineup**: two kits side by side that say whether they clash; a formation of shirts, `4-4-2`, with names and numbers.
 - **Whole uniforms**: the pants or shorts, the socks and the helmet that go with the jersey.
-- **Presets**: more than a thousand eras of the NHL and its defunct teams, MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
+- **Presets**: nearly fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
 - **Turning** (`./turn`): drag, arrow keys, Home and Space, or an automatic turn that waits for you.
 - **A custom element** (`./element`) and an **embed page** for sites that cannot run script.
 - English and Japanese labels. TypeScript types. No dependencies.
@@ -140,7 +140,7 @@ const yoke = renderJersey({ cut: "hockey", colors: ["#1f3a8a", "#f4f0e4"], yoke:
 console.log([hoops, stripes, sash, yoke].every((svg) => svg.startsWith("<svg"))); // true
 ```
 
-Sleeve, hem and chest bands are lists of numbers read in pairs: a width in drawing units and a colour (`0` the body, `1` the trim, `2` the second trim), from the edge inward. `[4, 0, 3, 2, 6, 1, 3, 2]` is a gap of 4, a line of the second trim, a band of the trim, a line of the second trim.
+Sleeve, hem and chest bands are lists of numbers read in pairs: a width in drawing units and a colour (`0` the body, `1` the trim, `2` the second trim, `3` the number's fill, the fourth colour), from the edge inward. `[4, 0, 3, 2, 6, 1, 3, 2]` is a gap of 4, a line of the second trim, a band of the trim, a line of the second trim.
 
 ```js
 import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
@@ -327,7 +327,7 @@ The package's own words (cut and pattern names, accessible titles) are in Englis
 
 ## Presets
 
-More than a thousand uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
+Nearly fifteen hundred uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
 
 The colours and layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes, and recorded as data here; no picture is copied. Treat them as a first reading, not a proof: where a source gave only colour names the layout is the plainest one that fits, and a row that could not be confirmed is marked `unsure` in its source. Corrections with a source are welcome.
 
