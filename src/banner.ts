@@ -27,6 +27,7 @@ export interface BannerOptions {
   title?: string;
 }
 
+
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T => (typeof v === "string" && (list as readonly string[]).includes(v) ? (v as T) : fallback);
 
 export function renderBanner(options?: BannerOptions): string {
@@ -78,8 +79,14 @@ export function renderBanner(options?: BannerOptions): string {
     body += `<path d="${OUT}" fill="url(#${uid}g)"/>`;
   }
   body += `<path d="${OUT}" fill="none" stroke="${edge}" stroke-width="${line ? 6 : 1.6}" stroke-linejoin="round"/>`;
-  // What is written on it.
-  const zone = shape === "pennant" ? { nx: 100, ny: 80, nh: 52, nw: 56, namey: 122, nameh: 10, namew: 62, yy: 140, yh: 8, yw: 52 } : { nx: 100, ny: sweaterOpts === undefined ? 112 : 158, nh: sweaterOpts === undefined ? 84 : 56, nw: 82, namey: sweaterOpts === undefined ? 180 : 196, nameh: 14, namew: 104, yy: sweaterOpts === undefined ? 202 : 214, yh: 10, yw: 90 };
+  // What is written on it. Every line sits inside the inner line (`IN`) with clear space round it, and the widest it may be is what the cloth leaves at its lower edge: the pennant and the shield narrow
+  // as they go down, and the rectangle ends at the notch's apex (y = 214), so its lines are stacked above that. A longer name or run of years is made smaller, not longer. `test/banner.test.ts` measures it.
+  const bare = sweaterOpts === undefined;
+  const zone = shape === "pennant"
+    ? { nx: 100, ny: 78, nh: 50, nw: 54, namey: 117, nameh: 10, namew: 49, yy: 132, yh: 8, yw: 41 }
+    : shape === "shield"
+      ? { nx: 100, ny: bare ? 106 : 140, nh: bare ? 80 : 52, nw: 82, namey: bare ? 170 : 177, nameh: bare ? 14 : 13, namew: bare ? 88 : 80, yy: bare ? 192 : 191, yh: bare ? 10 : 9, yw: 66 }
+      : { nx: 100, ny: bare ? 112 : 144, nh: bare ? 84 : 56, nw: 82, namey: bare ? 176 : 185, nameh: bare ? 14 : 13, namew: 104, yy: bare ? 197 : 200, yh: bare ? 10 : 9, yw: 90 };
   const mark = (text: string, cx: number, cy: number, h: number, w: number, weight: "bold" | "black"): string => {
     const run = layout(text, cx, cy, { height: h, maxWidth: w, weight, tracking: 0.4 });
     if (line) return drawRun(run, "currentColor", undefined, undefined);

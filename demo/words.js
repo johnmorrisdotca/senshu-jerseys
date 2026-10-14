@@ -76,7 +76,7 @@ export const WORDS = {
     frontText: "胸の文字", frontTextAngle: "文字の形", textAngle_straight: "まっすぐ", textAngle_arch: "アーチ", "textAngle_diagonal-up": "右上がり", "textAngle_diagonal-down": "右下がり", cuffs: "袖口", frontNumber: "胸の番号", patch: "パッチ", patch_none: "なし",
     armbands: "腕章", pocket: "胸ポケット", badge: "バッジの位置", badge_none: "なし", badge_round: "丸", badge_shield: "盾型", badge_square: "四角", protector: "プロテクター", sleeveNumbers: "袖の番号", sleeveStripes: "袖のライン", hemStripes: "裾のライン", chestBand: "胸の横帯", kit: "ユニフォーム一式", crest: "エンブレム", crest_none: "なし", crest_ring: "輪", crest_star: "星", crest_diamond: "ひし形",
     on: "あり", off: "なし",
-    turn: "回転", angle: "角度", background: "背景", backgroundNone: "なし", backgroundHint: "ステージの後ろに敷く絵です。プレビュー専用で、パッケージが描くジャージは変わりません。", play: "自動で回す", pause: "一時停止", front: "正面に戻す", turnBoth: "両面を同時に表示しています。回すには「前」か「後ろ」を選んでください。",
+    turn: "回転", angle: "角度", background: "背景", backgroundNone: "なし", backgroundHint: "ステージの後ろに表示する画像です。プレビュー専用で、パッケージが描くジャージには影響しません。", play: "自動で回す", pause: "一時停止", front: "正面に戻す", turnBoth: "両面を同時に表示しています。回すには「前」か「後ろ」を選んでください。",
     wallTitle: "ユニフォーム一覧",
     wallText: "すべてのプリセットをポスターのように並べました。リーグと年代で絞り込み、タップで試せます。色と縞だけで、紋章・ロゴ・ワードマークは描いていません。",
     league: "リーグ", allLeagues: "すべて", era: "年代", allEras: "すべて", search: "検索", searchHint: "チーム名か年", wallCount: "{total}件中{n}件", wallMore: "さらに{n}件を表示", wallShown: "{n}件を表示中", wallLoading: "プリセットを読み込み中…", tryThis: "これを試す",
