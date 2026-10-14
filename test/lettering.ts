@@ -85,15 +85,73 @@ export function leastRoom(svg: string, outline: readonly P[]): number {
   return least;
 }
 
-/**
- * The seam of a two-tone side view's front panel, as the left side of a polygon that runs on to the right (the crown's own edge is `outlineOf`'s): the panel is drawn as its top, its edge down to the
- * foot, a straight run left along the foot (`H`) and the seam back up to the top, so the seam is what follows that run.
- */
-export function seamOf(svg: string): P[] {
-  const m = /<g clip-path="url\(#[^")]*d\)"><path d="([^"]+H[^"]+)" fill="#/.exec(svg);
-  if (m === null) throw new Error("no front panel");
-  const pts = pathPoints(m[1] as string);
-  const at = pts.findIndex((p, i) => i > 0 && p[1] === (pts[i - 1] as P)[1]);
-  const seam = pts.slice(at);
-  return [...seam, [400, (seam[seam.length - 1] as P)[1]], [400, (seam[0] as P)[1]]];
+/** The front panel of a two-tone cap, as it is drawn (clipped by the crown): the path of the clipped group that follows the crown's clip path. */
+export function panelOf(svg: string): P[] | undefined {
+  const m = /<g clip-path="url\(#[^")]*d\)"><path d="([^"]+)" fill="#/.exec(svg);
+  return m === null ? undefined : pathPoints(m[1] as string);
+}
+
+export interface Lettering {
+  /** The colour of the letters' fill, and of their outline (the widest stroke under it, or a system-text halo), when they have one. */
+  fill: string;
+  outline: string | undefined;
+  /** The points of the letters' centre lines (or the corners of a text character's box) with the radius of the fill's own stroke, in the drawing's units. */
+  discs: { at: P; r: number }[];
+}
+
+/** The runs of lettering of a cap or helmet: for each, its fill and outline colour and where it lies. */
+export function letteringOf(svg: string): Lettering[] {
+  const runs: Lettering[] = [];
+  const walk = (n: Node, m: Matrix): void => {
+    const here = mul(m, transformOf(n.attrs["transform"]));
+    if (n.tag === "defs" || n.tag === "clipPath") return;
+    if (n.tag === "path" && n.attrs["stroke-linecap"] === "butt" && n.attrs["fill"] === "none") {
+      const d = n.attrs["d"] ?? "";
+      const stroke = n.attrs["stroke"] ?? "";
+      const width = Number(n.attrs["stroke-width"] ?? 0);
+      const last = runs[runs.length - 1];
+      const same = last !== undefined && (last as Lettering & { d?: string }).d === d;
+      if (same && last !== undefined) {
+        // The fill drawn over an outline of the same centre line.
+        (last as Lettering & { d?: string }).d = d;
+        last.outline = last.fill;
+        last.fill = stroke;
+        for (const disc of last.discs) disc.r = (width / 2) * scaleOf(here);
+      } else {
+        const discs: { at: P; r: number }[] = [];
+        for (const sub of d.split(/(?=M)/)) {
+          const q = pathPoints(sub);
+          for (let i = 0; i < q.length; i++) {
+            discs.push({ at: apply(here, q[i] as P), r: (width / 2) * scaleOf(here) });
+            const nx = q[i + 1];
+            if (nx !== undefined) for (let k = 1; k < 8; k++) discs.push({ at: apply(here, [(q[i] as P)[0] + ((nx[0] - (q[i] as P)[0]) * k) / 8, (q[i] as P)[1] + ((nx[1] - (q[i] as P)[1]) * k) / 8]), r: (width / 2) * scaleOf(here) });
+          }
+        }
+        const run: Lettering & { d?: string } = { fill: stroke, outline: undefined, discs, d };
+        runs.push(run);
+      }
+    } else if (n.tag === "text") {
+      const size = Number(n.attrs["font-size"] ?? 0);
+      const whole = here;
+      const run: Lettering = { fill: n.attrs["fill"] ?? "", outline: n.attrs["stroke"], discs: [] };
+      for (const [x, y] of [[-0.45, -0.8], [0.45, -0.8], [-0.45, 0.05], [0.45, 0.05], [0, -0.4]] as const) run.discs.push({ at: apply(whole, [x * size, y * size]), r: 0 });
+      runs.push(run);
+    }
+    for (const c of n.children) walk(c, here);
+  };
+  walk(parse(svg).children[0] as Node, IDENTITY);
+  return runs;
+}
+
+/** Which of a cap's colours a run of lettering lies over: the crown's (anywhere on the crown outside the front panel) and the panel's, by the disc of each point. */
+export function colourOver(run: Lettering, crown: readonly P[], panel: readonly P[] | undefined, colours: { crown: string; panel: string }): Set<string> {
+  const over = new Set<string>();
+  for (const { at, r } of run.discs) {
+    const inPanel = panel !== undefined && insidePolygon(panel, at);
+    const nearPanel = panel !== undefined && edgeDistance(panel, at) < r;
+    if (inPanel || nearPanel) over.add(colours.panel);
+    if (!inPanel || nearPanel) over.add(colours.crown);
+  }
+  void crown;
+  return over;
 }

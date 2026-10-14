@@ -8,7 +8,8 @@ All notable changes to this project are written here. The format follows
 
 ### Fixed
 
-- **The letters on a cap seen from the side are whole.** They ran off the edge of the crown ("CAN" read "CA", "USA" read "US"). They are now turned away with the front panel, narrowed to just over half and set in the middle of the panel, clear of the seam and of the crown's edge, for one to three letters and for kanji. The front view is unchanged.
+- **The letters on a cap seen from the side are whole.** They ran off the edge of the crown ("CAN" read "CA", "USA" read "US"). They are now turned away with the front panel, narrowed to just over half and set in the middle of the panel, clear of the seam and of the crown's edge, for one to three letters and for kanji. 
+- **The letters on a two-tone cap seen from the front read on both colours.** The front panel is narrower than the letters, so "CAN" lost its "C" against a white panel and "USA" and "JPN" ran across the seam. The letters now have an outline in the other colour (a real cap's lettering has one), chosen so that the fill or the outline has at least 4.5 to 1 against the panel and the crown both. A one-colour cap is unchanged. On the side view the letters were also set lower and a little smaller, so they stay on the front panel and clear of its far edge.
 - The cap and helmet pictures in the README are made again.
 
 ### Changed

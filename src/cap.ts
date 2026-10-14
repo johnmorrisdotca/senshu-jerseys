@@ -1,5 +1,5 @@
 // `renderCap`: a team cap, front or side: a solid crown or a two-tone one with a contrasting front panel, a brim in its own colour, and one to three letters.
-import { BLACK, WHITE, clean, hashOf, hexOf, inkOn, lum, readColour, shade, type Rgb } from "./colour.ts";
+import { BLACK, WHITE, clean, contrast, hashOf, hexOf, inkOn, lum, readColour, shade, type Rgb } from "./colour.ts";
 import { TITLE_WORDS } from "./names.ts";
 import { LANGUAGE_IDS, LOOK_IDS, type LanguageId, type LookId } from "./options.ts";
 import { wrapSvg } from "./svg.ts";
@@ -46,10 +46,29 @@ export function capParts(options?: CapOptions): { id: string; defs: string; body
   let defs = "";
   const W = 200;
   const H = 170;
-  const letters = (cx: number, cy: number, h: number, maxW: number, ground: Rgb): string => {
+  const letters = (cx: number, cy: number, h: number, maxW: number, grounds: readonly Rgb[]): string => {
     if (initials === undefined || initials === "") return "";
     const run = layout(initials, cx, cy, { height: h, maxWidth: maxW, weight: "black", tracking: 0.35 });
     if (line) return drawRun(run, "currentColor", undefined, undefined);
+    const ground = grounds[0] as Rgb;
+    if (grounds.length > 1) {
+      // Letters that run over two colours (the front panel and the crown beside it) read on both: the first fill and outline that give 4.5 to 1 against each colour by one or the other (the way a
+      // real cap's letters have an outline in the other colour), else the pair that does best.
+      const reading = (a: Rgb, b: Rgb): number => Math.min(...grounds.map((g) => Math.max(contrast(a, g), contrast(b, g))));
+      let best: [Rgb, Rgb] | undefined;
+      let score = 0;
+      for (const a of [crown, front, WHITE, BLACK]) {
+        for (const b of [BLACK, WHITE, crown, front]) {
+          const r = contrast(a, b) >= 3 ? reading(a, b) : 0;
+          if (r > score + 0.01 && score < 4.5) {
+            best = [a, b];
+            score = r;
+          }
+        }
+      }
+      const [a, b] = best ?? [WHITE, BLACK];
+      return drawRun(run, hx(a), { colour: hx(b), width: 1.8 }, undefined);
+    }
     const ink = inkOn([ground], [front === ground ? undefined : front, crown, WHITE, BLACK]);
     const outline = inkOn([ink], [BLACK, WHITE], 3);
     return drawRun(run, hx(ink), lum(ground) > 0.25 && lum(ink) > 0.5 ? { colour: hx(outline), width: 1.2 } : undefined, undefined);
@@ -72,7 +91,7 @@ export function capParts(options?: CapOptions): { id: string; defs: string; body
     const brimPath = "M18 112C40 148 160 148 182 112C160 124 40 124 18 112Z";
     body += `<path d="${brimPath}" ${fill(brim)} stroke="${edgeOf(brim)}" stroke-width="${sw}" stroke-linejoin="round"/>`;
     if (cloth) body += `<path d="M30 124C60 140 140 140 170 124" fill="none" stroke="#000" stroke-opacity=".16" stroke-width="5" stroke-linecap="round"/>`;
-    body += letters(100, 74, 40, 56, two ? front : crown);
+    body += letters(100, 74, 40, 56, two ? [front, crown] : [crown]);
   } else {
     // Side, facing right: the dome, a seam, the button and the brim jutting out.
     const dome = "M26 110C26 54 56 24 98 24C132 24 150 46 154 76L160 110Z";
@@ -89,8 +108,8 @@ export function capParts(options?: CapOptions): { id: string; defs: string; body
     body += `<path d="M22 110L160 110C176 106 190 110 196 120C176 126 150 124 130 120L22 120Z" ${fill(brim)} stroke="${edgeOf(brim)}" stroke-width="${sw}" stroke-linejoin="round"/>`;
     if (cloth) body += `<path d="M30 118H184" fill="none" stroke="#000" stroke-opacity=".14" stroke-width="3"/>`;
     // The front panel is turned away from the eye: its letters are the front view's, narrowed to just over half about the middle of the panel, so that they lie on it, whole, short of the edge.
-    const mark = letters(132, 74, 28, 50, two ? front : crown);
-    if (mark !== "") body += `<g transform="translate(132 0) scale(.56 1) translate(-132 0)">${mark}</g>`;
+    const mark = letters(130, 80, 24, 46, [two ? front : crown]);
+    if (mark !== "") body += `<g transform="translate(130 0) scale(.56 1) translate(-130 0)">${mark}</g>`;
   }
   const w = TITLE_WORDS[language];
   const title = clean(o.title, 120) ?? (language === "ja" ? `${w.cap}${initials === undefined ? "" : `（${initials}）`}` : `${w.cap}${initials === undefined ? "" : ` ${initials}`}`);
