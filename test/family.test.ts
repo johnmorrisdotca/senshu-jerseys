@@ -1,9 +1,5 @@
 // family.test.ts: what this package holds the same way as every package of the family: the shared template and the README writer, the one list of the family, and the README
 // block written from it. Changing a shared file means changing it in every repository at once, with the new hash recorded here.
-//
-// THIS COPY OF THE TEMPLATE IS AHEAD OF THE FAMILY'S. It is the template of 2026-10-15b (Dougu Sports' copy) with exactly three lines added for this package: its row in FAMILY,
-// its line in FAMILY_PITCH, and its id in FAMILY_NOT_ON_NPM (it comes out the day the package is published). The family-wide pass that adds Senshu Jerseys to every repository
-// replaces this hash with the one it records.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -29,8 +25,8 @@ const sha = (path: string) => createHash("sha256").update(readFileSync(path)).di
 const pkg = JSON.parse(read("package.json")) as { name: string };
 const id = pkg.name.replace(/^@[^/]+\//, "");
 
-// The template of 2026-10-15b, with Dougu Sports (already in the copy it comes from) and Senshu Jerseys added, lists twenty-eight packages.
-const TEMPLATE = { version: "2026-10-15b", sha256: "61a94e82145dc12e334bd826c3f7659fe5a305aff7d7314f030846bf27c58ece" };
+// The template of 2026-10-15c lists twenty-eight packages, Dougu Sports and Senshu Jerseys (both on npm) the last two.
+const TEMPLATE = { version: "2026-10-15c", sha256: "6fd8dcbdf819abcaeec890f75ee77e553ffab4ea9b0e2df40674d9b99da4a906" };
 const WRITER_SHA256 = "6752eaa287a9007af87d9019e4cee4c36fe1d79b60bf24478e7851ebe75138c4";
 
 test("the family template is the one file, byte for byte, as recorded", () => {
@@ -57,10 +53,11 @@ test("it lists every package of the family, in order, each with its Japanese nam
   assert.ok(template.FAMILY.some((one) => one.id === id));
 });
 
-test("this package is not on npm yet: the header has no npm pill and the footer says so (take it out of FAMILY_NOT_ON_NPM the day it is published)", () => {
-  assert.ok(template.FAMILY_NOT_ON_NPM.includes(id));
-  assert.ok(!template.familyHeader({ id }).includes("npmjs.com"));
-  assert.ok(template.familyFooter({ id }).includes("Not on npm yet"));
+test("this package is on npm: the header has the npm pill and the footer the install line", () => {
+  assert.ok(!template.FAMILY_NOT_ON_NPM.includes(id));
+  assert.ok(template.familyHeader({ id }).includes(`https://www.npmjs.com/package/@johnmorrisdotca/${id}`));
+  assert.ok(template.familyFooter({ id }).includes(`npm install @johnmorrisdotca/${id}`));
+  assert.ok(!template.familyFooter({ id }).includes("Not on npm yet"));
 });
 
 test("the demo page is made with the family's header and footer", () => {
