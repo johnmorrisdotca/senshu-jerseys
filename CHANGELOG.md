@@ -6,6 +6,14 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-14
+
+### Fixed
+
+- **The years and the name on a banner no longer touch the notch or the inner line.** On the rectangle with a sweater, the years ran across the inner line and into the swallow-tail notch; on the shield, a long run of years crossed the curve, and on the pennant a name or the years touched its sides. The writing is now stacked higher and shrunk where it must, so it stays on the cloth with clear space round it, for a long name and long years too. The banner itself is unchanged. `test/banner.test.ts` measures it from the finished drawing: every shape, with and without the sweater, in every look.
+- The banner pictures in the README are made again.
+- The demo's Background menu hint reads more naturally in Japanese.
+
 ## [0.3.2] - 2026-10-14
 
 The README's pictures are redone, because npm shows only the README that was published: every picture now stands on one of the family's shared backgrounds, and the demo can put one behind the stage.
