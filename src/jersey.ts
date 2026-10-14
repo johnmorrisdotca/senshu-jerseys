@@ -158,8 +158,16 @@ function repeatBands(seq: Bands, from: number, to: number, centred: number | und
 }
 
 /** The ink for the number and the name, and the outline (or none), given what is behind them. */
-export function inkFor(r: Resolved, grounds: readonly Rgb[]): { fill: Rgb; outline: Rgb | undefined } {
+export function inkFor(r: Resolved, grounds: readonly Rgb[]): { fill: Rgb; outline: Rgb | undefined; heavy: boolean } {
   const mixed = grounds.length > 1;
+  const ink = ink2(r, grounds, mixed);
+  // Over stripes the outline is what makes the lettering stand out when the fill alone is lost on one of the colours: a hair of white round a black number leaves a black stripe touching its edge,
+  // so there the outline is wide (`HEAVY` of a stroke on each side) and the fill and the outline are told apart from the stripes by it.
+  return { ...ink, heavy: mixed && ink.outline !== undefined && worst(ink.fill, grounds) < 4.5 };
+}
+
+/** The fill and the outline `inkFor` chooses. */
+function ink2(r: Resolved, grounds: readonly Rgb[], mixed: boolean): { fill: Rgb; outline: Rgb | undefined } {
   // Tackle-twill: a fill that does not read on the cloth on its own (red numbers on royal blue) is kept when the outline asked for reads on the cloth and the fill reads on the outline.
   if (!mixed && r.fill !== undefined && r.outline !== undefined && worst(r.fill, grounds) < 4.5 && worst(r.outline, grounds) >= 4.5 && contrast(r.fill, r.outline) >= 3) return { fill: r.fill, outline: r.outline };
   // Over stripes of two colours no single ink reads on both, but a fill and an outline that are given can: a black number with a white edge reads on the white stripes by its fill and on the black by its edge.
@@ -172,6 +180,50 @@ export function inkFor(r: Resolved, grounds: readonly Rgb[]): { fill: Rgb; outli
   // A given outline that is the ink itself is no outline.
   if (outline !== undefined && contrast(outline, fill) < 1.15) outline = undefined;
   return { fill, outline };
+}
+
+/** The colours a pattern lays behind lettering: the body and the trim, and the second trim or the number's fill where a `repeat` uses them. */
+function patternGrounds(r: Resolved): Rgb[] {
+  const out: Rgb[] = [r.body, r.trim];
+  const rep = r.pattern === "stripes" || r.pattern === "hoops" ? r.repeat : undefined;
+  for (let i = 0; rep !== undefined && i + 1 < rep.length; i += 2) {
+    const c = rep[i + 1];
+    if (c === 2) out.push(r.trim2);
+    else if (c === 3 && r.fill !== undefined) out.push(r.fill);
+  }
+  return out;
+}
+
+/** The width of the outline on lettering that has to stand out from stripes, as a part of a stroke, on each side. */
+const HEAVY = 0.45;
+
+/**
+ * The plate behind the back's name and number: one rounded patch as wide as the widest line and as tall as both, with a margin of over half a stroke round the lettering, so that no stripe comes
+ * near the edge of a letter. A thin darker edge keeps it from vanishing on a stripe of its own colour.
+ */
+function plateOf(r: Resolved, spec: CutSpec, colour: string): string {
+  const lines: { top: number; bottom: number; width: number; sw: number }[] = [];
+  if (r.name !== undefined) {
+    const s = spec.name;
+    const arch = r.nameArch === "arched" ? 110 : 0;
+    const run = layout(r.name, s.x, s.y, { height: s.h, maxWidth: s.w, weight: "bold", arch, tracking: 0.45 });
+    const sag = arch > 0 ? arch * (1 - Math.cos(Math.min(run.width / 2 / arch, 1.2))) : 0;
+    lines.push({ top: s.y - run.height / 2, bottom: s.y + run.height / 2 + sag, width: run.width, sw: run.sw });
+  }
+  if (r.number !== undefined) {
+    const s = spec.number.back;
+    const run = layout(r.number, s.x, s.y, { height: s.h, maxWidth: s.w, weight: "black" });
+    lines.push({ top: s.y - run.height / 2, bottom: s.y + run.height / 2, width: run.width, sw: run.sw });
+  }
+  const pad = Math.max(...lines.map((l) => l.sw)) * 0.6;
+  const x0 = 100 - Math.max(...lines.map((l) => l.width)) / 2 - pad;
+  const x1 = 200 - x0;
+  const y0 = Math.min(...lines.map((l) => l.top)) - pad;
+  const y1 = Math.max(...lines.map((l) => l.bottom)) + pad;
+  const c = 3;
+  const d = `M${n2(x0 + c)} ${n2(y0)}H${n2(x1 - c)}Q${n2(x1)} ${n2(y0)} ${n2(x1)} ${n2(y0 + c)}V${n2(y1 - c)}Q${n2(x1)} ${n2(y1)} ${n2(x1 - c)} ${n2(y1)}H${n2(x0 + c)}Q${n2(x0)} ${n2(y1)} ${n2(x0)} ${n2(y1 - c)}V${n2(y0 + c)}Q${n2(x0)} ${n2(y0)} ${n2(x0 + c)} ${n2(y0)}Z`;
+  const rgb = r.plate as Rgb;
+  return `<path d="${d}" fill="${colour}" stroke="${hexOf(shade(rgb, lum(rgb) > 0.4 ? -0.55 : 0.55))}" stroke-width="1" stroke-linejoin="round"/>`;
 }
 
 /** True when part of the pattern lies behind the spot on the view: its colour is then also a ground for the ink. */
@@ -629,14 +681,16 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
 
   // ---- Crest, patch, text and numbers. ----
   const sleeveNum = r.number !== undefined && r.sleeveNumbers;
-  const grounds = (where: "number" | "name" | "chest"): Rgb[] => (patternBehind(r, view, where) && !line ? [r.body, r.trim] : [r.body]);
+  // A plate behind the back's lettering is its ground; else the cloth, and the pattern's other colour when the pattern runs behind it.
+  const plated = r.plate !== undefined && view === "back" && !line && (r.name !== undefined || r.number !== undefined);
+  const grounds = (where: "number" | "name" | "chest"): Rgb[] => (plated && where !== "chest" ? [r.plate as Rgb] : patternBehind(r, view, where) && !line ? patternGrounds(r) : [r.body]);
   const tint = hexOf(r.body);
   let marks = "";
   const markRun = (text: string, spot: { x: number; y: number; w: number; h: number }, weight: "bold" | "black", where: "number" | "name" | "chest", arch?: number, tracking?: number, slant?: number, maxHeight?: number): string => {
     const run = layout(text, spot.x, spot.y, { height: spot.h, maxWidth: spot.w, weight, arch, tracking, slant, maxHeight });
     if (line) return drawRun(run, "currentColor", undefined, undefined);
-    const { fill, outline } = inkFor(r, grounds(where));
-    const width = outline === undefined ? 0 : Math.max(1.1, run.sw * 0.14);
+    const { fill, outline, heavy } = inkFor(r, grounds(where));
+    const width = outline === undefined ? 0 : Math.max(1.1, run.sw * (heavy ? HEAVY : 0.14));
     return drawRun(run, hexOf(fill), outline === undefined ? undefined : { colour: hexOf(outline), width }, cloth && weight === "black" && run.sw > 7 ? hexOf(shade(fill, lum(fill) > 0.4 ? -0.5 : 0.5)) : undefined);
   };
   if (view === "front") {
@@ -688,6 +742,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     }
     if (r.frontNumber !== undefined) marks += markRun(r.frontNumber, crestSvg !== undefined && r.cut === "basketball" ? { ...spec.number.front, y: spec.number.front.y + 8, h: spec.number.front.h - 14 } : spec.number.front, "black", "chest");
   } else {
+    if (plated) marks += plateOf(r, spec, hexOf(r.plate as Rgb));
     if (r.name !== undefined) marks += markRun(r.name, spec.name, "bold", "name", r.nameArch === "arched" ? 110 : undefined, 0.45);
     if (r.number !== undefined) marks += markRun(r.number, spec.number.back, "black", "number");
   }
@@ -709,8 +764,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       const phi = s.side === -1 ? 90 - s.a : -(90 - s.a);
       const run = layout(r.number, 0, 0, { height: spec.tv.h, maxWidth: Math.hypot(a[0] - b[0], a[1] - b[1]) * 0.8, weight: "black" });
       const g = line ? drawRun(run, "currentColor", undefined, undefined) : (() => {
-        const { fill, outline } = inkFor(r, [r.body]);
-        return drawRun(run, hexOf(fill), outline === undefined ? undefined : { colour: hexOf(outline), width: Math.max(0.9, run.sw * 0.14) }, undefined);
+        const { fill, outline, heavy } = inkFor(r, r.patternSleeves && r.sleeveColor === undefined && patternBehind(r, view, "number") ? patternGrounds(r) : [r.body]);
+        return drawRun(run, hexOf(fill), outline === undefined ? undefined : { colour: hexOf(outline), width: Math.max(0.9, run.sw * (heavy ? HEAVY : 0.14)) }, undefined);
       })();
       marks += `<g transform="translate(${n2(m[0])} ${n2(m[1])}) rotate(${n2(phi)})">${g}</g>`;
     }

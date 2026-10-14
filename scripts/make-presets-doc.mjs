@@ -39,6 +39,7 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | \`sn=1\` | \`sleeveNumbers\` | The number on the upper arm, where the cut puts it. |
 | \`ab=\` | \`armbands\` | Armbands: \`ab=2.12.30\` is a band in the second trim, 12 units wide, 30 percent down the sleeve (an official's); \`ab=2\` takes the defaults. |
 | \`pk=1\`, \`bd=\` | \`pocket\`, \`badge\` | A chest pocket, and a plain badge spot on it: \`r\` round, \`s\` shield, \`q\` square. |
+| \`bp=\` | \`plate\` | A plate behind the back's name and number, for lettering over stripes: \`bp=1\` takes the lighter of the body and the trim, \`bp=101010\` a colour (with \`nf=\` the ink on it). |
 | \`pr=1\`, \`na=s\` | \`protector\`, \`nameArch: "straight"\` | An umpire's chest protector; the name set straight, as officials wear it. |
 | \`co=z\`, \`co=t\` | \`collar: "zip"\`, \`collar: "point"\` | A zip collar, and a long-point dress collar (the other collar words are \`l\` lace-up, \`v\`, \`c\` crew, \`p\` polo, \`r\` round, \`w\` wishbone, \`b\` band). |
 

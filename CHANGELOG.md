@@ -6,6 +6,14 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`plate`** (spec word `bp=1` or `bp=<hex>`, attribute and query word `plate`): a solid plate behind the back's name and number, so stripes cannot reach a letter. `true` takes the lighter of the body and the trim, or give a colour (and `numberFill` for the ink on it). The NFL's and the NCAA's officials' shirts have a white one, and the 1950-1970 NBA striped shirt a black one with a white number.
+
+### Fixed
+
+- **Black numbers and surnames on black-and-white stripes were hard to read.** The lettering of the striped officials' shirts (the NHL referee and linesman, the NBA classic, the NFL, CFL, NCAA and high school football shirts and both lacrosse shirts) and of striped or hooped team shirts (Newcastle, Juventus, Leicester, Bath and others) had a hair of an outline, so a stripe the colour of the ink touched the edge of every letter. When the fill is lost on one of the stripe colours the outline is now `0.45` of a stroke wide on each side, rounded at the corners, and the colours a `repeat` uses (a second trim, the number's fill) count as grounds the ink must read on; the same holds for sleeve numbers over striped sleeves. A new test (`test/legible.test.ts`) paints each drawing and wants nothing of the ink's colour within a third of a stroke of a letter; it fails on 0.3.0 for 80 of the 122 striped presets, 15 of them officials.
+
 ## [0.3.0] - 2026-10-14
 
 ### Added

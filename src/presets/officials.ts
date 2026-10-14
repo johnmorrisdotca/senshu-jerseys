@@ -6,6 +6,11 @@
 //   pk=1                 a chest pocket        bd=r|s|q    a badge spot, plain: round, shield or square
 //   pr=1                 an umpire's chest protector         na=s    the name set straight, as officials wear it
 //   co=z                 a zip collar          co=t        a long-point dress collar
+//   bp=1|hex             a plate behind the back's name and number: 1 takes the lighter of body and trim
+//
+// Lettering over stripes: a black number on black-and-white stripes is lost, so the shirts that print it straight on the stripes (hockey, CFL, high school football, NCAA basketball, lacrosse) take a
+// white outline of over a third of a stroke on each side (the renderer makes it wide whenever the fill is lost on one of the stripe colours), and the shirts known to carry a patch (the NFL's white field,
+// the NCAA's placket, the NBA's black patch of the 1960s) take a plate. Which of the two a league uses is read from the sources below, which give text and not pictures: marked `unsure` where they are silent.
 //
 // Stripe widths: one drawing unit is about a fifth of an inch (the chest is about 100 units across), so a repeat of `5.0.10.1.5.0` is a 2 inch black stripe between 2 inch white ones.
 // A repeat is body, trim, body (the trim stripe is centred on the shirt) and its numbers are whole units.
@@ -47,7 +52,7 @@ export const OFFICIALS: Preset[] = defineOfficials([
   // the same with a black collar; the WNBA's collar is orange; FIBA a grey torso with black sleeves; EuroLeague orange; the Australian NBL green with black shoulders and a V-neck with no
   // collar; NCAA men from 2019-20 black-and-white stripes with black raglan sleeves, NCAA women grey with white pin-stripes, black sleeves and light blue collar trim. The basketball cut is
   // a tank, so these use the soccer cut, a short-sleeved shirt.
-  ["nba-classic", "NBA referee, striped", "NBAのレフェリー（縞柄）", "1950s", "classic", "fff 101010 c=s p=s r=5.0.10.1.5.0 sl=s co=v nf=101010 no=fff"], // unsure: Highsnobiety says the NBA wore black-and-white stripes in the early 1950s; Slate says grey by 1971
+  ["nba-classic", "NBA referee, striped", "NBAのレフェリー（縞柄）", "1950-1970", "classic", "fff 101010 c=s p=s r=5.0.10.1.5.0 sl=s co=v bp=101010 nf=fff"], // unsure: Highsnobiety says the NBA wore black-and-white stripes in the early 1950s; Slate says grey by 1971 (so the end year is a reading); the black patch with a white number is from an auction listing (Lelands) of a shirt worn about 1966
   ["nba-modern", "NBA referee", "NBAのレフェリー", "1971-", "modern", "b9bec3 fff 111 c8102e c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=3"], // unsure: the pin-stripe spacing; the side stripe and the blue half of the collar are not drawn
   ["nba-summer-league", "NBA Summer League referee", "NBAサマーリーグのレフェリー", "2010s", "summer league", "b9bec3 fff 111 c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=2"], // unsure: the era
   ["wnba", "WNBA referee", "WNBAのレフェリー", "1997-", "modern", "b9bec3 fff 111 f26b21 c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=3"], // unsure: the pin-stripe spacing
@@ -60,9 +65,9 @@ export const OFFICIALS: Preset[] = defineOfficials([
   // ----- Football (gridiron). Wikipedia "Official (American football)": black-and-white stripes from the 1920s in place of plain white shirts; black trousers; college stripes two inches, high school
   // one, the NFL's and the CFL's uneven; CFL shirts have solid black sleeves and only a number on the back; an NFL back has a number with a small letter above it. The white cap is not drawn.
   ["football-1910s-white", "Football official, plain white", "アメフトの審判（白無地）", "1900-1920", "classic", "fff 101010 c=f ss=0 hs=0 co=p"], // unsure: the collar; Wikipedia says plain white shirts before the stripes of the 1920s
-  ["nfl", "NFL official", "NFLの審判", "1945-", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 sl=s co=p nf=101010 no=fff"], // unsure: the 'uneven' pattern read as a 5 unit black stripe between 9 unit white ones; Highsnobiety says the standard design by 1945
+  ["nfl", "NFL official", "NFLの審判", "2006-", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 sl=s co=p bp=1 nf=101010"], // unsure: the 'uneven' pattern read as a 5 unit black stripe between 9 unit white ones; Highsnobiety says the standard design by 1945. The Gridiron Uniform Database says that from 2006 the back's position letter and number are black on a white field (the red numbers of 1947-59 and the white-on-black box of 1960-78 are not drawn)
   ["cfl", "CFL official", "CFLの審判", "2000s", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 ps=0 sc=1 sl=s co=v nf=101010 no=fff"], // unsure: the era; solid black sleeves per Wikipedia, the collar is not documented
-  ["ncaa-football", "NCAA football official", "NCAAアメフトの審判", "1950-", "college", "fff 101010 c=f ss=0 hs=0 p=s r=5.0.10.1.5.0 sl=s co=v nf=101010 no=fff"], // unsure: the era; two-inch stripes per Wikipedia
+  ["ncaa-football", "NCAA football official", "NCAAアメフトの審判", "1950-", "college", "fff 101010 c=f ss=0 hs=0 p=s r=5.0.10.1.5.0 sl=s co=v bp=1 nf=101010"], // unsure: the era; two-inch stripes per Wikipedia; Wikipedia's photo caption names an 'R' placket on the back of a college referee's shirt, drawn here as a white plate (its size and colour are a reading)
   ["highschool-football", "High school football official", "高校アメフトの審判", "1950-", "high school", "fff 101010 c=f ss=0 hs=0 p=s r=3.0.5.1.3.0 sl=s co=v nf=101010 no=fff"], // unsure: the era; one-inch stripes per Wikipedia
 
   // ----- Soccer. Wikipedia "Referee (association football)": traditionally all black (red if a side wore very dark); at the 1994 World Cup officials could choose burgundy, yellow or white and the

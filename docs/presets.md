@@ -20,6 +20,7 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | `sn=1` | `sleeveNumbers` | The number on the upper arm, where the cut puts it. |
 | `ab=` | `armbands` | Armbands: `ab=2.12.30` is a band in the second trim, 12 units wide, 30 percent down the sleeve (an official's); `ab=2` takes the defaults. |
 | `pk=1`, `bd=` | `pocket`, `badge` | A chest pocket, and a plain badge spot on it: `r` round, `s` shield, `q` square. |
+| `bp=` | `plate` | A plate behind the back's name and number, for lettering over stripes: `bp=1` takes the lighter of the body and the trim, `bp=101010` a colour (with `nf=` the ink on it). |
 | `pr=1`, `na=s` | `protector`, `nameArch: "straight"` | An umpire's chest protector; the name set straight, as officials wear it. |
 | `co=z`, `co=t` | `collar: "zip"`, `collar: "point"` | A zip collar, and a long-point dress collar (the other collar words are `l` lace-up, `v`, `c` crew, `p` polo, `r` round, `w` wishbone, `b` band). |
 
@@ -1587,7 +1588,7 @@ The officials' shirts (`OFFICIALS`, ids that start with `ref:`) are described, w
 | `ref:nhl-1950s-candy` | NHL referee, candy stripes | 1950s | `#fff` `#c8102e` `#1d1d1d` |
 | `ref:nhl-1950s-orange` | NHL referee, orange half-zip | 1950-1955 | `#f26b21` `#101010` |
 | `ref:nhl-1930s-cream` | NHL referee, cream sweater | 1930-1950 | `#efe6c8` `#101010` |
-| `ref:nba-classic` | NBA referee, striped | 1950s | `#fff` `#101010` |
+| `ref:nba-classic` | NBA referee, striped | 1950-1970 | `#fff` `#101010` |
 | `ref:nba-modern` | NBA referee | 1971- | `#b9bec3` `#fff` `#111` |
 | `ref:nba-summer-league` | NBA Summer League referee | 2010s | `#b9bec3` `#fff` `#111` |
 | `ref:wnba` | WNBA referee | 1997- | `#b9bec3` `#fff` `#111` |
@@ -1597,7 +1598,7 @@ The officials' shirts (`OFFICIALS`, ids that start with `ref:`) are described, w
 | `ref:ncaa-basketball-men` | NCAA men's basketball referee | 2019- | `#fff` `#101010` |
 | `ref:ncaa-basketball-women` | NCAA women's basketball referee | 2019- | `#b9bec3` `#fff` `#111` |
 | `ref:football-1910s-white` | Football official, plain white | 1900-1920 | `#fff` `#101010` |
-| `ref:nfl` | NFL official | 1945- | `#fff` `#101010` |
+| `ref:nfl` | NFL official | 2006- | `#fff` `#101010` |
 | `ref:cfl` | CFL official | 2000s | `#fff` `#101010` |
 | `ref:ncaa-football` | NCAA football official | 1950- | `#fff` `#101010` |
 | `ref:highschool-football` | High school football official | 1950- | `#fff` `#101010` |

@@ -90,7 +90,8 @@ export function drawRun(run: Run, fill: string, edge: { colour: string; width: n
     if (run.d === "") return "";
     const strokes = 'fill="none" stroke-linejoin="miter" stroke-miterlimit="2.5" stroke-linecap="butt"';
     let out = "";
-    if (edge !== undefined && edge.width > 0) out += `<path d="${run.d}" ${strokes} stroke="${edge.colour}" stroke-width="${n2(run.sw + edge.width * 2)}"/>`;
+    // A wide outline is rounded at the corners: mitred, it would throw a spike from every sharp turn of a letter.
+    if (edge !== undefined && edge.width > 0) out += `<path d="${run.d}" ${edge.width > run.sw * 0.25 ? strokes.replace('stroke-linejoin="miter" stroke-miterlimit="2.5"', 'stroke-linejoin="round"') : strokes} stroke="${edge.colour}" stroke-width="${n2(run.sw + edge.width * 2)}"/>`;
     out += `<path d="${run.d}" ${strokes} stroke="${fill}" stroke-width="${n2(run.sw)}"/>`;
     // Stitching: a dashed ring along each edge of the letter, made by a dashed wide stroke covered by a narrower solid one.
     if (stitch !== undefined && run.sw > 5) {

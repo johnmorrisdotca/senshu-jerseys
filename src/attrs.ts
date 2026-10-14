@@ -8,7 +8,7 @@ export const OPTION_ATTRIBUTES = [
   "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
   "patch", "sleeve-numbers", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
-  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector",
+  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate",
 ] as const;
 
 const bare = (v: string): string => (/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i.test(v) ? `#${v}` : v);
@@ -56,6 +56,11 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
     const nums = list(arm);
     o.armbands = arm.trim() === "true" ? 2 : nums.length === 1 ? nums[0] : nums;
   }
+  const plate = read("plate");
+  if (plate !== null) {
+    if (plate === "" || plate === "true") o.plate = true;
+    else if (readColour(bare(plate)) !== undefined) o.plate = bare(plate);
+  }
   const chest = read("chest-band");
   if (chest !== null) {
     if (chest === "" || chest === "true") o.chestBand = true;
@@ -102,6 +107,8 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   for (const [k, v] of [["sleeve-stripes", o.sleeveStripes], ["hem-stripes", o.hemStripes]] as const) if (v !== undefined) out[k] = Array.isArray(v) ? v.join(" ") : String(v);
   if (o.cuffs !== undefined) out.cuffs = Array.isArray(o.cuffs) ? o.cuffs.join(" ") : String(o.cuffs);
   if (o.armbands !== undefined) out.armbands = Array.isArray(o.armbands) ? o.armbands.join(" ") : String(o.armbands);
+  if (o.plate === true) out.plate = "true";
+  else if (typeof o.plate === "string") out.plate = c(o.plate);
   if (o.chestBand === true) out["chest-band"] = "true";
   else if (Array.isArray(o.chestBand)) out["chest-band"] = o.chestBand.join(" ");
   for (const [k, v] of [["repeat", o.repeat], ["arm-stripes", o.armStripes], ["pants-bands", o.pantsBands], ["socks-bands", o.socksBands]] as const) if (v !== undefined && v.length > 0) out[k] = v.join(" ");

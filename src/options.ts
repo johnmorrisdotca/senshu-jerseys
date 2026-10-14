@@ -1,6 +1,6 @@
 // The options of a jersey, read from outside: every value is checked against the lists below, a colour is read as `#rgb`, `#rrggbb` or `rgb()`, and text is cleaned.
 import { COLLAR_IDS, CUT_IDS, CUTS, type CollarId, type CutId, type SleeveId } from "./cuts.ts";
-import { clean, readColour, type Rgb } from "./colour.ts";
+import { clean, lum, readColour, type Rgb } from "./colour.ts";
 
 export const PATTERN_IDS = ["solid", "stripes", "hoops", "halves", "quarters", "sash", "chevron", "pinstripes", "yoke", "chest-band"] as const;
 export type PatternId = (typeof PATTERN_IDS)[number];
@@ -85,6 +85,11 @@ export interface JerseyOptions {
   sleeveColor?: 0 | 1 | 2;
   /** The side panels of a tank, and the shoulder panels, in this colour index (1 or 2). */
   panels?: 0 | 1 | 2;
+  /**
+   * A solid plate behind the back's name and number, for lettering that has to read over stripes: `true` takes the lighter of the body and the trim, or give it a colour. The ink on it is the number's
+   * fill if that reads on the plate, else black or white.
+   */
+  plate?: boolean | string;
   number?: string | number;
   name?: string;
   nameArch?: ArchId;
@@ -150,6 +155,7 @@ export interface Resolved {
   collarColor: 0 | 1 | 2 | 3;
   sleeveColor?: 0 | 1 | 2;
   panels: 0 | 1 | 2;
+  plate?: Rgb;
   number?: string;
   name?: string;
   nameArch: ArchId;
@@ -277,6 +283,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     collarColor: idx3(o.collarColor, 1),
     sleeveColor: o.sleeveColor === undefined ? undefined : idx(o.sleeveColor, 0),
     panels: idx(o.panels, 1),
+    plate: o.plate === true ? (lum(body) >= lum(trim) ? body : trim) : readColour(o.plate),
     number: digits(o.number, 2),
     name: clean(o.name, 18)?.toUpperCase(),
     nameArch: pick(ARCH_IDS, o.nameArch, "arched"),

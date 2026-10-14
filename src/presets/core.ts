@@ -63,6 +63,7 @@ export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
       case "pk": o.pocket = v !== "0"; break;
       case "bd": o.badge = BADGE_CODES[v as keyof typeof BADGE_CODES]; break;
       case "pr": o.protector = v !== "0"; break;
+      case "bp": o.plate = v === "1" ? true : hex(v); break;
       case "na": o.nameArch = v === "s" ? "straight" : "arched"; break;
       case "cb": o.chestBand = v === "1" ? true : bandsOf(dotted(v)); break;
       case "cy": o.chestY = Number(v); break;

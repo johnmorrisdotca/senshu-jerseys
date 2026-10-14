@@ -30,9 +30,27 @@ console.log(back.startsWith("<svg")); // true
 | `collar: "zip"` | `co=z` | A stand collar over a zipper, with its teeth and slider (hockey officials, the 1950s half-zip). |
 | `collar: "point"` | `co=t` | A dress collar with long points and a placket with three buttons (an umpire's light blue shirt). |
 | `collarColor: 3` | `cc=3` | The collar in the number's fill colour, so a shirt can have grey, white and black and a red collar (the NBA's). |
+| `plate` | `bp=1`, `bp=101010` | A solid plate behind the back's name and number, so that stripes cannot reach a letter: `true` takes the lighter of the body and the trim, or give a colour (and `numberFill` for the ink on it). |
 | `nameArch: "straight"` | `na=s` | The name straight across the shoulders, as officials wear it (the presets set it). |
 
 `zip` and `point` are collars of the hockey, baseball, football, soccer and rugby cuts; the basketball tank has neither. The basketball referee's shirt has sleeves, so the basketball presets use the soccer cut, a short-sleeved shirt. Lacrosse has no cut of its own and uses it too.
+
+## Lettering on stripes
+
+A black number printed straight on black-and-white stripes is lost: a stripe the colour of the ink touches the edge of every letter. Two things keep it readable, and every striped official's back is held to them by `test/legible.test.ts`, which paints the drawing, looks at the ring a third of a stroke wide round each letter of the number and of the name, and wants nothing in it that is within a contrast of 4.5 of the ink:
+
+- **A wide outline** (every shirt whose lettering lies on the stripes): when the fill is lost on one of the stripe colours the outline is `0.45` of a stroke wide on each side, rounded at the corners, so a black number sits in a white edge between the stripes. A thin one stays on a plain shirt.
+- **A plate** (`plate`, `bp=`): a solid patch behind the name and number.
+
+| Shirt | Lettering | Read from |
+| --- | --- | --- |
+| NFL (`ref:nfl`) | A plate: the position letter and the number black on a white field, from 2006 (the red numbers of 1947 to 1959 and the white-on-black box of 1960 to 1978 are not drawn) | The Gridiron Uniform Database, "The Zebras Are Coming" (text); footballzebras.com, "Before they were zebras they were candy canes" |
+| NCAA football (`ref:ncaa-football`) | A white plate, as the 'R' placket a college referee wears on the back; the size and colour of the plate are a reading | Wikipedia, "Official (American football)", a photo caption |
+| NBA, striped (`ref:nba-classic`) | A black plate with a white number, about 1966 | An auction listing of a shirt (Lelands), through a search result: the page itself could not be opened |
+| NHL, Hockey Canada, PWHL (`ref:nhl-modern-referee` and the rest of hockey) | The number alone on the stripes, black with a wide white outline; names were worn from 1977 to 1994 and numbers alone since | Wikipedia, "Official (ice hockey)" (the years); the outline is a reading |
+| CFL, high school football, NCAA men's basketball, lacrosse | The number alone, black with a wide white outline: the CFL has numbers and no letters | Wikipedia, "Official (American football)" for the CFL; the outline is a reading |
+
+The sources are texts, not pictures, and none of them describes an outline, so which league prints on the stripes and which on a patch is partly a reading, marked `unsure` in `src/presets/officials.ts`. Numbers on the sleeves are not drawn.
 
 ## Stripe widths
 
