@@ -5,7 +5,7 @@ A preset is a team's uniform of one era written as colours and stripes: the body
 are still owned and sold today. The colours and the stripe layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes and recorded here as data; no picture is copied.
 They are an honest reading, not a proof: where a layout could not be said with the stripes the renderer draws, the nearest plain one is used.
 
-Made from the built package by `node scripts/make-presets-doc.mjs`; `pnpm test:readme` checks that it is current. 1513 presets in 12 modules.
+Made from the built package by `node scripts/make-presets-doc.mjs`; `pnpm test:readme` checks that it is current. 1537 presets in 13 modules.
 
 ## What the one-line spec can say
 
@@ -44,6 +44,7 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | `SOCCER_NATIONS` | `@johnmorrisdotca/senshu-jerseys/presets/soccer-nations` | 85 |
 | `RUGBY` | `@johnmorrisdotca/senshu-jerseys/presets/rugby` | 54 |
 | `OFFICIALS` | `@johnmorrisdotca/senshu-jerseys/presets/officials` | 40 |
+| `HOCKEY_STYLES` | `@johnmorrisdotca/senshu-jerseys/presets/hockey-styles` | 24 |
 
 The officials' shirts (`OFFICIALS`, ids that start with `ref:`) are described, with their sources, in [officials.md](./officials.md).
 
@@ -1619,3 +1620,32 @@ The officials' shirts (`OFFICIALS`, ids that start with `ref:`) are described, w
 | `ref:rugby-union-yellow` | Rugby union referee, yellow | 2020s | `#f7e017` `#111` |
 | `ref:lacrosse-boys` | Lacrosse official, boys' game | 2020s | `#fff` `#101010` |
 | `ref:lacrosse-girls` | Lacrosse official, girls' game | 2020s | `#fff` `#101010` |
+
+## HOCKEY_STYLES
+
+| Id | Team | Years | Colours (body, trim, second trim) |
+| --- | --- | --- | --- |
+| `style:canada-2026-home` | Canada | 2026 | `#d52b1e` `#fff` `#111` |
+| `style:canada-2026-away` | Canada | 2026 | `#fff` `#d52b1e` `#111` |
+| `style:usa-2026-home` | United States | 2026 | `#0a3161` `#fff` `#b31942` |
+| `style:usa-2026-away` | United States | 2026 | `#fff` `#0a3161` `#b31942` |
+| `style:sweden-2026-home` | Sweden | 2026 | `#006aa7` `#fecc00` `#fff` |
+| `style:sweden-2026-away` | Sweden | 2026 | `#fecc00` `#006aa7` `#fff` |
+| `style:finland-2026-home` | Finland | 2026 | `#fff` `#003580` |
+| `style:finland-2026-away` | Finland | 2026 | `#003580` `#fff` |
+| `style:czechia-2026-home` | Czechia | 2026 | `#d7141a` `#fff` `#11457e` |
+| `style:czechia-2026-away` | Czechia | 2026 | `#fff` `#d7141a` `#11457e` |
+| `style:slovakia-2026-home` | Slovakia | 2026 | `#fff` `#0b4ea2` `#ee1c25` |
+| `style:slovakia-2026-away` | Slovakia | 2026 | `#0b4ea2` `#fff` `#ee1c25` |
+| `style:switzerland-2026-home` | Switzerland | 2026 | `#d52b1e` `#fff` |
+| `style:switzerland-2026-away` | Switzerland | 2026 | `#fff` `#d52b1e` |
+| `style:germany-2026-home` | Germany | 2026 | `#fff` `#111` `#dd0000` |
+| `style:germany-2026-away` | Germany | 2026 | `#111` `#fff` `#dd0000` |
+| `style:latvia-2026-home` | Latvia | 2026 | `#9e3039` `#fff` |
+| `style:latvia-2026-away` | Latvia | 2026 | `#fff` `#9e3039` |
+| `style:norway-2026-home` | Norway | 2026 | `#ba0c2f` `#fff` `#00205b` |
+| `style:norway-2026-away` | Norway | 2026 | `#fff` `#ba0c2f` `#00205b` |
+| `style:japan-2026-home` | Japan | 2026 | `#fff` `#bc002d` `#1b2a6b` |
+| `style:japan-2026-away` | Japan | 2026 | `#bc002d` `#fff` `#1b2a6b` |
+| `style:france-2026-home` | France | 2026 | `#0055a4` `#fff` `#ef4135` |
+| `style:france-2026-away` | France | 2026 | `#fff` `#0055a4` `#ef4135` |

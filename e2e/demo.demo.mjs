@@ -453,3 +453,30 @@ test("the chest controls put a captain's letter and a flag on either breast, and
   await expect(page.locator('[data-testid="seg-chest-right"] button[data-value="flag"]')).toHaveAttribute("aria-pressed", "true");
   expect(errors).toEqual([]);
 });
+
+test("the twelve national styles are on a sheet, home or away, and a tap puts one on the stage to be personalised", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  const grid = page.locator("#styles-grid");
+  await expect(grid.locator("li")).toHaveCount(12);
+  await expect(grid.locator("li svg").first()).toBeVisible();
+  const home = await grid.locator("li").first().getAttribute("data-id");
+  expect(home).toBe("style:canada-2026-home");
+  await page.getByTestId("style-away").click();
+  await expect(page).toHaveURL(/sw=away/);
+  await expect(grid.locator("li").first()).toHaveAttribute("data-id", "style:canada-2026-away");
+  await page.getByTestId("style-japan").click();
+  await expect(page).toHaveURL(/preset=style%3Ajapan-2026-away/);
+  await expect(page.locator("#stage svg title")).toContainText("Hockey");
+  // Personalise it: a name and a number go on without changing the style.
+  await page.locator('[data-testid="in-number"]').fill("19");
+  await page.locator('[data-testid="in-name"]').fill("Tanaka");
+  await expect(page.locator("#stage svg title")).toContainText("number 19");
+  expect(await noSideways(page)).toBe(true);
+  // In Japanese the names are Japanese.
+  await page.goto("/?lang=ja");
+  await expect(page.locator("#styles-grid li").first()).toContainText("カナダ");
+  expect(await noSideways(page)).toBe(true);
+  expect(errors).toEqual([]);
+});

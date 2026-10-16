@@ -11,7 +11,7 @@
   <!--family:header-->
 
   <nav class="jump" id="jump" aria-label="Sections" data-say-label="navLabel">
-    <a href="#try" data-say="navTry"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
+    <a href="#try" data-say="navTry"></a><a href="#styles" data-say="navStyles"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
   </nav>
 
   <section class="more" id="try" aria-labelledby="try-h">
@@ -47,6 +47,16 @@
         <p class="fam-fine" id="turn-note" hidden data-say="turnBoth"></p>
       </div>
     </div>
+  </section>
+
+  <section class="more" id="styles" aria-labelledby="styles-h">
+    <h2 id="styles-h" data-say="stylesTitle"></h2>
+    <p data-say="stylesText"></p>
+    <div class="wallbar"><span class="fam-seg" id="styles-way" role="group" data-say-label="stylesWay" aria-label="Home or away">
+      <button type="button" data-way="home" data-testid="style-home" aria-pressed="true" data-say="stylesHome"></button>
+      <button type="button" data-way="away" data-testid="style-away" aria-pressed="false" data-say="stylesAway"></button>
+    </span></div>
+    <ul class="wallgrid" id="styles-grid" data-testid="styles"></ul>
   </section>
 
   <section class="more" id="wall" aria-labelledby="wall-h">

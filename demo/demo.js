@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", cmp: "0" };
+const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -616,6 +616,28 @@ function filterWall() {
   for (const b of $("wallbar").querySelectorAll("[data-league]")) b.setAttribute("aria-pressed", String(b.dataset.league === ui.wl));
 }
 
+// ----- The twelve national hockey styles: a card for each country, home or away; a tap puts the style on the stage, to be given a name, a number and colours.
+function buildStyles() {
+  const list = presetsApi.PRESETS.filter((p) => p.league === "style" && p.way === ui.sw);
+  const grid = $("styles-grid");
+  grid.replaceChildren();
+  for (const p of list) {
+    const name = lang() === "ja" ? p.ja : p.team;
+    const open = el("button", { type: "button", class: "fam-button", "data-testid": `style-${p.id.slice(6).replace(/-2026-(home|away)$/, "")}`, text: say("tryThis"), onclick: () => { applyPreset(p.id); $("try").scrollIntoView({ block: "start" }); } });
+    const li = el("li", { "data-id": p.id }, el("div", { class: "wsvg", role: "img", "aria-label": name }), el("strong", { text: name }), open);
+    li.querySelector(".wsvg").innerHTML = renderJersey({ ...p.options, number: 19, size: 120, language: lang() });
+    grid.append(li);
+  }
+  for (const b of $("styles-way").children) b.setAttribute("aria-pressed", String(b.dataset.way === ui.sw));
+}
+$("styles-way").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (b === null || presetsApi === undefined) return;
+  ui.sw = b.dataset.way;
+  buildStyles();
+  syncUrl();
+});
+
 // ----- Officials: the referees, linesmen and umpires, by sport.
 const OFFICIAL_SPORTS = ["all", "hockey", "basketball", "football", "soccer", "baseball", "rugby-lacrosse"];
 const sportOf = (id) => {
@@ -703,6 +725,7 @@ async function loadPresets() {
   drawRafters();
   if (ui.preset !== "" && presetsApi.byId.has(ui.preset) && Object.keys(attrs).length <= Object.keys(DEFAULTS).length + 1 && !params.has("body")) applyPreset(ui.preset);
   buildWall();
+  buildStyles();
   buildOfficials();
   drawBuilders();
   syncControls();
@@ -775,6 +798,7 @@ function everything() {
   if (presetsApi !== undefined) {
     fillPresetSelects();
     buildWall();
+    buildStyles();
     buildOfficials();
   }
 }
