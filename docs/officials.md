@@ -57,7 +57,7 @@ A black number printed straight on black-and-white stripes is lost: a stripe the
 | NHL, Hockey Canada, PWHL (`ref:nhl-modern-referee` and the rest of hockey) | The number alone on the stripes, black with a wide white outline; names were worn from 1977 to 1994 and numbers alone since | Wikipedia, "Official (ice hockey)" (the years); the outline is a reading |
 | CFL, high school football, NCAA men's basketball, lacrosse | The number alone, black with a wide white outline: the CFL has numbers and no letters | Wikipedia, "Official (American football)" for the CFL; the outline is a reading |
 
-The sources are texts, not pictures, and none of them describes an outline, so which league prints on the stripes and which on a patch is partly a reading, marked `unsure` in `src/presets/officials.ts`. Numbers on the sleeves are not drawn.
+The sources are texts, not pictures, and none of them describes an outline, so which league prints on the stripes and which on a patch is partly a reading, marked `unsure` in `src/presets/officials.ts`. 
 
 ## Stripe widths
 
@@ -88,4 +88,20 @@ Each preset says where it comes from in the comments of `src/presets/officials.t
 | `ref:rugby-union-yellow` | A yellow referee's shirt | Wikipedia, "Referee (rugby union)" |
 | `ref:lacrosse-boys`, `ref:lacrosse-girls` | A black-and-white striped shirt with a black collar and cuffs; one-inch stripes | Illinois High School Association, Sports Officials Handbook |
 
-Not drawn: the white cap of a gridiron referee, the side stripe and the blue half of the NBA's collar, the black trousers, and the numbers some officials wear on the sleeve.
+Not drawn: the side stripe and the blue half of the NBA's collar, and the black trousers.
+
+## Numbers on the sleeves
+
+The hockey, basketball and football shirts (the NHL, Hockey Canada and PWHL referees and linesmen, the NBA's two striped shirts and the gridiron officials) carry `sleeveNumbers`: an official wears the number on the back and on both upper arms, and the number you give is drawn on both, on the flat shirt and, with `volume: true`, on the turning garment's arms ([sleeves](./sleeves.md)). Which leagues put the number on the sleeve is a reading of photographs and marked `unsure` in `src/presets/officials.ts`; nothing is drawn until a number is given. The soccer, baseball, rugby and lacrosse shirts have none.
+
+## Caps
+
+`OFFICIAL_CAPS` (same module) are the gridiron officials' and the umpire's caps, for `renderCap`: a white cap for the NFL and CFL referee, a black one for their other officials, and the umpire's plain navy one. No letters and no mark.
+
+```js
+import { renderCap } from "@johnmorrisdotca/senshu-jerseys";
+import { OFFICIAL_CAPS } from "@johnmorrisdotca/senshu-jerseys/presets/officials";
+
+const referee = OFFICIAL_CAPS.find((c) => c.id === "ref:nfl-referee-cap");
+console.log(OFFICIAL_CAPS.length, renderCap({ ...referee.cap, view: "side" }).startsWith("<svg")); // 5 true
+```

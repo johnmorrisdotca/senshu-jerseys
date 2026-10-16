@@ -18,9 +18,12 @@
 // Pages (English Wikipedia unless a host is named): Official (ice hockey) and Referee (ice hockey); Official (basketball); Official (American football); Referee (association football);
 // Umpire (baseball); Referee (rugby union); Referee (rugby league). Also: Alberta Sports Hall of Fame, "December Artifact of the Month" (albertasportshall.ca); the Illinois High School
 // Association Sports Officials Handbook (ihsa.org); FootyHeadlines on the 2019 Macron UEFA Champions League, the 2022 adidas World Cup and the 2025-26 Puma Premier League referee kits.
+// Sleeve numbers: hockey, basketball and football officials wear their number on the back and on both sleeves, so those shirts say `sn=1` (nothing is drawn until the caller gives a number; which leagues put it on the
+// sleeve is a reading of the photographs the ticket was made from).
 // A colour here is this package's reading of a colour name, not a published code: where a page gave only a name the hex is the plainest one that fits.
 import type { Preset } from "./core.ts";
 import { decode } from "./core.ts";
+import type { CapOptions } from "../cap.ts";
 
 /** `[key, name, name in Japanese, years, way, spec]`. */
 type Row = readonly [key: string, en: string, ja: string, years: string, way: string, spec: string];
@@ -38,13 +41,13 @@ export const OFFICIALS: Preset[] = defineOfficials([
   // ----- Ice hockey. Wikipedia "Official (ice hockey)": a black-and-white vertically striped shirt, black trousers; armbands orange (NHL, USA Hockey), purple (PWHL), red (Hockey Canada) for
   // the referee, none on the linesman. NHL history: cream sweaters over a shirt and tie from the 1930s to the early 1950s; then orange sweaters with half-zip fronts; the striped sweater on
   // 29 December 1955 (Alberta Sports Hall of Fame); numbers on the back from 1955, surnames from 1977, numbers again from 1994. Orange armbands by 1970 (same Hall page).
-  ["nhl-modern-referee", "NHL referee", "NHLのレフェリー", "1955-", "referee", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=p ${ARM} nf=101010 no=fff`],
-  ["nhl-modern-referee-zip", "NHL referee, zip collar", "NHLのレフェリー（ジップ襟）", "1955-", "referee zip", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=z ${ARM} nf=101010 no=fff`],
-  ["nhl-modern-linesman", "NHL linesman", "NHLのラインズマン", "1955-", "linesman", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=p nf=101010 no=fff`],
-  ["nhl-modern-linesman-zip", "NHL linesman, zip collar", "NHLのラインズマン（ジップ襟）", "1955-", "linesman zip", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=z nf=101010 no=fff`],
-  ["hockey-canada-referee", "Hockey Canada referee", "ホッケー・カナダのレフェリー", "2000s", "referee", `fff 101010 d52b1e c=h ss=0 hs=0 ${NHL_STRIPES} co=p ${ARM} nf=101010 no=fff`], // unsure: the era; red armbands per Wikipedia, with no year given
-  ["pwhl-referee", "PWHL referee", "PWHLのレフェリー", "2024-", "referee", `fff 101010 5a2d82 c=h ss=0 hs=0 ${NHL_STRIPES} co=p ${ARM} nf=101010 no=fff`], // purple armbands per Wikipedia; the league began play in 2024
-  ["nhl-1950s-candy", "NHL referee, candy stripes", "NHLのレフェリー（赤白の縞）", "1950s", "referee", "fff c8102e 1d1d1d c=h ss=0 hs=0 p=s r=5.0.10.1.5.0 co=p cc=2 nf=101010 no=fff"], // unsure: red-and-white stripes with a dark collar are from a photograph from the maintainer; no Wikipedia page or museum page found for an NHL red-and-white sweater (the WHA's 1970s referees did wear red, white and blue)
+  ["nhl-modern-referee", "NHL referee", "NHLのレフェリー", "1955-", "referee", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=p ${ARM} nf=101010 no=fff sn=1`],
+  ["nhl-modern-referee-zip", "NHL referee, zip collar", "NHLのレフェリー（ジップ襟）", "1955-", "referee zip", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=z ${ARM} nf=101010 no=fff sn=1`],
+  ["nhl-modern-linesman", "NHL linesman", "NHLのラインズマン", "1955-", "linesman", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=p nf=101010 no=fff sn=1`],
+  ["nhl-modern-linesman-zip", "NHL linesman, zip collar", "NHLのラインズマン（ジップ襟）", "1955-", "linesman zip", `${BW} c=h ss=0 hs=0 ${NHL_STRIPES} co=z nf=101010 no=fff sn=1`],
+  ["hockey-canada-referee", "Hockey Canada referee", "ホッケー・カナダのレフェリー", "2000s", "referee", `fff 101010 d52b1e c=h ss=0 hs=0 ${NHL_STRIPES} co=p ${ARM} nf=101010 no=fff sn=1`], // unsure: the era; red armbands per Wikipedia, with no year given
+  ["pwhl-referee", "PWHL referee", "PWHLのレフェリー", "2024-", "referee", `fff 101010 5a2d82 c=h ss=0 hs=0 ${NHL_STRIPES} co=p ${ARM} nf=101010 no=fff sn=1`], // purple armbands per Wikipedia; the league began play in 2024
+  ["nhl-1950s-candy", "NHL referee, candy stripes", "NHLのレフェリー（赤白の縞）", "1950s", "referee", "fff c8102e 1d1d1d c=h ss=0 hs=0 p=s r=5.0.10.1.5.0 co=p cc=2 nf=101010 no=fff sn=1"], // unsure: red-and-white stripes with a dark collar are from a photograph from the maintainer; no Wikipedia page or museum page found for an NHL red-and-white sweater (the WHA's 1970s referees did wear red, white and blue)
   ["nhl-1950s-orange", "NHL referee, orange half-zip", "NHLのレフェリー（オレンジのハーフジップ）", "1950-1955", "referee", "f26b21 101010 c=h ss=0 hs=0 co=z"], // unsure: the collar colour; Wikipedia says orange sweaters with half-zip fronts and no neckties
   ["nhl-1930s-cream", "NHL referee, cream sweater", "NHLのレフェリー（クリーム色のセーター）", "1930-1950", "referee", "efe6c8 101010 c=h ss=0 hs=0 co=c cc=0"], // unsure: the exact cream; a sweater over a shirt and tie, no stripes
 
@@ -52,8 +55,8 @@ export const OFFICIALS: Preset[] = defineOfficials([
   // the same with a black collar; the WNBA's collar is orange; FIBA a grey torso with black sleeves; EuroLeague orange; the Australian NBL green with black shoulders and a V-neck with no
   // collar; NCAA men from 2019-20 black-and-white stripes with black raglan sleeves, NCAA women grey with white pin-stripes, black sleeves and light blue collar trim. The basketball cut is
   // a tank, so these use the soccer cut, a short-sleeved shirt.
-  ["nba-classic", "NBA referee, striped", "NBAのレフェリー（縞柄）", "1950-1970", "classic", "fff 101010 c=s p=s r=5.0.10.1.5.0 sl=s co=v bp=101010 nf=fff"], // unsure: Highsnobiety says the NBA wore black-and-white stripes in the early 1950s; Slate says grey by 1971 (so the end year is a reading); the black patch with a white number is from an auction listing (Lelands) of a shirt worn about 1966
-  ["nba-modern", "NBA referee", "NBAのレフェリー", "1971-", "modern", "b9bec3 fff 111 c8102e c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=3"], // unsure: the pin-stripe spacing; the side stripe and the blue half of the collar are not drawn
+  ["nba-classic", "NBA referee, striped", "NBAのレフェリー（縞柄）", "1950-1970", "classic", "fff 101010 c=s p=s r=5.0.10.1.5.0 sl=s co=v bp=101010 nf=fff sn=1"], // unsure: Highsnobiety says the NBA wore black-and-white stripes in the early 1950s; Slate says grey by 1971 (so the end year is a reading); the black patch with a white number is from an auction listing (Lelands) of a shirt worn about 1966
+  ["nba-modern", "NBA referee", "NBAのレフェリー", "1971-", "modern", "b9bec3 fff 111 c8102e c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=3 sn=1"], // unsure: the pin-stripe spacing; the side stripe and the blue half of the collar are not drawn
   ["nba-summer-league", "NBA Summer League referee", "NBAサマーリーグのレフェリー", "2010s", "summer league", "b9bec3 fff 111 c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=2"], // unsure: the era
   ["wnba", "WNBA referee", "WNBAのレフェリー", "1997-", "modern", "b9bec3 fff 111 f26b21 c=s p=p r=5.1 ps=0 sc=2 sl=s co=p cc=3"], // unsure: the pin-stripe spacing
   ["fiba", "FIBA referee", "FIBAのレフェリー", "2010s", "modern", "9ea3a8 111 c=s ps=0 sc=1 sl=s co=p"], // unsure: the era
@@ -65,10 +68,10 @@ export const OFFICIALS: Preset[] = defineOfficials([
   // ----- Football (gridiron). Wikipedia "Official (American football)": black-and-white stripes from the 1920s in place of plain white shirts; black trousers; college stripes two inches, high school
   // one, the NFL's and the CFL's uneven; CFL shirts have solid black sleeves and only a number on the back; an NFL back has a number with a small letter above it. The white cap is not drawn.
   ["football-1910s-white", "Football official, plain white", "アメフトの審判（白無地）", "1900-1920", "classic", "fff 101010 c=f ss=0 hs=0 co=p"], // unsure: the collar; Wikipedia says plain white shirts before the stripes of the 1920s
-  ["nfl", "NFL official", "NFLの審判", "2006-", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 sl=s co=p bp=1 nf=101010"], // unsure: the 'uneven' pattern read as a 5 unit black stripe between 9 unit white ones; Highsnobiety says the standard design by 1945. The Gridiron Uniform Database says that from 2006 the back's position letter and number are black on a white field (the red numbers of 1947-59 and the white-on-black box of 1960-78 are not drawn)
-  ["cfl", "CFL official", "CFLの審判", "2000s", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 ps=0 sc=1 sl=s co=v nf=101010 no=fff"], // unsure: the era; solid black sleeves per Wikipedia, the collar is not documented
-  ["ncaa-football", "NCAA football official", "NCAAアメフトの審判", "1950-", "college", "fff 101010 c=f ss=0 hs=0 p=s r=5.0.10.1.5.0 sl=s co=v bp=1 nf=101010"], // unsure: the era; two-inch stripes per Wikipedia; Wikipedia's photo caption names an 'R' placket on the back of a college referee's shirt, drawn here as a white plate (its size and colour are a reading)
-  ["highschool-football", "High school football official", "高校アメフトの審判", "1950-", "high school", "fff 101010 c=f ss=0 hs=0 p=s r=3.0.5.1.3.0 sl=s co=v nf=101010 no=fff"], // unsure: the era; one-inch stripes per Wikipedia
+  ["nfl", "NFL official", "NFLの審判", "2006-", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 sl=s co=p bp=1 nf=101010 sn=1"], // unsure: the 'uneven' pattern read as a 5 unit black stripe between 9 unit white ones; Highsnobiety says the standard design by 1945. The Gridiron Uniform Database says that from 2006 the back's position letter and number are black on a white field (the red numbers of 1947-59 and the white-on-black box of 1960-78 are not drawn)
+  ["cfl", "CFL official", "CFLの審判", "2000s", "modern", "fff 101010 c=f ss=0 hs=0 p=s r=4.0.5.1.5.0 ps=0 sc=1 sl=s co=v nf=101010 no=fff sn=1"], // unsure: the era; solid black sleeves per Wikipedia, the collar is not documented
+  ["ncaa-football", "NCAA football official", "NCAAアメフトの審判", "1950-", "college", "fff 101010 c=f ss=0 hs=0 p=s r=5.0.10.1.5.0 sl=s co=v bp=1 nf=101010 sn=1"], // unsure: the era; two-inch stripes per Wikipedia; Wikipedia's photo caption names an 'R' placket on the back of a college referee's shirt, drawn here as a white plate (its size and colour are a reading)
+  ["highschool-football", "High school football official", "高校アメフトの審判", "1950-", "high school", "fff 101010 c=f ss=0 hs=0 p=s r=3.0.5.1.3.0 sl=s co=v nf=101010 no=fff sn=1"], // unsure: the era; one-inch stripes per Wikipedia
 
   // ----- Soccer. Wikipedia "Referee (association football)": traditionally all black (red if a side wore very dark); at the 1994 World Cup officials could choose burgundy, yellow or white and the
   // Premier League's referees wore green; since then mostly yellow or black. FootyHeadlines: the 2019 Macron UEFA Champions League range in black, neon yellow, neon sky and neon pink, with
@@ -97,3 +100,22 @@ export const OFFICIALS: Preset[] = defineOfficials([
   ["lacrosse-boys", "Lacrosse official, boys' game", "ラクロスの審判（男子）", "2020s", "boys", "fff 101010 c=s p=s r=5.0.10.1.5.0 sl=s co=p cf=9.1 nf=101010 no=fff"], // unsure: the era and the stripe width, not given for boys
   ["lacrosse-girls", "Lacrosse official, girls' game", "ラクロスの審判（女子）", "2020s", "girls", "fff 101010 c=s p=s r=3.0.5.1.3.0 sl=s co=p nf=101010 no=fff"], // unsure: the era; one-inch stripes per the IHSA handbook
 ]);
+
+/** An official's cap, for `renderCap`: plain, with no letters and no mark. */
+export interface OfficialCap {
+  id: string;
+  team: string;
+  ja: string;
+  years: string;
+  /** What to give `renderCap`. */
+  cap: CapOptions;
+}
+
+// A gridiron referee wears a white cap and the other officials black ones (Wikipedia, "Official (American football)"); a baseball umpire a navy one, plain (Wikipedia, "Umpire (baseball)"). unsure: the exact colours.
+export const OFFICIAL_CAPS: OfficialCap[] = [
+  { id: "ref:nfl-referee-cap", team: "NFL referee's cap", ja: "NFLのレフェリーの帽子（白）", years: "1990s", cap: { colors: ["#ffffff", "#ffffff"], tone: "solid" } },
+  { id: "ref:nfl-official-cap", team: "NFL official's cap", ja: "NFLの審判の帽子（黒）", years: "1990s", cap: { colors: ["#101010", "#101010"], tone: "solid" } },
+  { id: "ref:cfl-referee-cap", team: "CFL referee's cap", ja: "CFLのレフェリーの帽子（白）", years: "2000s", cap: { colors: ["#ffffff", "#ffffff"], tone: "solid" } },
+  { id: "ref:cfl-official-cap", team: "CFL official's cap", ja: "CFLの審判の帽子（黒）", years: "2000s", cap: { colors: ["#101010", "#101010"], tone: "solid" } },
+  { id: "ref:mlb-umpire-cap", team: "MLB umpire's cap", ja: "MLBの審判の帽子（紺）", years: "1996", cap: { colors: ["#14213d", "#14213d"], tone: "solid" } },
+];

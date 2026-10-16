@@ -638,6 +638,20 @@ $("styles-way").addEventListener("click", (e) => {
   syncUrl();
 });
 
+async function drawOfficialCaps() {
+  const host = $("official-caps");
+  try {
+    const { OFFICIAL_CAPS } = await import("./dist/presets/officials.js");
+    host.replaceChildren(...OFFICIAL_CAPS.map((c) => {
+      const fig = el("figure", { class: "cap", "data-id": c.id }, el("figcaption", { class: "banner", text: lang() === "ja" ? c.ja : c.team }));
+      fig.insertAdjacentHTML("afterbegin", renderCap({ ...c.cap, size: 120, view: "side", language: lang() }));
+      return fig;
+    }));
+  } catch {
+    host.replaceChildren();
+  }
+}
+
 // ----- Officials: the referees, linesmen and umpires, by sport.
 const OFFICIAL_SPORTS = ["all", "hockey", "basketball", "football", "soccer", "baseball", "rugby-lacrosse"];
 const sportOf = (id) => {
@@ -727,6 +741,7 @@ async function loadPresets() {
   buildWall();
   buildStyles();
   buildOfficials();
+  drawOfficialCaps();
   drawBuilders();
   syncControls();
 }
@@ -800,6 +815,7 @@ function everything() {
     buildWall();
     buildStyles();
     buildOfficials();
+    drawOfficialCaps();
   }
 }
 window.addEventListener("senshu-language", everything);

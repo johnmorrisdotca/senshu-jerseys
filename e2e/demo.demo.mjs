@@ -480,3 +480,13 @@ test("the twelve national styles are on a sheet, home or away, and a tap puts on
   expect(await noSideways(page)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test("the officials section shows the caps, and a number on a striped referee goes on both sleeves", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#official-caps figure")).toHaveCount(5);
+  await expect(page.locator("#official-caps figure svg").first()).toBeVisible();
+  expect(await noSideways(page)).toBe(true);
+  await page.goto("/?preset=ref:nhl-modern-referee&number=14");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  expect(await page.locator("#stage").innerHTML()).toContain("rotate(");
+});

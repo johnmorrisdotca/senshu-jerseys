@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import * as S from "../src/index.ts";
-import { OFFICIALS } from "../src/presets/officials.ts";
+import { OFFICIAL_CAPS, OFFICIALS } from "../src/presets/officials.ts";
 import { PRESETS, LEAGUES } from "../src/presets-entry.ts";
 import { armbandsOf, resolve } from "../src/options.ts";
 import { decode } from "../src/presets/core.ts";
@@ -184,4 +184,32 @@ test("a chest protector draws over the front of a baseball shirt, and not on the
   const base = { cut: "baseball" as const, colors: ["#14213d", "#c8102e"], collar: "polo" as const, sleeve: "short" as const };
   assert.ok(S.renderJersey({ ...base, protector: true }).length > S.renderJersey(base).length);
   assert.equal(plain(S.renderJersey({ ...base, protector: true, view: "back" })), plain(S.renderJersey({ ...base, view: "back" })));
+});
+
+test("the officials' numbers go on the sleeves too: the hockey, basketball and football shirts carry sleeveNumbers, the others do not", async () => {
+  const { renderJersey } = await import("../src/render.ts");
+  const by = (id: string) => OFFICIALS.find((p) => p.id === id)?.options;
+  for (const id of ["ref:nhl-modern-referee", "ref:nhl-modern-linesman", "ref:pwhl-referee", "ref:nhl-1950s-candy", "ref:nba-modern", "ref:nfl", "ref:cfl"]) assert.ok(by(id)?.sleeveNumbers === true, id);
+  for (const id of ["ref:soccer-yellow", "ref:mlb-umpire-navy", "ref:rugby-union-yellow", "ref:lacrosse-boys", "ref:nhl-1930s-cream"]) assert.ok(by(id)?.sleeveNumbers !== true, id);
+  const referee = by("ref:nhl-modern-referee");
+  const count = (svg: string): number => (svg.match(/<g transform="translate\([\d.]+ [\d.]+\) rotate\(/g) ?? []).length;
+  const without = count(renderJersey({ ...referee, view: "front" }));
+  assert.equal(count(renderJersey({ ...referee, number: 14, view: "front" })) - without, 2, "a number on each arm once it is given");
+});
+
+test("the white cap of a gridiron referee and the black of the other officials are caps with no letters", async () => {
+  const { renderCap } = await import("../src/cap.ts");
+  assert.equal(OFFICIAL_CAPS.length, 5);
+  assert.equal(new Set(OFFICIAL_CAPS.map((c) => c.id)).size, 5);
+  for (const c of OFFICIAL_CAPS) {
+    assert.match(c.id, /^ref:[a-z-]+-cap$/);
+    assert.match(c.ja, /[぀-ヿ㐀-鿿]/, c.id);
+    assert.equal((c.cap as Record<string, unknown>).initials, undefined, "no letters");
+    for (const view of ["front", "side"] as const) {
+      const svg = renderCap({ ...c.cap, view });
+      assert.equal(wellFormed(svg), null, `${c.id} ${view}`);
+      assert.doesNotMatch(svg, /NaN|undefined|Infinity/);
+    }
+  }
+  assert.deepEqual(OFFICIAL_CAPS.find((c) => c.id === "ref:nfl-referee-cap")?.cap.colors, ["#ffffff", "#ffffff"]);
 });
