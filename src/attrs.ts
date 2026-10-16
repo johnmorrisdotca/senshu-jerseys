@@ -1,13 +1,13 @@
 // The jersey's options as text: the attributes of `<senshu-jersey>` and the query of `embed.html` are the same words, read by one function and written by another.
 import { readColour } from "./colour.ts";
 import { CUT_IDS, type CutId } from "./cuts.ts";
-import { bandsOf, type Bands, type JerseyOptions, type SleeveDetail } from "./options.ts";
+import { bandsOf, type Bands, type ChestBadge, type JerseyOptions, type SleeveDetail } from "./options.ts";
 
 /** Every attribute that sets an option; the element watches these. */
 export const OPTION_ATTRIBUTES = [
   "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
-  "patch", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
+  "patch", "chest-badges", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
   "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate",
 ] as const;
 
@@ -48,6 +48,67 @@ export function detailToText(d: SleeveDetail, hash = true): string {
   return parts.join(";");
 }
 
+const CHEST_NUMERIC = new Set(["size", "dx", "dy"]);
+const CHEST_COLOURS = new Set(["fill", "outline", "ink"]);
+const CHEST_TEXT = ["kind", "side", "text", "shape", "art"] as const;
+
+/**
+ * The chest badges from text: badges separated by `|`, each `key:value` pairs separated by `;`: `kind:C;side:left|kind:flag;side:right;flag:d52b1e+fff+d52b1e;flag-direction:vertical`. The keys are the badge's (`kind`, `side`,
+ * `text`, `shape`, `size`, `dx`, `dy`, `fill`, `outline`, `ink`, `nudge`, `art`) and, for a flag, `flag` (its colours joined by `+`), `flag-direction`, `flag-canton` and `flag-disc`. A colour is with or without its `#`.
+ */
+export function chestFromText(text: string): ChestBadge[] {
+  const out: ChestBadge[] = [];
+  for (const entry of text.split("|").slice(0, 4)) {
+    const d: Record<string, unknown> = {};
+    const flag: Record<string, unknown> = {};
+    for (const part of entry.split(";")) {
+      const at = part.indexOf(":");
+      if (at < 0) continue;
+      const key = part.slice(0, at).trim();
+      const value = part.slice(at + 1).trim();
+      if (value === "") continue;
+      if (key === "flag") flag.stripes = value.split("+").map(bare);
+      else if (key === "flag-direction") flag.direction = value;
+      else if (key === "flag-canton" || key === "flag-disc") flag[key.slice(5)] = bare(value);
+      else if ((CHEST_TEXT as readonly string[]).includes(key)) d[key] = value;
+      else if (CHEST_NUMERIC.has(key)) {
+        if (/^-?\d+(?:\.\d+)?$/.test(value)) d[key] = Number(value);
+      } else if (CHEST_COLOURS.has(key)) {
+        if (readColour(bare(value)) !== undefined) d[key] = bare(value);
+      } else if (key === "nudge") d.nudge = value !== "false" && value !== "0";
+    }
+    if (Object.keys(flag).length > 0) d.flag = flag;
+    if (Object.keys(d).length > 0) out.push(d as ChestBadge);
+  }
+  return out;
+}
+
+/** The chest badges as text, the reverse of `chestFromText`. */
+export function chestToText(badges: ChestBadge | readonly ChestBadge[], hash = true): string {
+  const list = Array.isArray(badges) ? badges : [badges];
+  return list
+    .filter((b) => b !== null && typeof b === "object")
+    .slice(0, 4)
+    .map((b) => {
+      const parts: string[] = [];
+      for (const key of [...CHEST_TEXT, "size", "dx", "dy", "fill", "outline", "ink", "nudge"] as const) {
+        const v = b[key as keyof ChestBadge];
+        if (v === undefined || v === null || v === "") continue;
+        parts.push(`${key}:${CHEST_COLOURS.has(key) && !hash && typeof v === "string" ? strip(v) : String(v)}`);
+      }
+      const f = b.flag;
+      if (f !== undefined && f !== null && typeof f === "object") {
+        if (Array.isArray(f.stripes)) parts.push(`flag:${(f.stripes as readonly string[]).map((c: string) => (hash ? c : strip(c))).join("+")}`);
+        if (f.direction !== undefined) parts.push(`flag-direction:${f.direction}`);
+        if (f.canton !== undefined) parts.push(`flag-canton:${hash ? f.canton : strip(f.canton)}`);
+        if (f.disc !== undefined) parts.push(`flag-disc:${hash ? f.disc : strip(f.disc)}`);
+      }
+      return parts.join(";");
+    })
+    .filter((t) => t !== "")
+    .join("|");
+}
+
 const list = (v: string): number[] => v.split(/[\s,]+/).filter((s) => s !== "").map(Number);
 
 /** The options `read` finds, a function from an attribute's name to its text or `null`. Nothing here is trusted: `renderJersey` checks every value again. */
@@ -71,6 +132,8 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
     const f = flag(read(name));
     if (f !== undefined) o[name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = f;
   }
+  const chestText = read("chest-badges");
+  if (chestText !== null && chestText.trim() !== "") o.chestBadges = chestFromText(chestText);
   const sn = read("sleeve-numbers");
   if (sn !== null) o.sleeveNumbers = sn === "both" || sn === "left" || sn === "right" ? sn : flag(sn);
   for (const [name, key] of [["sleeve-left", "sleeveLeft"], ["sleeve-right", "sleeveRight"]] as const) {
@@ -141,6 +204,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   for (const [k, v] of [["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["badge", o.badge], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
   for (const [k, v] of [["raglan", o.raglan], ["piping", o.piping], ["sleeve-numbers", o.sleeveNumbers], ["kit", o.kit], ["pocket", o.pocket], ["protector", o.protector]] as const) set(k, v);
   if (o.patternSleeves === false) out["pattern-sleeves"] = "false";
+  if (o.chestBadges !== undefined && o.chestBadges !== null) set("chest-badges", chestToText(o.chestBadges, hash));
   for (const [k, v] of [["sleeve-left", o.sleeveLeft], ["sleeve-right", o.sleeveRight]] as const) if (v !== undefined && v !== null && typeof v === "object") set(k, detailToText(v, hash));
   set("stripe-count", o.stripeCount);
   set("number", o.number);

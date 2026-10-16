@@ -10,7 +10,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
   <img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-3178c6">
 </p>
 
-<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
 
 <p align="center">
 <picture>
@@ -178,7 +178,7 @@ console.log(up !== down); // true
 console.log([tips, band, set].every((svg) => svg.startsWith("<svg"))); // true
 ```
 
-The upper-arm number is `sleeveNumbers: true`: it sits where the cut puts the number on a sleeve (hockey: a third of the way down the arm; the other cuts: near the middle of it), turned to the sleeve's slant. `"left"` or `"right"` (the wearer's) picks a side, and `sleeveLeft` and `sleeveRight` give each sleeve its own number, size, place, colours and a plain patch; on the turning garment (`volume: true`) they stay on the arm as it turns: see [sleeves](./docs/sleeves.md). A `patch` (`"C"` or `"A"`) is on the front only, on the wearer's left chest.
+The upper-arm number is `sleeveNumbers: true`: it sits where the cut puts the number on a sleeve (hockey: a third of the way down the arm; the other cuts: near the middle of it), turned to the sleeve's slant. `"left"` or `"right"` (the wearer's) picks a side, and `sleeveLeft` and `sleeveRight` give each sleeve its own number, size, place, colours and a plain patch; on the turning garment (`volume: true`) they stay on the arm as it turns: see [sleeves](./docs/sleeves.md). A `patch` (`"C"` or `"A"`) is on the front only, on the cut's own side of the chest; `chestBadges` places captain's and alternate's letters, plain patches and flags, each on the wearer's left or right breast: see [chest badges](./docs/chest.md).
 
 ### Numbers and names that read
 
@@ -378,7 +378,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `usePresets`, `presetOf`, `presetOptions`, `loadedPresets`, `decode`, `defineLeague` | Load presets, find one, and read or write a preset's one-line spec. |
 | `embedCode`, `EMBED_KINDS`, `SITE`, `CDN` | The text that puts a jersey in a page: element, iframe, module, SVG or data address. |
 | `OPTION_ATTRIBUTES`, `attributesFromOptions`, `optionsFromAttributes`, `jerseyToParams`, `jerseyFromParams` | Options as attributes and as a query. |
-| `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `BADGE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
+| `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `BADGE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `CHEST_KINDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
 | `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES` | The helmets, their marks, and the banner shapes. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
@@ -386,7 +386,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 
 ### Options
 
-`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `armbands`, `pocket`, `badge`, `protector`, `plate`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `sleeveLeft`, `sleeveRight`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
+`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `armbands`, `pocket`, `badge`, `protector`, `plate`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `sleeveLeft`, `sleeveRight`, `chestBadges`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
 
 ## Theming
 

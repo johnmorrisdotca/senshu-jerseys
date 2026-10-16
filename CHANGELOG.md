@@ -12,10 +12,11 @@ All notable changes to this project are written here. The format follows
 - A pattern that differs from side to side (halves, quarters, an odd stripe count) is mirrored on the back of the volumetric garment, so it runs on round the side seam.
 
 - **Sleeve numbers and patches that stay on the arm.** `sleeveNumbers` takes `"left"` and `"right"` (the wearer's) as well as `true`, and `sleeveLeft` and `sleeveRight` give each sleeve its own number, size, place down the sleeve, place round the arm, fill and outline, and a plain patch (round, shield or square, with up to three letters). On the volumetric turn they are drawn on the arm's surface in their own cells: attached as the shirt turns, hidden where the arm turns away, never mirrored, and the back number is never taken for a sleeve number. A flat drawing with `sleeveNumbers: true` is unchanged. The element takes `sleeve-numbers="left"`, `sleeve-left` and `sleeve-right`; the demo has the controls; `docs/sleeves.md` says it all, and `test/sleeves.test.ts` holds it.
+- **Chest badges.** `chestBadges` puts captain's and alternate's letters, plain patches and flags on the chest, each on the wearer's left or right breast, with a size, an offset and colours, up to four. A flag is the caller's: stripes, a canton and a disc from their colours, or any SVG or emblem id as `art`; the package draws none of its own. A badge keeps clear of the collar, the crest, the pocket, the chest text and number, the old `patch` and the other badges, by sliding down (`nudge: false` keeps it where it is put). The `patch` option is unchanged. On the volumetric turn a badge is on the chest and turns with it. The element takes `chest-badges`; the demo has the controls; `docs/chest.md` says it all, and `test/chest.test.ts` holds it.
 
 ### Changed
 
-- The size limits of the turn and element bundles are raised (17 to 22 kB and 24 to 30 kB gzipped), and the jersey's and the banner's (20 to 22 kB and 16 to 18 kB), for the volume and the sleeves.
+- The size limits of the bundles are raised, gzipped, for the volume, the sleeves and the chest badges: the jersey's from 20 to 24 kB, the banner's from 16 to 20, the turn's from 17 to 25 and the element's from 24 to 32.
 
 ## [0.3.4] - 2026-10-16
 

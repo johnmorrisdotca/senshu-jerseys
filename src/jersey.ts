@@ -3,7 +3,7 @@
 import { CUTS, type CollarId, type CutId, type CutSpec } from "./cuts.ts";
 import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, worst, type Rgb } from "./colour.ts";
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
-import { resolve, type Bands, type JerseyOptions, type Resolved, type SleeveSide } from "./options.ts";
+import { resolve, type Bands, type ChestBadgeR, type JerseyOptions, type Resolved, type SleeveSide } from "./options.ts";
 import { cubic, lerp, n2, poly, quad, rounded, type Pt } from "./path.ts";
 import { drawRun, layout } from "./text.ts";
 
@@ -772,6 +772,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       marks += drawRun(layout(r.patch, p.x, p.y, { height: p.w * 0.58, weight: "bold" }), hexOf(letterInk), undefined, undefined);
     }
   }
+  if (r.chest !== undefined && view === "front") marks += chestBadgeMarks(r, sh, uid, emblems, r.crest === undefined ? undefined : crestDocument(r.crest, emblems, tint, trimHex));
   if (details && r.sleeveSides !== undefined && L !== undefined && R !== undefined) {
     for (const s of [L, R]) {
       // The picture's left sleeve is the wearer's right in the front view and the wearer's left in the back view.
@@ -798,6 +799,114 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
 }
 
 
+
+type Rect = readonly [number, number, number, number];
+const hits = (a: Rect, b: Rect): boolean => a[0] < b[2] + 1 && b[0] < a[2] + 1 && a[1] < b[3] + 1 && b[1] < a[3] + 1;
+
+/** Where the chest badges go: each badge, its middle and its size, after the nudging. `clear` is false for one that found no room and stays where it was put. */
+export function chestLayout(r: Resolved, sh: Shape, hasCrest: boolean): { b: ChestBadgeR; x: number; y: number; w: number; h: number; clear: boolean }[] {
+  const spec = sh.spec;
+  const fd = FRONT_DEPTH[r.collar] + (sh.tank && r.collar === "v" ? -4 : 0);
+  const taken: Rect[] = [[100 - sh.nw - 6, spec.ny - 10, 100 + sh.nw + 6, spec.ny + fd + 2]];
+  // The leaves of a polo or a dress collar lie out over the chest.
+  if (r.collar === "polo" || r.collar === "point" || r.collar === "zip") taken.push([100 - sh.nw - 12, spec.ny, 100 + sh.nw + 12, spec.ny + 28]);
+  const box = (s: { x: number; y: number; w: number; h: number }): Rect => [s.x - s.w / 2, s.y - s.h / 2, s.x + s.w / 2, s.y + s.h / 2];
+  const hasSpot = r.badge !== undefined;
+  if (hasCrest && !hasSpot) taken.push(box(spec.crest));
+  const px = 100 + Math.round(spec.au * 0.56);
+  const py = spec.ay + 6;
+  if (r.pocket) taken.push([px - 15, py - 17, px + 15, py + 17]);
+  else if (hasSpot) taken.push([px - 10, py - 12, px + 10, py + 10]);
+  if (r.frontText !== undefined) {
+    if (r.frontTextAngle === "diagonal-up" || r.frontTextAngle === "diagonal-down") {
+      const cy = spec.ay + (spec.hy - spec.ay) * 0.36;
+      taken.push([100 - (Math.min(spec.wu, spec.au) - 12), cy - 24, 100 + (Math.min(spec.wu, spec.au) - 12), cy + 24]);
+    } else taken.push(box(spec.text));
+  }
+  if (r.frontNumber !== undefined) taken.push(box(spec.number.front));
+  if (r.patch !== "") taken.push(box(spec.patch));
+  const own = spec.patch.x > 100 ? "left" : "right";
+  const u = Math.abs(spec.patch.x - 100);
+  const limit = spec.hy - 12;
+  const out: { b: ChestBadgeR; x: number; y: number; w: number; h: number; clear: boolean }[] = [];
+  for (const b of r.chest ?? []) {
+    const side = b.side ?? own;
+    const w = b.kind === "flag" ? b.size * 1.5 : b.size;
+    const h = b.size;
+    // Down from its place on its own side until it is clear, else down the other side; if there is no room at all it stays where it was put.
+    const at = (sd: "left" | "right"): number => 100 + (sd === "left" ? 1 : -1) * u + b.dx * (sd === side ? 1 : -1);
+    const free = (px2: number, py2: number): boolean => !taken.some((t) => hits([px2 - w / 2, py2 - h / 2, px2 + w / 2, py2 + h / 2], t));
+    let x = at(side);
+    let y = spec.patch.y + b.dy;
+    let clear = free(x, y);
+    if (b.nudge && !clear) {
+      for (const sd of [side, side === "left" ? "right" : "left"] as const) {
+        for (let py2 = spec.patch.y + b.dy + 3; py2 + h / 2 + 3 <= limit && !clear; py2 += 3) {
+          if (free(at(sd), py2)) {
+            x = at(sd);
+            y = py2;
+            clear = true;
+          }
+        }
+        if (clear) break;
+      }
+    }
+    taken.push([x - w / 2, y - h / 2, x + w / 2, y + h / 2]);
+    out.push({ b, x, y, w, h, clear });
+  }
+  return out;
+}
+
+/**
+ * The chest badges of the front: each in the place the cut puts its captain's letter (the wearer's side given, or the cut's own), moved by its offset, and then, unless it says `nudge: false`, slid down until it clears what
+ * else is on the chest: the neck opening and the collar, the crest or the badge spot and the pocket, the chest text and number, the old `patch`, and the badges placed before it. Layering, from the cloth outwards: the pattern
+ * and bands, the crest, the badges, the lettering. What is drawn is a plain shape, the colours and letters or the flag's stripes of the caller's, or the caller's own art; the package has no flag and no mark.
+ */
+function chestBadgeMarks(r: Resolved, sh: Shape, uid: string, emblems: EmblemRenderer | undefined, crestSvg: string | undefined): string {
+  const line = r.look === "line";
+  const trimHex = hexOf(r.trim);
+  let out = "";
+  chestLayout(r, sh, crestSvg !== undefined).forEach(({ b, x, y, w, h }, i) => {
+    const fillRgb = b.fill ?? r.trim;
+    const edgeRgb = b.outline ?? shade(fillRgb, lum(fillRgb) > 0.4 ? -0.4 : 0.4);
+    const ink = b.ink ?? inkOn([fillRgb], [r.body, r.trim2, BLACK, WHITE]);
+    let g = "";
+    const art = b.art === undefined ? undefined : crestDocument(b.art, emblems, hexOf(r.body), trimHex);
+    if (b.kind === "flag") {
+      const clip = `${uid}b${i}`;
+      const rect = `M${n2(-w / 2)} ${n2(-h / 2)}H${n2(w / 2)}V${n2(h / 2)}H${n2(-w / 2)}Z`;
+      if (line) g = `<path d="${rect}" fill="none" stroke="currentColor" stroke-width="3"/>`;
+      else if (art !== undefined) g = crestImage(art, -w / 2, -h / 2, w, h) + `<path d="${rect}" fill="none" stroke="${hexOf(edgeRgb)}" stroke-width=".8"/>`;
+      else {
+        let body = "";
+        const f = b.flag;
+        if (f === undefined) body = `<path d="${rect}" fill="${hexOf(fillRgb)}"/>`;
+        else {
+          const n = f.stripes.length;
+          f.stripes.forEach((c, k) => {
+            body += f.vertical ? `<path d="M${n2(-w / 2 + (w * k) / n)} ${n2(-h / 2)}h${n2(w / n + 0.2)}v${n2(h)}h${n2(-w / n - 0.2)}Z" fill="${hexOf(c)}"/>` : `<path d="M${n2(-w / 2)} ${n2(-h / 2 + (h * k) / n)}h${n2(w)}v${n2(h / n + 0.2)}h${n2(-w)}Z" fill="${hexOf(c)}"/>`;
+          });
+          if (f.canton !== undefined) body += `<path d="M${n2(-w / 2)} ${n2(-h / 2)}h${n2(w * 0.4)}v${n2(h * 0.55)}h${n2(-w * 0.4)}Z" fill="${hexOf(f.canton)}"/>`;
+          if (f.disc !== undefined) body += `<circle r="${n2(h * 0.28)}" fill="${hexOf(f.disc)}"/>`;
+        }
+        g = `<clipPath id="${clip}"><path d="${rect}"/></clipPath><g clip-path="url(#${clip})">${body}</g><path d="${rect}" fill="none" stroke="${hexOf(edgeRgb)}" stroke-width=".8"/>`;
+      }
+    } else {
+      const shape = b.kind === "patch" ? b.shape : "round";
+      const body = shapePath(shape, b.size);
+      if (line) g = `<path d="${body}" fill="none" stroke="currentColor" stroke-width="${b.kind === "patch" ? 3 : 4}"/>`;
+      else if (art !== undefined) g = `<path d="${body}" fill="${hexOf(fillRgb)}" stroke="${hexOf(edgeRgb)}" stroke-width="1" stroke-linejoin="round"/>` + crestImage(art, -b.size * 0.4, -b.size * 0.4, b.size * 0.8, b.size * 0.8);
+      else {
+        g = `<path d="${body}" fill="${hexOf(fillRgb)}" stroke="${hexOf(edgeRgb)}" stroke-width="1" stroke-linejoin="round"/>`;
+        const letters = b.kind === "patch" ? b.text : b.kind;
+        if (letters !== undefined) g += drawRun(layout(letters, 0, 0, { height: b.size * 0.58, maxWidth: b.size * 0.8, weight: "bold" }), hexOf(ink), undefined, undefined);
+      }
+    }
+    out += `<g transform="translate(${n2(x)} ${n2(y)})">${g}</g>`;
+  });
+  return out;
+}
+
 /** One thing on a sleeve, drawn upright and centred on the origin: `at` is how far down the sleeve it lies in percent, `around` how far round the arm in degrees, `w` and `h` the room it takes. */
 export interface SleeveDraw {
   kind: "number" | "patch";
@@ -806,6 +915,14 @@ export interface SleeveDraw {
   h: number;
   at: number;
   around: number;
+}
+
+/** A badge's plain shape, centred on the origin, `s` across: a circle, a shield or a square. */
+function shapePath(shape: "round" | "shield" | "square", s: number): string {
+  const h = s / 2;
+  if (shape === "shield") return `M${n2(-h)} ${n2(-h)}H${n2(h)}V${n2(s * 0.05)}Q${n2(h)} ${n2(s * 0.55)} 0 ${n2(s * 0.65)}Q${n2(-h)} ${n2(s * 0.55)} ${n2(-h)} ${n2(s * 0.05)}Z`;
+  if (shape === "square") return `M${n2(-h)} ${n2(-h)}H${n2(h)}V${n2(h)}H${n2(-h)}Z`;
+  return `M${n2(-h)} 0a${n2(h)} ${n2(h)} 0 1 0 ${n2(s)} 0a${n2(h)} ${n2(h)} 0 1 0 ${n2(-s)} 0Z`;
 }
 
 /**
@@ -831,7 +948,7 @@ export function sleeveDraws(r: Resolved, side: SleeveSide, width: (t: number) =>
   if (side.patch !== undefined) {
     const p = side.patch;
     const s2 = p.size;
-    const body = p.shape === "shield" ? `M${n2(-s2 / 2)} ${n2(-s2 / 2)}H${n2(s2 / 2)}V${n2(s2 * 0.05)}Q${n2(s2 / 2)} ${n2(s2 * 0.55)} 0 ${n2(s2 * 0.65)}Q${n2(-s2 / 2)} ${n2(s2 * 0.55)} ${n2(-s2 / 2)} ${n2(s2 * 0.05)}Z` : p.shape === "square" ? `M${n2(-s2 / 2)} ${n2(-s2 / 2)}H${n2(s2 / 2)}V${n2(s2 / 2)}H${n2(-s2 / 2)}Z` : `M${n2(-s2 / 2)} 0a${n2(s2 / 2)} ${n2(s2 / 2)} 0 1 0 ${n2(s2)} 0a${n2(s2 / 2)} ${n2(s2 / 2)} 0 1 0 ${n2(-s2)} 0Z`;
+    const body = shapePath(p.shape, s2);
     let svg: string;
     if (line) svg = `<path d="${body}" fill="none" stroke="currentColor" stroke-width="3"/>`;
     else {

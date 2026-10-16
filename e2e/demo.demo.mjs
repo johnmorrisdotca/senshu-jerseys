@@ -430,3 +430,26 @@ test("the sleeve controls place a number and a patch on the arm, at an angle, an
   expect(errors).toEqual([]);
   expect(await noSideways(page)).toBe(true);
 });
+
+test("the chest controls put a captain's letter and a flag on either breast, and they go round with the chest", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/?cut=hockey&number=19&name=Morris");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg[data-vol]")).toBeVisible();
+  await page.locator('[data-testid="seg-chest-left"] button[data-value="C"]').click();
+  await expect(page).toHaveURL(/chest-badges=kind%3AC%3Bside%3Aleft/);
+  await page.locator('[data-testid="seg-chest-right"] button[data-value="flag"]').click();
+  await expect(page).toHaveURL(/flag%3A/);
+  expect(await stage.locator("svg").innerHTML()).toContain("translate(134 78)");
+  expect(await noSideways(page)).toBe(true);
+  await page.getByTestId("view-back").click();
+  expect(Math.abs(await yawOf(page))).toBe(180);
+  await page.locator('[data-testid="seg-chest-left"] button[data-value="none"]').click();
+  expect(Math.abs(await yawOf(page))).toBe(180);
+  await expect(page).not.toHaveURL(/kind%3AC/);
+  // The address is the whole state.
+  await page.goto(page.url());
+  await expect(page.locator('[data-testid="seg-chest-right"] button[data-value="flag"]')).toHaveAttribute("aria-pressed", "true");
+  expect(errors).toEqual([]);
+});

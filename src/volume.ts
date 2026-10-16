@@ -327,7 +327,7 @@ function quadPath(tex: readonly number[]): string {
     const dx = x - cx;
     const dy = y - cy;
     const len = Math.hypot(dx, dy) || 1;
-    const g = 0.55;
+    const g = 0.9;
     d += `${k === 0 ? "M" : "L"}${n2(x + (dx / len) * g)} ${n2(y + (dy / len) * g)}`;
   }
   return `${d}Z`;

@@ -54,6 +54,37 @@ export interface SleeveDetail {
   patchOutline?: string;
 }
 
+export const CHEST_KINDS = ["C", "A", "patch", "flag"] as const;
+export type ChestKind = (typeof CHEST_KINDS)[number];
+
+/**
+ * A badge on the chest, in the wearer's own terms (`"left"` is the wearer's left breast, the right of the picture): a captain's `C`, an alternate's `A`, a plain `patch` (a shape with up to three letters) or a `flag` (a rectangle).
+ * What a flag or a patch shows is the caller's: stripes and colours of their own, or any SVG document, or an emblem id through `useEmblems` or `emblems`, as for `crest`. The package draws no flag and no mark of its own.
+ */
+export interface ChestBadge {
+  kind?: ChestKind;
+  /** The wearer's side: the one the cut puts its C on by default. */
+  side?: "left" | "right";
+  /** For a `patch`: up to three letters on it. */
+  text?: string;
+  /** For a `patch` (and the C and A): `round` (the C and A's own), `shield` or `square`. */
+  shape?: BadgeId;
+  /** For a `flag`: its bands as colours, 2 to 5, from the top (or the left); `direction` says which; a `canton` colour fills the top corner next to the hoist and a `disc` colour is a circle in the middle. */
+  flag?: { stripes?: readonly string[]; direction?: "horizontal" | "vertical"; canton?: string; disc?: string };
+  /** An SVG document, or an emblem id, to show in the badge's place instead of its drawing (a flag from a flag package, a federation's patch). */
+  art?: string;
+  /** The badge's height in drawing units (8 to 40; the C and A's 20 to 22, a patch 16, a flag 14, whose width is half as much again), and its offset from the place it takes, in units (-40 to 40). */
+  size?: number;
+  dx?: number;
+  dy?: number;
+  fill?: string;
+  outline?: string;
+  /** The ink of the letters. */
+  ink?: string;
+  /** False keeps a badge exactly where it is put, even over the collar or the lettering; by default it slides down clear of them. */
+  nudge?: boolean;
+}
+
 export interface JerseyOptions {
   cut?: CutId;
   /** `[body, trim, trim2?, numberFill?, numberOutline?]`. */
@@ -125,6 +156,8 @@ export interface JerseyOptions {
   frontTextAngle?: TextAngleId;
   frontNumber?: boolean | string | number;
   patch?: PatchId;
+  /** Badges on the chest: a captain's letter, a flag, a patch, each on the wearer's left or right, in any number up to four. The `patch` option is the one C or A of old. */
+  chestBadges?: ChestBadge | readonly ChestBadge[];
   /** The number on the sleeves: `true` or `"both"` for both, or `"left"` or `"right"` (the wearer's) for one. `sleeveLeft` and `sleeveRight` place each sleeve's number and patch. */
   sleeveNumbers?: boolean | "both" | "left" | "right";
   sleeveLeft?: SleeveDetail;
@@ -148,6 +181,23 @@ export interface JerseyOptions {
   /** Bands round the pants' leg and round the socks, as `Bands` (a width and a colour index, from the bottom up). */
   pantsBands?: Bands;
   socksBands?: Bands;
+}
+
+/** A chest badge, read. */
+export interface ChestBadgeR {
+  kind: ChestKind;
+  side?: "left" | "right";
+  text?: string;
+  shape: BadgeId;
+  flag?: { stripes: Rgb[]; vertical: boolean; canton?: Rgb; disc?: Rgb };
+  art?: string;
+  size: number;
+  dx: number;
+  dy: number;
+  fill?: Rgb;
+  outline?: Rgb;
+  ink?: Rgb;
+  nudge: boolean;
 }
 
 /** One sleeve's number and patch, read. */
@@ -201,6 +251,7 @@ export interface Resolved {
   frontTextAngle: TextAngleId;
   frontNumber?: string;
   patch: PatchId;
+  chest?: ChestBadgeR[];
   /** The sleeves' numbers and patches by the wearer's side: absent for a side with none. */
   sleeveSides?: { left?: SleeveSide; right?: SleeveSide };
   crest?: string;
@@ -311,6 +362,44 @@ function sleeveSidesOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], sleeve: Exc
   return { ...(left === undefined ? {} : { left }), ...(right === undefined ? {} : { right }) };
 }
 
+/** The chest badges from outside: each entry that is a badge, at most four; anything wrong in one is its default. */
+function chestOf(o: JerseyOptions, spec: (typeof CUTS)[CutId]): ChestBadgeR[] | undefined {
+  const list: unknown[] = Array.isArray(o.chestBadges) ? o.chestBadges : o.chestBadges !== undefined && o.chestBadges !== null ? [o.chestBadges] : [];
+  const out: ChestBadgeR[] = [];
+  for (const given of list.filter((g) => g !== null && typeof g === "object" && !Array.isArray(g)).slice(0, 4)) {
+    const d = given as ChestBadge;
+    const kind = pick(CHEST_KINDS, d.kind, "C");
+    const flagIn = d.flag !== null && typeof d.flag === "object" ? d.flag : undefined;
+    const stripes = Array.isArray(flagIn?.stripes) ? flagIn.stripes.map((c) => readColour(c)).filter((c): c is Rgb => c !== undefined).slice(0, 5) : [];
+    const art = typeof d.art === "string" && d.art.length <= 200_000 && d.art.trim() !== "" ? d.art : undefined;
+    const b: ChestBadgeR = {
+      kind,
+      shape: kind === "patch" ? pick(BADGE_IDS, d.shape, "round") : "round",
+      size: within(d.size, 8, 40) ?? (kind === "flag" ? 14 : kind === "patch" ? 16 : spec.patch.w),
+      dx: within(d.dx, -40, 40) ?? 0,
+      dy: within(d.dy, -40, 40) ?? 0,
+      nudge: d.nudge !== false,
+    };
+    if (d.side === "left" || d.side === "right") b.side = d.side;
+    const text = clean(d.text, 6)?.replace(/[^\p{L}\p{N}]/gu, "").toUpperCase().slice(0, 3);
+    if (kind === "patch" && text !== undefined && text !== "") b.text = text;
+    if (kind === "flag" && stripes.length >= 2) {
+      b.flag = { stripes, vertical: flagIn?.direction === "vertical" };
+      const canton = readColour(flagIn?.canton);
+      const disc = readColour(flagIn?.disc);
+      if (canton !== undefined) b.flag.canton = canton;
+      if (disc !== undefined) b.flag.disc = disc;
+    }
+    if ((kind === "flag" || kind === "patch") && art !== undefined) b.art = art;
+    for (const [k, v] of [["fill", d.fill], ["outline", d.outline], ["ink", d.ink]] as const) {
+      const c = readColour(v);
+      if (c !== undefined) b[k] = c;
+    }
+    out.push(b);
+  }
+  return out.length === 0 ? undefined : out;
+}
+
 /** Read the options: anything wrong is replaced by the default, never thrown. */
 export function resolve(options: JerseyOptions | undefined): Resolved {
   const o: JerseyOptions = options !== null && typeof options === "object" ? options : {};
@@ -374,6 +463,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     frontTextAngle: pick(TEXT_ANGLE_IDS, o.frontTextAngle, cut === "basketball" ? "arch" : "straight"),
     frontNumber: o.frontNumber === true ? digits(o.number, 2) : o.frontNumber === false || o.frontNumber === undefined ? undefined : digits(o.frontNumber, 2),
     patch: pick(PATCH_IDS, o.patch, ""),
+    chest: chestOf(o, spec),
     sleeveSides: sleeve === "none" ? undefined : sleeveSidesOf(o, spec, sleeve),
     crest: typeof o.crest === "string" && o.crest.length <= 200_000 ? o.crest : undefined,
     view,

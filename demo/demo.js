@@ -92,6 +92,33 @@ const text = (key, props = {}) => {
   return i;
 };
 
+/** The chest badges as the demo keeps them: one choice for the wearer's left breast and one for the right, written as the `chest-badges` word. */
+function chestChoices() {
+  const out = { left: "none", right: "none" };
+  for (const entry of (attrs["chest-badges"] ?? "").split("|")) {
+    const get = (k) => new RegExp(`(?:^|;)${k}:([^;]*)`).exec(entry)?.[1];
+    const side = get("side");
+    if (side === "left" || side === "right") out[side] = get("kind") ?? "none";
+  }
+  return out;
+}
+function setChest(side, kind) {
+  const now = chestChoices();
+  now[side] = kind;
+  const hex = (c) => String(c).replace("#", "");
+  const colours = [attrs.body ?? DEFAULTS.body, attrs.trim ?? DEFAULTS.trim, attrs.accent ?? DEFAULTS.accent].map(hex);
+  const parts = [];
+  for (const sd of ["left", "right"]) {
+    const k = now[sd];
+    if (k === "none") continue;
+    parts.push(k === "flag" ? `kind:flag;side:${sd};flag:${colours.join("+")};flag-direction:vertical` : k === "patch" ? `kind:patch;side:${sd};text:HC;shape:shield` : `kind:${k};side:${sd}`);
+  }
+  if (parts.length === 0) delete attrs["chest-badges"];
+  else attrs["chest-badges"] = parts.join("|");
+  ui.preset = "";
+  render();
+}
+
 /** A slider for one of the sleeve's placements, with its value beside it. */
 const range = (key, min, max, step, onInput) => {
   const input = el("input", { type: "range", class: "range", min: String(min), max: String(max), step: String(step), "data-sleeve": key, "data-testid": `rng-${key}` });
@@ -186,6 +213,8 @@ function buildControls() {
   add(row("frontTextAngle", () => seg("front-text-angle", ["auto", "straight", "arch", "diagonal-up", "diagonal-down"], (v) => (v === "auto" ? say("auto") : say(`textAngle_${v}`)))));
   add(row("frontNumber", () => toggle("front-number", say("on"))));
   add(row("patch", () => seg("patch", ["none", "C", "A"], (v) => (v === "none" ? say("patch_none") : v)), () => true));
+  add(row("chestLeft", () => seg("chest-left", ["none", "C", "A", "patch", "flag"], (v) => say(`chest_${v}`), { onPick: (v) => setChest("left", v) })));
+  add(row("chestRight", () => seg("chest-right", ["none", "C", "A", "patch", "flag"], (v) => say(`chest_${v}`), { onPick: (v) => setChest("right", v) })));
   add(row("sleeveNumbers", () => seg("sleeve-numbers", ["off", "both", "left", "right"], (v) => say(`sn_${v}`), { onPick: (v) => setAttr("sleeve-numbers", v === "off" ? null : v) })));
   add(row("sleevePatch", () => seg("sleeve-patch", ["none", "round", "shield", "square"], (v) => say(`badge_${v}`), { onPick: (v) => setSleeve("patch", v === "none" ? null : v) })));
   add(row("sleeveSize", () => range("sleeve-size", 6, 32, 1, (v) => setSleeve("size", v))));
@@ -248,7 +277,7 @@ function syncControls() {
   hideFor("cuffs", cut === "basketball");
   for (const box of document.querySelectorAll("#controls .fam-seg")) {
     const key = box.dataset.key;
-    const current = key === "sleeve-numbers" ? (attrs[key] === "true" ? "both" : (attrs[key] ?? "off")) : key === "sleeve-patch" ? (sleeveSetting().patch ?? "none") : key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "badge" ? (attrs.badge ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
+    const current = key === "chest-left" || key === "chest-right" ? chestChoices()[key.slice(6)] : key === "sleeve-numbers" ? (attrs[key] === "true" ? "both" : (attrs[key] ?? "off")) : key === "sleeve-patch" ? (sleeveSetting().patch ?? "none") : key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "badge" ? (attrs.badge ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
     for (const b of box.children) {
       b.setAttribute("aria-pressed", String(b.dataset.value === current));
       if (key === "sleeve") b.hidden = b.dataset.value !== "auto" && !sleevesFor(cut).includes(b.dataset.value);
