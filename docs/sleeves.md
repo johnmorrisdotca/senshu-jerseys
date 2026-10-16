@@ -52,3 +52,17 @@ From the cloth outwards: the pattern, the sleeve stripes and the cuffs, the armb
 - The number reads left to right for a viewer facing the sleeve's outside, on both arms, so no digit is ever mirrored (a test holds every cell of every cut at twelve angles to a drawing that is not turned over), and it stands upright with the arm hanging.
 - `update` and `applyTurn` keep the angle: changing a number, a colour or a place at 135 degrees draws the new one at 135.
 - The flat drawing in the front and back views is unchanged for `sleeveNumbers: true`.
+
+## A shoulder patch on a team's preset
+
+A preset draws no mark, so a team's shoulder patches are the caller's: the same words put a plain patch at the top of each sleeve, on the outside of the arm.
+
+```js
+import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
+import { NHL } from "@johnmorrisdotca/senshu-jerseys/presets/nhl";
+
+const stars = NHL.find((p) => p.id === "nhl:stars-2013-away").options;
+const patch = { patch: "shield", patchText: "S", patchAt: 12, patchAround: -90, patchFill: "#000", patchOutline: "#fff" };
+const svg = renderJersey({ ...stars, number: 19, sleeveNumbers: true, sleeveLeft: patch, sleeveRight: patch });
+console.log((svg.match(/rotate\(/g) ?? []).length); // 4
+```
