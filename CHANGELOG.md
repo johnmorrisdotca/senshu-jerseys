@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-16
+
 ### Fixed
 
 - **The letters on a cap seen from the side are whole.** They ran off the edge of the crown ("CAN" read "CA", "USA" read "US"). They are now turned away with the front panel, narrowed to just over half and set in the middle of the panel, clear of the seam and of the crown's edge, for one to three letters and for kanji. 
