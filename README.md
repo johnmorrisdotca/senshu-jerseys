@@ -348,7 +348,7 @@ const turn = bindTurn(document.querySelector("#shirt"), { cut: "hockey", number:
 turn.play(); // or turn.pause(), turn.togglePlay(), turn.setYaw(180)
 ```
 
-See [turning](./docs/turning.md) for the pointer, the keys and `prefers-reduced-motion`.
+See [turning](./docs/turning.md) for the pointer, the keys and `prefers-reduced-motion`, and for `volume: true`, which turns the shirt as a garment with depth (a body, sleeves, a hem) instead of a flat card.
 
 ### Read and write options as text
 

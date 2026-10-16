@@ -35,7 +35,7 @@ test("the controls change the drawing, and the address says so", async ({ page }
 });
 
 test("dragging turns the jersey from the front to the back, and the keys do too", async ({ page }) => {
-  await page.goto("/?cut=hockey&number=9&name=Gray");
+  await page.goto("/?cut=hockey&number=9&name=Gray&vol=0");
   const stage = page.locator("#stage");
   await expect(stage.locator("svg")).toBeVisible();
   expect(await yawOf(page)).toBe(0);
@@ -73,7 +73,7 @@ const frontOffset = (page) =>
   });
 
 test("a drag to the right takes the front of the jersey to the right, a drag to the left to the left, and the arrows do the same", async ({ page }) => {
-  await page.goto("/?cut=hockey&number=9&name=Gray");
+  await page.goto("/?cut=hockey&number=9&name=Gray&vol=0");
   const stage = page.locator("#stage");
   await expect(stage.locator("svg")).toBeVisible();
   // Pointer events on the stage, as in the test above, so that it is the same on every project whatever is scrolled into view.
@@ -329,4 +329,77 @@ test("the background is off by default, and a chosen one is a picture behind the
   await expect(page.locator("#background")).toHaveValue("");
   expect(await noSideways(page)).toBe(true);
   expect(errors).toEqual([]);
+});
+
+// ----- The garment with volume (the demo's default stage).
+const shown = (page) => page.locator("#stage [data-vc]:not([display])").count();
+
+test("the stage draws a garment with volume, and the fixed views turn it to the front, the sides, the back and the three-quarter", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/?cut=hockey&number=19&name=Morris&sleeve-numbers=true");
+  await expect(page.locator("#stage svg[data-vol]")).toBeVisible();
+  await expect(page.getByTestId("vol")).toHaveAttribute("aria-pressed", "true");
+  for (const [view, yaw] of [["view-right", 90], ["view-back", 180], ["view-left", -90], ["view-three", 40], ["view-front", 0]]) {
+    await page.getByTestId(view).click();
+    expect(Math.abs(await yawOf(page))).toBe(Math.abs(yaw));
+    expect(await shown(page)).toBeGreaterThan(20);
+  }
+  expect(errors).toEqual([]);
+  expect(await noSideways(page)).toBe(true);
+});
+
+test("the garment turns by hand and by the keys, and the volume and the comparison are switches kept in the address", async ({ page }) => {
+  await page.goto("/?cut=hockey&number=9&name=Gray");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg[data-vol]")).toBeVisible();
+  await stage.focus();
+  await page.keyboard.press("ArrowRight");
+  expect(await yawOf(page)).toBe(15);
+  await page.keyboard.press("Shift+ArrowRight");
+  expect(await yawOf(page)).toBe(60);
+  await page.keyboard.press("Home");
+  expect(await yawOf(page)).toBe(0);
+  await page.getByTestId("cmp").click();
+  await expect(page.getByTestId("compare")).toBeVisible();
+  await expect(page).toHaveURL(/cmp=1/);
+  await expect(page.locator("#cmp-flat svg")).toBeVisible();
+  expect(await page.locator("#cmp-flat").innerHTML()).toContain('data-turn="slab"');
+  expect(await page.locator("#cmp-vol").innerHTML()).toContain("data-vol");
+  await page.getByTestId("view-right").click();
+  expect(await page.locator("#cmp-vol svg").getAttribute("data-yaw")).toBe("90");
+  expect(await noSideways(page)).toBe(true);
+  await page.getByTestId("vol").click();
+  await expect(page).toHaveURL(/vol=0/);
+  await expect(stage.locator("svg[data-turn], svg:has([data-turn])")).toBeVisible();
+  expect(await stage.locator("[data-vol]").count()).toBe(0);
+  await page.getByTestId("vol").click();
+  await expect(stage.locator("svg[data-vol]")).toBeVisible();
+});
+
+test("the garment keeps the options: a pattern, a sleeve number and a look, at an angle, and an update keeps the angle", async ({ page }) => {
+  await page.goto("/?cut=soccer&pattern=hoops&number=10&sleeve-numbers=true&yaw=135");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg[data-vol]")).toBeVisible();
+  expect(await yawOf(page)).toBe(135);
+  await page.locator('[data-testid="seg-look"] button[data-value="line"]').click();
+  expect(await yawOf(page)).toBe(135);
+  expect(await stage.innerHTML()).toContain("currentColor");
+  await page.locator('[data-testid="seg-look"] button[data-value="cloth"]').click();
+  await page.locator('[data-testid="in-number"]').fill("77");
+  expect(await yawOf(page)).toBe(135);
+  expect(await shown(page)).toBeGreaterThan(20);
+});
+
+test("a reader who prefers reduced motion gets a still garment from the frame, and the frame draws one at an angle", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.goto("/embed.html?cut=hockey&number=9&volume=1&turn=auto");
+  await expect(page.locator("#frame svg[data-vol]")).toBeVisible();
+  await page.waitForTimeout(600);
+  expect(Number(await page.locator("#frame svg").getAttribute("data-yaw"))).toBe(0);
+  await page.goto("/embed.html?cut=hockey&number=9&volume=1&yaw=90");
+  await expect(page.locator("#frame svg[data-vol]")).toBeVisible();
+  expect(Number(await page.locator("#frame svg").getAttribute("data-yaw"))).toBe(90);
+  await context.close();
 });

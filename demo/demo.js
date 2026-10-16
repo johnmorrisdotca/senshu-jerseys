@@ -1,7 +1,7 @@
 // The demo's script: a jersey to try (every option, turned by a drag or by itself), the wall of every preset, the retired-number banners, a matchup and a lineup,
 // caps and helmets, and the code that puts it in a page. Everything the controls say is in the address. The words are in words.js.
 import { CUT_IDS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, usePresets } from "./dist/index.js";
-import { bindTurn } from "./dist/turn-entry.js";
+import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "" };
+const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", cmp: "0" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -261,7 +261,18 @@ async function paintBackground() {
 dark.addEventListener("change", () => { if (ui.background !== "") paintBackground(); });
 new MutationObserver(() => { if (ui.background !== "") paintBackground(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 function stageOptions() {
-  return { ...options(), size: 300, language: attrs.language ?? lang() };
+  return { ...options(), size: 300, language: attrs.language ?? lang(), volume: ui.vol === "1" };
+}
+/** The flat card and the garment side by side at the angle the stage is at, to see what the volume adds. */
+function drawCompare() {
+  const on = ui.cmp === "1" && !$("turnbar").hidden;
+  $("compare").hidden = !on;
+  $("cmp").setAttribute("aria-pressed", String(ui.cmp === "1"));
+  if (!on) return;
+  const yaw = Number(ui.yaw) || 0;
+  const o = { ...options(), size: 180, language: attrs.language ?? lang(), yaw };
+  $("cmp-flat").innerHTML = jerseyFrame({ ...o, volume: false });
+  $("cmp-vol").innerHTML = jerseyFrame({ ...o, volume: true });
 }
 function drawStage() {
   const stage = $("stage");
@@ -269,6 +280,8 @@ function drawStage() {
   const canTurn = o.view !== "both" && o.kit !== true;
   $("turnbar").hidden = !canTurn;
   $("turn-note").hidden = canTurn || o.kit === true;
+  $("viewbar").hidden = !canTurn;
+  $("vol").setAttribute("aria-pressed", String(ui.vol === "1"));
   if (!canTurn) {
     turn?.destroy();
     turn = undefined;
@@ -277,6 +290,7 @@ function drawStage() {
     stage.removeAttribute("aria-label");
     stage.style.touchAction = "";
     stage.innerHTML = renderJersey(stageOptions());
+    drawCompare();
     return;
   }
   const yaw = Number(ui.yaw) || 0;
@@ -285,6 +299,7 @@ function drawStage() {
   } else {
     turn.update({ ...stageOptions(), yaw: turn.yaw() });
   }
+  drawCompare();
 }
 function onYaw(yaw) {
   ui.yaw = String(Math.round(yaw));
@@ -296,6 +311,7 @@ function onYaw(yaw) {
     for (const b of document.querySelectorAll('[data-key="view"] button')) b.setAttribute("aria-pressed", String(b.dataset.value === facing));
   }
   if (!playing()) syncUrl();
+  if (ui.cmp === "1") drawCompare();
 }
 const playing = () => turn?.playing() === true;
 function syncPlay() {
@@ -638,6 +654,15 @@ $("play").addEventListener("click", () => {
   turn?.togglePlay();
   syncPlay();
 });
+$("vol").addEventListener("click", () => { ui.vol = ui.vol === "1" ? "0" : "1"; drawStage(); syncUrl(); });
+$("cmp").addEventListener("click", () => { ui.cmp = ui.cmp === "1" ? "0" : "1"; drawCompare(); syncUrl(); });
+for (const b of document.querySelectorAll("[data-yaw-view]")) {
+  b.addEventListener("click", () => {
+    turn?.pause();
+    turn?.setYaw(Number(b.dataset.yawView));
+    syncPlay();
+  });
+}
 $("front").addEventListener("click", () => {
   turn?.pause();
   turn?.setYaw(0);

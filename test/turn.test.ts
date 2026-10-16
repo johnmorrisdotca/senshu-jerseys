@@ -93,6 +93,7 @@ test("applyTurn moves the transforms of a frame that is already there, as the co
   const slices = [node("s0"), node("s1"), node("s2"), node("s3"), node("s4"), node("s5")];
   const nodes: Record<string, ReturnType<typeof node>> = { '[data-turn="front"]': node("f"), '[data-turn="back"]': node("b"), '[data-turn="front-shade"]': node("fs"), '[data-turn="back-shade"]': node("bs") };
   const svg = {
+    hasAttribute: () => false,
     setAttribute: (k: string, v: string) => calls.push(["svg" + k, v]),
     querySelectorAll: () => ({ forEach: (f: (n: unknown, i: number) => void) => slices.forEach((n, i) => f(n, i)) }),
     querySelector: (q: string) => nodes[q] ?? null,

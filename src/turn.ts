@@ -3,18 +3,26 @@
 // each a string of SVG. `jerseyFrame` is one angle; `bindTurn` is the pointer, the keys and the automatic turn, in a container.
 import { CUTS } from "./cuts.ts";
 import { hexOf, shade } from "./colour.ts";
-import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox, jerseyView, uidOf } from "./jersey.ts";
+import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox, jerseyView, uidOf, type View } from "./jersey.ts";
 import { resolve, type JerseyOptions } from "./options.ts";
 import { titleOf } from "./title.ts";
 import type { EmblemRenderer } from "./emblems.ts";
 import { esc } from "./colour.ts";
 import { n2 } from "./path.ts";
+import { applyVolume, volumeDesc, volumeMarkup } from "./volume.ts";
 
 export interface TurnOptions extends JerseyOptions {
   /** The turn about the vertical axis in degrees: 0 the front, 90 the edge, 180 the back. Any number; it is taken round. */
   yaw?: number;
   /** How thick the cloth shows at the edge, in drawing units (0 to 40; 14 by default). */
   thickness?: number;
+  /**
+   * Draw the shirt as a garment with volume (see `volume.ts`): a body and two sleeves with depth that turn as one, the flat front and back drawings wrapped over them, in every angle. False
+   * (the default) keeps the flat card with its edge, which `thickness` shapes.
+   */
+  volume?: boolean;
+  /** For `volume`: how far the camera looks down on the shirt, in degrees (0 to 20; 8 by default). */
+  pitch?: number;
   emblems?: EmblemRenderer;
 }
 
@@ -67,8 +75,10 @@ export function jerseyFrame(options?: TurnOptions): string {
   const base = { ...o, view: "front" as const };
   const rf = resolve(base);
   const rb = resolve({ ...o, view: "back" });
-  const front = jerseyView(rf, "front", uidOf(rf, "tf"), o.emblems);
-  const back = jerseyView(rb, "back", uidOf(rb, "tb"), o.emblems);
+  const volume = o.volume === true;
+  const front = jerseyView(rf, "front", uidOf(rf, "tf"), o.emblems, false, !volume);
+  const back = jerseyView(rb, "back", uidOf(rb, "tb"), o.emblems, volume, !volume);
+  if (volume) return volumeFrame(o, rf, front, back);
   const st = turnState(o.yaw, o.thickness);
   const edge = hexOf(shade(rf.body, -0.38));
   const edgeLit = hexOf(shade(rf.body, -0.22));
@@ -89,8 +99,27 @@ export function jerseyFrame(options?: TurnOptions): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(box.w)} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(st.yaw)}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}</defs><g data-turn="edge">${slab}${slices}</g>${face("front", front, st.front)}${face("back", back, st.back)}</svg>`;
 }
 
+/** The shirt as a garment with volume, at one angle: the two drawings once in the defs, the cells (see `volume.ts`) wrapped over a body and two sleeves. */
+function volumeFrame(o: TurnOptions, rf: ReturnType<typeof resolve>, front: View, back: View): string {
+  const box = jerseyBox(rf.cut);
+  const w = n2((rf.size * box.w) / JERSEY_WIDTH);
+  const h = Math.round(((rf.size * JERSEY_HEIGHT) / JERSEY_WIDTH) * 100) / 100;
+  const id = uidOf(rf, "vol");
+  const pitch = typeof o.pitch === "number" && Number.isFinite(o.pitch) ? Math.max(0, Math.min(20, o.pitch)) : 8;
+  const yaw = normalYaw(o.yaw);
+  const desc = volumeDesc(rf, pitch);
+  const mk = volumeMarkup(desc, id, `${id}F`, `${id}B`, front.clipId, back.clipId, yaw, rf.look !== "line");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(box.w)} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(yaw)}" data-vol="${JSON.stringify(desc).replace(/"/g, "&quot;")}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}<g id="${id}F">${front.body}</g><g id="${id}B">${back.body}</g>${mk.defs}</defs>${mk.body}</svg>`;
+}
+
 /** Move an SVG made by `jerseyFrame` to an angle without redrawing it: only the transforms change. */
 export function applyTurn(svg: Element, yawDeg: unknown, thickness = 14): number {
+  if (svg.hasAttribute("data-vol")) {
+    const yaw = normalYaw(yawDeg);
+    svg.setAttribute("data-yaw", n2(yaw));
+    applyVolume(svg, yaw);
+    return yaw;
+  }
   const st = turnState(yawDeg, thickness);
   svg.setAttribute("data-yaw", n2(st.yaw));
   const slab = svg.querySelector('[data-turn="slab"]');

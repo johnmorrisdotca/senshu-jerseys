@@ -29,6 +29,21 @@
           <button type="button" class="fam-button" id="play" data-testid="play" aria-pressed="false" data-say="play"></button>
           <button type="button" class="fam-button" id="front" data-testid="front" data-say="front"></button>
         </div>
+        <div class="turnbar" id="viewbar">
+          <button type="button" class="fam-button" id="vol" data-testid="vol" aria-pressed="true" data-say="volume"></button>
+          <button type="button" class="fam-button" id="cmp" data-testid="cmp" aria-pressed="false" data-say="compare"></button>
+          <span class="viewbtns" role="group" data-say-label="viewsLabel" aria-label="Fixed views">
+            <button type="button" class="fam-button" data-yaw-view="0" data-testid="view-front" data-say="viewFront"></button>
+            <button type="button" class="fam-button" data-yaw-view="-90" data-testid="view-left" data-say="viewLeft"></button>
+            <button type="button" class="fam-button" data-yaw-view="180" data-testid="view-back" data-say="viewBack"></button>
+            <button type="button" class="fam-button" data-yaw-view="90" data-testid="view-right" data-say="viewRight"></button>
+            <button type="button" class="fam-button" data-yaw-view="40" data-testid="view-three" data-say="viewThree"></button>
+          </span>
+        </div>
+        <div class="compare" id="compare" data-testid="compare" hidden>
+          <figure><div id="cmp-flat"></div><figcaption data-say="flatLabel"></figcaption></figure>
+          <figure><div id="cmp-vol"></div><figcaption data-say="volLabel"></figcaption></figure>
+        </div>
         <p class="fam-fine" id="turn-note" hidden data-say="turnBoth"></p>
       </div>
     </div>

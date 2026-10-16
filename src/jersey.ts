@@ -41,6 +41,8 @@ interface Shape {
   tank: boolean;
   /** The armpit and hem measures actually used (a vest's differ from a sleeved shirt's). */
   ay: number;
+  /** The torso's half-outline as `[u, y]`, down from the neck to the hem, whatever the sleeve (a raglan's torso as a set-in one's): what the turning view's body is lofted from. */
+  half: [number, number][];
 }
 
 interface SleeveGeo {
@@ -79,7 +81,7 @@ function sleeveGeo(spec: CutSpec, id: "long" | "elbow" | "short", side: 1 | -1, 
 const outerAt = (s: SleeveGeo, f: number): Pt => lerp(s.S, s.P, f);
 const innerAt = (s: SleeveGeo, f: number): Pt => lerp(s.A, s.Q, f);
 
-function shapeOf(r: Resolved): Shape {
+export function shapeOf(r: Resolved): Shape {
   const spec = CUTS[r.cut];
   const tank = r.sleeve === "none";
   const nw = NECK_W[r.collar] + (tank && r.collar !== "round" ? 2 : 0);
@@ -134,7 +136,8 @@ function shapeOf(r: Resolved): Shape {
   for (const p of hem) tpts.push([p[0], p[1], 0]);
   for (const [uu, y, rr] of [...tl].reverse()) tpts.push([100 + uu, y, rr]);
   for (const p of backTop()) tpts.push([p[0], p[1], 0]);
-  return { spec, outline, torso: rounded(tpts), sleeves, nw, tank, ay };
+  const half: [number, number][] = tank ? left.map((p): [number, number] => [p[0], p[1]]) : [[nw, ny], [spec.su, spec.sy], [spec.au, ay], ...sidePts.map((p): [number, number] => [p[0], p[1]])];
+  return { spec, outline, torso: rounded(tpts), sleeves, nw, tank, ay, half };
 }
 
 /** The bands of a repeat, covering `from` to `to` along one axis: rectangles for the bands that are not the body's colour, by colour index. */
@@ -251,13 +254,15 @@ export interface View {
   outline: string;
   /** The id of the outline in the defs, to draw it again with `<use>`. */
   outlineId: string;
+  /** The id of the clip of the outline, in the defs. */
+  clipId: string;
   edge: string;
   width: number;
   height: number;
 }
 
 /** One view of the jersey. `uid` makes the ids unique to this drawing. */
-export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emblems?: EmblemRenderer): View {
+export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emblems?: EmblemRenderer, mirror = false, rim = true): View {
   const sh = shapeOf(r);
   const spec = sh.spec;
   const line = r.look === "line";
@@ -415,15 +420,15 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
           // The sleeves keep the body's colour.
         } else if (pat === "halves") {
           // The sleeve takes its half's colour: the wearer's right half (the picture's left) is the body's, the other the trim's.
-          if (s.side === 1) layer += `<path d="${s.poly}" fill="${trimHex}"/>`;
-        } else if (pat === "quarters" && s.side === -1) layer += `<path d="${s.poly}" fill="${trimHex}"/>`;
+          if (s.side * (mirror ? -1 : 1) === 1) layer += `<path d="${s.poly}" fill="${trimHex}"/>`;
+        } else if (pat === "quarters" && s.side * (mirror ? -1 : 1) === -1) layer += `<path d="${s.poly}" fill="${trimHex}"/>`;
         if (layer !== "") {
           if (key === "L") sleevePattern.L = `<g clip-path="url(#${id})">${layer}</g>`;
           else sleevePattern.R = `<g clip-path="url(#${id})">${layer}</g>`;
         }
       }
     }
-    if (torsoPattern !== "") addIn(`<g clip-path="url(#${idt})">${torsoPattern}</g>`);
+    if (torsoPattern !== "") addIn(`<g clip-path="url(#${idt})">${mirror ? `<g transform="matrix(-1 0 0 1 200 0)">${torsoPattern}</g>` : torsoPattern}</g>`);
     addIn(sleevePattern.L + sleevePattern.R);
   }
 
@@ -646,7 +651,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   }
 
   // ---- The edge, self-toned. ----
-  add(useO(`fill="none" stroke="${edge}" stroke-width="${line ? 7 : 1.7}" stroke-linejoin="round"`));
+  // The turning view's garment wraps this drawing round its body, where a line round the outline would be a seam stretched down the side: it leaves it out (`rim` false).
+  if (rim) add(useO(`fill="none" stroke="${edge}" stroke-width="${line ? 7 : 1.7}" stroke-linejoin="round"`));
 
   // ---- Line style: a few strokes for the bands, so that a small one still reads. ----
   if (line) {
@@ -780,7 +786,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     defs += `<linearGradient id="${uid}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${o(0.16)}"/><stop offset=".38" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.2)}"/></linearGradient>`;
     defs += `<linearGradient id="${uid}h" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0"><stop offset="0" stop-color="#000" stop-opacity="${o(0.22)}"/><stop offset=".2" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset=".5" stop-color="#fff" stop-opacity="${o(0.06)}"/><stop offset=".8" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.22)}"/></linearGradient>`;
   }
-  return { defs, body: out, outline: sh.outline, outlineId: ido, edge: edge, width: JERSEY_WIDTH, height: JERSEY_HEIGHT };
+  return { defs, body: out, outline: sh.outline, outlineId: ido, clipId: idc, edge: edge, width: JERSEY_WIDTH, height: JERSEY_HEIGHT };
 }
 
 /** A string id prefix for a drawing: the same options always give the same one. */

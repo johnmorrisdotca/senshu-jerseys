@@ -19,17 +19,22 @@
       // A frame that draws what its address says: ?cut=hockey&colors=af1e2d,ffffff,192168&number=9&view=both, and `turn=1` to let it be turned by hand or `turn=auto` to turn by itself.
       // The address is read as text and the drawing checks every value; the frame fetches nothing.
       import { jerseyFromParams, renderJersey } from "./dist/index.js";
-      import { bindTurn } from "./dist/turn-entry.js";
+      import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
       const frame = document.getElementById("frame");
       const q = new URLSearchParams(location.search);
       const options = { ...jerseyFromParams(q), size: 400 };
       const turn = q.get("turn");
+      // `volume=1` draws the shirt as a garment with depth, and `yaw` stops it at an angle (0 the front, 90 the wearer's right side, 180 the back).
+      const volume = q.get("volume") === "1";
+      const still = Number(q.get("yaw")) || 0;
       if (turn === "1" || turn === "auto") {
         // Turning shows one face at a time: `both` is the front.
         const box = document.createElement("div");
         box.style.width = "min(100%, 70vh)";
         frame.append(box);
-        bindTurn(box, { ...options, view: options.view === "back" ? "back" : "front" }, { autoPlay: turn === "auto", yaw: options.view === "back" ? 180 : 0 });
+        bindTurn(box, { ...options, view: options.view === "back" ? "back" : "front", volume }, { autoPlay: turn === "auto", yaw: q.has("yaw") ? still : options.view === "back" ? 180 : 0 });
+      } else if (volume && options.view !== "both") {
+        frame.innerHTML = jerseyFrame({ ...options, view: "front", volume, yaw: q.has("yaw") ? still : options.view === "back" ? 180 : 0 });
       } else {
         frame.innerHTML = renderJersey(options);
       }

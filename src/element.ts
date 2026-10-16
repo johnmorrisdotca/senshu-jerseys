@@ -3,12 +3,12 @@ import { OPTION_ATTRIBUTES, optionsFromAttributes } from "./attrs.ts";
 import type { JerseyOptions } from "./options.ts";
 import { presetOptions } from "./registry.ts";
 import { renderJersey } from "./render.ts";
-import { bindTurn, type TurnHandle } from "./turn.ts";
+import { bindTurn, jerseyFrame, type TurnHandle } from "./turn.ts";
 
 /** The tag of the element. */
 export const SENSHU_TAG = "senshu-jersey";
 
-export const SENSHU_ATTRIBUTES = [...OPTION_ATTRIBUTES, "preset", "turnable", "autoplay", "speed", "yaw"] as const;
+export const SENSHU_ATTRIBUTES = [...OPTION_ATTRIBUTES, "preset", "turnable", "autoplay", "speed", "yaw", "volume", "pitch"] as const;
 
 // Importing the module in a server or a test with no DOM must not fail: the class stands on an empty base there.
 const Base: typeof HTMLElement = typeof HTMLElement === "undefined" ? (class {} as unknown as typeof HTMLElement) : HTMLElement;
@@ -81,7 +81,10 @@ export class SenshuJersey extends Base {
   #render(): void {
     const box = this.#box;
     if (box === undefined) return;
-    const options = this.current();
+    const given = this.current();
+    const volume = this.hasAttribute("volume") && this.getAttribute("volume") !== "false";
+    const pitch = Number(this.getAttribute("pitch"));
+    const options = { ...given, volume, ...(this.hasAttribute("pitch") && Number.isFinite(pitch) ? { pitch } : {}) };
     if (!this.hasAttribute("turnable") && !this.hasAttribute("autoplay")) {
       this.#turn?.destroy();
       this.#turn = undefined;
@@ -90,7 +93,8 @@ export class SenshuJersey extends Base {
       box.removeAttribute("aria-label");
       box.removeAttribute("aria-roledescription");
       box.removeAttribute("style");
-      box.innerHTML = renderJersey(options);
+      const still = Number(this.getAttribute("yaw"));
+      box.innerHTML = volume && given.view !== "both" && given.kit !== true ? jerseyFrame({ ...options, yaw: Number.isFinite(still) ? still : 0 }) : renderJersey(given);
       return;
     }
     const speed = Number(this.getAttribute("speed"));

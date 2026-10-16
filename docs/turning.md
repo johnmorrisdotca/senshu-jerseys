@@ -36,6 +36,36 @@ console.log(jerseyBox("hockey").w, jerseyBox("football").w); // 200 233.8
 
 `test/jerseybox.test.ts` measures the ink of every cut, sleeve, look and view, still and turned, against the box; `node scripts/jersey-boxes.mjs` prints the `reach` a changed cut needs, to put in `src/cuts.ts`, and `node scripts/turn-sheet.mjs <out.png>` draws a sheet of the sleeves to look at.
 
+## Volume: the shirt as a garment
+
+`volume: true` draws the shirt as a garment with depth instead of a card. Front, back, both sides and every angle between show a body with a neck, shoulders, sleeves and a hem, and a sleeve number stays on its arm. The flat turn above is still the default, so nobody's drawing changes.
+
+```js
+import { jerseyFrame } from "@johnmorrisdotca/senshu-jerseys/turn";
+
+const options = { cut: "hockey", number: 19, name: "Morris", colors: ["#c8102e", "#fff", "#0a3161"], sleeveNumbers: true };
+const side = jerseyFrame({ ...options, volume: true, yaw: 90 }); // the wearer's right side
+const flat = jerseyFrame({ ...options, yaw: 90 }); // the card, an edge
+console.log(side.includes("data-vol"), flat.includes("data-vol")); // true false
+
+// Anything else than true is the flat turn; `pitch` is how far the camera looks down, 0 to 20 degrees (8 by default).
+console.log(jerseyFrame({ ...options, volume: "yes", yaw: 30 }) === jerseyFrame({ ...options, yaw: 30 })); // true
+```
+
+**How it is drawn.** There is no 3D engine and no new way of drawing. The front and the back are the same drawings as before, made once, with every option (colours, stripes, yoke, collar, name, number, patch) in them. The garment is a mesh that they are wrapped over:
+
+- The **body** is a loft of rounded sections: narrow at the neck, a chest's depth at the armpit, the width of the drawing at each height (a square-ish section, so it fills out to the sleeves).
+- Each **sleeve** is a tapered tube from the armhole to the cuff, lying where the flat drawing has it.
+- Each surface is cut into small **triangles**, and each triangle is a clipped copy of its face's drawing under an affine matrix worked out from where its three corners lie after the turn (`yaw` about the vertical, then `pitch`). A triangle is exact at its corners, so neighbours meet with no gap, and they overlap by a fraction of a unit under the clip so no hairline shows between them.
+- A triangle whose cloth faces away from the viewer is hidden, so the far side never shows through; the sleeve behind the body is drawn first and the sleeve in front last. A little shade, from a light above and to the left, is laid over each cell by the way it faces.
+- The back is drawn as seen from behind: a pattern that is not the same on both sides (halves, quarters, an odd number of stripes) is mirrored on it, so it carries on round the side seam.
+
+At 0 degrees the front is drawn as it is by `renderJersey`, and the camera's `pitch` curves the hem and the neck a little. The box is the cut's own (`jerseyBox`), the output is a pure function of the options, and nothing outside the options reaches the markup but `volume` (only `true` counts) and `pitch` (a number, clamped).
+
+`bindTurn(container, { ...options, volume: true })` turns it by hand or by itself like the flat one; only the matrices, which cells show and the order of the sleeves change from frame to frame (`applyTurn` does this, the markup is made once). A frame is some 130 kilobytes of SVG (about 17 gzipped) because each cell is a short element and the two drawings are held once in the defs.
+
+**What it does not do.** The front and the back drawings are all there is to wrap, so the cloth under the arm and at the side seam is the drawings' own edge, stretched a little at the sleeve's sides. The `kit` view and the `both` view do not turn. The `<senshu-jersey>` element takes `volume` and `pitch` as attributes, and `embed.html` takes `volume=1` and `yaw`.
+
 ## `bindTurn(container, options, settings)`
 
 Draws the jersey into a container and lets the reader turn it.
