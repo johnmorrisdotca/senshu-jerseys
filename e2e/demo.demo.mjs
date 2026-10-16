@@ -403,3 +403,30 @@ test("a reader who prefers reduced motion gets a still garment from the frame, a
   expect(Number(await page.locator("#frame svg").getAttribute("data-yaw"))).toBe(90);
   await context.close();
 });
+
+test("the sleeve controls place a number and a patch on the arm, at an angle, and an update keeps the angle", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/?cut=hockey&number=77&name=Morris&yaw=90");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg[data-vol]")).toBeVisible();
+  expect(await stage.locator('[id$="D0"]').count()).toBe(0);
+  await page.locator('[data-testid="seg-sleeve-numbers"] button[data-value="right"]').click();
+  await expect(page).toHaveURL(/sleeve-numbers=right/);
+  await expect(stage.locator('[id$="D0"]')).toHaveCount(1);
+  expect(await yawOf(page)).toBe(90);
+  // The wearer's right arm is on the picture's left, so its number is in the cells of the left sleeve (group 1).
+  expect(await stage.locator('[data-vol="1"] [data-vc]:not([display]) use[href*="D"]').count()).toBeGreaterThan(0);
+  await page.locator('[data-testid="seg-sleeve-patch"] button[data-value="shield"]').click();
+  await expect(page).toHaveURL(/sleeve-left=/);
+  await expect(stage.locator('[id$="D1"]')).toHaveCount(1);
+  await page.locator('[data-testid="rng-sleeve-at"]').fill("60");
+  await expect(page).toHaveURL(/at%3A60/);
+  expect(await yawOf(page)).toBe(90);
+  await page.getByTestId("view-left").click();
+  expect(Math.abs(await yawOf(page))).toBe(90);
+  // The wearer's left arm has no number now: its group shows only the patch's cells, if any.
+  expect(await stage.locator('[data-vol="2"] [data-vc]:not([display]) use[href$="D0"]').count()).toBe(0);
+  expect(errors).toEqual([]);
+  expect(await noSideways(page)).toBe(true);
+});

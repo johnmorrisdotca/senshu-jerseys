@@ -92,6 +92,42 @@ const text = (key, props = {}) => {
   return i;
 };
 
+/** A slider for one of the sleeve's placements, with its value beside it. */
+const range = (key, min, max, step, onInput) => {
+  const input = el("input", { type: "range", class: "range", min: String(min), max: String(max), step: String(step), "data-sleeve": key, "data-testid": `rng-${key}` });
+  const out = el("output", { text: "" });
+  input.addEventListener("input", () => {
+    out.textContent = input.value;
+    onInput(Number(input.value));
+  });
+  return el("span", { class: "colour" }, input, out);
+};
+/** The sleeves' own words (`sleeve-left`, `sleeve-right`), as the demo keeps them: one setting for both. */
+const SLEEVE_KEYS = ["size", "at", "around", "patch"];
+function sleeveSetting() {
+  const out = {};
+  for (const part of (attrs["sleeve-left"] ?? "").split(";")) {
+    const [k, v] = part.split(":");
+    if (SLEEVE_KEYS.includes(k) && v !== undefined) out[k] = v;
+  }
+  return out;
+}
+function setSleeve(key, value) {
+  const now = sleeveSetting();
+  if (value === null) delete now[key];
+  else now[key] = String(value);
+  const text = SLEEVE_KEYS.filter((k) => now[k] !== undefined).map((k) => `${k}:${now[k]}`).join(";");
+  if (text === "") {
+    delete attrs["sleeve-left"];
+    delete attrs["sleeve-right"];
+  } else {
+    attrs["sleeve-left"] = text;
+    attrs["sleeve-right"] = text;
+  }
+  ui.preset = "";
+  render();
+}
+
 const collarsFor = (cut) => ["auto", ...CUTS[cut].collars];
 const sleevesFor = (cut) => (cut === "basketball" ? ["none"] : ["auto", ...["long", "elbow", "short"].filter((s) => CUTS[cut].sleeves[s] !== undefined), ...(cut === "baseball" ? ["none"] : [])]);
 
@@ -150,7 +186,11 @@ function buildControls() {
   add(row("frontTextAngle", () => seg("front-text-angle", ["auto", "straight", "arch", "diagonal-up", "diagonal-down"], (v) => (v === "auto" ? say("auto") : say(`textAngle_${v}`)))));
   add(row("frontNumber", () => toggle("front-number", say("on"))));
   add(row("patch", () => seg("patch", ["none", "C", "A"], (v) => (v === "none" ? say("patch_none") : v)), () => true));
-  add(row("sleeveNumbers", () => toggle("sleeve-numbers", say("on"))));
+  add(row("sleeveNumbers", () => seg("sleeve-numbers", ["off", "both", "left", "right"], (v) => say(`sn_${v}`), { onPick: (v) => setAttr("sleeve-numbers", v === "off" ? null : v) })));
+  add(row("sleevePatch", () => seg("sleeve-patch", ["none", "round", "shield", "square"], (v) => say(`badge_${v}`), { onPick: (v) => setSleeve("patch", v === "none" ? null : v) })));
+  add(row("sleeveSize", () => range("sleeve-size", 6, 32, 1, (v) => setSleeve("size", v))));
+  add(row("sleeveAt", () => range("sleeve-at", 8, 92, 1, (v) => setSleeve("at", v))));
+  add(row("sleeveAround", () => range("sleeve-around", -150, 60, 5, (v) => setSleeve("around", v))));
   add(row("crest", () => seg("crest", ["none", "ring", "star", "diamond"], (v) => say(`crest_${v}`), { onPick: (v) => setAttr("crest", v === "none" ? null : crestSvg(v)) })));
   add(row("armbands", () => toggle("armbands", say("on"))));
   add(row("pocket", () => toggle("pocket", say("on"))));
@@ -196,11 +236,19 @@ function syncControls() {
   }
   const hideFor = (label, hidden) => rows.find((r) => r.label === label)?.wrap.toggleAttribute("hidden", hidden);
   hideFor("sleeve", cut === "basketball");
-  hideFor("sleeveNumbers", cut === "basketball");
+  for (const label of ["sleeveNumbers", "sleevePatch", "sleeveSize", "sleeveAt", "sleeveAround"]) hideFor(label, cut === "basketball");
+  const setting = sleeveSetting();
+  for (const [key, fallback] of [["size", CUTS[cut].tv.h], ["at", Math.round(CUTS[cut].tv.t * 100)], ["around", -55]]) {
+    const input = document.querySelector(`[data-sleeve="sleeve-${key}"]`);
+    if (input !== null) {
+      input.value = setting[key] ?? String(fallback);
+      input.nextElementSibling.textContent = input.value;
+    }
+  }
   hideFor("cuffs", cut === "basketball");
   for (const box of document.querySelectorAll("#controls .fam-seg")) {
     const key = box.dataset.key;
-    const current = key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "badge" ? (attrs.badge ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
+    const current = key === "sleeve-numbers" ? (attrs[key] === "true" ? "both" : (attrs[key] ?? "off")) : key === "sleeve-patch" ? (sleeveSetting().patch ?? "none") : key === "sleeve" || key === "sleeve-stripes" || key === "hem-stripes" || key === "front-text-angle" || key === "cuffs" ? (attrs[key] ?? "auto") : key === "patch" ? (attrs.patch ?? "none") : key === "badge" ? (attrs.badge ?? "none") : key === "crest" ? (attrs.crest === undefined ? "none" : ["ring", "star", "diamond"].find((k) => crestSvg(k) === attrs.crest) ?? "none") : (attrs[key] ?? DEFAULTS[key] ?? (key === "closure" ? "button" : ""));
     for (const b of box.children) {
       b.setAttribute("aria-pressed", String(b.dataset.value === current));
       if (key === "sleeve") b.hidden = b.dataset.value !== "auto" && !sleevesFor(cut).includes(b.dataset.value);

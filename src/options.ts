@@ -30,6 +30,30 @@ export type LanguageId = (typeof LANGUAGE_IDS)[number];
  */
 export type Bands = readonly number[];
 
+/**
+ * What one sleeve carries, in the wearer's own terms: `sleeveLeft` is the sleeve on the wearer's left arm (the picture's right in the front view and its left in the back view), `sleeveRight` the other.
+ * A number or a patch is placed on the sleeve itself: in the turning view with volume it is drawn on the arm's surface and turns with it.
+ */
+export interface SleeveDetail {
+  /** The digits on this sleeve (up to two): the jersey's number when absent and `sleeveNumbers` asks for one, none when `false`. */
+  number?: string | number | false;
+  /** The number's height in drawing units (6 to 32; the cut's own by default), how far down the sleeve its middle lies in percent (8 to 92; the cut's own) and, with volume, how far round the arm in degrees from the front (-150 to 60; -55, out and a little forward). */
+  size?: number;
+  at?: number;
+  around?: number;
+  /** The number's fill and outline colours; the cloth's own contrast by default. */
+  fill?: string;
+  outline?: string;
+  /** A plain patch on the sleeve (never a mark): its shape, up to three letters on it, its size (6 to 30), place down the sleeve and round it (as for the number; off the number by default (the shoulder's 12 percent if there is none) and at -60 degrees) and its colours. */
+  patch?: BadgeId | "";
+  patchText?: string;
+  patchSize?: number;
+  patchAt?: number;
+  patchAround?: number;
+  patchFill?: string;
+  patchOutline?: string;
+}
+
 export interface JerseyOptions {
   cut?: CutId;
   /** `[body, trim, trim2?, numberFill?, numberOutline?]`. */
@@ -101,7 +125,10 @@ export interface JerseyOptions {
   frontTextAngle?: TextAngleId;
   frontNumber?: boolean | string | number;
   patch?: PatchId;
-  sleeveNumbers?: boolean;
+  /** The number on the sleeves: `true` or `"both"` for both, or `"left"` or `"right"` (the wearer's) for one. `sleeveLeft` and `sleeveRight` place each sleeve's number and patch. */
+  sleeveNumbers?: boolean | "both" | "left" | "right";
+  sleeveLeft?: SleeveDetail;
+  sleeveRight?: SleeveDetail;
   /** Any SVG document as text, or an emblem's id when a renderer is plugged in (`useEmblems`). */
   crest?: string;
   view?: ViewId;
@@ -121,6 +148,17 @@ export interface JerseyOptions {
   /** Bands round the pants' leg and round the socks, as `Bands` (a width and a colour index, from the bottom up). */
   pantsBands?: Bands;
   socksBands?: Bands;
+}
+
+/** One sleeve's number and patch, read. */
+export interface SleeveSide {
+  number?: string;
+  size: number;
+  at: number;
+  around: number;
+  fill?: Rgb;
+  outline?: Rgb;
+  patch?: { shape: BadgeId; text?: string; size: number; at: number; around: number; fill?: Rgb; outline?: Rgb };
 }
 
 /** The options after they are read: nothing here is a string from outside that has not been checked. */
@@ -163,7 +201,8 @@ export interface Resolved {
   frontTextAngle: TextAngleId;
   frontNumber?: string;
   patch: PatchId;
-  sleeveNumbers: boolean;
+  /** The sleeves' numbers and patches by the wearer's side: absent for a side with none. */
+  sleeveSides?: { left?: SleeveSide; right?: SleeveSide };
   crest?: string;
   view: ViewId;
   look: LookId;
@@ -226,6 +265,50 @@ export function armbandsOf(v: unknown): { c: 1 | 2 | 3; w: number; at: number } 
   const [c, w = 12, at = 30] = typeof v === "number" ? [v] : Array.isArray(v) ? v.map(Number) : [];
   if (c === undefined || !(c === 1 || c === 2 || c === 3) || !Number.isFinite(w) || w < 3 || w > 30 || !Number.isFinite(at) || at < 10 || at > 80) return undefined;
   return { c, w: Math.round(w * 10) / 10, at: Math.round(at) };
+}
+
+const within = (v: unknown, lo: number, hi: number): number | undefined => (typeof v === "number" && Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v * 10) / 10)) : undefined);
+
+/** One sleeve's detail from outside: `asked` says the sleeve is to carry the jersey's number. Anything wrong is the default. */
+function sleeveSideOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], length: number, asked: boolean, given: unknown): SleeveSide | undefined {
+  const d: SleeveDetail = given !== null && typeof given === "object" && !Array.isArray(given) ? (given as SleeveDetail) : {};
+  const number = d.number === false ? undefined : d.number !== undefined ? digits(d.number, 2) : asked ? digits(o.number, 2) : undefined;
+  const shape = (BADGE_IDS as readonly unknown[]).includes(d.patch) ? (d.patch as BadgeId) : undefined;
+  if (number === undefined && shape === undefined) return undefined;
+  const side: SleeveSide = { size: within(d.size, 6, 32) ?? spec.tv.h, at: within(d.at, 8, 92) ?? Math.round(spec.tv.t * 100), around: within(d.around, -150, 60) ?? -55 };
+  if (number !== undefined) side.number = number;
+  const fill = readColour(d.fill);
+  const outline = readColour(d.outline);
+  if (fill !== undefined) side.fill = fill;
+  if (outline !== undefined) side.outline = outline;
+  if (shape !== undefined) {
+    const text = clean(d.patchText, 6)?.replace(/[^\p{L}\p{N}]/gu, "").toUpperCase().slice(0, 3);
+    const size = within(d.patchSize, 6, 30) ?? 12;
+    // Unless it is told a place, the patch goes where the number is not: above it if there is room between the shoulder and the number, else below it.
+    let at = 12;
+    if (number !== undefined && length > 0) {
+      const gap = side.size / 2 + size / 2 + 1;
+      const middle = (side.at / 100) * length;
+      at = Math.round(((middle - gap - size / 2 >= 2 ? middle - gap : middle + gap) / length) * 100);
+    }
+    side.patch = { shape, size, at: within(d.patchAt, 8, 92) ?? Math.max(8, Math.min(92, at)), around: within(d.patchAround, -150, 60) ?? -60 };
+    if (text !== undefined && text !== "") side.patch.text = text;
+    const pf = readColour(d.patchFill);
+    const po = readColour(d.patchOutline);
+    if (pf !== undefined) side.patch.fill = pf;
+    if (po !== undefined) side.patch.outline = po;
+  }
+  return side;
+}
+
+/** Both sleeves' details, by the wearer's side. */
+function sleeveSidesOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], sleeve: Exclude<SleeveId, "none">): Resolved["sleeveSides"] {
+  const all = o.sleeveNumbers === true || o.sleeveNumbers === "both";
+  const length = spec.sleeves[sleeve]?.l ?? 0;
+  const left = sleeveSideOf(o, spec, length, all || o.sleeveNumbers === "left", o.sleeveLeft);
+  const right = sleeveSideOf(o, spec, length, all || o.sleeveNumbers === "right", o.sleeveRight);
+  if (left === undefined && right === undefined) return undefined;
+  return { ...(left === undefined ? {} : { left }), ...(right === undefined ? {} : { right }) };
 }
 
 /** Read the options: anything wrong is replaced by the default, never thrown. */
@@ -291,7 +374,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     frontTextAngle: pick(TEXT_ANGLE_IDS, o.frontTextAngle, cut === "basketball" ? "arch" : "straight"),
     frontNumber: o.frontNumber === true ? digits(o.number, 2) : o.frontNumber === false || o.frontNumber === undefined ? undefined : digits(o.frontNumber, 2),
     patch: pick(PATCH_IDS, o.patch, ""),
-    sleeveNumbers: o.sleeveNumbers === true,
+    sleeveSides: sleeve === "none" ? undefined : sleeveSidesOf(o, spec, sleeve),
     crest: typeof o.crest === "string" && o.crest.length <= 200_000 ? o.crest : undefined,
     view,
     look: pick(LOOK_IDS, o.look, "cloth"),

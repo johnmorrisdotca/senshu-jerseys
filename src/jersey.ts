@@ -3,7 +3,7 @@
 import { CUTS, type CollarId, type CutId, type CutSpec } from "./cuts.ts";
 import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, worst, type Rgb } from "./colour.ts";
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
-import { resolve, type Bands, type JerseyOptions, type Resolved } from "./options.ts";
+import { resolve, type Bands, type JerseyOptions, type Resolved, type SleeveSide } from "./options.ts";
 import { cubic, lerp, n2, poly, quad, rounded, type Pt } from "./path.ts";
 import { drawRun, layout } from "./text.ts";
 
@@ -261,8 +261,19 @@ export interface View {
   height: number;
 }
 
+/**
+ * How a view is made for the turning garment (`volume.ts`), which wraps it round a body: `mirror` draws the back's pattern as seen from behind, `rim` leaves out the line round the outline (a seam would be stretched
+ * down the side), and `details` the numbers and patches on the sleeves, which the garment places on the arms itself.
+ */
+export interface ViewHow {
+  mirror?: boolean;
+  rim?: boolean;
+  details?: boolean;
+}
+
 /** One view of the jersey. `uid` makes the ids unique to this drawing. */
-export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emblems?: EmblemRenderer, mirror = false, rim = true): View {
+export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emblems?: EmblemRenderer, how: ViewHow = {}): View {
+  const { mirror = false, rim = true, details = true } = how;
   const sh = shapeOf(r);
   const spec = sh.spec;
   const line = r.look === "line";
@@ -686,7 +697,6 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   }
 
   // ---- Crest, patch, text and numbers. ----
-  const sleeveNum = r.number !== undefined && r.sleeveNumbers;
   // A plate behind the back's lettering is its ground; else the cloth, and the pattern's other colour when the pattern runs behind it.
   const plated = r.plate !== undefined && view === "back" && !line && (r.name !== undefined || r.number !== undefined);
   const grounds = (where: "number" | "name" | "chest"): Rgb[] => (plated && where !== "chest" ? [r.plate as Rgb] : patternBehind(r, view, where) && !line ? patternGrounds(r) : [r.body]);
@@ -762,18 +772,16 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
       marks += drawRun(layout(r.patch, p.x, p.y, { height: p.w * 0.58, weight: "bold" }), hexOf(letterInk), undefined, undefined);
     }
   }
-  if (sleeveNum && L !== undefined && R !== undefined && r.number !== undefined) {
+  if (details && r.sleeveSides !== undefined && L !== undefined && R !== undefined) {
     for (const s of [L, R]) {
-      const a = outerAt(s, spec.tv.t);
-      const b = innerAt(s, spec.tv.t);
-      const m = lerp(a, b, 0.5);
+      // The picture's left sleeve is the wearer's right in the front view and the wearer's left in the back view.
+      const side = r.sleeveSides[(view === "front") === (s.side === -1) ? "right" : "left"];
+      if (side === undefined) continue;
       const phi = s.side === -1 ? 90 - s.a : -(90 - s.a);
-      const run = layout(r.number, 0, 0, { height: spec.tv.h, maxWidth: Math.hypot(a[0] - b[0], a[1] - b[1]) * 0.8, weight: "black" });
-      const g = line ? drawRun(run, "currentColor", undefined, undefined) : (() => {
-        const { fill, outline, heavy } = inkFor(r, r.patternSleeves && r.sleeveColor === undefined && patternBehind(r, view, "number") ? patternGrounds(r) : [r.body]);
-        return drawRun(run, hexOf(fill), outline === undefined ? undefined : { colour: hexOf(outline), width: Math.max(0.9, run.sw * (heavy ? HEAVY : 0.14)) }, undefined);
-      })();
-      marks += `<g transform="translate(${n2(m[0])} ${n2(m[1])}) rotate(${n2(phi)})">${g}</g>`;
+      for (const d of sleeveDraws(r, side, (t) => Math.hypot(outerAt(s, t)[0] - innerAt(s, t)[0], outerAt(s, t)[1] - innerAt(s, t)[1]))) {
+        const m = lerp(outerAt(s, d.at / 100), innerAt(s, d.at / 100), 0.5);
+        marks += `<g transform="translate(${n2(m[0])} ${n2(m[1])}) rotate(${n2(phi)})">${d.svg}</g>`;
+      }
     }
   }
   add(marks);
@@ -787,6 +795,54 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     defs += `<linearGradient id="${uid}h" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0"><stop offset="0" stop-color="#000" stop-opacity="${o(0.22)}"/><stop offset=".2" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset=".5" stop-color="#fff" stop-opacity="${o(0.06)}"/><stop offset=".8" stop-color="#000" stop-opacity="${o(0.02)}"/><stop offset="1" stop-color="#000" stop-opacity="${o(0.22)}"/></linearGradient>`;
   }
   return { defs, body: out, outline: sh.outline, outlineId: ido, clipId: idc, edge: edge, width: JERSEY_WIDTH, height: JERSEY_HEIGHT };
+}
+
+
+/** One thing on a sleeve, drawn upright and centred on the origin: `at` is how far down the sleeve it lies in percent, `around` how far round the arm in degrees, `w` and `h` the room it takes. */
+export interface SleeveDraw {
+  kind: "number" | "patch";
+  svg: string;
+  w: number;
+  h: number;
+  at: number;
+  around: number;
+}
+
+/**
+ * The number and the patch one sleeve carries, as drawings of their own. The number is the cut's own height and place unless it is told others, lettered in the ink that reads on the sleeve's cloth; the patch is a plain
+ * shape (the licence patch's, never a mark) with up to three letters. `width(t)` is the sleeve's width a fraction `t` of the way down it, which a number must fit.
+ */
+export function sleeveDraws(r: Resolved, side: SleeveSide, width: (t: number) => number): SleeveDraw[] {
+  const out: SleeveDraw[] = [];
+  const line = r.look === "line";
+  if (side.number !== undefined) {
+    const run = layout(side.number, 0, 0, { height: side.size, maxWidth: width(side.at / 100) * 0.8, weight: "black" });
+    let svg: string;
+    if (line) svg = drawRun(run, "currentColor", undefined, undefined);
+    else {
+      const grounds: Rgb[] = r.patternSleeves && r.sleeveColor === undefined && patternBehind(r, "front", "number") ? patternGrounds(r) : [r.body];
+      const base = inkFor({ ...r, ...(side.fill === undefined ? {} : { fill: side.fill }), ...(side.outline === undefined ? {} : { outline: side.outline }) }, grounds);
+      const outline = side.outline ?? base.outline;
+      const fill = side.fill ?? base.fill;
+      svg = drawRun(run, hexOf(fill), outline === undefined || contrast(outline, fill) < 1.15 ? undefined : { colour: hexOf(outline), width: Math.max(0.9, run.sw * (base.heavy ? HEAVY : 0.14)) }, undefined);
+    }
+    out.push({ kind: "number", svg, w: run.width + run.sw, h: run.height + run.sw, at: side.at, around: side.around });
+  }
+  if (side.patch !== undefined) {
+    const p = side.patch;
+    const s2 = p.size;
+    const body = p.shape === "shield" ? `M${n2(-s2 / 2)} ${n2(-s2 / 2)}H${n2(s2 / 2)}V${n2(s2 * 0.05)}Q${n2(s2 / 2)} ${n2(s2 * 0.55)} 0 ${n2(s2 * 0.65)}Q${n2(-s2 / 2)} ${n2(s2 * 0.55)} ${n2(-s2 / 2)} ${n2(s2 * 0.05)}Z` : p.shape === "square" ? `M${n2(-s2 / 2)} ${n2(-s2 / 2)}H${n2(s2 / 2)}V${n2(s2 / 2)}H${n2(-s2 / 2)}Z` : `M${n2(-s2 / 2)} 0a${n2(s2 / 2)} ${n2(s2 / 2)} 0 1 0 ${n2(s2)} 0a${n2(s2 / 2)} ${n2(s2 / 2)} 0 1 0 ${n2(-s2)} 0Z`;
+    let svg: string;
+    if (line) svg = `<path d="${body}" fill="none" stroke="currentColor" stroke-width="3"/>`;
+    else {
+      const fillRgb = p.fill ?? r.trim;
+      const edge = p.outline ?? shade(fillRgb, lum(fillRgb) > 0.4 ? -0.45 : 0.45);
+      svg = `<path d="${body}" fill="${hexOf(fillRgb)}" stroke="${hexOf(edge)}" stroke-width="1" stroke-linejoin="round"/>`;
+      if (p.text !== undefined) svg += drawRun(layout(p.text, 0, 0, { height: s2 * 0.5, maxWidth: s2 * 0.8, weight: "bold" }), hexOf(inkOn([fillRgb], [r.body, r.trim2, BLACK, WHITE])), undefined, undefined);
+    }
+    out.push({ kind: "patch", svg, w: s2 + 2, h: s2 + 2, at: p.at, around: p.around });
+  }
+  return out;
 }
 
 /** A string id prefix for a drawing: the same options always give the same one. */

@@ -1,18 +1,53 @@
 // The jersey's options as text: the attributes of `<senshu-jersey>` and the query of `embed.html` are the same words, read by one function and written by another.
 import { readColour } from "./colour.ts";
 import { CUT_IDS, type CutId } from "./cuts.ts";
-import { bandsOf, type Bands, type JerseyOptions } from "./options.ts";
+import { bandsOf, type Bands, type JerseyOptions, type SleeveDetail } from "./options.ts";
 
 /** Every attribute that sets an option; the element watches these. */
 export const OPTION_ATTRIBUTES = [
   "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
-  "patch", "sleeve-numbers", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
+  "patch", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
   "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate",
 ] as const;
 
 const bare = (v: string): string => (/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i.test(v) ? `#${v}` : v);
 const flag = (v: string | null): boolean | undefined => (v === null ? undefined : v !== "false" && v !== "0");
+const DETAIL_KEYS = ["number", "size", "at", "around", "fill", "outline", "patch", "patchText", "patchSize", "patchAt", "patchAround", "patchFill", "patchOutline"] as const;
+const NUMERIC = new Set(["size", "at", "around", "patchSize", "patchAt", "patchAround"]);
+const COLOURS = new Set(["fill", "outline", "patchFill", "patchOutline"]);
+const kebab = (k: string): string => k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+
+/** A sleeve's detail from text such as `number:77;size:20;at:30;fill:ffd100` (a colour with or without its `#`). A key that is not one of the detail's, or a value that is not a number where one is wanted, is left out. */
+export function detailFromText(text: string): SleeveDetail {
+  const d: Record<string, unknown> = {};
+  for (const part of text.split(";")) {
+    const at = part.indexOf(":");
+    if (at < 0) continue;
+    const key = part.slice(0, at).trim().replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+    const value = part.slice(at + 1).trim();
+    if (!(DETAIL_KEYS as readonly string[]).includes(key) || value === "") continue;
+    if (key === "number" && value === "false") d[key] = false;
+    else if (NUMERIC.has(key)) {
+      if (/^-?\d+(?:\.\d+)?$/.test(value)) d[key] = Number(value);
+    } else if (COLOURS.has(key)) {
+      if (readColour(bare(value)) !== undefined) d[key] = bare(value);
+    } else d[key] = value;
+  }
+  return d as SleeveDetail;
+}
+
+/** A sleeve's detail as text, the reverse of `detailFromText`. */
+export function detailToText(d: SleeveDetail, hash = true): string {
+  const parts: string[] = [];
+  for (const key of DETAIL_KEYS) {
+    const v = d[key];
+    if (v === undefined || v === null || v === "") continue;
+    parts.push(`${kebab(key)}:${COLOURS.has(key) && !hash && typeof v === "string" ? strip(v) : String(v)}`);
+  }
+  return parts.join(";");
+}
+
 const list = (v: string): number[] => v.split(/[\s,]+/).filter((s) => s !== "").map(Number);
 
 /** The options `read` finds, a function from an attribute's name to its text or `null`. Nothing here is trusted: `renderJersey` checks every value again. */
@@ -32,9 +67,15 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
   if (colors !== null && colors.trim() !== "") o.colors = colors.split(",").map((c) => bare(c.trim())).slice(0, 5);
   for (const [name, key] of [["body", "body"], ["trim", "trim"], ["accent", "accent"], ["number-fill", "numberFill"], ["number-outline", "numberOutline"], ["pants", "pants"], ["pants-trim", "pantsTrim"], ["socks", "socks"], ["socks-trim", "socksTrim"], ["helmet", "helmet"]] as const) colour(name, key);
   for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "front-text-angle", "patch", "crest", "view", "look", "language", "title", "description", "badge"]) text(name);
-  for (const name of ["raglan", "piping", "sleeve-numbers", "kit", "pattern-sleeves", "pocket", "protector"]) {
+  for (const name of ["raglan", "piping", "kit", "pattern-sleeves", "pocket", "protector"]) {
     const f = flag(read(name));
     if (f !== undefined) o[name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = f;
+  }
+  const sn = read("sleeve-numbers");
+  if (sn !== null) o.sleeveNumbers = sn === "both" || sn === "left" || sn === "right" ? sn : flag(sn);
+  for (const [name, key] of [["sleeve-left", "sleeveLeft"], ["sleeve-right", "sleeveRight"]] as const) {
+    const v = read(name);
+    if (v !== null && v.trim() !== "") o[key] = detailFromText(v);
   }
   const number = read("number");
   if (number !== null && number !== "") o.number = number;
@@ -100,6 +141,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   for (const [k, v] of [["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["badge", o.badge], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
   for (const [k, v] of [["raglan", o.raglan], ["piping", o.piping], ["sleeve-numbers", o.sleeveNumbers], ["kit", o.kit], ["pocket", o.pocket], ["protector", o.protector]] as const) set(k, v);
   if (o.patternSleeves === false) out["pattern-sleeves"] = "false";
+  for (const [k, v] of [["sleeve-left", o.sleeveLeft], ["sleeve-right", o.sleeveRight]] as const) if (v !== undefined && v !== null && typeof v === "object") set(k, detailToText(v, hash));
   set("stripe-count", o.stripeCount);
   set("number", o.number);
   if (o.frontNumber === true) out["front-number"] = "true";

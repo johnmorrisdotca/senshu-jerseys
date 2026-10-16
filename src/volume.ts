@@ -2,7 +2,7 @@
 // the flat front and back drawings are wrapped over them: each surface is cut into a grid of small cells, every cell a clipped copy of its face's drawing under an affine map worked out from where its
 // corners lie in space after the turn. Only the maps, the visibility and the shade change from one angle to the next; the cells, their clips and the drawings do not. Pure and deterministic: no
 // clock, no random number, no DOM except `applyVolume`, which moves a frame that is already drawn.
-import { shapeOf } from "./jersey.ts";
+import { shapeOf, sleeveDraws } from "./jersey.ts";
 import type { Resolved } from "./options.ts";
 import { n2 } from "./path.ts";
 
@@ -18,6 +18,8 @@ export interface VolumeDesc {
   nh: number;
   /** Each sleeve: its side (-1 on the picture's left) and `[Sx, Sy, Px, Py, Ax, Ay, Qx, Qy]`, the shoulder and the cuff on the outer edge, then the armpit and the cuff on the inner. */
   sl: { s: -1 | 1; q: number[] }[];
+  /** The things on the sleeves, each on the sleeve `g` (1 on the picture's left, which is the wearer's right, 2 on the other): where its middle lies (`f` of the way down, `a` degrees round from the front), the room it takes round and down (half an angle in degrees, half a length as a part of the sleeve), its size on its own drawing and which way that drawing reads round the arm (`dir`). */
+  sd: { g: 1 | 2; f: number; a: number; da: number; df: number; w: number; h: number; dir: 1 | -1 }[];
   /** How far the camera looks down, in degrees. */
   pitch: number;
 }
@@ -71,7 +73,38 @@ export function volumeDesc(r: Resolved, pitch = 8): VolumeDesc {
     }
   }
   const r2 = (v: number): number => Math.round(v * 100) / 100;
-  return { y: y.map(r2), a: a.map(r2), b: b.map(r2), nt: 8, nf: 3, nh: 5, sl, pitch };
+  const sd: VolumeDesc["sd"] = [];
+  for (const d of detailsOf(r, sl)) sd.push(d.at);
+  return { y: y.map(r2), a: a.map(r2), b: b.map(r2), nt: 8, nf: 3, nh: 5, sl, sd, pitch };
+}
+
+/** The drawings of what the sleeves carry, in the order of `VolumeDesc.sd`, each upright and centred on its own origin. */
+export function volumeDetails(r: Resolved): string[] {
+  return detailsOf(r, volumeDesc(r).sl).map((d) => d.svg);
+}
+
+function detailsOf(r: Resolved, sl: VolumeDesc["sl"]): { at: VolumeDesc["sd"][number]; svg: string }[] {
+  const out: { at: VolumeDesc["sd"][number]; svg: string }[] = [];
+  if (r.sleeveSides === undefined) return out;
+  // The picture's left sleeve (the first) is the wearer's right.
+  for (const [i, wearer] of [[0, "right"], [1, "left"]] as const) {
+    const side = r.sleeveSides[wearer];
+    const sleeve = sl[i];
+    if (side === undefined || sleeve === undefined) continue;
+    const q = sleeve.q;
+    const mid = (t: number): number[] => [q[0]! + (q[2]! - q[0]!) * t, q[1]! + (q[3]! - q[1]!) * t, q[4]! + (q[6]! - q[4]!) * t, q[5]! + (q[7]! - q[5]!) * t];
+    const width = (t: number): number => Math.hypot(mid(t)[0]! - mid(t)[2]!, mid(t)[1]! - mid(t)[3]!);
+    const length = Math.hypot(q[2]! - q[0]!, q[3]! - q[1]!);
+    for (const d of sleeveDraws(r, side, width)) {
+      const df = (d.h / 2 + 1) / length;
+      const f = Math.max(df + 0.01, Math.min(1 - df - 0.01, d.at / 100));
+      const rc = width(f) / 2;
+      const da = Math.min(80, ((d.w / 2 + 1) / rc) * (180 / Math.PI));
+      const r3 = (v: number): number => Math.round(v * 1000) / 1000;
+      out.push({ at: { g: (i + 1) as 1 | 2, f: r3(f), a: d.around, da: r3(da), df: r3(df), w: r3(d.w + 2), h: r3(d.h + 2), dir: i === 0 ? 1 : -1 }, svg: d.svg });
+    }
+  }
+  return out;
 }
 
 /** One cell: a triangle, where it is on its drawing, where its corners lie in space and the way the cloth faces there. Two make a quadrilateral of the grid, and a triangle's map is exact at its corners, so its neighbours meet it with no gap. */
@@ -82,12 +115,14 @@ export interface Cell {
   tex: number[];
   p: number[];
   n: [number, number, number];
+  /** The drawing of a thing on a sleeve, by its place in `VolumeDesc.sd`; the cell is of that drawing and not of the front or the back. */
+  src?: number;
 }
 
 /** The two triangles of a quadrilateral given as the corners tl, tr, bl, br (x, y of the drawing, and x, y, z of the space). */
-function split(g: Cell["g"], back: boolean, tex: number[], p: number[], n: [number, number, number]): Cell[] {
+function split(g: Cell["g"], back: boolean, tex: number[], p: number[], n: [number, number, number], src?: number): Cell[] {
   const pick = (ks: number[]): { tex: number[]; p: number[] } => ({ tex: ks.flatMap((k) => [tex[2 * k] as number, tex[2 * k + 1] as number]), p: ks.flatMap((k) => [p[3 * k] as number, p[3 * k + 1] as number, p[3 * k + 2] as number]) });
-  return [pick([0, 1, 2]), pick([1, 3, 2])].map((t) => ({ g, back, tex: t.tex, p: t.p, n }));
+  return [pick([0, 1, 2]), pick([1, 3, 2])].map((t) => ({ g, back, tex: t.tex, p: t.p, n, ...(src === undefined ? {} : { src }) }));
 }
 
 const lerp2 = (p: readonly number[], q: readonly number[], t: number): [number, number] => [p[0]! + (q[0]! - p[0]!) * t, p[1]! + (q[1]! - p[1]!) * t];
@@ -175,6 +210,39 @@ export function cellsOf(d: VolumeDesc): Cell[] {
       }
     }
   }
+  // What the sleeves carry: a small grid over the arm's surface, each cell of the thing's own drawing.
+  d.sd.forEach((e, k) => {
+    const q = (d.sl[e.g - 1] as VolumeDesc["sl"][number]).q;
+    const S = [q[0], q[1]] as const;
+    const P = [q[2], q[3]] as const;
+    const A = [q[4], q[5]] as const;
+    const Q = [q[6], q[7]] as const;
+    const length = Math.hypot(P[0] - S[0], P[1] - S[1]);
+    const ring = (f: number): { cx: number; cy: number; r: number; vx: number; vy: number } => {
+      const o = lerp2(S, P, f);
+      const inn = lerp2(A, Q, f);
+      const w = Math.hypot(inn[0] - o[0], inn[1] - o[1]) || 1;
+      return { cx: (o[0] + inn[0]) / 2 - 100, cy: (o[1] + inn[1]) / 2, r: w / 2, vx: (inn[0] - o[0]) / w, vy: (inn[1] - o[1]) / w };
+    };
+    const rc = ring(e.f).r;
+    const nc = 4;
+    const nr = 3;
+    for (let k2 = 0; k2 < nr; k2++) {
+      for (let i = 0; i < nc; i++) {
+        const tex: number[] = [];
+        const p: number[] = [];
+        for (const [kk, ii] of [[k2, i], [k2, i + 1], [k2 + 1, i], [k2 + 1, i + 1]] as const) {
+          const f = e.f - e.df + (2 * e.df * kk) / nr;
+          const psi = e.a + e.da * (-1 + (2 * ii) / nc);
+          const t = ring(f);
+          tex.push(e.dir * rc * rad(psi - e.a), (f - e.f) * length);
+          p.push(t.cx + t.r * Math.sin(rad(psi)) * t.vx, t.cy + t.r * Math.sin(rad(psi)) * t.vy, SLEEVE_DEPTH * t.r * Math.cos(rad(psi)));
+        }
+        const mid = ring(e.f);
+        cells.push(...split(e.g, false, tex, p, normalOf(p, mid.cx, mid.cy, 0), k));
+      }
+    }
+  });
   return cells;
 }
 
@@ -274,15 +342,15 @@ export interface VolumeMarkup {
  * The markup of the garment at one turn: a clip and a shape for each cell in the defs, and the cells themselves in three groups (the sleeve that is behind the body, the body, the sleeve in front),
  * each cell a use of the front's drawing (`frontId`) or the back's (`backId`) under its map, with the shade as a second shape on top.
  */
-export function volumeMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number, shaded: boolean): VolumeMarkup {
+export function volumeMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number, shaded: boolean, details: readonly string[] = []): VolumeMarkup {
   const cells = cellsOf(d);
-  let defs = "";
+  let defs = details.map((svg, k) => `<g id="${uid}D${k}">${svg}</g>`).join("");
   const groups: [string, string, string, string] = ["", "", "", ""];
   cells.forEach((c, i) => {
     defs += `<path id="${uid}q${i}" d="${quadPath(c.tex)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
     const pl = placeCell(c, yaw, d.pitch);
-    const shadeEl = shaded ? `<use href="#${uid}q${i}" fill="#000" fill-opacity="${pl.shade}" clip-path="url(#${c.back ? backClip : frontClip})" data-vs=""/>` : "";
-    groups[c.g] += `<g data-vc="${i}"${pl.visible ? ` transform="${pl.matrix}"` : ' display="none"'} clip-path="url(#${uid}k${i})"><use href="#${c.back ? backId : frontId}"/>${shadeEl}</g>`;
+    const shadeEl = shaded && c.src === undefined ? `<use href="#${uid}q${i}" fill="#000" fill-opacity="${pl.shade}" clip-path="url(#${c.back ? backClip : frontClip})" data-vs=""/>` : "";
+    groups[c.g] += `<g data-vc="${i}"${pl.visible ? ` transform="${pl.matrix}"` : ' display="none"'} clip-path="url(#${uid}k${i})"><use href="#${c.src !== undefined ? `${uid}D${c.src}` : c.back ? backId : frontId}"/>${shadeEl}</g>`;
   });
   const body = groupOrder(yaw).map((g) => `<g data-vol="${g}">${groups[g as 0 | 1 | 2 | 3]}</g>`).join("");
   return { defs, body };

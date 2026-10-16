@@ -11,9 +11,11 @@ All notable changes to this project are written here. The format follows
 - **A volumetric turn.** `jerseyFrame`, `bindTurn` and `applyTurn` take `volume: true` (and `pitch`, 0 to 20 degrees, 8 by default) and draw the shirt as a garment: a body lofted from the cut's measures and two tapered sleeves, with the front and back drawings wrapped over them in small triangles, cloth that faces away hidden, the sleeve behind the body drawn first, and a little shade. Front, back, both sides and the angles between keep a believable silhouette, and every option follows the surfaces. The flat turn is the default and is unchanged. `docs/turning.md` says how it is drawn; `test/volume.test.ts` holds it (the eight angles, every cut, the box, the matrices against the points, hostile values). The element takes `volume` and `pitch`, `embed.html` takes `volume=1` and `yaw`, and the demo has a Volume switch, fixed views (front, left side, back, right side, three-quarter) and a Compare of the flat card with the garment.
 - A pattern that differs from side to side (halves, quarters, an odd stripe count) is mirrored on the back of the volumetric garment, so it runs on round the side seam.
 
+- **Sleeve numbers and patches that stay on the arm.** `sleeveNumbers` takes `"left"` and `"right"` (the wearer's) as well as `true`, and `sleeveLeft` and `sleeveRight` give each sleeve its own number, size, place down the sleeve, place round the arm, fill and outline, and a plain patch (round, shield or square, with up to three letters). On the volumetric turn they are drawn on the arm's surface in their own cells: attached as the shirt turns, hidden where the arm turns away, never mirrored, and the back number is never taken for a sleeve number. A flat drawing with `sleeveNumbers: true` is unchanged. The element takes `sleeve-numbers="left"`, `sleeve-left` and `sleeve-right`; the demo has the controls; `docs/sleeves.md` says it all, and `test/sleeves.test.ts` holds it.
+
 ### Changed
 
-- The size limits of the turn and element bundles are raised (17 to 22 kB and 24 to 27 kB gzipped) for the volume.
+- The size limits of the turn and element bundles are raised (17 to 22 kB and 24 to 30 kB gzipped), and the jersey's and the banner's (20 to 22 kB and 16 to 18 kB), for the volume and the sleeves.
 
 ## [0.3.4] - 2026-10-16
 

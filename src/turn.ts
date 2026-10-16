@@ -9,7 +9,7 @@ import { titleOf } from "./title.ts";
 import type { EmblemRenderer } from "./emblems.ts";
 import { esc } from "./colour.ts";
 import { n2 } from "./path.ts";
-import { applyVolume, volumeDesc, volumeMarkup } from "./volume.ts";
+import { applyVolume, volumeDesc, volumeDetails, volumeMarkup } from "./volume.ts";
 
 export interface TurnOptions extends JerseyOptions {
   /** The turn about the vertical axis in degrees: 0 the front, 90 the edge, 180 the back. Any number; it is taken round. */
@@ -76,8 +76,8 @@ export function jerseyFrame(options?: TurnOptions): string {
   const rf = resolve(base);
   const rb = resolve({ ...o, view: "back" });
   const volume = o.volume === true;
-  const front = jerseyView(rf, "front", uidOf(rf, "tf"), o.emblems, false, !volume);
-  const back = jerseyView(rb, "back", uidOf(rb, "tb"), o.emblems, volume, !volume);
+  const front = jerseyView(rf, "front", uidOf(rf, "tf"), o.emblems, volume ? { rim: false, details: false } : {});
+  const back = jerseyView(rb, "back", uidOf(rb, "tb"), o.emblems, volume ? { mirror: true, rim: false, details: false } : {});
   if (volume) return volumeFrame(o, rf, front, back);
   const st = turnState(o.yaw, o.thickness);
   const edge = hexOf(shade(rf.body, -0.38));
@@ -108,7 +108,7 @@ function volumeFrame(o: TurnOptions, rf: ReturnType<typeof resolve>, front: View
   const pitch = typeof o.pitch === "number" && Number.isFinite(o.pitch) ? Math.max(0, Math.min(20, o.pitch)) : 8;
   const yaw = normalYaw(o.yaw);
   const desc = volumeDesc(rf, pitch);
-  const mk = volumeMarkup(desc, id, `${id}F`, `${id}B`, front.clipId, back.clipId, yaw, rf.look !== "line");
+  const mk = volumeMarkup(desc, id, `${id}F`, `${id}B`, front.clipId, back.clipId, yaw, rf.look !== "line", volumeDetails(rf));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(box.w)} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(yaw)}" data-vol="${JSON.stringify(desc).replace(/"/g, "&quot;")}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}<g id="${id}F">${front.body}</g><g id="${id}B">${back.body}</g>${mk.defs}</defs>${mk.body}</svg>`;
 }
 
