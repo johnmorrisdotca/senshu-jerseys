@@ -49,3 +49,19 @@ test("a hostile logo is ignored", () => {
 test("TITLE_BANNER_KINDS lists pennant and garden", () => {
   assert.deepEqual([...TITLE_BANNER_KINDS], ["pennant", "garden"]);
 });
+
+test("honour is condensed sports sans as SVG text, not jersey glyphs or a display font", () => {
+  const pennant = renderTitleBanner({ kind: "pennant", ...oilers });
+  const garden = renderTitleBanner({ kind: "garden", ...oilers, city: "Edmonton", club: "Oilers" });
+  for (const svg of [pennant, garden]) {
+    assert.match(svg, /<text[^>]*>STANLEY CUP<\/text>/);
+    assert.match(svg, /<text[^>]*>CHAMPIONS<\/text>/);
+    assert.match(svg, /<text[^>]*>1984 1985 1987<\/text>/);
+    assert.match(svg, /font-family="[^"]*sans-serif"/);
+    assert.match(svg, /font-stretch="condensed"/);
+    assert.doesNotMatch(svg, /textLength=/);
+    assert.doesNotMatch(svg, /comic sans|impact|papyrus|cursive|fantasy|chalkboard|marker felt|brush script/i);
+  }
+  assert.match(garden, /<text[^>]*>EDMONTON<\/text>/);
+  assert.match(garden, /<text[^>]*>OILERS<\/text>/);
+});

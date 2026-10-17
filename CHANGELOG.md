@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-17
+
+### Changed
+
+- **Title-banner type is condensed sports sans.** Honour, city, club and years are SVG `<text>` (`Arial Narrow` and a condensed sans stack, even tracking, size drops to fit). They are no longer the jersey's tackle-twill stroke glyphs, which looked warped on a pennant. No `textLength`.
+
 ## [0.5.1] - 2026-10-17
 
 ### Added

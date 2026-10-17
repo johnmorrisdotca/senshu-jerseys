@@ -295,7 +295,7 @@ console.log(hanging.includes("Retired number banner 99")); // true
 console.log(pennant.includes("Championship banner")); // true
 ```
 
-A caller's own letters go on a cap (up to three) and a banner. No helmet, cap or banner draws a team's mark of its own: a hanging banner or a title banner shows a logo only when the caller passes one. Trophies and rings are in [Dougu Sports](https://github.com/johnmorrisdotca/dougu-sports).
+A caller's own letters go on a cap (up to three) and a banner. Title banners set honour, city, club and years as condensed sports sans (SVG `<text>`), not the jersey's tackle-twill glyphs. No helmet, cap or banner draws a team's mark of its own: a hanging banner or a title banner shows a logo only when the caller passes one. Trophies and rings are in [Dougu Sports](https://github.com/johnmorrisdotca/dougu-sports).
 
 ### Two kits and a lineup
 

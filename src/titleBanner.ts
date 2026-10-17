@@ -7,7 +7,6 @@ import { TITLE_WORDS } from "./names.ts";
 import { LANGUAGE_IDS, LOOK_IDS, type LanguageId, type LookId } from "./options.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
-import { drawRun, layout } from "./text.ts";
 
 export const TITLE_BANNER_KINDS = ["pennant", "garden"] as const;
 export type TitleBannerKind = (typeof TITLE_BANNER_KINDS)[number];
@@ -62,11 +61,27 @@ function honourOf(o: TitleBannerOptions): { title?: string; subtitle?: string } 
   return { title: honour };
 }
 
-const markAt = (text: string, cx: number, cy: number, h: number, w: number, weight: "bold" | "black", fill: string, outline?: { colour: string; width: number }, line?: boolean): string => {
-  const run = layout(text, cx, cy, { height: h, maxWidth: w, weight, tracking: 0.35 });
-  if (line) return drawRun(run, "currentColor", undefined, undefined);
-  return drawRun(run, fill, outline, undefined);
-};
+/**
+ * Condensed sports sans for championship cloth. The jersey's tackle-twill stroke glyphs stay on
+ * sweaters (`text.ts`); they look like sewn numbers and warp when forced into a pennant. No
+ * `textLength`, no display/comic family: if a line is too wide, the size drops evenly.
+ */
+const TYPE =
+  "Arial Narrow,'Helvetica Neue','Franklin Gothic Medium','Nimbus Sans Narrow',system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif";
+
+function typeSize(text: string, want: number, maxWidth: number, tracking: number): number {
+  let units = 0;
+  for (const c of text) units += c === " " ? 0.28 : c.charCodeAt(0) > 255 ? 1 : 0.52;
+  const gaps = Math.max(0, [...text].length - 1) * tracking;
+  const natural = (units + gaps) * want;
+  return natural > maxWidth ? want * (maxWidth / natural) : want;
+}
+
+/** One centred line. `tracking` is extra space between letters, in ems (years a little more). */
+function typeLine(text: string, cx: number, cy: number, want: number, maxWidth: number, fill: string, weight: 700 | 800, tracking = 0.05): string {
+  const size = typeSize(text, want, maxWidth, tracking);
+  return `<text x="${n2(cx)}" y="${n2(cy)}" text-anchor="middle" dominant-baseline="central" font-size="${n2(size)}" font-weight="${weight}" font-stretch="condensed" letter-spacing="${n2(size * tracking)}" fill="${fill}" font-family="${TYPE}">${esc(text)}</text>`;
+}
 
 /** A five-point star centred at `(cx, cy)`, outer radius `r`. Generic decoration; not a league mark. */
 function starPath(cx: number, cy: number, r: number): string {
@@ -180,15 +195,15 @@ function pennantBody(p: {
     y = 128;
   }
   if (title !== undefined) {
-    body += markAt(title, 100, y, 16, 92, "black", fill, undefined, line);
+    body += typeLine(title, 100, y, 16, 92, fill, 800);
     y += 22;
   }
   if (subtitle !== undefined) {
-    body += markAt(subtitle, 100, y, 12, 88, "bold", fill, undefined, line);
+    body += typeLine(subtitle, 100, y, 12, 88, fill, 700);
     y += 20;
   }
   for (const row of years) {
-    body += markAt(row, 100, y, 11, 90, "bold", yearFill, undefined, line);
+    body += typeLine(row, 100, y, 11, 90, yearFill, 700, 0.12);
     y += 16;
   }
   return body;
@@ -250,16 +265,16 @@ function gardenBody(p: {
   for (let i = 0; i < 7; i++) {
     body += `<path d="${starPath(46 + i * 16, 42, 5.2)}" fill="${starFill}"/>`;
   }
-  if (city !== undefined) body += markAt(city, 96, 72, 10, 112, "bold", accentInk, undefined, line);
-  if (club !== undefined) body += markAt(club, 96, 100, 22, 118, "black", accentInk, undefined, line);
+  if (city !== undefined) body += typeLine(city, 96, 72, 10, 112, accentInk, 700, 0.12);
+  if (club !== undefined) body += typeLine(club, 96, 100, 22, 118, accentInk, 800);
   if (logo !== undefined) {
     body += `<image href="${esc(logo)}" x="64" y="136" width="64" height="52" preserveAspectRatio="xMidYMid meet"/>`;
   }
-  if (title !== undefined) body += markAt(title, 96, 210, 12, 112, "black", accentInk, undefined, line);
-  if (subtitle !== undefined) body += markAt(subtitle, 96, 230, 11, 112, "bold", accentInk, undefined, line);
+  if (title !== undefined) body += typeLine(title, 96, 210, 12, 112, accentInk, 800);
+  if (subtitle !== undefined) body += typeLine(subtitle, 96, 230, 11, 112, accentInk, 700);
   let yy = 262;
   for (const row of years) {
-    body += markAt(row, 96, yy, 11, 112, "bold", lightFill, undefined, line);
+    body += typeLine(row, 96, yy, 11, 112, lightFill, 700, 0.12);
     yy += 15;
   }
   return body;
