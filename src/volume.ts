@@ -32,6 +32,18 @@ const SLEEVE_DEPTH = 0.75;
 /** The exponent of the torso's cross-section in depth: 2 is an ellipse, more is a fuller, squarer body that fills out to the sleeves. */
 const FULL = 4;
 const BODY_DEPTH = 0.6;
+/**
+ * How much of the body's depth stays on the side of each half, as a part of `b`. Without this the
+ * superellipse pinches to z = 0 at x = ±a and a three-quarter view looks through a hole between
+ * the front and the back. A side panel then spans the rest, from +SIDE b to −SIDE b.
+ */
+const SIDE = 0.4;
+
+/** Depth of the front (or back) half at parameter `t` (−90° the left, 90° the right): the superellipse, never thinner than the side wall. */
+function depthAt(b: number, t: number): number {
+  const elliptical = b * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(Math.sin(t)), FULL)), 1 / FULL);
+  return Math.max(SIDE * b, elliptical);
+}
 
 /** The half width of a polyline of `[u, y]` at `y`. */
 function widthAt(half: readonly (readonly [number, number])[], y: number): number {
@@ -159,10 +171,44 @@ export function cellsOf(d: VolumeDesc): Cell[] {
         const p: number[] = [];
         for (const [jj, ii] of [[j, i], [j, i + 1], [j + 1, i], [j + 1, i + 1]] as const) {
           const t = tAt(ii, d.nt);
-          tex.push(100 + (d.a[jj] as number) * Math.sin(t), d.y[jj] as number);
-          p.push(sg * (d.a[jj] as number) * Math.sin(t), d.y[jj] as number, sg * (d.b[jj] as number) * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(Math.sin(t)), FULL)), 1 / FULL));
+          const halfW = (d.a[jj] as number) - PAD;
+          tex.push(100 + halfW * Math.sin(t), d.y[jj] as number);
+          p.push(sg * (d.a[jj] as number) * Math.sin(t), d.y[jj] as number, sg * depthAt(d.b[jj] as number, t));
         }
         cells.push(...split(back ? 3 : 0, back, tex, p, normalOf(p, 0, (d.y[j]! + d.y[j + 1]!) / 2, 0)));
+      }
+    }
+  }
+  // A wall at each side, from the front half's edge down to z = 0 and from there to the back.
+  // The two halves no longer meet as a line: a side or three-quarter view is cloth, and a stripe
+  // at the drawing's own edge wraps around it.
+  for (let j = 0; j + 1 < d.y.length; j++) {
+    const y0 = d.y[j] as number;
+    const y1 = d.y[j + 1] as number;
+    const cy = (y0 + y1) / 2;
+    for (const left of [true, false]) {
+      const s = left ? -1 : 1;
+      const a0 = d.a[j] as number;
+      const a1 = d.a[j + 1] as number;
+      const z0 = SIDE * (d.b[j] as number);
+      const z1 = SIDE * (d.b[j + 1] as number);
+      const w0 = a0 - PAD;
+      const w1 = a1 - PAD;
+      const inner = 2.2;
+      for (const back of [false, true]) {
+        const sg = back ? -1 : 1;
+        const tex: number[] = [];
+        const p: number[] = [];
+        for (const c of [
+          { inset: inner, z: z0, x: s * a0, y: y0, w: w0 },
+          { inset: 0, z: 0, x: s * a0, y: y0, w: w0 },
+          { inset: inner, z: z1, x: s * a1, y: y1, w: w1 },
+          { inset: 0, z: 0, x: s * a1, y: y1, w: w1 },
+        ]) {
+          tex.push(100 + (back ? -s : s) * (c.w - c.inset), c.y);
+          p.push(c.x, c.y, sg * c.z);
+        }
+        cells.push(...split(back ? 3 : 0, back, tex, p, normalOf(p, 0, cy, 0)));
       }
     }
   }

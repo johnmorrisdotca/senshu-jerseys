@@ -70,10 +70,12 @@ test("the regression angles: the front and the back come round, and each shows o
     return { front, back };
   };
   const per = desc.nt * (desc.y.length - 1) * 2;
+  // Side-wall triangles on one half: pitch can tip a few of them toward the camera.
+  const wall = (desc.y.length - 1) * 2 * 2;
   // The camera looks down a little, so the top of the far shoulders shows over the near ones: a few cells, and drawn behind.
-  assert.equal(shown(0).front, per, "face on: the whole front");
+  assert.ok(shown(0).front >= per && shown(0).front <= per + wall, "face on: the whole front");
   assert.ok(shown(0).back <= per * 0.08, "face on: next to none of the back");
-  assert.equal(shown(180).back, per, "from behind: the whole back");
+  assert.ok(shown(180).back >= per && shown(180).back <= per + wall, "from behind: the whole back");
   assert.ok(shown(180).front <= per * 0.08, "from behind: next to none of the front");
   for (const yaw of [90, 270]) {
     const s = shown(yaw);
@@ -82,12 +84,35 @@ test("the regression angles: the front and the back come round, and each shows o
   for (const yaw of [45, 135, 225, 315]) {
     const s = shown(yaw);
     assert.ok(s.front > 0 && s.back > 0, `${yaw}: both faces turn through the three-quarter`);
-    assert.ok(s.front + s.back > per * 0.45 && s.front + s.back <= per, `${yaw}: about half the surface`);
+    assert.ok(s.front + s.back > per * 0.45 && s.front + s.back <= per * 2, `${yaw}: about half the surface, side walls included`);
   }
   // Whatever the angle, no cell that faces away shows: its matrix is empty and the markup hides it.
   for (const yaw of EIGHT) {
     const hidden = cells.filter((c) => !placeCell(c, yaw, desc.pitch).visible).length;
     assert.equal(cellsIn(jerseyFrame({ cut: "hockey", volume: true, yaw })).filter((c) => c.includes('display="none"')).length, hidden, `${yaw}`);
+  }
+});
+
+test("a side view is closed cloth, not a hole between the front and the back", () => {
+  for (const cut of CUT_IDS) {
+    const desc = volumeDesc(resolve({ cut }));
+    const torso = cellsOf(desc).filter((c) => c.g === 0 || c.g === 3);
+    let zMin = Infinity;
+    let zMax = -Infinity;
+    let nearSide = 0;
+    const chest = Math.max(...desc.b);
+    for (const c of torso) {
+      if (!placeCell(c, 90, desc.pitch).visible) continue;
+      for (let k = 0; k < 3; k++) {
+        const z = c.p[3 * k + 2] as number;
+        zMin = Math.min(zMin, z);
+        zMax = Math.max(zMax, z);
+      }
+      const mx = (c.p[0]! + c.p[3]! + c.p[6]!) / 3;
+      if (mx < -chest * 0.4) nearSide++;
+    }
+    assert.ok(zMax - zMin > chest, `${cut}: depth ${zMax - zMin} at yaw 90, want > ${chest}`);
+    assert.ok(nearSide > 4, `${cut}: the near side has cells, not a line`);
   }
 });
 

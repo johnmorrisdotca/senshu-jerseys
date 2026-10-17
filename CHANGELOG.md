@@ -11,6 +11,7 @@ All notable changes to this project are written here. The format follows
 ### Changed
 
 - **Title-banner type is condensed sports sans.** Honour, city, club and years are SVG `<text>` (`Arial Narrow` and a condensed sans stack, even tracking, size drops to fit). They are no longer the jersey's tackle-twill stroke glyphs, which looked warped on a pennant. No `textLength`.
+- **A volume jersey's side is cloth.** The torso's front and back halves no longer meet as a line at z = 0: a side wall wraps the drawing's own edge, so a side or three-quarter view is solid (stripes wrap) instead of a hole under the arm.
 
 ## [0.5.1] - 2026-10-17
 

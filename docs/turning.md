@@ -54,7 +54,7 @@ console.log(jerseyFrame({ ...options, volume: "yes", yaw: 30 }) === jerseyFrame(
 
 **How it is drawn.** There is no 3D engine and no new way of drawing. The front and the back are the same drawings as before, made once, with every option (colours, stripes, yoke, collar, name, number, patch) in them. The garment is a mesh that they are wrapped over:
 
-- The **body** is a loft of rounded sections: narrow at the neck, a chest's depth at the armpit, the width of the drawing at each height (a square-ish section, so it fills out to the sleeves).
+- The **body** is a loft of rounded sections: narrow at the neck, a chest's depth at the armpit, the width of the drawing at each height (a square-ish section, so it fills out to the sleeves), with a **side wall** that closes the torso between the front half and the back so a side or three-quarter view is cloth, not a hole.
 - Each **sleeve** is a tapered tube from the armhole to the cuff, lying where the flat drawing has it.
 - Each surface is cut into small **triangles**, and each triangle is a clipped copy of its face's drawing under an affine matrix worked out from where its three corners lie after the turn (`yaw` about the vertical, then `pitch`). A triangle is exact at its corners, so neighbours meet with no gap, and they overlap by a fraction of a unit under the clip so no hairline shows between them.
 - A triangle whose cloth faces away from the viewer is hidden, so the far side never shows through; the sleeve behind the body is drawn first and the sleeve in front last. A little shade, from a light above and to the left, is laid over each cell by the way it faces.
@@ -64,7 +64,7 @@ At 0 degrees the front is drawn as it is by `renderJersey`, and the camera's `pi
 
 `bindTurn(container, { ...options, volume: true })` turns it by hand or by itself like the flat one; only the matrices, which cells show and the order of the sleeves change from frame to frame (`applyTurn` does this, the markup is made once). A frame is some 130 kilobytes of SVG (about 17 gzipped) because each cell is a short element and the two drawings are held once in the defs.
 
-**What it does not do.** The front and the back drawings are all there is to wrap, so the cloth under the arm and at the side seam is the drawings' own edge, stretched a little at the sleeve's sides. The `kit` view and the `both` view do not turn. The `<senshu-jersey>` element takes `volume` and `pitch` as attributes, and `embed.html` takes `volume=1` and `yaw`.
+**What it does not do.** The front and the back drawings are all there is to wrap; the side wall samples the drawing's own edge (stripes wrap). The `kit` view and the `both` view do not turn. The `<senshu-jersey>` element takes `volume` and `pitch` as attributes, and `embed.html` takes `volume=1` and `yaw`.
 
 ## `bindTurn(container, options, settings)`
 
