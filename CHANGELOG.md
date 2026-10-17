@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-16
+
 ### Added
 
 - **A volumetric turn.** `jerseyFrame`, `bindTurn` and `applyTurn` take `volume: true` (and `pitch`, 0 to 20 degrees, 8 by default) and draw the shirt as a garment: a body lofted from the cut's measures and two tapered sleeves, with the front and back drawings wrapped over them in small triangles, cloth that faces away hidden, the sleeve behind the body drawn first, and a little shade. Front, back, both sides and the angles between keep a believable silhouette, and every option follows the surfaces. The flat turn is the default and is unchanged. `docs/turning.md` says how it is drawn; `test/volume.test.ts` holds it (the eight angles, every cut, the box, the matrices against the points, hostile values). The element takes `volume` and `pitch`, `embed.html` takes `volume=1` and `yaw`, and the demo has a Volume switch, fixed views (front, left side, back, right side, three-quarter) and a Compare of the flat card with the garment.
@@ -21,7 +23,6 @@ All notable changes to this project are written here. The format follows
 
 - The size limits of the bundles are raised, gzipped, for the volume, the sleeves and the chest badges: the jersey's from 20 to 24 kB, the banner's from 16 to 20, the turn's from 17 to 25 and the element's from 24 to 32.
 
-## [0.3.4] - 2026-10-16
 
 ### Fixed
 
