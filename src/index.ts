@@ -8,6 +8,8 @@ export { HELMET_KINDS, HELMET_MARKS, renderHelmet } from "./helmet.ts";
 export type { HelmetKind, HelmetMark, HelmetOptions } from "./helmet.ts";
 export { BANNER_KINDS, BANNER_SHAPES, logoHref, renderBanner } from "./banner.ts";
 export type { BannerKind, BannerOptions, BannerShape } from "./banner.ts";
+export { TITLE_BANNER_KINDS, renderTitleBanner, yearLines } from "./titleBanner.ts";
+export type { TitleBannerKind, TitleBannerOptions } from "./titleBanner.ts";
 export { formationRows, jerseyLineup, kitClash, kitMatchup } from "./kit.ts";
 export type { KitSide, LineupOptions, LineupPlayer, MatchupOptions } from "./kit.ts";
 export { renderKit } from "./uniform.ts";

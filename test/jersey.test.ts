@@ -143,6 +143,8 @@ test("the cap, the helmet, the banner, the matchup, the lineup and the whole kit
     ...(["rectangle", "pennant", "shield"] as const).map((shape) => S.renderBanner({ shape, number: 9, name: "Beaumont", years: "1948-1963", sweater: true })),
     S.renderBanner({ look: "line" }),
     S.renderBanner({ kind: "hanging", number: 99, name: "Lindqvist", logo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" fill="#fff"/></svg>` }),
+    S.renderTitleBanner({ kind: "pennant", title: "Stanley Cup", subtitle: "Champions", years: [1984, 1985, 1987] }),
+    S.renderTitleBanner({ kind: "garden", city: "Edmonton", club: "Oilers", title: "Stanley Cup", subtitle: "Champions", years: [1990] }),
     S.kitMatchup({ away: { colors: ["#1f3a8a", "#fff"], label: "Gulls" }, home: { colors: ["#c8102e", "#fff"], label: "Bison" }, view: "both" }),
     S.jerseyLineup(Array.from({ length: 11 }, (_, i) => ({ number: i + 1, name: `P${i + 1}` })), { formation: "4-4-2", jersey: { cut: "soccer", colors: ["#c8102e", "#fff"] }, field: true }),
     S.jerseyLineup([{ number: 1 }, { number: 2 }], { rows: [1, 1] }),

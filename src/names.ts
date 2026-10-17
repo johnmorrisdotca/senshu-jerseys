@@ -26,7 +26,7 @@ export const PATTERN_NAMES: Readonly<Record<PatternId, { en: string; ja: string 
 };
 
 /** The words of a title: `{ jersey, number, front, back, both }` in a language. */
-export const TITLE_WORDS: Readonly<Record<LanguageId, { number: string; front: string; back: string; both: string; cap: string; helmet: string; banner: string; retired: string }>> = {
-  en: { number: "number", front: "front", back: "back", both: "front and back", cap: "Cap", helmet: "Helmet", banner: "Retired number banner", retired: "retired" },
-  ja: { number: "背番号", front: "前", back: "後ろ", both: "前と後ろ", cap: "キャップ", helmet: "ヘルメット", banner: "永久欠番バナー", retired: "永久欠番" },
+export const TITLE_WORDS: Readonly<Record<LanguageId, { number: string; front: string; back: string; both: string; cap: string; helmet: string; banner: string; retired: string; titleBanner: string }>> = {
+  en: { number: "number", front: "front", back: "back", both: "front and back", cap: "Cap", helmet: "Helmet", banner: "Retired number banner", retired: "retired", titleBanner: "Championship banner" },
+  ja: { number: "背番号", front: "前", back: "後ろ", both: "前と後ろ", cap: "キャップ", helmet: "ヘルメット", banner: "永久欠番バナー", retired: "永久欠番", titleBanner: "優勝バナー" },
 };

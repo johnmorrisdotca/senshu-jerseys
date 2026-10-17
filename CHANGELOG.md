@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-17
+
+### Added
+
+- **`renderTitleBanner`**: championship pennants (black rod, gold knobs, honour and years) and garden flags (stars bar, city and club as letters, honour and years). The caller passes colours, honour, years and an optional logo; the package still draws no team's mark and no league shield. `TITLE_BANNER_KINDS`, `yearLines`.
+
 ## [0.5.0] - 2026-10-17
 
 ### Added

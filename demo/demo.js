@@ -1,6 +1,6 @@
-// The demo's script: a jersey to try (every option, turned by a drag or by itself), the wall of every preset, the retired-number banners, a matchup and a lineup,
+// The demo's script: a jersey to try (every option, turned by a drag or by itself), the wall of every preset, the retired-number banners, title banners, a matchup and a lineup,
 // caps and helmets, and the code that puts it in a page. Everything the controls say is in the address. The words are in words.js.
-import { CUT_IDS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, usePresets } from "./dist/index.js";
+import { CUT_IDS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { WORDS } from "./words.js";
 
@@ -475,6 +475,27 @@ function drawRafters() {
   }
 }
 
+function drawTitles() {
+  const grid = $("titles-grid");
+  if (!grid) return;
+  grid.replaceChildren();
+  const mark = plateMark("#ff4c00", "#ffffff");
+  const navy = ["#041e42", "#ff4c00", "#ffffff"];
+  const red = ["#af1e2d", "#ffffff", "#192168"];
+  const rows = [
+    { kind: "pennant", colors: navy, title: "Stanley Cup", subtitle: "Champions", years: [1984, 1985, 1987, 1988, 1990], city: "Edmonton", club: "Oilers", cap: "Pennant", capJa: "ペナント" },
+    { kind: "garden", colors: navy, title: "Stanley Cup", subtitle: "Champions", years: [1984, 1985, 1987, 1988, 1990], city: "Edmonton", club: "Oilers", cap: "Garden flag", capJa: "縦型フラッグ" },
+    { kind: "pennant", colors: red, title: "Stanley Cup", subtitle: "Champions", years: [1976, 1977, 1978, 1979], city: "Montreal", club: "Canadiens", cap: "Pennant", capJa: "ペナント" },
+    { kind: "garden", colors: red, title: "Stanley Cup", subtitle: "Champions", years: [1976, 1977, 1978, 1979], city: "Montreal", club: "Canadiens", cap: "Garden flag", capJa: "縦型フラッグ" },
+  ];
+  for (const r of rows) {
+    const fig = el("figure", { class: "banner" });
+    fig.innerHTML = renderTitleBanner({ kind: r.kind, colors: r.colors, title: r.title, subtitle: r.subtitle, years: r.years, city: r.city, club: r.club, logo: mark, size: 160, language: lang() });
+    fig.append(el("figcaption", { text: `${lang() === "ja" ? r.capJa : r.cap} · ${r.club}` }));
+    grid.append(fig);
+  }
+}
+
 function colorsOf(o) {
   return [o.body ?? DEFAULTS.body, o.trim ?? DEFAULTS.trim, o.accent ?? DEFAULTS.accent];
 }
@@ -751,6 +772,7 @@ async function loadPresets() {
   }
   fillPresetSelects();
   drawRafters();
+  drawTitles();
   if (ui.preset !== "" && presetsApi.byId.has(ui.preset) && Object.keys(attrs).length <= Object.keys(DEFAULTS).length + 1 && !params.has("body")) applyPreset(ui.preset);
   buildWall();
   buildStyles();
@@ -823,6 +845,7 @@ function everything() {
   buildControls();
   render();
   drawRafters();
+  drawTitles();
   drawBuilders();
   if (presetsApi !== undefined) {
     fillPresetSelects();
@@ -838,5 +861,6 @@ buildControls();
 render();
 paintBackground();
 drawRafters();
+drawTitles();
 drawBuilders();
 loadPresets();

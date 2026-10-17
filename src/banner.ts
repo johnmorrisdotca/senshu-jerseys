@@ -1,7 +1,7 @@
 // `renderBanner`: a retired-number banner as it hangs from the rafters: a rectangle, a pennant or a shield in the team's colours, the number, the name, the years or the
 // honour, and, if asked, a sweater of the team with the number on its back. `kind: "hanging"` is the other cut: last name, a big number and a caller-supplied logo, no years and
-// no sweater, like a plate from the rafters. A championship banner, a pennant or a ring is not this; those are in dougu-sports. The package draws no team's mark: a hanging
-// banner shows a logo only when the caller passes one (an SVG document, a data address, or an http(s) or root-relative image).
+// no sweater, like a plate from the rafters. Championship pennants and garden flags are `renderTitleBanner`. Trophies and rings stay in dougu-sports. The package draws no team's
+// mark: a hanging banner shows a logo only when the caller passes one (an SVG document, a data address, or an http(s) or root-relative image).
 import { BLACK, WHITE, clean, contrast, esc, hashOf, hexOf, inkOn, lum, readColour, shade, type Rgb } from "./colour.ts";
 import { jerseyView, uidOf } from "./jersey.ts";
 import { TITLE_WORDS } from "./names.ts";

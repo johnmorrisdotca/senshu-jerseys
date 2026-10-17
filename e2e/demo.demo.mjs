@@ -244,6 +244,7 @@ test("the controls take the officials' parts: armbands, a pocket, a badge spot a
 test("the hall of rafters, the matchup, the lineup and the caps draw", async ({ page }) => {
   await page.goto("/");
   await expect.poll(() => page.locator('[data-testid="rafters"] svg').count()).toBeGreaterThanOrEqual(14);
+  await expect.poll(() => page.locator('[data-testid="titles"] svg').count()).toBeGreaterThanOrEqual(4);
   await expect(page.locator('[data-testid="m-out"] svg')).toBeVisible();
   await expect(page.locator('[data-testid="l-out"] svg')).toBeVisible();
   await expect(page.locator('[data-testid="caps"] svg')).toHaveCount(6);
