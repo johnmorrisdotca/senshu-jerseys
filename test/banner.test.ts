@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { BANNER_SHAPES, renderBanner, type BannerOptions, type BannerShape } from "../src/index.ts";
+import { BANNER_KINDS, BANNER_SHAPES, logoHref, renderBanner, type BannerOptions, type BannerShape } from "../src/index.ts";
 import { inkBox, pathPoints, type Box } from "./svgbox.ts";
 
 type P = readonly [number, number];
@@ -90,11 +90,10 @@ function room(poly: readonly P[], b: Box): number {
   return least;
 }
 
-const cases = (shape: BannerShape): { label: string; options: BannerOptions }[] => {
+const cases = (shape: BannerShape, sweater = false): { label: string; options: BannerOptions }[] => {
   const out: { label: string; options: BannerOptions }[] = [];
-  for (const sweater of shape === "pennant" ? [false] : [false, true])
-    for (const look of ["cloth", "flat", "line"] as const)
-      for (const colors of COLOURS) out.push({ label: `${shape}${sweater ? " with sweater" : ""}, ${look}, ${colors[0]}`, options: { shape, look, colors, sweater, number: 88 } });
+  for (const look of ["cloth", "flat", "line"] as const)
+    for (const colors of COLOURS) out.push({ label: `${shape}${sweater ? " with sweater" : ""}, ${look}, ${colors[0]}`, options: { shape, look, colors, sweater, number: 88 } });
   return out;
 };
 
@@ -131,4 +130,54 @@ test("the writing does not collide: the name stays above the years, and the numb
         assert.ok(a.y1 <= y.y0, `${label}, ${name}: the name (to ${a.y1.toFixed(1)}) runs into the years (from ${y.y0.toFixed(1)})`);
       }
     }
+});
+
+for (const shape of BANNER_SHAPES) {
+  test(`on a ${shape} banner with a sweater the years stay on the cloth below the jersey${shape === "rectangle" ? ", above the notch" : ""}`, () => {
+    for (const { label, options } of cases(shape, true)) {
+      const poly = outline(renderBanner(options));
+      const apex = shape === "rectangle" ? Math.min(...poly.filter(([x, y]) => Math.abs(x - 100) < 0.5 && y > 200).map(([, y]) => y)) : undefined;
+      const svg = renderBanner({ ...options, name: "Beaumont", years: "1948-1963", number: 9 });
+      assert.match(svg, /9/);
+      assert.match(svg, /BEAUMONT/);
+      for (const years of ["1948-1963", "Retired 1972", "1999"]) {
+        const ink = inkOf(options, { years });
+        const r = room(poly, ink);
+        assert.ok(r >= CLEAR, `${label}, ${years}: the years come within ${r.toFixed(1)} of the edge; they need ${CLEAR}`);
+        if (apex !== undefined) assert.ok(ink.y1 <= apex - NOTCH_CLEAR, `${label}, ${years}: the years end at ${ink.y1.toFixed(1)}, need ${NOTCH_CLEAR} above the notch at ${apex}`);
+        // The years sit in the band under the jersey, not up with the number.
+        assert.ok(ink.y0 >= 145, `${label}, ${years}: the years start at ${ink.y0.toFixed(1)}, still in the jersey's area`);
+      }
+    }
+  });
+}
+
+test("a hanging banner is last name, number and a caller logo, with no years", () => {
+  const mark = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#ff4c00"/></svg>`;
+  const svg = renderBanner({ kind: "hanging", colors: ["#041e42", "#ffffff", "#ff4c00"], number: 99, name: "Gretzky", years: "1999", logo: mark, size: 160 });
+  assert.match(svg, /^<svg /);
+  assert.match(svg, /99/);
+  assert.match(svg, /GRETZKY/);
+  assert.doesNotMatch(svg, /1999/);
+  assert.match(svg, /<image href="data:image\/svg\+xml/);
+  const poly = outline(svg);
+  const a = inkOf({ kind: "hanging", colors: ["#041e42", "#ffffff", "#ff4c00"] }, { name: "Gretzky" });
+  const n = inkOf({ kind: "hanging", colors: ["#041e42", "#ffffff", "#ff4c00"] }, { number: 99 });
+  assert.ok(room(poly, a) >= CLEAR, `hanging name is ${room(poly, a).toFixed(1)} from the edge`);
+  assert.ok(room(poly, n) >= CLEAR, `hanging number is ${room(poly, n).toFixed(1)} from the edge`);
+  assert.ok(a.y1 <= n.y0, `hanging: the name (to ${a.y1.toFixed(1)}) runs into the number (from ${n.y0.toFixed(1)})`);
+});
+
+test("a hanging banner ignores a hostile logo", () => {
+  const svg = renderBanner({ kind: "hanging", number: 9, name: "Beaumont", logo: `javascript:alert(1)` });
+  assert.doesNotMatch(svg, /javascript:/i);
+  assert.doesNotMatch(svg, /<image /);
+  const broke = renderBanner({ kind: "hanging", number: 9, name: "Beaumont", logo: `"><script>alert(1)</script>` });
+  assert.doesNotMatch(broke, /<script/i);
+  assert.equal(logoHref("javascript:alert(1)"), undefined);
+  assert.equal(logoHref("vbscript:x"), undefined);
+  assert.ok(logoHref("https://example.com/a.png")?.startsWith("https://"));
+  assert.ok(logoHref("http://example.com/a.png")?.startsWith("http://"));
+  assert.ok(logoHref("/team-logos/edm.png")?.startsWith("/"));
+  assert.ok(BANNER_KINDS.includes("hanging"));
 });

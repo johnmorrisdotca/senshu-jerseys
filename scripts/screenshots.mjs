@@ -148,7 +148,7 @@ try {
     ];
     const one = ([shape, colors, number, name, years, cut], flip) => {
       const c = flip ? [colors[1], colors[0], colors[2]] : colors;
-      return `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderBanner({ shape, colors: c, number, name, years, sweater: shape === "pennant" ? false : { cut, colors: [c[1], c[0], c[2]], pattern: cut === "baseball" ? "pinstripes" : "solid" }, size: 200 })}</figure>`;
+      return `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderBanner({ shape, colors: c, number, name, years, sweater: { cut, colors: [c[1], c[0], c[2]], pattern: cut === "baseball" ? "pinstripes" : "solid" }, size: 200 })}</figure>`;
     };
     return sets.map((s) => one(s, false)).join("") + sets.map((s) => one(s, true)).join("");
   };

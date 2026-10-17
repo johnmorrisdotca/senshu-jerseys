@@ -439,21 +439,35 @@ const PRESET_RAFTERS = [
   ["nfl:packers-1959-1979-home", "shield", 15, "Delacroix", "1956-1971"],
   ["cfl:argonauts-1950s-home", "rectangle", 77, "Tremblay", "1951-1962"],
 ];
+function plateMark(fill, stroke) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="${fill}" stroke="${stroke}" stroke-width="4"/><circle cx="32" cy="22" r="8" fill="${stroke}"/><path d="M20 40Q32 54 44 40" fill="none" stroke="${stroke}" stroke-width="4" stroke-linecap="round"/></svg>`;
+}
+const HANGING = [
+  { team: "Canada", ja: "カナダ代表", colors: ["#d52b1e", "#ffffff", "#0b2a6a"], number: 9, name: "Beaumont", fill: "#d52b1e", stroke: "#ffffff" },
+  { team: "United States", ja: "アメリカ代表", colors: ["#0b2a6a", "#ffffff", "#c8102e"], number: 99, name: "Lindqvist", fill: "#0b2a6a", stroke: "#ffffff" },
+  { team: "Japan", ja: "日本代表", colors: ["#1b2a6b", "#ffffff", "#bc002d"], number: 10, name: "Tanaka", fill: "#1b2a6b", stroke: "#ffffff" },
+];
 function drawRafters() {
   const grid = $("rafters-grid");
   grid.replaceChildren();
+  for (const r of HANGING) {
+    const fig = el("figure", { class: "banner" });
+    fig.innerHTML = renderBanner({ kind: "hanging", colors: r.colors, number: r.number, name: r.name, logo: plateMark(r.fill, r.stroke), size: 150, language: lang() });
+    fig.append(el("figcaption", { text: lang() === "ja" ? r.ja : r.team }));
+    grid.append(fig);
+  }
   for (const [id, shape, number, name, years] of PRESET_RAFTERS) {
     const p = presetsApi?.byId.get(id);
     if (p === undefined) continue;
     const o = p.options;
     const colors = [o.body ?? "#1f3a8a", o.trim ?? "#f4f0e4", o.accent ?? o.trim ?? "#c8102e"];
     const fig = el("figure", { class: "banner" });
-    fig.innerHTML = renderBanner({ shape, colors, number, name, years, sweater: shape === "pennant" ? false : { ...o, colors: undefined, body: colors[1], trim: colors[0], accent: colors[2], look: "flat" }, size: 150, language: lang() });
+    fig.innerHTML = renderBanner({ shape, colors, number, name, years, sweater: { ...o, colors: undefined, body: colors[1], trim: colors[0], accent: colors[2], look: "flat" }, size: 150, language: lang() });
     fig.append(el("figcaption", { text: `${lang() === "ja" ? p.ja : p.team}, ${p.years}` }));
     grid.append(fig);
   }
   for (const r of RAFTERS) {
-    const svg = renderBanner({ shape: r.shape, colors: r.colors, number: r.number, name: r.name, years: r.years, sweater: r.shape !== "pennant" ? { cut: r.cut, colors: [r.colors[1], r.colors[0], r.colors[2]], pattern: r.cut === "baseball" ? "pinstripes" : "solid" } : false, size: 150, language: lang() });
+    const svg = renderBanner({ shape: r.shape, colors: r.colors, number: r.number, name: r.name, years: r.years, sweater: { cut: r.cut, colors: [r.colors[1], r.colors[0], r.colors[2]], pattern: r.cut === "baseball" ? "pinstripes" : "solid" }, size: 150, language: lang() });
     const fig = el("figure", { class: "banner" });
     fig.innerHTML = svg;
     fig.append(el("figcaption", { text: lang() === "ja" ? r.ja : r.team }));

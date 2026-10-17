@@ -68,7 +68,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Ten patterns**: solid, stripes, hoops, halves, quarters, sash, chevron, pinstripes, yoke and chest band; stripes and hoops take any repeat of widths and colours.
 - **Front, back, or both**, in three styles: `cloth` (soft folds, stitched numbers, a self-toned edge), `flat`, and `line` (one colour, legible at 16 pixels).
 - **Numbers and names that read**: each gets an ink with 4.5 to 1 contrast against what is behind it, and an outline over stripes. The letters are drawn here, as block strokes: no font file and no system font. A Japanese name is set as system text.
-- **Caps, helmets and banners**: a solid or two-tone cap with a contrast brim; football, hockey and batting helmets; retired-number banners as a rectangle, a pennant or a shield, with an optional small sweater.
+- **Caps, helmets and banners**: a solid or two-tone cap with a contrast brim; football, hockey and batting helmets; retired-number banners as a rectangle, a pennant or a shield, with an optional sweater filling the cloth (number and last name on the back, years below), or `kind: "hanging"` for a plate with last name, number and a caller-supplied logo.
 - **A matchup and a lineup**: two kits side by side that say whether they clash; a formation of shirts, `4-4-2`, with names and numbers.
 - **Whole uniforms**: the pants or shorts, the socks and the helmet that go with the jersey.
 - **Presets**: more than fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
@@ -284,14 +284,16 @@ import { renderBanner, renderCap, renderHelmet } from "@johnmorrisdotca/senshu-j
 
 const cap = renderCap({ colors: ["#d52b1e", "#0b2a6a", "#ffffff"], tone: "two-tone", initials: "CAN" });
 const helmet = renderHelmet({ kind: "football", colors: ["#1f3a8a", "#f4f0e4"], mark: "number", number: 12, facing: "left" });
-const banner = renderBanner({ shape: "shield", colors: ["#d52b1e", "#ffffff", "#0b2a6a"], number: 9, name: "Beaumont", years: "1948-1963", sweater: true });
+const banner = renderBanner({ shape: "pennant", colors: ["#d52b1e", "#ffffff", "#0b2a6a"], number: 9, name: "Beaumont", years: "1948-1963", sweater: true });
+const hanging = renderBanner({ kind: "hanging", colors: ["#041e42", "#ffffff", "#ff4c00"], number: 99, name: "Lindqvist" });
 
 console.log(cap.includes("<title")); // true
 console.log(helmet.includes("<title")); // true
 console.log(banner.includes("Retired number banner 9")); // true
+console.log(hanging.includes("Retired number banner 99")); // true
 ```
 
-A caller's own letters go on a cap (up to three) and a banner. No helmet, cap or banner draws a team's mark. Championship banners, pennants and rings are in [Dougu Sports](https://github.com/johnmorrisdotca/dougu-sports).
+A caller's own letters go on a cap (up to three) and a banner. No helmet, cap or banner draws a team's mark of its own: a hanging banner shows a logo only when the caller passes one. Championship banners, pennants and rings are in [Dougu Sports](https://github.com/johnmorrisdotca/dougu-sports).
 
 ### Two kits and a lineup
 
@@ -380,7 +382,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `OPTION_ATTRIBUTES`, `attributesFromOptions`, `optionsFromAttributes`, `jerseyToParams`, `jerseyFromParams` | Options as attributes and as a query. |
 | `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `BADGE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `CHEST_KINDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
-| `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES` | The helmets, their marks, and the banner shapes. |
+| `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES`, `BANNER_KINDS`, `logoHref` | The helmets, their marks, the banner shapes, the rafter or hanging kind, and a check of a caller-supplied hanging logo. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
 | `JERSEY_WIDTH`, `JERSEY_HEIGHT`, `jerseyBox`, `VERSION` | The body's 200 by 232 units, the box a cut is drawn in (a little wider than the body for a cut whose sleeves reach past it), and the package's version. |
 

@@ -6,6 +6,16 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-17
+
+### Added
+
+- **`kind: "hanging"`** on `renderBanner`: a hanging plate (last name, a large number, an optional caller-supplied logo, hem stripes, no years and no sweater), next to the rafter pennant. `logo` is an SVG document, a `data:image` address, or an `http(s)` or root-relative image; anything else is ignored (`logoHref`). The package still draws no team's own mark.
+
+### Changed
+
+- **A rafter banner's sweater fills the cloth.** The number and the last name sit on the jersey's back, the years sit below in a larger size, and a pennant can take a sweater too (it did not). `sweater: true` or its own options ask for this; a banner without a sweater is unchanged.
+
 ## [0.4.0] - 2026-10-16
 
 ### Added
