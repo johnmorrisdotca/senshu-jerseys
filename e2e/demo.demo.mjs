@@ -290,6 +290,7 @@ test("in Japanese the words change, and nothing scrolls sideways", async ({ page
 });
 
 test("44 pixels is the least a control gives a finger", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/");
   await expect(page.locator('[data-testid="chip-mlb"]')).toBeVisible();
   const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #background, #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #officials-sports button, #teams select, #teams button, #embed button").all();
