@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **A volume jersey's side view is solid.** The body's rows follow the side seam (and a tank's armhole) so a row is never wider than the drawing there, the side wall's two halves overlap at the middle, and every cell samples the drawing a little inside its edge. The slits under the sleeve at 84 and 90 degrees, the clear sliver at the shoulder tip and the ragged neck rim are gone. A test checks every 15 degrees that nothing behind the torso shows through.
+
 ## [0.5.2] - 2026-10-17
 
 ### Changed

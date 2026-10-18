@@ -38,6 +38,14 @@ const BODY_DEPTH = 0.6;
  * the front and the back. A side panel then spans the rest, from +SIDE b to −SIDE b.
  */
 const SIDE = 0.4;
+/** The two halves of the side wall meet past z = 0 by this part of its depth, and sample the drawing a little inside its edge, so that two antialiased edges never meet on the seam and leave a hairline. */
+const OVERLAP = 0.15;
+const EDGE = 0.6;
+
+/** The half width, on the drawing, a row samples: inside the outline's own edge, and further in at the shoulder tip, whose corner the drawing rounds off and leaves clear. */
+function texHalf(d: VolumeDesc, j: number): number {
+  return (d.a[j] as number) - PAD - EDGE - (j === 1 ? 5 : 0);
+}
 
 /** Depth of the front (or back) half at parameter `t` (−90° the left, 90° the right): the superellipse, never thinner than the side wall. */
 function depthAt(b: number, t: number): number {
@@ -67,7 +75,11 @@ export function volumeDesc(r: Resolved, pitch = 8): VolumeDesc {
   const sy = sh.half[1]?.[1] ?? spec.sy;
   const ay = sh.ay;
   const hem = spec.hy + spec.drop + 3;
-  const y = [ny - 6, ny, sy, (sy + ay) / 2, ay, ay + (spec.hy - ay) / 3, ay + (2 * (spec.hy - ay)) / 3, hem];
+  // The rows follow the seam's own points, so a row's width is the drawing's and not a chord across a curve: a tank's armhole too.
+  const seam = sh.half.slice(3);
+  const below = [seam[1], seam[3], seam[5], seam[seam.length - 1]].filter((p): p is [number, number] => p !== undefined).map((p) => p[1]);
+  const arm = sh.half.slice(2, sh.half.length - 8).filter((_, i) => i % 2 === 0).map((p) => p[1]);
+  const y = sh.tank ? [ny, sy, ...arm.filter((v) => v > sy + 2 && v < ay - 2), ay, ...below, hem] : [ny, sy, (sy + ay) / 2, ay, ...below, hem];
   const chest = BODY_DEPTH * spec.au;
   const neck = BODY_DEPTH * sh.nw;
   const a = y.map((v) => widthAt(sh.half, v) + PAD);
@@ -171,7 +183,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
         const p: number[] = [];
         for (const [jj, ii] of [[j, i], [j, i + 1], [j + 1, i], [j + 1, i + 1]] as const) {
           const t = tAt(ii, d.nt);
-          const halfW = (d.a[jj] as number) - PAD;
+          const halfW = texHalf(d, jj);
           tex.push(100 + halfW * Math.sin(t), d.y[jj] as number);
           p.push(sg * (d.a[jj] as number) * Math.sin(t), d.y[jj] as number, sg * depthAt(d.b[jj] as number, t));
         }
@@ -192,8 +204,8 @@ export function cellsOf(d: VolumeDesc): Cell[] {
       const a1 = d.a[j + 1] as number;
       const z0 = SIDE * (d.b[j] as number);
       const z1 = SIDE * (d.b[j + 1] as number);
-      const w0 = a0 - PAD;
-      const w1 = a1 - PAD;
+      const w0 = texHalf(d, j) + EDGE;
+      const w1 = texHalf(d, j + 1) + EDGE;
       const inner = 2.2;
       for (const back of [false, true]) {
         const sg = back ? -1 : 1;
@@ -201,9 +213,9 @@ export function cellsOf(d: VolumeDesc): Cell[] {
         const p: number[] = [];
         for (const c of [
           { inset: inner, z: z0, x: s * a0, y: y0, w: w0 },
-          { inset: 0, z: 0, x: s * a0, y: y0, w: w0 },
+          { inset: EDGE, z: -OVERLAP * z0, x: s * a0, y: y0, w: w0 },
           { inset: inner, z: z1, x: s * a1, y: y1, w: w1 },
-          { inset: 0, z: 0, x: s * a1, y: y1, w: w1 },
+          { inset: EDGE, z: -OVERLAP * z1, x: s * a1, y: y1, w: w1 },
         ]) {
           tex.push(100 + (back ? -s : s) * (c.w - c.inset), c.y);
           p.push(c.x, c.y, sg * c.z);

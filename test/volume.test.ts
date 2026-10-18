@@ -74,9 +74,9 @@ test("the regression angles: the front and the back come round, and each shows o
   const wall = (desc.y.length - 1) * 2 * 2;
   // The camera looks down a little, so the top of the far shoulders shows over the near ones: a few cells, and drawn behind.
   assert.ok(shown(0).front >= per && shown(0).front <= per + wall, "face on: the whole front");
-  assert.ok(shown(0).back <= per * 0.08, "face on: next to none of the back");
+  assert.ok(shown(0).back <= per * 0.08 + wall, "face on: next to none of the back");
   assert.ok(shown(180).back >= per && shown(180).back <= per + wall, "from behind: the whole back");
-  assert.ok(shown(180).front <= per * 0.08, "from behind: next to none of the front");
+  assert.ok(shown(180).front <= per * 0.08 + wall, "from behind: next to none of the front");
   for (const yaw of [90, 270]) {
     const s = shown(yaw);
     assert.ok(s.front > per / 3 && s.front < (2 * per) / 3 && s.back > per / 3 && s.back < (2 * per) / 3, `${yaw}: half of each, the side of the body`);
@@ -251,5 +251,48 @@ test("the garment weighs what it should: a frame is a few tens of kilobytes, wha
   for (const yaw of [0, 90, 180]) {
     const svg = jerseyFrame({ cut: "hockey", number: 9, name: "Gray", colors: COLORS, volume: true, yaw });
     assert.ok(svg.length < 220_000, `${yaw}: ${svg.length} bytes`);
+  }
+});
+
+test("every 15 degrees the torso is closed below the neck: whatever lies behind a hidden cell is covered by a shown one", () => {
+  const inTri = (p: number[], t: number[][]): boolean => {
+    const s = (a: number[], b: number[], c: number[]): number => (a[0]! - c[0]!) * (b[1]! - c[1]!) - (b[0]! - c[0]!) * (a[1]! - c[1]!);
+    const d1 = s(p, t[0]!, t[1]!);
+    const d2 = s(p, t[1]!, t[2]!);
+    const d3 = s(p, t[2]!, t[0]!);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  };
+  for (const cut of ["hockey", "football", "basketball"] as const) {
+    const desc = volumeDesc(resolve({ cut }));
+    const torso = cellsOf(desc).filter((c) => c.g === 0 || c.g === 3);
+    // The neck is an opening; the rows below it are cloth.
+    const below = (desc.y[0] as number) + 12;
+    for (let yaw = 0; yaw < 360; yaw += 15) {
+      const shown: number[][][] = [];
+      const hidden: number[][][] = [];
+      for (const c of torso) {
+        const tri = [0, 1, 2].map((k) => project(c.p, k, yaw, desc.pitch).map((v, i) => (i === 0 ? v - 100 : v)));
+        (placeCell(c, yaw, desc.pitch).visible ? shown : hidden).push(tri);
+      }
+      let holes = 0;
+      for (let x = -110; x <= 110; x += 2) for (let y = below; y <= 240; y += 2) {
+        const p = [x, y];
+        if (hidden.some((t) => inTri(p, t)) && !shown.some((t) => inTri(p, t))) holes++;
+      }
+      assert.ok(holes <= 6, `${cut} at ${yaw}: ${holes} samples of the torso show through`);
+    }
+  }
+});
+
+test("the cells sample the drawing inside its edge, so a seam never meets a clear or antialiased rim", () => {
+  const desc = volumeDesc(resolve({ cut: "hockey" }));
+  for (const c of cellsOf(desc)) {
+    if (c.g !== 0 && c.g !== 3) continue;
+    for (let k = 0; k < 3; k++) {
+      const x = c.tex[2 * k] as number;
+      const row = desc.y.findIndex((y) => Math.abs(y - (c.tex[2 * k + 1] as number)) < 1e-6);
+      if (row < 0) continue;
+      assert.ok(Math.abs(x - 100) <= (desc.a[row] as number) - 1.2 - 0.5, `row ${row}: ${x} is on or past the outline`);
+    }
   }
 });
