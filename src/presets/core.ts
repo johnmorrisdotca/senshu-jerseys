@@ -23,7 +23,7 @@ export type Teams = Readonly<Record<string, readonly [en: string, ja: string]>>;
 
 const CUT_CODES: Record<string, CutId> = { h: "hockey", b: "baseball", k: "basketball", f: "football", s: "soccer", r: "rugby", d: "handball" };
 const PATTERN_CODES = { s: "stripes", h: "hoops", "2": "halves", "4": "quarters", a: "sash", c: "chevron", p: "pinstripes", y: "yoke", b: "chest-band" } as const;
-const YOKE_CODES = { c: "curved", s: "square", f: "full-arm" } as const;
+const YOKE_CODES = { c: "curved", s: "square", p: "pointed", f: "full-arm" } as const;
 const COLLAR_CODES = { l: "lace-up", v: "v", c: "crew", p: "polo", r: "round", w: "wishbone", b: "band", z: "zip", t: "point" } as const;
 const BADGE_CODES = { r: "round", s: "shield", q: "square" } as const;
 const SLEEVE_CODES = { l: "long", e: "elbow", s: "short", n: "none" } as const;
@@ -34,6 +34,18 @@ const dotted = (t: string): number[] => t.split(".").map(Number);
 const stripes = (t: string): number | readonly number[] | undefined => {
   const n = dotted(t);
   return n.length === 1 ? n[0] : bandsOf(n);
+};
+
+/** `count.from.to` and then the colour (1 or 2) and the gap in tenths of a band: shrinking stripes. */
+const shrinking = (t: string): JerseyOptions["sleeveStripes"] => {
+  const [count, from, to, colour, gap] = dotted(t);
+  return { shrink: { count: count as number, from: from as number, to: to as number, ...(colour === 2 ? { colour: 2 as const } : {}), ...(gap === undefined ? {} : { gap: gap / 10 }) } };
+};
+/** `at.colour.count.depth` and then `c` for teeth that point to the cuff: sawtooth sleeve teeth. */
+const teeth = (t: string): JerseyOptions["sleeveTeeth"] => {
+  const [spec, dir] = t.split(",");
+  const [at, colour, count, depth] = dotted(spec as string);
+  return { at, colour: colour === 2 ? 2 : 1, count, depth, ...(dir === "c" ? { direction: "cuff" as const } : {}) };
 };
 
 /** The options a spec says, on top of `base`. Unknown words are ignored. */
@@ -58,6 +70,9 @@ export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
       case "ps": o.patternSleeves = v !== "0"; break;
       case "ss": o.sleeveStripes = stripes(v); break;
       case "hs": o.hemStripes = stripes(v); break;
+      case "sh": o.sleeveStripes = shrinking(v); break;
+      case "hh": o.hemStripes = shrinking(v); break;
+      case "tt": o.sleeveTeeth = teeth(v); break;
       case "cf": o.cuffs = dotted(v).length === 1 ? dotted(v)[0] : dotted(v); break;
       case "ab": o.armbands = dotted(v).length === 1 ? dotted(v)[0] : dotted(v); break;
       case "pk": o.pocket = v !== "0"; break;

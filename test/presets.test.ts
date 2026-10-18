@@ -110,3 +110,17 @@ test("a spec reads the cuffs: a length alone, or a length and a colour", () => {
   assert.equal(decode("fff af1e2d cf=14").cuffs, 14);
   assert.deepEqual(decode("fff af1e2d cf=14.2").cuffs, [14, 2]);
 });
+
+test("the hockey patterns are plain colours and shapes, and they draw and turn at every angle in the flat and the volume", async () => {
+  const { HOCKEY_PATTERNS } = await import("../src/presets/hockey-patterns.ts");
+  const { renderJersey } = await import("../src/render.ts");
+  const { jerseyFrame } = await import("../src/turn-entry.ts");
+  const { wellFormed } = await import("./helpers.ts");
+  assert.equal(HOCKEY_PATTERNS.length, 4);
+  assert.ok(HOCKEY_PATTERNS.every((p) => p.id.startsWith("hockey:") && p.ja !== ""));
+  assert.ok(HOCKEY_PATTERNS.some((p) => p.options.sleeveTeeth !== undefined) && HOCKEY_PATTERNS.some((p) => typeof p.options.sleeveStripes === "object" && !Array.isArray(p.options.sleeveStripes)));
+  for (const p of HOCKEY_PATTERNS) {
+    assert.equal(wellFormed(renderJersey({ ...p.options, number: 9, name: "Tanaka" })), null, p.id);
+    for (const yaw of [0, 45, 90, 180, 270]) assert.equal(wellFormed(jerseyFrame({ ...p.options, number: 9, volume: true, yaw })), null, `${p.id} ${yaw}`);
+  }
+});

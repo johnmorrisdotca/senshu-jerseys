@@ -257,3 +257,31 @@ test("a number may be red on royal blue when its white outline reads, and a patc
   // The back carries no patch: it is the same drawing as without one, apart from the ids.
   assert.equal(ids(back), ids(S.renderJersey({ cut: "hockey", view: "back" })));
 });
+
+test("shrinking bands thin out toward the cuff, with the gaps; teeth and a pointed yoke are drawn from numbers; anything wrong is read as the default", async () => {
+  const { resolve } = await import("../src/options.ts");
+  const { renderJersey } = await import("../src/render.ts");
+  const bands = resolve({ cut: "hockey", sleeveStripes: { shrink: { count: 5, from: 9, to: 1 } } }).sleeveBands;
+  const widths = bands.filter((_, i) => i % 2 === 0);
+  const solid = widths.filter((_, i) => bands[2 * i + 1] === 1);
+  assert.equal(solid.length, 5);
+  assert.deepEqual(solid, [9, 7, 5, 3, 1]);
+  assert.ok(solid.every((w, i) => i === 0 || w < (solid[i - 1] as number)), "each band thinner than the last");
+  assert.deepEqual(resolve({ cut: "hockey", sleeveStripes: { shrink: { count: 3, from: 6, to: 2, gap: 0.5, colour: 2 } } }).sleeveBands, [6, 2, 3, 0, 4, 2, 2, 0, 2, 2]);
+  assert.equal(resolve({ cut: "hockey", hemStripes: { shrink: { count: 3, from: 6, to: 2 } } }).hemBands.length, 10, "the hem too, with no gap after the last band");
+  for (const bad of [{ shrink: { count: "x", from: 1, to: 2 } }, { shrink: null }, { shrink: { count: 3 } }, [], null] as unknown[]) assert.ok(resolve({ cut: "hockey", sleeveStripes: bad as never }).sleeveBands.length >= 0);
+  const big = resolve({ cut: "hockey", sleeveStripes: { shrink: { count: 99, from: 99, to: -5 } } }).sleeveBands.filter((_, i, all) => i % 2 === 0 && all[i + 1] === 1);
+  assert.deepEqual([big.length, big[0], big[big.length - 1]], [8, 30, 1], "the count and the widths are held to their range");
+  assert.equal(resolve({ cut: "hockey", sleeveTeeth: { at: 500, count: 99, depth: -4, direction: "<x>" as never, colour: 7 as never } }).teeth?.count, 12);
+  assert.deepEqual(resolve({ cut: "hockey", sleeveTeeth: {} }).teeth, { at: 50, c: 1, count: 6, depth: 8, toward: "shoulder" });
+  assert.equal(resolve({ cut: "basketball", sleeveTeeth: {} }).teeth, undefined, "a tank has no sleeves to cut");
+  assert.equal(resolve({ cut: "hockey", sleeveTeeth: "x" as never }).teeth, undefined);
+  const plain = renderJersey({ cut: "hockey", colors: ["#151515", "#c8102e", "#ffffff"], sleeveColor: 1 });
+  const teeth = renderJersey({ cut: "hockey", colors: ["#151515", "#c8102e", "#ffffff"], sleeveColor: 1, sleeveTeeth: { colour: 2, count: 5 } });
+  const toCuff = renderJersey({ cut: "hockey", colors: ["#151515", "#c8102e", "#ffffff"], sleeveColor: 1, sleeveTeeth: { colour: 2, count: 5, direction: "cuff" } });
+  assert.notEqual(plain, teeth);
+  assert.notEqual(teeth, toCuff);
+  assert.doesNotMatch(teeth, /NaN|undefined/);
+  assert.notEqual(renderJersey({ cut: "hockey", yoke: "pointed" }), renderJersey({ cut: "hockey", yoke: "curved" }));
+  assert.equal(renderJersey({ cut: "hockey", yoke: "bogus" as never }), renderJersey({ cut: "hockey" }));
+});

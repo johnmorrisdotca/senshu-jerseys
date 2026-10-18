@@ -8,6 +8,10 @@ All notable changes to this project are written here. The format follows
 
 ### Added
 
+- **Shrinking sleeve bands, sawtooth sleeves and a pointed yoke.** `sleeveStripes` and `hemStripes` take `{ shrink: { count, from, to, colour?, gap? } }` (bands and gaps that thin out toward the cuff or the hem), `sleeveTeeth` draws a row of teeth where two sleeve colours meet (`at`, `colour`, `count`, `depth`, `direction`), and `yoke: "pointed"` ends in a V. The `hockey-patterns` presets ("Shrinking bands" and "Sawtooth sleeves", home and away) show them in plain colours; nothing in them is a team's mark. The preset spec has `sh=`, `hh=` and `tt=` and `y=p`.
+
+### Added
+
 - **Tilt the turning garment up to 30 degrees.** `pitch` now goes from 0 to 30 (it was 0 to 20; 8 is still the default), on `jerseyFrame`, `bindTurn` and the `<senshu-jersey>` element's `pitch` attribute. Past the default the picture grows taller so a sleeve is never cut off, and the cells, their order and the closed torso and arms hold at every tilt. The flat turn is a card and ignores it. The demo has a Tilt slider (`?pitch=`) beside the angle, shown with the volume view.
 
 ### Changed

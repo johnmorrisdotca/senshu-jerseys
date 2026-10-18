@@ -5,7 +5,7 @@ import { NATIONAL_TEXT, nationalOf, type NationalOptions, type NationalR } from 
 
 export const PATTERN_IDS = ["solid", "stripes", "hoops", "halves", "quarters", "sash", "chevron", "pinstripes", "yoke", "chest-band"] as const;
 export type PatternId = (typeof PATTERN_IDS)[number];
-export const YOKE_IDS = ["none", "curved", "square", "full-arm"] as const;
+export const YOKE_IDS = ["none", "curved", "square", "pointed", "full-arm"] as const;
 export type YokeId = (typeof YOKE_IDS)[number];
 export const CLOSURE_IDS = ["button", "pullover", "vest"] as const;
 export type ClosureId = (typeof CLOSURE_IDS)[number];
@@ -65,6 +65,15 @@ export type ChestKind = (typeof CHEST_KINDS)[number];
  * A badge on the chest, in the wearer's own terms (`"left"` is the wearer's left breast, the right of the picture): a captain's `C`, an alternate's `A`, a plain `patch` (a shape with up to three letters) or a `flag` (a rectangle).
  * What a flag or a patch shows is the caller's: stripes and colours of their own, or any SVG document, or an emblem id through `useEmblems` or `emblems`, as for `crest`. The package draws no flag and no mark of its own.
  */
+/** Sawtooth teeth round each sleeve: the colour (1 trim, 2 the second trim) fills from the edge to the cuff, and the edge is a row of `count` teeth `depth` units deep, `at` percent of the way down the sleeve (10 to 90, 50 by default); they point toward the `"shoulder"` (the default) or the `"cuff"`. */
+export interface SleeveTeeth {
+  at?: number;
+  colour?: 1 | 2;
+  count?: number;
+  depth?: number;
+  direction?: "shoulder" | "cuff";
+}
+
 export interface ChestBadge {
   kind?: ChestKind;
   /** The wearer's side: the one the cut puts its C on by default. */
@@ -118,8 +127,10 @@ export interface JerseyOptions {
   raglan?: boolean;
   piping?: boolean;
   /** How many stripes round each sleeve (0 to 3), and round the hem (0 to 3), or a `Bands` list. */
-  sleeveStripes?: number | Bands;
-  hemStripes?: number | Bands;
+  sleeveStripes?: number | Bands | ShrinkingBands;
+  hemStripes?: number | Bands | ShrinkingBands;
+  /** A band of teeth round each sleeve, in the trim's colour: where two sleeve colours meet, a sawtooth edge. */
+  sleeveTeeth?: SleeveTeeth;
   /** A band across the chest: `true` for the usual one, or a `Bands` list. */
   chestBand?: boolean | Bands;
   /** Where the chest band starts, down from the top. */
@@ -251,6 +262,7 @@ export interface Resolved {
   piping: boolean;
   sleeveBands: Bands;
   hemBands: Bands;
+  teeth?: { at: number; c: 1 | 2; count: number; depth: number; toward: "shoulder" | "cuff" };
   chestBands: Bands;
   cuffs?: { len: number; c: 1 | 2 | 3 };
   armbands?: { c: 1 | 2 | 3; w: number; at: number };
@@ -310,6 +322,43 @@ export function stripesOf(count: number, edged: boolean): Bands {
     else out.push(i === 0 ? 8 : 5, 0, 5, 1);
   }
   return out;
+}
+
+/**
+ * Stripes that shrink: `count` bands whose widths go evenly from `from` (the first, at the cuff or the hem) to `to` (the last), each followed by a gap of `gap` times the band's own width (1 by default), so
+ * both the stripes and the space between them thin out. The bands are the trim's (`colour` 1, the default) or the second trim's (2).
+ */
+export interface ShrinkingBands {
+  shrink: { count: number; from: number; to: number; colour?: 1 | 2; gap?: number };
+}
+
+/** The bands a `ShrinkingBands` makes, or undefined for anything else: the count is 2 to 8, the widths 1 to 30. */
+export function shrinkOf(v: unknown): Bands | undefined {
+  const d = v !== null && typeof v === "object" && !Array.isArray(v) ? (v as { shrink?: unknown }).shrink : undefined;
+  if (d === null || typeof d !== "object") return undefined;
+  const g = d as { count?: unknown; from?: unknown; to?: unknown; colour?: unknown; gap?: unknown };
+  const count = within(g.count, 2, 8);
+  const from = within(g.from, 1, 30);
+  const to = within(g.to, 1, 30);
+  if (count === undefined || from === undefined || to === undefined) return undefined;
+  const n = Math.round(count);
+  const gap = within(g.gap, 0, 3) ?? 1;
+  const c = g.colour === 2 ? 2 : 1;
+  const out: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const w = Math.round((from + ((to - from) * i) / (n - 1)) * 10) / 10;
+    out.push(w, c);
+    const space = Math.round(w * gap * 10) / 10;
+    if (i < n - 1 && space > 0) out.push(space, 0);
+  }
+  return out;
+}
+
+/** The sleeve teeth from outside: each part that is wrong is its default. */
+function teethOf(v: unknown, sleeve: string): Resolved["teeth"] {
+  if (sleeve === "none" || v === null || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const t = v as SleeveTeeth;
+  return { at: within(t.at, 10, 90) ?? 50, c: t.colour === 2 ? 2 : 1, count: Math.round(within(t.count, 2, 12) ?? 6), depth: within(t.depth, 2, 24) ?? 8, toward: t.direction === "cuff" ? "cuff" : "shoulder" };
 }
 
 /** A list of bands from outside: pairs of a width (1 to 80) and a colour index (0 to 3), at most 24 pairs. */
@@ -441,8 +490,8 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
   if (!spec.collars.includes(collar)) collar = spec.collar;
   if (cut === "baseball" && closure === "pullover" && collar === "band") collar = "crew";
   const edged = second !== undefined;
-  const sleeveBands = typeof o.sleeveStripes === "number" ? stripesOf(o.sleeveStripes, edged) : (bandsOf(o.sleeveStripes) ?? stripesOf(sleeve === "none" ? 0 : spec.sleeveStripes, edged));
-  const hemBands = typeof o.hemStripes === "number" ? stripesOf(o.hemStripes, edged) : (bandsOf(o.hemStripes) ?? stripesOf(spec.hemStripes, edged));
+  const sleeveBands = typeof o.sleeveStripes === "number" ? stripesOf(o.sleeveStripes, edged) : (shrinkOf(o.sleeveStripes) ?? bandsOf(o.sleeveStripes) ?? stripesOf(sleeve === "none" ? 0 : spec.sleeveStripes, edged));
+  const hemBands = typeof o.hemStripes === "number" ? stripesOf(o.hemStripes, edged) : (shrinkOf(o.hemStripes) ?? bandsOf(o.hemStripes) ?? stripesOf(spec.hemStripes, edged));
   const national = nationalOf(o.national);
   const nationalAngle = national === undefined ? undefined : NATIONAL_TEXT[national.layout];
   const nationalBands = national?.layout === "wordmark" && o.chestBand === undefined ? [3, 1, 28, 0, 3, 2] : [];
@@ -472,6 +521,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     piping: o.piping === true,
     sleeveBands,
     hemBands,
+    teeth: teethOf(o.sleeveTeeth, sleeve),
     chestBands,
     cuffs: sleeve === "none" ? undefined : cuffsOf(o.cuffs),
     armbands: sleeve === "none" ? undefined : armbandsOf(o.armbands),

@@ -14,7 +14,7 @@ for (const file of modules) {
   const mod = await import(`${dir}${file}`);
   for (const [name, list] of Object.entries(mod)) if (Array.isArray(list) && list.length > 0 && list[0].options !== undefined) groups.push({ name, file, list });
 }
-const order = ["NHL_CLASSIC", "NHL", "HOCKEY_NATIONS", "MLB", "NBA", "NFL", "CFL", "IFAF", "SOCCER", "SOCCER_NATIONS", "RUGBY", "OFFICIALS"];
+const order = ["NHL_CLASSIC", "NHL", "HOCKEY_NATIONS", "HOCKEY_PATTERNS", "MLB", "NBA", "NFL", "CFL", "IFAF", "SOCCER", "SOCCER_NATIONS", "RUGBY", "OFFICIALS"];
 groups.sort((a, b) => (order.indexOf(a.name) + 1 || 99) - (order.indexOf(b.name) + 1 || 99) || a.name.localeCompare(b.name));
 const dot = (c) => (c === undefined ? "" : `\`${c}\``);
 let out = `# Presets
@@ -33,9 +33,10 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | Word | Option | Reads as |
 | --- | --- | --- |
 | \`ss=\`, \`hs=\`, \`cb=\` | \`sleeveStripes\`, \`hemStripes\`, \`chestBand\` | A count (\`ss=2\`) or \`Bands\`: pairs of a width and a colour (\`0\` the body, \`1\` the trim, \`2\` the second trim, \`3\` the number's fill), from the cuff or hem inward. |
+| \`sh=\`, \`hh=\`, \`tt=\` | \`sleeveStripes\`, \`hemStripes\` shrinking, \`sleeveTeeth\` | \`sh=5.9.2.1.10\` is five bands from 9 to 2 units wide in colour 1 with gaps of 10 tenths of a band; \`tt=58.2.7.9\` is teeth in colour 2, seven of them 9 units deep, 58 percent of the way down the sleeve (add \`,c\` to point them at the cuff). |
 | \`cf=\` | \`cuffs\` | The sleeve's end in a colour: \`cf=18.1\` is a cuff 18 units long in the trim (the Canadiens' red tips); \`cf=10\` is the same with the default colour (the trim). |
 | \`as=\` | \`armStripes\` | Bands down the length of the sleeve, from the shoulder to the cuff. |
-| \`y=\`, \`p=y\` | \`yoke\`, \`pattern: "yoke"\` | A shoulder yoke (curved, square or full-arm). |
+| \`y=\`, \`p=y\` | \`yoke\`, \`pattern: "yoke"\` | A shoulder yoke (curved, square, pointed or full-arm). |
 | \`sn=1\` | \`sleeveNumbers\` | The number on the upper arm, where the cut puts it. |
 | \`ab=\` | \`armbands\` | Armbands: \`ab=2.12.30\` is a band in the second trim, 12 units wide, 30 percent down the sleeve (an official's); \`ab=2\` takes the defaults. |
 | \`pk=1\`, \`bd=\` | \`pocket\`, \`badge\` | A chest pocket, and a plain badge spot on it: \`r\` round, \`s\` shield, \`q\` square. |

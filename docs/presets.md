@@ -5,7 +5,7 @@ A preset is a team's uniform of one era written as colours and stripes: the body
 are still owned and sold today. The colours and the stripe layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes and recorded here as data; no picture is copied.
 They are an honest reading, not a proof: where a layout could not be said with the stripes the renderer draws, the nearest plain one is used.
 
-Made from the built package by `node scripts/make-presets-doc.mjs`; `pnpm test:readme` checks that it is current. 1537 presets in 13 modules.
+Made from the built package by `node scripts/make-presets-doc.mjs`; `pnpm test:readme` checks that it is current. 1541 presets in 14 modules.
 
 ## What the one-line spec can say
 
@@ -14,9 +14,10 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | Word | Option | Reads as |
 | --- | --- | --- |
 | `ss=`, `hs=`, `cb=` | `sleeveStripes`, `hemStripes`, `chestBand` | A count (`ss=2`) or `Bands`: pairs of a width and a colour (`0` the body, `1` the trim, `2` the second trim, `3` the number's fill), from the cuff or hem inward. |
+| `sh=`, `hh=`, `tt=` | `sleeveStripes`, `hemStripes` shrinking, `sleeveTeeth` | `sh=5.9.2.1.10` is five bands from 9 to 2 units wide in colour 1 with gaps of 10 tenths of a band; `tt=58.2.7.9` is teeth in colour 2, seven of them 9 units deep, 58 percent of the way down the sleeve (add `,c` to point them at the cuff). |
 | `cf=` | `cuffs` | The sleeve's end in a colour: `cf=18.1` is a cuff 18 units long in the trim (the Canadiens' red tips); `cf=10` is the same with the default colour (the trim). |
 | `as=` | `armStripes` | Bands down the length of the sleeve, from the shoulder to the cuff. |
-| `y=`, `p=y` | `yoke`, `pattern: "yoke"` | A shoulder yoke (curved, square or full-arm). |
+| `y=`, `p=y` | `yoke`, `pattern: "yoke"` | A shoulder yoke (curved, square, pointed or full-arm). |
 | `sn=1` | `sleeveNumbers` | The number on the upper arm, where the cut puts it. |
 | `ab=` | `armbands` | Armbands: `ab=2.12.30` is a band in the second trim, 12 units wide, 30 percent down the sleeve (an official's); `ab=2` takes the defaults. |
 | `pk=1`, `bd=` | `pocket`, `badge` | A chest pocket, and a plain badge spot on it: `r` round, `s` shield, `q` square. |
@@ -35,6 +36,7 @@ A preset is a line of colours (body, trim, second trim, number fill, number outl
 | `NHL_CLASSIC` | `@johnmorrisdotca/senshu-jerseys/presets/nhl-classic` | 208 |
 | `NHL` | `@johnmorrisdotca/senshu-jerseys/presets/nhl` | 211 |
 | `HOCKEY_NATIONS` | `@johnmorrisdotca/senshu-jerseys/presets/hockey-nations` | 139 |
+| `HOCKEY_PATTERNS` | `@johnmorrisdotca/senshu-jerseys/presets/hockey-patterns` | 4 |
 | `MLB` | `@johnmorrisdotca/senshu-jerseys/presets/mlb` | 182 |
 | `NBA` | `@johnmorrisdotca/senshu-jerseys/presets/nba` | 184 |
 | `NFL` | `@johnmorrisdotca/senshu-jerseys/presets/nfl` | 169 |
@@ -620,6 +622,15 @@ The officials' shirts (`OFFICIALS`, ids that start with `ref:`) are described, w
 | `hockey:italy-1992-away` | Italy | 1992 | `#1b5fb3` `#fff` `#009246` |
 | `hockey:france-1998-2000-home` | France | 1998-2000 | `#fff` `#241a8c` `#d52b1e` |
 | `hockey:france-1998-2000-away` | France | 1998-2000 | `#241a8c` `#fff` `#d52b1e` |
+
+## HOCKEY_PATTERNS
+
+| Id | Team | Years | Colours (body, trim, second trim) |
+| --- | --- | --- | --- |
+| `hockey:shrinking-bands-2026-home` | Shrinking bands | 2026 | `#fff` `#c8102e` `#1b2a6b` |
+| `hockey:shrinking-bands-2026-away` | Shrinking bands | 2026 | `#1b2a6b` `#fff` `#c8102e` |
+| `hockey:sawtooth-sleeves-2026-home` | Sawtooth sleeves | 2026 | `#151515` `#c8102e` `#fff` |
+| `hockey:sawtooth-sleeves-2026-away` | Sawtooth sleeves | 2026 | `#fff` `#151515` `#c8102e` |
 
 ## MLB
 

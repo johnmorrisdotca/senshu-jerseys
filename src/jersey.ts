@@ -450,6 +450,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     const ay = sh.ay;
     let region = "";
     if (kind === "square") region = `M-10 -10H210V${n2(ay - 6)}H-10Z`;
+    else if (kind === "pointed") region = `M-10 -10H210V${n2(ay - 24)}L${n2(100 + spec.su + 10)} ${n2(ay - 24)}L100 ${n2(ay + 6)}L${n2(100 - spec.su - 10)} ${n2(ay - 24)}L-10 ${n2(ay - 24)}Z`;
     else {
       const yc = ny + 36;
       const ye = ay - 14;
@@ -457,7 +458,7 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     }
     const yokeC = r.panels === 2 ? trim2Hex : trimHex;
     addIn(`<path d="${region}" fill="${yokeC}"/>`);
-    if (r.trim2Given && kind !== "square") addIn(`<path d="M${n2(100 - spec.su - 10)} ${n2(sh.ay - 14)}Q100 ${n2(2 * (ny + 36) - (sh.ay - 14))} ${n2(100 + spec.su + 10)} ${n2(sh.ay - 14)}" stroke="${trim2Hex}" stroke-width="2.6" fill="none"/>`);
+    if (r.trim2Given && kind !== "square" && kind !== "pointed") addIn(`<path d="M${n2(100 - spec.su - 10)} ${n2(sh.ay - 14)}Q100 ${n2(2 * (ny + 36) - (sh.ay - 14))} ${n2(100 + spec.su + 10)} ${n2(sh.ay - 14)}" stroke="${trim2Hex}" stroke-width="2.6" fill="none"/>`);
   }
 
   // ---- A national layout: the country's mark and flag, under the bands (fills) and over them (marks). ----
@@ -517,6 +518,22 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   };
   if (L !== undefined && R !== undefined && !line) {
     let bands = "";
+    // Teeth: the colour from a sawtooth edge to the cuff.
+    if (r.teeth !== undefined) {
+      const t = r.teeth;
+      for (const s of [L, R]) {
+        const f0 = t.at / 100;
+        const dd = ((t.toward === "cuff" ? 1 : -1) * t.depth) / s.l;
+        const edge: Pt[] = [];
+        for (let i = 0; i < t.count; i++) {
+          const a = i / t.count;
+          const b = (i + 0.5) / t.count;
+          edge.push(lerp(outerAt(s, f0), innerAt(s, f0), a), lerp(outerAt(s, f0 + dd), innerAt(s, f0 + dd), b));
+        }
+        edge.push(innerAt(s, f0));
+        bands += `<path d="${poly([...edge, innerAt(s, 1.02), outerAt(s, 1.02)])}" fill="${colourOf(t.c)}"/>`;
+      }
+    }
     for (const s of [L, R]) {
       let at = -2;
       for (let i = 0; i + 1 < r.sleeveBands.length; i += 2) {
