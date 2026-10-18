@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-18
+
+### Changed
+
+- **The README's pictures are made from the current code.** The turning strip is the volume view (`volume: true`), the sweater turned in seven steps from the front through the side to the back, so it shows a solid garment instead of the flat cards. A women's and a men's cut side by side (`fit: "womens"`) and Canada's diagonal national layout (`national: "canada:diagonal"`) each have a picture, and the championship banners (`renderTitleBanner`) a new one. `scripts/screenshots.mjs` makes them all; the captions and alt text match.
+
 ## [0.7.0] - 2026-10-17
 
 ### Added
