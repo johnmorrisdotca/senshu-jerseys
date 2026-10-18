@@ -8,6 +8,7 @@ All notable changes to this project are written here. The format follows
 
 ### Fixed
 
+- **A sleeve number is centred on the arm in a side view.** `around` now defaults to -90 (the middle of the arm's outer face), where it was -55, which put the number toward the front of the arm at 90 and 270 degrees. It stays on the arm as it turns; seen from the front it is edge-on, and `around: -55` brings the old place back. A test holds the number's middle to the arm's at a straight side view on four cuts.
 - **A volume jersey's side view is solid.** The body's rows follow the side seam (and a tank's armhole) so a row is never wider than the drawing there, the side wall's two halves overlap at the middle, and every cell samples the drawing a little inside its edge. The slits under the sleeve at 84 and 90 degrees, the clear sliver at the shoulder tip and the ragged neck rim are gone. A test checks every 15 degrees that nothing behind the torso shows through.
 
 ## [0.5.2] - 2026-10-17

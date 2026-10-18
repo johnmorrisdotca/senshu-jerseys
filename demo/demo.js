@@ -267,7 +267,7 @@ function syncControls() {
   hideFor("sleeve", cut === "basketball");
   for (const label of ["sleeveNumbers", "sleevePatch", "sleeveSize", "sleeveAt", "sleeveAround"]) hideFor(label, cut === "basketball");
   const setting = sleeveSetting();
-  for (const [key, fallback] of [["size", CUTS[cut].tv.h], ["at", Math.round(CUTS[cut].tv.t * 100)], ["around", -55]]) {
+  for (const [key, fallback] of [["size", CUTS[cut].tv.h], ["at", Math.round(CUTS[cut].tv.t * 100)], ["around", -90]]) {
     const input = document.querySelector(`[data-sleeve="sleeve-${key}"]`);
     if (input !== null) {
       input.value = setting[key] ?? String(fallback);

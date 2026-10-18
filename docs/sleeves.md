@@ -34,7 +34,7 @@ console.log(side.includes("data-vol")); // true
 | `number` | Up to two digits, as for the back. |
 | `size` | The number's height in drawing units, 6 to 32 (the cut's own by default: hockey 21, soccer 15). |
 | `at` | How far down the sleeve its middle lies, in percent of the sleeve, 8 to 92 (the cut's own). |
-| `around` | With volume: how far round the arm from the front, in degrees, -150 to 60. 0 is the front of the arm, -90 straight out, -150 round to the back. -55 by default, out and a little forward, which shows from the front and from the side. |
+| `around` | With volume: how far round the arm from the front, in degrees, -150 to 60. 0 is the front of the arm, -90 straight out, -150 round to the back. -90 by default: the middle of the arm's outer face, so the number sits in the middle of the sleeve seen straight from the side (seen from the front it is edge-on; use -55 for a number that shows from the front too). |
 | `fill`, `outline` | The number's colours. Without them it takes the ink that reads on the cloth (4.5 to 1), and an outline over stripes. |
 | `patch` | `"round"`, `"shield"` or `"square"`: a plain patch, never a mark. |
 | `patchText` | Up to three letters on it. |

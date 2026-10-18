@@ -37,7 +37,7 @@ export type Bands = readonly number[];
 export interface SleeveDetail {
   /** The digits on this sleeve (up to two): the jersey's number when absent and `sleeveNumbers` asks for one, none when `false`. */
   number?: string | number | false;
-  /** The number's height in drawing units (6 to 32; the cut's own by default), how far down the sleeve its middle lies in percent (8 to 92; the cut's own) and, with volume, how far round the arm in degrees from the front (-150 to 60; -55, out and a little forward). */
+  /** The number's height in drawing units (6 to 32; the cut's own by default), how far down the sleeve its middle lies in percent (8 to 92; the cut's own) and, with volume, how far round the arm in degrees from the front (-150 to 60; -90, straight out, the middle of the arm seen from the side). */
   size?: number;
   at?: number;
   around?: number;
@@ -326,7 +326,7 @@ function sleeveSideOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], length: numb
   const number = d.number === false ? undefined : d.number !== undefined ? digits(d.number, 2) : asked ? digits(o.number, 2) : undefined;
   const shape = (BADGE_IDS as readonly unknown[]).includes(d.patch) ? (d.patch as BadgeId) : undefined;
   if (number === undefined && shape === undefined) return undefined;
-  const side: SleeveSide = { size: within(d.size, 6, 32) ?? spec.tv.h, at: within(d.at, 8, 92) ?? Math.round(spec.tv.t * 100), around: within(d.around, -150, 60) ?? -55 };
+  const side: SleeveSide = { size: within(d.size, 6, 32) ?? spec.tv.h, at: within(d.at, 8, 92) ?? Math.round(spec.tv.t * 100), around: within(d.around, -150, 60) ?? -90 };
   if (number !== undefined) side.number = number;
   const fill = readColour(d.fill);
   const outline = readColour(d.outline);

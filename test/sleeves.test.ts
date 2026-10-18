@@ -80,11 +80,11 @@ test("on the garment the numbers are not in the front and back drawings but on t
   assert.deepEqual([...shownBy(90)], [1], "90: the wearer's right arm, the picture's left");
   assert.deepEqual([...shownBy(270)], [2], "270: the wearer's left arm");
   assert.deepEqual([...shownBy(-90)], [2]);
-  assert.deepEqual([...shownBy(0)].sort(), [1, 2], "face on: both, a little forward");
+  assert.deepEqual([...shownBy(45)], [1], "three-quarter: the near arm's, whose outer face turns toward the viewer");
   // From behind the arm's outer edge turns a sliver of the number toward the viewer, as it does on a real sleeve, and no more: the back number is the one that shows.
   const detailCells = cells.filter((c) => c.src !== undefined);
-  assert.ok(detailCells.filter((c) => placeCell(c, 180, desc.pitch).visible).length <= detailCells.length * 0.3, "from behind only the edge of a sleeve number shows");
-  assert.ok(detailCells.filter((c) => placeCell(c, 0, desc.pitch).visible).length >= detailCells.length * 0.6, "face on, most of it");
+  assert.ok(detailCells.filter((c) => placeCell(c, 180, desc.pitch).visible).length <= detailCells.length * 0.55, "from behind only the edge of a sleeve number shows");
+  assert.ok(detailCells.filter((c) => placeCell(c, 90, desc.pitch).visible).length >= detailCells.length * 0.4, "from the side, the near arm's whole number");
   // Round the back of the arm (-120) the number shows from behind and not from the front.
   const behind = volumeDesc(resolve({ ...BASE, sleeveNumbers: true, sleeveLeft: { around: -120 }, sleeveRight: { around: -120 } }));
   const bc = cellsOf(behind);
@@ -147,4 +147,22 @@ test("what comes from outside cannot reach the markup", () => {
     assert.doesNotMatch(svg, /NaN|undefined|Infinity/);
   }
   assert.deepEqual(volumeDetails(resolve({ ...BASE })), [], "nothing asked, nothing drawn");
+});
+
+test("seen straight from the side, a sleeve number is centred on the arm's outer face and stays on the arm as it turns", () => {
+  for (const cut of ["hockey", "football", "baseball", "soccer"] as const) {
+    const r = resolve({ cut, number: 23, sleeve: cut === "hockey" ? "long" : "short", sleeveNumbers: true } as never);
+    const desc = volumeDesc(r);
+    const cells = cellsOf(desc);
+    for (const [yaw, g] of [[90, 1], [270, 2]] as const) {
+      const mid = (list: typeof cells): number => {
+        const xs = list.flatMap((c) => [0, 1, 2].map((k) => (c.p[3 * k] as number) * Math.cos((yaw * Math.PI) / 180) + (c.p[3 * k + 2] as number) * Math.sin((yaw * Math.PI) / 180)));
+        return (Math.min(...xs) + Math.max(...xs)) / 2;
+      };
+      const arm = cells.filter((c) => c.g === g && c.src === undefined && placeCell(c, yaw, desc.pitch).visible);
+      const num = cells.filter((c) => c.g === g && c.src !== undefined && placeCell(c, yaw, desc.pitch).visible);
+      assert.ok(num.length > 0, `${cut} ${yaw}: the number shows`);
+      assert.ok(Math.abs(mid(num) - mid(arm)) < 1.5, `${cut} ${yaw}: number at ${mid(num).toFixed(1)}, arm at ${mid(arm).toFixed(1)}`);
+    }
+  }
 });
