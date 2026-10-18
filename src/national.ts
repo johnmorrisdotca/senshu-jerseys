@@ -12,13 +12,18 @@ export type NationalLayout = (typeof NATIONAL_LAYOUTS)[number];
 export const NATIONAL_COUNTRIES = ["canada", "usa", "sweden", "finland", "czechia", "slovakia", "switzerland", "germany", "latvia", "norway", "japan", "france"] as const;
 export type NationalCountry = (typeof NATIONAL_COUNTRIES)[number];
 
-/** What a caller may say: `"canada:diagonal"`, or the country and the layout, and the words to set (the country's own name by default). */
-export type NationalOptions = string | { country?: string; layout?: string; text?: string };
+/** The way the diagonal layout's name runs: `down` (the default) starts high on the chest and runs down toward the hem, `up` rises from the lower left to the upper right. */
+export const NATIONAL_DIRECTIONS = ["down", "up"] as const;
+export type NationalDirection = (typeof NATIONAL_DIRECTIONS)[number];
+
+/** What a caller may say: `"canada:diagonal"` (or `"canada:diagonal:up"`), or the country, the layout, the direction of the diagonal and the words to set (the country's own name by default). */
+export type NationalOptions = string | { country?: string; layout?: string; direction?: string; text?: string };
 
 /** The layout, read. */
 export interface NationalR {
   country: NationalCountry;
   layout: NationalLayout;
+  direction: NationalDirection;
   text: string;
 }
 
@@ -35,13 +40,15 @@ export function nationalOf(v: unknown): NationalR | undefined {
   let country: unknown;
   let layout: unknown;
   let text: unknown;
-  if (typeof v === "string") [country, layout] = v.trim().toLowerCase().split(":");
-  else if (v !== null && typeof v === "object" && !Array.isArray(v)) ({ country, layout, text } = v as Record<string, unknown>);
+  let direction: unknown;
+  if (typeof v === "string") [country, layout, direction] = v.trim().toLowerCase().split(":");
+  else if (v !== null && typeof v === "object" && !Array.isArray(v)) ({ country, layout, direction, text } = v as Record<string, unknown>);
   else return undefined;
   const c = (NATIONAL_COUNTRIES as readonly unknown[]).includes(country) ? (country as NationalCountry) : undefined;
   if (c === undefined) return undefined;
   const l = (NATIONAL_LAYOUTS as readonly unknown[]).includes(layout) ? (layout as NationalLayout) : "centred";
-  return { country: c, layout: l, text: clean(text, 14)?.toUpperCase() ?? NATIONAL_NAMES[c] };
+  const d = (NATIONAL_DIRECTIONS as readonly unknown[]).includes(direction) ? (direction as NationalDirection) : "down";
+  return { country: c, layout: l, direction: d, text: clean(text, 14)?.toUpperCase() ?? NATIONAL_NAMES[c] };
 }
 
 type Box = { x0: number; y0: number; x1: number; y1: number };
@@ -192,7 +199,7 @@ export interface NationalPlan {
   /** The boxes of the marks on the chest (and the corners of the slanted text), for tests. */
   marks: Box[];
   textBox?: Pt[];
-  /** The line the diagonal layout cuts along: from the foot to the top. */
+  /** The line the diagonal layout cuts along: from the upper left to the lower right, or from the foot to the top when it rises. */
   cut?: [Pt, Pt];
 }
 
@@ -266,9 +273,10 @@ export function nationalPlan(n: NationalR, spec: CutSpec, view: "front" | "back"
     }
     plan.over.push(...armMarks(country, arms, 0.7, 0.62, trim, edge, plan.marks));
   } else if (layout === "diagonal") {
-    // The mark is cut along a slant and the name runs up the cut, beside it.
-    const A: Pt = [cx0 + 14, bottom];
-    const B: Pt = [100 + 18, top - 2];
+    // The mark is cut along a slant and the name runs along the cut, beside it: down from the upper left by default (the mark above and to the right, the name below and to the left), or up from the lower left.
+    const down = n.direction === "down";
+    const A: Pt = down ? [cx0 + 14, top - 2] : [cx0 + 14, bottom];
+    const B: Pt = down ? [100 + 18, bottom] : [100 + 18, top - 2];
     plan.cut = [A, B];
     const dx = B[0] - A[0];
     const dy = B[1] - A[1];
@@ -277,16 +285,19 @@ export function nationalPlan(n: NationalR, spec: CutSpec, view: "front" | "back"
     const uy = dy / len;
     const s = 74;
     const cy = (top + bottom) / 2 + 2;
-    const cx = A[0] + ((bottom - cy) / (bottom - (top - 2))) * dx + 8;
-    const half = `M${n2(A[0])} ${n2(A[1])}L${n2(B[0])} ${n2(B[1])}L${n2(cx1 + 30)} ${n2(top - 30)}L${n2(cx1 + 30)} ${n2(bottom + 30)}Z`;
+    const along = down ? (cy - (top - 2)) / (bottom - (top - 2)) : (bottom - cy) / (bottom - (top - 2));
+    const cx = A[0] + along * dx + 8;
+    const half = down
+      ? `M${n2(A[0])} ${n2(A[1])}L${n2(B[0])} ${n2(B[1])}L${n2(cx1 + 30)} ${n2(bottom + 30)}L${n2(cx1 + 30)} ${n2(top - 30)}Z`
+      : `M${n2(A[0])} ${n2(A[1])}L${n2(B[0])} ${n2(B[1])}L${n2(cx1 + 30)} ${n2(top - 30)}L${n2(cx1 + 30)} ${n2(bottom + 30)}Z`;
     plan.defs += `<clipPath id="${uid}nd"><path d="${half}"/></clipPath>`;
     plan.over.push({ clip: "torso", svg: `<g clip-path="url(#${uid}nd)">${markAt(country, cx, cy, s, 0, trim, edge)}</g>` });
     plan.marks.push({ x0: Math.max(cx - s / 2, 0), y0: cy - s / 2, x1: cx + s / 2, y1: cy + s / 2 });
     const h = 19;
     const gap = h / 2 + 3;
-    // The normal that points to the left and up of the cut: the name sits on that side, the mark on the other.
+    // The normal that points to the left of the cut (down and left when it runs down, up and left when it rises): the name sits on that side, the mark on the other.
     const tx = (A[0] + B[0]) / 2 - Math.abs(uy) * gap;
-    const ty = (A[1] + B[1]) / 2 - Math.abs(ux) * gap;
+    const ty = (A[1] + B[1]) / 2 + (down ? 1 : -1) * Math.abs(ux) * gap;
     const deg = (Math.atan2(dy, dx) * 180) / Math.PI;
     plan.slant = { text: n.text, x: tx, y: ty, w: len * 0.86, h, deg };
     const r = (deg * Math.PI) / 180;

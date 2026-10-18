@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The diagonal national layout reads top-down.** The country's name now starts high on the chest and runs down toward the hem, with the split mark above it on the wearer's left, as on the Canada jersey it follows. `direction: "up"` (`national: "canada:diagonal:up"`, `{ country, layout, direction }`) keeps the old rising look. The name stays on its own side of the cut and the mark clears it, flat and on the turning garment (`NATIONAL_DIRECTIONS`).
+
 ## [0.6.0] - 2026-10-17
 
 ### Added

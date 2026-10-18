@@ -23,7 +23,10 @@ test("the countries are the twelve of the style sheet, and the layouts eight", (
 });
 
 test("a national layout is read from a string or an object, and anything else is nothing", () => {
-  assert.deepEqual(nationalOf("canada:diagonal"), { country: "canada", layout: "diagonal", text: "CANADA" });
+  assert.deepEqual(nationalOf("canada:diagonal"), { country: "canada", layout: "diagonal", direction: "down", text: "CANADA" });
+  assert.equal(nationalOf("canada:diagonal:up")?.direction, "up");
+  assert.equal(nationalOf({ country: "canada", layout: "diagonal", direction: "up" })?.direction, "up");
+  assert.equal(nationalOf("canada:diagonal:sideways")?.direction, "down", "anything else is the default, top-down");
   assert.equal(nationalOf({ country: "japan", layout: "flag", text: "nippon" })?.text, "NIPPON");
   assert.equal(nationalOf("japan")?.layout, "centred", "a layout that is not one is centred");
   assert.equal(nationalOf("atlantis:flag"), undefined);
@@ -72,8 +75,8 @@ test("the marks stay on the chest: inside the shirt, below the collar, clear of 
     const shape = shapeOf(resolve({ cut }));
     const collarY = spec.ny + 40;
     for (const country of NATIONAL_COUNTRIES) {
-      for (const layout of NATIONAL_LAYOUTS) {
-        const plan = nationalPlan({ country, layout, text: "X" }, spec, "front", "u", arms, COLOURS);
+      for (const [layout, direction] of NATIONAL_LAYOUTS.flatMap((l) => [[l, "down"], [l, "up"]] as const)) {
+        const plan = nationalPlan({ country, layout, direction, text: "X" }, spec, "front", "u", arms, COLOURS);
         for (const m of plan.marks) {
           assert.ok(m.x1 - m.x0 > 0 && m.y1 - m.y0 > 0, `${cut} ${country} ${layout}`);
           const centre = (m.x0 + m.x1) / 2;
@@ -94,9 +97,10 @@ test("the marks stay on the chest: inside the shirt, below the collar, clear of 
         if (plan.slant !== undefined && plan.textBox !== undefined && plan.cut !== undefined) {
           const [A, B] = plan.cut;
           const side = (p: readonly [number, number]): number => (B[0] - A[0]) * (p[1] - A[1]) - (B[1] - A[1]) * (p[0] - A[0]);
-          // The text is on one side of the cut and the mark on the other.
+          // The text is on one side of the cut (the lower left) and the mark on the other, and the cut runs down to the right, or rises.
+          assert.ok(direction === "down" ? B[1] > A[1] && plan.slant.deg > 0 : B[1] < A[1] && plan.slant.deg < 0, `${cut} ${country}: the ${direction} diagonal runs ${direction}`);
           for (const p of plan.textBox) {
-            assert.ok(side(p) < 1, `${cut} ${country}: the slanted words cross the cut`);
+            assert.ok(side(p) * (direction === "down" ? -1 : 1) < 1, `${cut} ${country}: the slanted words cross the cut`);
             assert.ok(p[1] >= collarY, `${cut} ${country}: the slanted words reach the collar`);
             assert.ok(p[0] >= 100 - spec.wu - 4, `${cut} ${country}: the slanted words leave the shirt`);
           }
@@ -137,4 +141,20 @@ test("a layout is on every cut: a tank and a sleeved shirt alike", () => {
       assert.equal(wellFormed(svg), null, `${cut} ${layout}`);
     }
   }
+});
+
+test("the diagonal name reads top-down by default, rises with direction up, and the two differ flat and in volume", () => {
+  const o = { cut: "hockey", colors: ["#d52b1e", "#fff", "#111"] } as const;
+  const down = renderJersey({ ...o, national: "canada:diagonal" });
+  assert.equal(down, renderJersey({ ...o, national: "canada:diagonal:down" }));
+  assert.match(down, /rotate\((\d|\d+\.\d+) /, "top-down turns clockwise");
+  const up = renderJersey({ ...o, national: { country: "canada", layout: "diagonal", direction: "up" } });
+  assert.match(up, /rotate\(-\d/, "rising turns the other way");
+  assert.notEqual(down, up);
+  for (const direction of ["down", "up"]) {
+    const f = jerseyFrame({ ...o, national: { country: "canada", layout: "diagonal", direction }, volume: true, yaw: 30 });
+    assert.equal(wellFormed(f), null);
+    assert.doesNotMatch(f, /NaN|undefined|Infinity/);
+  }
+  assert.equal(attributesFromOptions({ national: { country: "canada", layout: "diagonal", direction: "up" } }).national, "canada:diagonal:up");
 });

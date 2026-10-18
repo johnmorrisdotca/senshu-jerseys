@@ -26,7 +26,7 @@ console.log(renderJersey(mine ?? {}).length > 1000); // true
 | Layout | What is drawn |
 | --- | --- |
 | `quadrant` | The mark, large, in the lower quarter of the front on the wearer's right (the picture's left). |
-| `diagonal` | The mark cut along a slant, and the country's name set along the cut. |
+| `diagonal` | The mark cut along a slant, and the country's name set along the cut: it starts high on the chest and reads down toward the hem (`"canada:diagonal:up"`, or `direction: "up"`, rises from the lower left instead). |
 | `centred` | One big mark in the middle of the chest, and a small one on each sleeve. |
 | `arched` | The name arched over a centred mark, the mark again at each hem corner and on each sleeve. |
 | `serrated` | The upper body and shoulders in the trim colour, the body colour coming up in the points of a leaf, and the same points across each sleeve. |

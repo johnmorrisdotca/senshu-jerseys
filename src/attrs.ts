@@ -225,7 +225,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   set("size", o.size);
   set("crest", o.crest);
   if (typeof o.national === "string") set("national", o.national);
-  else if (o.national !== undefined && o.national !== null && typeof o.national === "object" && typeof o.national.country === "string") set("national", `${o.national.country}:${o.national.layout ?? "centred"}`);
+  else if (o.national !== undefined && o.national !== null && typeof o.national === "object" && typeof o.national.country === "string") set("national", `${o.national.country}:${o.national.layout ?? "centred"}${o.national.direction === "up" || o.national.direction === "down" ? `:${o.national.direction}` : ""}`);
   for (const [k, v] of [["pants", o.pants], ["pants-trim", o.pantsTrim], ["socks", o.socks], ["socks-trim", o.socksTrim], ["helmet", o.helmet]] as const) set(k, v === undefined ? undefined : c(v));
   return out;
 }
