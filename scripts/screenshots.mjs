@@ -1,5 +1,5 @@
 // Takes the README's pictures into docs/images, as webp made in the browser: the seven cuts front, back and in line (each cut on the ground of its own sport), a hockey sweater turned through
-// eight angles, the officials, the caps and helmets, the retired-number banners, and jerseys on a phone (each light and dark). Every sheet stands on the family's shared backgrounds
+// seven angles, the officials, the caps and helmets, the retired-number banners, the championship banners, a women's and a men's cut, a national layout, and jerseys on a phone (each light and dark). Every sheet stands on the family's shared backgrounds
 // (scripts/family-backgrounds.ts, drawn in code, copied from taisen-brackets and never edited here), in the dark or the light variant, and its labels and line drawings take the ink the
 // background returns, so they read. The grid runs edge to edge, every row is full, and a sheet may be cut into zones that each have a background of their own (the cuts, one ground per sport).
 // It serves the demo on port 7302, or TEST_PORT (this package's own block, tests and tools from 7301 up) and stops the server it started. It needs a build (`pnpm screenshots` builds first).
@@ -114,8 +114,8 @@ try {
   };
   // Four jerseys on a phone, two by two.
   const phoneCells = (S) => ["hockey", "soccer", "basketball", "baseball"].map((cut, i) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderJersey({ cut, colors: [["#af1e2d", "#ffffff", "#192168"], ["#6cace4", "#ffffff"], ["#1f3a8a", "#f4f0e4"], ["#f4f0e4", "#1b2a6b"]][i], pattern: cut === "soccer" ? "stripes" : cut === "baseball" ? "pinstripes" : "solid", number: [9, 10, 23, 3][i], name: ["Beaumont", "Gray", "Morris", "Ruthven"][i], view: "both", size: 150 })}</figure>`).join("");
-  // A hockey sweater turned through eight angles, in two rows of four.
-  const turned = (S, T) => [-135, -90, -45, 0, 45, 90, 135, 180].map((yaw) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${T.jerseyFrame({ cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9, name: "Beaumont", yaw, size: 190 })}</figure>`).join("");
+  // A hockey sweater as a garment with volume, turned from the front through the side to the back, in one row of seven.
+  const turned = (S, T) => [0, 30, 60, 90, 120, 150, 180].map((yaw) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${T.jerseyFrame({ cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9, name: "Beaumont", volume: true, yaw, size: 170 })}</figure>`).join("");
   // Officials: eight of the shirts, front (with the preset's id under it) and back (a made-up name and the number, the name straight as an official wears it).
   const officials = (S, T, O) => {
     S.usePresets(O.OFFICIALS);
@@ -152,13 +152,29 @@ try {
     };
     return sets.map((s) => one(s, false)).join("") + sets.map((s) => one(s, true)).join("");
   };
+  // A women's cut beside the men's, the hockey sweater from the front and the back.
+  const fitted = (S) => ["front", "back"].map((view) => ["mens", "womens"].map((fit) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderJersey({ cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9, name: "Beaumont", fit, view, size: 200 })}</figure>`).join("")).join("");
+  // One national layout: Canada's own mark and flag set along the diagonal, the front and the back.
+  const national = (S) => ["front", "back"].map((view) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderJersey({ cut: "hockey", colors: ["#ffffff", "#d52b1e", "#ffffff"], national: "canada:diagonal", number: 9, name: "Beaumont", view, size: 240 })}</figure>`).join("");
+  // Championship banners: a pennant and a garden flag in the colours of each set, the honour, the years.
+  const titles = (S) => [
+    { colors: ["#041e42", "#ff4c00"], title: "Stanley Cup", subtitle: "Champions", years: [1984, 1985, 1987, 1988, 1990] },
+    { colors: ["#0b2a6a", "#c8102e", "#ffffff"], title: "Senshu", subtitle: "Champions", years: [1948, 1952, 1961] },
+    { colors: ["#1f3a8a", "#e8b900"], title: "Stanley Cup", subtitle: "Champions", years: "2001 2004 2009 2012" },
+    { kind: "garden", colors: ["#041e42", "#ff4c00"], city: "SENSHU", club: "KESTREL", title: "Cup", subtitle: "Champions", years: [1984, 1988] },
+    { kind: "garden", colors: ["#0b2a6a", "#c8102e", "#ffffff"], city: "NORTHWIND", club: "GULLS", title: "League", subtitle: "Champions", years: [1972, 1979, 1983] },
+    { kind: "garden", colors: ["#c8102e", "#ffffff"], city: "KOBE", club: "RAIJIN", title: "Shield", subtitle: "Champions", years: [1996] },
+  ].map((o) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderTitleBanner({ size: 200, ...o })}</figure>`).join("");
   // Which preset stands behind which picture (dark and light variants): each cut on the ground of its sport (ice, infield, hardwood, turf, pitch), the officials under floodlights (midnight in the dark),
   // the caps and the helmets on an infield and on turf, the banners on royal purple (crimson in the dark), the phone's four jerseys on four grounds and the turned sweater on ice.
   const grounds = ["ice", "infield", "hardwood", "turf", "pitch", "turf", "hardwood"];
   for (const scheme of ["light", "dark"]) {
     await sheet(`hero-desk-${scheme}`, { width: 1400, cols: 7, rows: [200, 200, 118], scheme, zones: grounds.map((preset, i) => ({ preset, cols: [i, i + 1], intensity: 0.9 })) }, cuts);
     await sheet(`phone-${scheme}`, { width: 390, cols: 2, rows: [200, 200], gap: 4, pad: 8, phone: true, scheme, zones: [["ice", 0, 0], ["pitch", 1, 0], ["hardwood", 0, 1], ["infield", 1, 1]].map(([preset, c, r]) => ({ preset, cols: [c, c + 1], rows: [r, r + 1], intensity: 0.9 })) }, phoneCells);
-    await sheet(`turn-desk-${scheme}`, { width: 1000, cols: 4, rows: [230, 230], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, turned);
+    await sheet(`turn-desk-${scheme}`, { width: 1400, cols: 7, rows: [250], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, turned);
+    await sheet(`fit-desk-${scheme}`, { width: 1000, cols: 4, rows: [250], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, fitted);
+    await sheet(`national-desk-${scheme}`, { width: 760, cols: 2, rows: [300], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, national);
+    await sheet(`titles-desk-${scheme}`, { width: 1400, cols: 3, rows: [270, 270], scheme, zones: [{ preset: scheme === "dark" ? "crimson" : "royal", intensity: 0.9 }] }, titles);
     await sheet(`officials-desk-${scheme}`, { width: 1400, cols: 8, rows: [230, 215], scheme, zones: [{ preset: scheme === "dark" ? "midnight" : "floodlights", intensity: 0.9 }] }, officials);
     await sheet(`caps-desk-${scheme}`, { width: 1400, cols: 6, rows: [170, 170, 170, 170], scheme, zones: [{ preset: "infield", rows: [0, 2], intensity: 0.9 }, { preset: "turf", rows: [2, 4], intensity: 0.9 }] }, gear);
     await sheet(`banners-desk-${scheme}`, { width: 1400, cols: 6, rows: [270, 270], scheme, zones: [{ preset: scheme === "dark" ? "crimson" : "royal", intensity: 0.9 }] }, banners);

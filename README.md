@@ -24,8 +24,8 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 <td align="center" valign="top">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-dark.webp">
-<img alt="A hockey sweater on ice, turned through eight angles: the front foreshortens to an edge, where the thickness of the cloth shows, and then the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.webp" width="470">
-</picture><br><em>Turned: the front to an edge, then the back</em>
+<img alt="A hockey sweater on ice as a garment with volume, turned in seven steps from the front through the side to the back: the sleeves swing round, the body turns with its thickness, and the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.webp" width="470">
+</picture><br><em>Turned: the front, the side, then the back</em>
 </td>
 <td align="center" valign="top">
 <picture>
@@ -161,6 +161,14 @@ console.log(svg.includes("<title")); // true
 
 `fit: "womens"` (the `fit` attribute) draws the tailored cut of any sport: a shorter body, narrower shoulders and sleeves, and a waist that tapers in and flares to the hem. `fit: "mens"` is the default and is unchanged. Patterns, stripes, names, numbers and badges follow the women's outline, flat and in volume; `cutSpec(cut, fit)` returns the table and `FIT_IDS` lists the fits. See [men's and women's cuts](./docs/fit.md).
 
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/fit-desk-dark.webp">
+<img alt="A hockey sweater from the front and the back, a men's cut and a women's cut side by side: the women's is shorter in the body, narrower in the shoulders and tapers in at the waist." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/fit-desk-light.webp" width="760">
+</picture>
+</p>
+
+
 ### Cuffs, diagonal text and wide arm bands
 
 `cuffs` is the sleeve's end in a contrasting colour: a length in drawing units, or `[length, colour]` with the colour `1` the trim, `2` the second trim or `3` the number's fill. A seam shows where the knit starts, and it is drawn over the sleeve's stripes. `frontTextAngle` sets how the chest text runs: `"straight"`, `"arch"` (the basketball default), `"diagonal-up"` (each letter a step higher than the last, rising to the right) or `"diagonal-down"`. The letters are stepped along the slant, upright, and fitted to the chest of whichever cut it is. A wide band with thin edges at the elbow, and a set of three colours, need no new option: they are `sleeveStripes` and `hemStripes` lists, where the first pair is the gap from the cuff.
@@ -280,6 +288,13 @@ console.log(renderJersey({ ...set, kit: true }) === renderKit(set)); // true
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-dark.webp">
 <img alt="Twelve retired-number banners on royal purple: a rectangle, a pennant and a shield in the colours of Canada, the USA and Japan with a made-up name, number and years, and the same six again with their colours turned round." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-light.webp" width="760">
+</picture>
+</p>
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/titles-desk-dark.webp">
+<img alt="Six championship banners on royal purple: three pennants hung from a rod that say STANLEY CUP CHAMPIONS, SENSHU CHAMPIONS and STANLEY CUP CHAMPIONS, with their years, and three garden flags with a row of stars, a city, a club, CUP, LEAGUE or SHIELD CHAMPIONS and the years." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/titles-desk-light.webp" width="760">
 </picture>
 </p>
 
@@ -430,6 +445,13 @@ The package's own words (cut and pattern names, accessible titles) are in Englis
 More than fifteen hundred uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
 
 Apart from the real teams, `presets/hockey-styles` holds twelve original national hockey styles, home and away, each with a layout of its own and made to be personalised (`personalStyle`): see [national styles](./docs/hockey-styles.md), and [national layouts](./docs/national.md) for each country's own mark or flag in eight arrangements (`national: "canada:diagonal"`).
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/national-desk-dark.webp">
+<img alt="Canada's own mark, the maple leaf, set along a diagonal across the chest of a white hockey sweater, with CANADA running down beside it toward the hem; the back shows a name and the number 9." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/national-desk-light.webp" width="760">
+</picture>
+</p>
 
 The colours and layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes, and recorded as data here; no picture is copied. Treat them as a first reading, not a proof: where a source gave only colour names the layout is the plainest one that fits, and a row that could not be confirmed is marked `unsure` in its source. Corrections with a source are welcome.
 
