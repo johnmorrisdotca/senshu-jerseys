@@ -5,6 +5,7 @@ import { CUT_IDS } from "../src/cuts.ts";
 import { JERSEY_HEIGHT, jerseyBox } from "../src/jersey.ts";
 import { resolve } from "../src/options.ts";
 import { applyTurn, jerseyFrame } from "../src/turn-entry.ts";
+import { tipReach } from "../src/turn.ts";
 import { cellsOf, nearSleeve, placeCell, volumeDesc } from "../src/volume.ts";
 import { wellFormed } from "./helpers.ts";
 
@@ -233,14 +234,14 @@ test("applyTurn moves a garment that is already there to the same state a new on
   assert.deepEqual(svg.kids.map((g) => g.getAttribute("data-vol")), groupsIn(fresh), "and the sleeve in front is in front");
 });
 
-test("what comes from outside cannot reach the markup: the pitch is a number between 0 and 20, anything else is the default", () => {
+test("what comes from outside cannot reach the markup: the pitch is a number between 0 and 30, anything else is the default", () => {
   const base = jerseyFrame({ cut: "hockey", volume: true, yaw: 30 });
   for (const pitch of [NaN, Infinity, "8", "<script>", null, undefined, {}, []] as unknown[]) {
     const svg = jerseyFrame({ cut: "hockey", volume: true, yaw: 30, pitch } as never);
     assert.equal(svg, base, String(pitch));
     assert.doesNotMatch(svg, /<script/);
   }
-  assert.match(jerseyFrame({ cut: "hockey", volume: true, pitch: 99 }), /&quot;pitch&quot;:20/);
+  assert.match(jerseyFrame({ cut: "hockey", volume: true, pitch: 99 }), /&quot;pitch&quot;:30/);
   assert.match(jerseyFrame({ cut: "hockey", volume: true, pitch: -5 }), /&quot;pitch&quot;:0/);
   const hostile = jerseyFrame({ cut: "hockey", volume: true, name: '"><script>alert(1)</script>', crest: '<svg onload="x"/>', colors: ['"><b>', "red"], yaw: 10 });
   assert.doesNotMatch(hostile, /<script|<b>|\sonload=/);
@@ -361,4 +362,46 @@ test("the cells sample the drawing inside its edge, so a seam never meets a clea
       assert.ok(Math.abs(x - 100) <= (desc.a[row] as number) - 1.2 - 0.5, `row ${row}: ${x} is on or past the outline`);
     }
   }
+});
+
+test("tipped forward by 0, 15 and 30 degrees the garment keeps its order, stays in its box and its torso and arms stay closed, in every cut and both fits", () => {
+  const inTri = (p: number[], t: number[][]): boolean => {
+    const s = (a: number[], b: number[], c: number[]): number => (a[0]! - c[0]!) * (b[1]! - c[1]!) - (b[0]! - c[0]!) * (a[1]! - c[1]!);
+    const d1 = s(p, t[0]!, t[1]!);
+    const d2 = s(p, t[1]!, t[2]!);
+    const d3 = s(p, t[2]!, t[0]!);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  };
+  for (const pitch of [0, 15, 30]) {
+    assert.match(jerseyFrame({ cut: "hockey", volume: true, pitch, yaw: 40 }), new RegExp(`&quot;pitch&quot;:${pitch}[,}]`));
+    for (const fit of ["mens", "womens"] as const) {
+      for (const cut of CUT_IDS) {
+        const desc = volumeDesc(resolve({ cut, fit }), pitch);
+        const box = jerseyBox(cut);
+        const [up, down] = tipReach(desc, JERSEY_HEIGHT);
+        const cells = cellsOf(desc).filter((c) => c.src === undefined);
+        for (let yaw = 0; yaw < 360; yaw += 30) {
+          const shown: number[][][] = [];
+          const hidden: number[][][] = [];
+          for (const c of cells) {
+            const pts = [0, 1, 2].map((k) => project(c.p, k, yaw, pitch));
+            const vis = placeCell(c, yaw, pitch).visible;
+            if (vis) for (const [sx, sy] of pts) assert.ok(sx >= box.x - 0.5 && sx <= box.x + box.w + 0.5 && sy >= -up - 0.5 && sy <= JERSEY_HEIGHT + down + 0.5, `${fit} ${cut} ${pitch}/${yaw}: ${sx}, ${sy} is outside the box`);
+            const tri = pts.map((p) => [p[0]! - 100, p[1]!]);
+            if (vis) shown.push(tri);
+            else hidden.push(tri);
+          }
+          // Below the neck and the hem's lip, whatever is hidden is covered: the camera tipped down sees the shoulders and the neck's inside, never through the cloth.
+          let holes = 0;
+          for (let x = -129.7; x <= 130; x += 4) for (let y = (desc.y[0] as number) + 40.3; y <= (desc.y[desc.y.length - 1] as number) - 30; y += 4) {
+            const p = [x, y];
+            if (hidden.some((t) => inTri(p, t)) && !shown.some((t) => inTri(p, t))) holes++;
+          }
+          assert.ok(holes <= 12, `${fit} ${cut} at pitch ${pitch}, yaw ${yaw}: ${holes} samples show through`);
+        }
+      }
+    }
+  }
+  // The arm nearer the viewer is still drawn last, whatever the tilt.
+  for (const pitch of [0, 15, 30]) assert.deepEqual(groupsIn(jerseyFrame({ cut: "hockey", volume: true, yaw: 45, pitch })), ["2", "3", "0", "1"]);
 });

@@ -9,7 +9,7 @@ import { titleOf } from "./title.ts";
 import type { EmblemRenderer } from "./emblems.ts";
 import { esc } from "./colour.ts";
 import { n2 } from "./path.ts";
-import { applyVolume, volumeDesc, volumeDetails, volumeMarkup } from "./volume.ts";
+import { applyVolume, cellsOf, volumeDesc, volumeDetails, volumeMarkup, type VolumeDesc } from "./volume.ts";
 
 export interface TurnOptions extends JerseyOptions {
   /** The turn about the vertical axis in degrees: 0 the front, 90 the edge, 180 the back. Any number; it is taken round. */
@@ -99,17 +99,40 @@ export function jerseyFrame(options?: TurnOptions): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(box.w)} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(st.yaw)}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}</defs><g data-turn="edge">${slab}${slices}</g>${face("front", front, st.front)}${face("back", back, st.back)}</svg>`;
 }
 
+/** How far the garment, tipped by `desc.pitch`, goes above the top and below the bottom of a picture `height` tall at any turn, in whole units (0 when it stays inside, as it does at the default tip). */
+export function tipReach(desc: VolumeDesc, height: number): [number, number] {
+  if (desc.pitch <= 8) return [0, 0];
+  const cp = Math.cos((desc.pitch * Math.PI) / 180);
+  const sp = Math.sin((desc.pitch * Math.PI) / 180);
+  let lo = 0;
+  let hi = height;
+  for (const c of cellsOf(desc)) {
+    for (let k = 0; k < 3; k++) {
+      const x = c.p[3 * k] as number;
+      const y = c.p[3 * k + 1] as number;
+      const z = c.p[3 * k + 2] as number;
+      // The farthest the point's depth reaches over a whole turn is its distance from the axis.
+      const r = Math.hypot(x, z);
+      lo = Math.min(lo, y * cp - r * sp);
+      hi = Math.max(hi, y * cp + r * sp);
+    }
+  }
+  return [Math.max(0, Math.ceil(-lo)), Math.max(0, Math.ceil(hi - height))];
+}
+
 /** The shirt as a garment with volume, at one angle: the two drawings once in the defs, the cells (see `volume.ts`) wrapped over a body and two sleeves. */
 function volumeFrame(o: TurnOptions, rf: ReturnType<typeof resolve>, front: View, back: View): string {
   const box = jerseyBox(rf.cut);
-  const w = n2((rf.size * box.w) / JERSEY_WIDTH);
-  const h = Math.round(((rf.size * JERSEY_HEIGHT) / JERSEY_WIDTH) * 100) / 100;
   const id = uidOf(rf, "vol");
-  const pitch = typeof o.pitch === "number" && Number.isFinite(o.pitch) ? Math.max(0, Math.min(20, o.pitch)) : 8;
+  const pitch = typeof o.pitch === "number" && Number.isFinite(o.pitch) ? Math.max(0, Math.min(30, o.pitch)) : 8;
   const yaw = normalYaw(o.yaw);
   const desc = volumeDesc(rf, pitch);
+  // Tipped forward, a sleeve's end swings above and below the drawing's own height: the picture grows to hold it, at every angle.
+  const [up, down] = tipReach(desc, JERSEY_HEIGHT);
+  const w = n2((rf.size * box.w) / JERSEY_WIDTH);
+  const h = Math.round(((rf.size * (JERSEY_HEIGHT + up + down)) / JERSEY_WIDTH) * 100) / 100;
   const mk = volumeMarkup(desc, id, `${id}F`, `${id}B`, front.clipId, back.clipId, yaw, rf.look !== "line", volumeDetails(rf));
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} 0 ${n2(box.w)} ${JERSEY_HEIGHT}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(yaw)}" data-vol="${JSON.stringify(desc).replace(/"/g, "&quot;")}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}<g id="${id}F">${front.body}</g><g id="${id}B">${back.body}</g>${mk.defs}</defs>${mk.body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} ${-up} ${n2(box.w)} ${JERSEY_HEIGHT + up + down}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(yaw)}" data-vol="${JSON.stringify(desc).replace(/"/g, "&quot;")}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}<g id="${id}F">${front.body}</g><g id="${id}B">${back.body}</g>${mk.defs}</defs>${mk.body}</svg>`;
 }
 
 /** Move an SVG made by `jerseyFrame` to an angle without redrawing it: only the transforms change. */

@@ -29,6 +29,11 @@
           <button type="button" class="fam-button" id="play" data-testid="play" aria-pressed="false" data-say="play"></button>
           <button type="button" class="fam-button" id="front" data-testid="front" data-say="front"></button>
         </div>
+        <div class="turnbar" id="pitchbar">
+          <label class="fam-label" for="pitch" data-say="tilt"></label>
+          <input class="range" type="range" id="pitch" min="0" max="30" step="1" value="8" data-testid="pitch" />
+          <output id="pitch-out" for="pitch">8°</output>
+        </div>
         <div class="turnbar" id="viewbar">
           <button type="button" class="fam-button" id="vol" data-testid="vol" aria-pressed="true" data-say="volume"></button>
           <button type="button" class="fam-button" id="cmp" data-testid="cmp" aria-pressed="false" data-say="compare"></button>

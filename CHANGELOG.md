@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Tilt the turning garment up to 30 degrees.** `pitch` now goes from 0 to 30 (it was 0 to 20; 8 is still the default), on `jerseyFrame`, `bindTurn` and the `<senshu-jersey>` element's `pitch` attribute. Past the default the picture grows taller so a sleeve is never cut off, and the cells, their order and the closed torso and arms hold at every tilt. The flat turn is a card and ignores it. The demo has a Tilt slider (`?pitch=`) beside the angle, shown with the volume view.
+
 ### Changed
 
 - **A captain's C and A look like the ones on a hockey sweater.** They are the bare letter in a heavy block face with a thick outline in a contrasting colour (the second trim, white or black, whichever sets it off from the letter and the cloth), no disc, flat and on the turning garment. `style: "disc"` on a chest badge, and `patchStyle: "disc"` (the `patch-style` attribute) on the old `patch`, keep the round patch.

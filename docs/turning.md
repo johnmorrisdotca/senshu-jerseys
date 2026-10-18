@@ -48,7 +48,7 @@ const side = jerseyFrame({ ...options, volume: true, yaw: 90 }); // the wearer's
 const flat = jerseyFrame({ ...options, yaw: 90 }); // the card, an edge
 console.log(side.includes("data-vol"), flat.includes("data-vol")); // true false
 
-// Anything else than true is the flat turn; `pitch` is how far the camera looks down, 0 to 20 degrees (8 by default).
+// Anything else than true is the flat turn; `pitch` is how far the camera looks down, tipping the garment forward, 0 to 30 degrees (8 by default); past 8 the picture grows taller to hold a sleeve that swings above or below the cut's own height.
 console.log(jerseyFrame({ ...options, volume: "yes", yaw: 30 }) === jerseyFrame({ ...options, yaw: 30 })); // true
 ```
 
@@ -60,7 +60,7 @@ console.log(jerseyFrame({ ...options, volume: "yes", yaw: 30 }) === jerseyFrame(
 - A triangle whose cloth faces away from the viewer is hidden, so the far side never shows through; the sleeve behind the body is drawn first and the sleeve in front last. A little shade, from a light above and to the left, is laid over each cell by the way it faces.
 - The back is drawn as seen from behind: a pattern that is not the same on both sides (halves, quarters, an odd number of stripes) is mirrored on it, so it carries on round the side seam.
 
-At 0 degrees the front is drawn as it is by `renderJersey`, and the camera's `pitch` curves the hem and the neck a little. The box is the cut's own (`jerseyBox`), the output is a pure function of the options, and nothing outside the options reaches the markup but `volume` (only `true` counts) and `pitch` (a number, clamped).
+At 0 degrees the front is drawn as it is by `renderJersey`, and the camera's `pitch` curves the hem and the neck a little. The box is the cut's own (`jerseyBox`), the output is a pure function of the options, and nothing outside the options reaches the markup but `volume` (only `true` counts) and `pitch` (a number from 0 to 30, clamped).
 
 `bindTurn(container, { ...options, volume: true })` turns it by hand or by itself like the flat one; only the matrices, which cells show and the order of the sleeves change from frame to frame (`applyTurn` does this, the markup is made once). A frame is some 130 kilobytes of SVG (about 17 gzipped) because each cell is a short element and the two drawings are held once in the defs.
 

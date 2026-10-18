@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", cmp: "0", sw: "home" };
+const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", pitch: "8", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -339,7 +339,7 @@ async function paintBackground() {
 dark.addEventListener("change", () => { if (ui.background !== "") paintBackground(); });
 new MutationObserver(() => { if (ui.background !== "") paintBackground(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 function stageOptions() {
-  return { ...options(), size: 300, language: attrs.language ?? lang(), volume: ui.vol === "1" };
+  return { ...options(), size: 300, language: attrs.language ?? lang(), volume: ui.vol === "1", pitch: Number(ui.pitch) };
 }
 /** The flat card and the garment side by side at the angle the stage is at, to see what the volume adds. */
 function drawCompare() {
@@ -348,7 +348,7 @@ function drawCompare() {
   $("cmp").setAttribute("aria-pressed", String(ui.cmp === "1"));
   if (!on) return;
   const yaw = Number(ui.yaw) || 0;
-  const o = { ...options(), size: 180, language: attrs.language ?? lang(), yaw };
+  const o = { ...options(), size: 180, language: attrs.language ?? lang(), yaw, pitch: Number(ui.pitch) };
   $("cmp-flat").innerHTML = jerseyFrame({ ...o, volume: false });
   $("cmp-vol").innerHTML = jerseyFrame({ ...o, volume: true });
 }
@@ -359,6 +359,7 @@ function drawStage() {
   $("turnbar").hidden = !canTurn;
   $("turn-note").hidden = canTurn || o.kit === true;
   $("viewbar").hidden = !canTurn;
+  $("pitchbar").hidden = !canTurn || ui.vol !== "1";
   $("vol").setAttribute("aria-pressed", String(ui.vol === "1"));
   if (!canTurn) {
     turn?.destroy();
@@ -827,6 +828,8 @@ function render() {
   drawStage();
   $("yaw").value = ui.yaw;
   $("yaw-out").textContent = `${ui.yaw}°`;
+  $("pitch").value = ui.pitch;
+  $("pitch-out").textContent = `${ui.pitch}°`;
   syncPlay();
   drawCaps();
   drawEmbed();
@@ -839,6 +842,12 @@ $("yaw").addEventListener("input", () => {
   turn?.pause();
   syncPlay();
   turn?.setYaw(Number($("yaw").value));
+});
+$("pitch").addEventListener("input", () => {
+  ui.pitch = $("pitch").value;
+  $("pitch-out").textContent = `${ui.pitch}°`;
+  drawStage();
+  syncUrl();
 });
 $("play").addEventListener("click", () => {
   turn?.togglePlay();
