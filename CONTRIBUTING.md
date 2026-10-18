@@ -35,6 +35,11 @@ Bug reports and ideas go in the
   the tests' on 7301 (`playwright.config.mjs`), the picture script's on 7302, and any other server or worktree takes 7303 and up.
   Check with `lsof -iTCP:<port> -sTCP:LISTEN` first, and stop a server by its process id, never by name.
 
+## Reference images
+
+Reference images live in Dropbox at `/Projects/Resources/senshu-jerseys/`, never in this repository (photo licences are
+unknown): `national-quadrant` (Team Canada and USA national jersey layouts, files 1-9) and `womens` (women's cut references).
+
 ## Pull requests
 
 One change per pull request. Say what changed and how you checked it, and add a line to `CHANGELOG.md` under **Unreleased**:
