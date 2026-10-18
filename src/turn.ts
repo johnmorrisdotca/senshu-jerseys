@@ -1,7 +1,7 @@
 // Turning: the jersey as a thin piece of cloth that turns about its vertical axis. The front foreshortens as it turns, to an edge at 90 degrees where the cloth's thickness
 // shows (at the shoulders and the hem and down the sides), and the back, with its name and number, shows from 90 to 270 degrees. 2.5D: flat drawings on a turning plane,
 // each a string of SVG. `jerseyFrame` is one angle; `bindTurn` is the pointer, the keys and the automatic turn, in a container.
-import { CUTS } from "./cuts.ts";
+import { cutSpec } from "./cuts.ts";
 import { hexOf, shade } from "./colour.ts";
 import { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox, jerseyView, uidOf, type View } from "./jersey.ts";
 import { resolve, type JerseyOptions } from "./options.ts";
@@ -87,7 +87,7 @@ export function jerseyFrame(options?: TurnOptions): string {
   st.slices.forEach((matrix, i) => {
     slices += `<use href="#${front.outlineId}" data-turn="slice" fill="${line ? "none" : i % 2 === 0 ? edge : edgeLit}" ${line ? 'stroke="currentColor" stroke-width="3" ' : ""}transform="${matrix}"/>`;
   });
-  const spec = CUTS[rf.cut];
+  const spec = cutSpec(rf.cut, rf.fit);
   const slab = `<rect data-turn="slab" x="${st.slab.x}" y="${spec.ny - 5}" width="${st.slab.width}" height="${spec.hy - spec.ny + 5}" rx="2.5" fill="${line ? "none" : edge}"${line ? ' stroke="currentColor" stroke-width="3"' : ""}/>`;
   const face = (which: "front" | "back", v: typeof front, s: TurnState["front"]): string =>
     `<g data-turn="${which}" transform="${s.matrix}"${s.visible ? "" : ' display="none"'}>${v.body}<use href="#${v.outlineId}" data-turn="${which}-shade" fill="#000" fill-opacity="${s.shade}" stroke="none"/></g>`;

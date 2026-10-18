@@ -5,7 +5,7 @@ import { capParts } from "./cap.ts";
 import { hashOf, hexOf, lum, shade, type Rgb } from "./colour.ts";
 import type { EmblemRenderer } from "./emblems.ts";
 import { helmetParts } from "./helmet.ts";
-import { JERSEY_HEIGHT, jerseyBox, jerseyView, uidOf } from "./jersey.ts";
+import { JERSEY_HEIGHT, jerseyBox, jerseyView, keyOf, uidOf } from "./jersey.ts";
 import { resolve, type Bands, type JerseyOptions, type Resolved } from "./options.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
@@ -51,7 +51,7 @@ export function renderKit(options?: JerseyOptions & { emblems?: EmblemRenderer }
   const cloth = r.look === "cloth";
   const hx = hexOf;
   const edgeOf = (c: Rgb): string => (line ? "currentColor" : hx(lum(c) > 0.1 ? shade(c, -0.42) : shade(c, 0.3)));
-  const uid = `su${hashOf(JSON.stringify(r))}`;
+  const uid = `su${hashOf(keyOf(r))}`;
   // A column is the shirt with 10 units of room on each side, or what its cut's sleeves need if that is more.
   const pad = Math.max(10, Math.ceil(-jerseyBox(r.cut).x));
   const colW = 200 + 2 * pad;

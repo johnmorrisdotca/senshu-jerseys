@@ -1,5 +1,5 @@
 // The options of a jersey, read from outside: every value is checked against the lists below, a colour is read as `#rgb`, `#rrggbb` or `rgb()`, and text is cleaned.
-import { COLLAR_IDS, CUT_IDS, CUTS, type CollarId, type CutId, type SleeveId } from "./cuts.ts";
+import { COLLAR_IDS, CUT_IDS, cutSpec, FIT_IDS, type CollarId, type CutId, type CutSpec, type FitId, type SleeveId } from "./cuts.ts";
 import { clean, lum, readColour, type Rgb } from "./colour.ts";
 import { NATIONAL_TEXT, nationalOf, type NationalOptions, type NationalR } from "./national.ts";
 
@@ -88,6 +88,8 @@ export interface ChestBadge {
 
 export interface JerseyOptions {
   cut?: CutId;
+  /** `"mens"` (the default: straight, boxy) or `"womens"`: shorter in the body, narrower in the shoulders and sleeves, tapered at the waist, and every pattern, stripe and mark follows that outline, flat and in volume. */
+  fit?: FitId;
   /** `[body, trim, trim2?, numberFill?, numberOutline?]`. */
   colors?: readonly string[];
   body?: string;
@@ -221,6 +223,7 @@ export interface SleeveSide {
 /** The options after they are read: nothing here is a string from outside that has not been checked. */
 export interface Resolved {
   cut: CutId;
+  fit: FitId;
   body: Rgb;
   trim: Rgb;
   trim2: Rgb;
@@ -329,7 +332,7 @@ export function armbandsOf(v: unknown): { c: 1 | 2 | 3; w: number; at: number } 
 const within = (v: unknown, lo: number, hi: number): number | undefined => (typeof v === "number" && Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v * 10) / 10)) : undefined);
 
 /** One sleeve's detail from outside: `asked` says the sleeve is to carry the jersey's number. Anything wrong is the default. */
-function sleeveSideOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], length: number, asked: boolean, given: unknown): SleeveSide | undefined {
+function sleeveSideOf(o: JerseyOptions, spec: CutSpec, length: number, asked: boolean, given: unknown): SleeveSide | undefined {
   const d: SleeveDetail = given !== null && typeof given === "object" && !Array.isArray(given) ? (given as SleeveDetail) : {};
   const number = d.number === false ? undefined : d.number !== undefined ? digits(d.number, 2) : asked ? digits(o.number, 2) : undefined;
   const shape = (BADGE_IDS as readonly unknown[]).includes(d.patch) ? (d.patch as BadgeId) : undefined;
@@ -361,7 +364,7 @@ function sleeveSideOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], length: numb
 }
 
 /** Both sleeves' details, by the wearer's side. */
-function sleeveSidesOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], sleeve: Exclude<SleeveId, "none">): Resolved["sleeveSides"] {
+function sleeveSidesOf(o: JerseyOptions, spec: CutSpec, sleeve: Exclude<SleeveId, "none">): Resolved["sleeveSides"] {
   const all = o.sleeveNumbers === true || o.sleeveNumbers === "both";
   const length = spec.sleeves[sleeve]?.l ?? 0;
   const left = sleeveSideOf(o, spec, length, all || o.sleeveNumbers === "left", o.sleeveLeft);
@@ -371,7 +374,7 @@ function sleeveSidesOf(o: JerseyOptions, spec: (typeof CUTS)[CutId], sleeve: Exc
 }
 
 /** The chest badges from outside: each entry that is a badge, at most four; anything wrong in one is its default. */
-function chestOf(o: JerseyOptions, spec: (typeof CUTS)[CutId]): ChestBadgeR[] | undefined {
+function chestOf(o: JerseyOptions, spec: CutSpec): ChestBadgeR[] | undefined {
   const list: unknown[] = Array.isArray(o.chestBadges) ? o.chestBadges : o.chestBadges !== undefined && o.chestBadges !== null ? [o.chestBadges] : [];
   const out: ChestBadgeR[] = [];
   for (const given of list.filter((g) => g !== null && typeof g === "object" && !Array.isArray(g)).slice(0, 4)) {
@@ -412,7 +415,8 @@ function chestOf(o: JerseyOptions, spec: (typeof CUTS)[CutId]): ChestBadgeR[] | 
 export function resolve(options: JerseyOptions | undefined): Resolved {
   const o: JerseyOptions = options !== null && typeof options === "object" ? options : {};
   const cut = pick(CUT_IDS, o.cut, "soccer");
-  const spec = CUTS[cut];
+  const fit = pick(FIT_IDS, o.fit, "mens");
+  const spec = cutSpec(cut, fit);
   const list = Array.isArray(o.colors) ? o.colors : [];
   const body = readColour(list[0]) ?? readColour(o.body) ?? [31, 58, 138];
   const trim = readColour(list[1]) ?? readColour(o.trim) ?? [244, 240, 228];
@@ -437,6 +441,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
   const reads = (v: unknown): Rgb | undefined => readColour(v);
   return {
     cut,
+    fit,
     body,
     trim,
     trim2: second ?? trim,

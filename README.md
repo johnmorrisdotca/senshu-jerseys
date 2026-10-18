@@ -157,6 +157,10 @@ const svg = renderJersey({ cut: "hockey", colors: ["#af1e2d", "#ffffff", "#19216
 console.log(svg.includes("<title")); // true
 ```
 
+### Men's and women's cuts
+
+`fit: "womens"` (the `fit` attribute) draws the tailored cut of any sport: a shorter body, narrower shoulders and sleeves, and a waist that tapers in and flares to the hem. `fit: "mens"` is the default and is unchanged. Patterns, stripes, names, numbers and badges follow the women's outline, flat and in volume; `cutSpec(cut, fit)` returns the table and `FIT_IDS` lists the fits. See [men's and women's cuts](./docs/fit.md).
+
 ### Cuffs, diagonal text and wide arm bands
 
 `cuffs` is the sleeve's end in a contrasting colour: a length in drawing units, or `[length, colour]` with the colour `1` the trim, `2` the second trim or `3` the number's fill. A seam shows where the knit starts, and it is drawn over the sleeve's stripes. `frontTextAngle` sets how the chest text runs: `"straight"`, `"arch"` (the basketball default), `"diagonal-up"` (each letter a step higher than the last, rising to the right) or `"diagonal-down"`. The letters are stepped along the slant, upright, and fitted to the chest of whichever cut it is. A wide band with thin edges at the elbow, and a set of three colours, need no new option: they are `sleeveStripes` and `hemStripes` lists, where the first pair is the gap from the cuff.
@@ -384,7 +388,8 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `OPTION_ATTRIBUTES`, `attributesFromOptions`, `optionsFromAttributes`, `jerseyToParams`, `jerseyFromParams` | Options as attributes and as a query. |
 | `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `BADGE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `CHEST_KINDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
-| `NATIONAL_COUNTRIES`, `NATIONAL_LAYOUTS`, `NATIONAL_NAMES` | The twelve countries, the eight national layouts, and the words each country sets on the chest: [national layouts](./docs/national.md). |
+| `NATIONAL_COUNTRIES`, `NATIONAL_LAYOUTS`, `NATIONAL_DIRECTIONS`, `NATIONAL_NAMES` | The twelve countries, the eight national layouts, the way the diagonal's name runs (`down`, `up`), and the words each country sets on the chest: [national layouts](./docs/national.md). |
+| `FIT_IDS`, `cutSpec` | The fits (`mens`, `womens`) and a cut's table in a fit: [men's and women's cuts](./docs/fit.md). |
 | `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES`, `BANNER_KINDS`, `TITLE_BANNER_KINDS`, `logoHref`, `yearLines` | The helmets, their marks, the banner shapes, the rafter or hanging kind, championship pennant or garden, a check of a caller-supplied logo, and championship years split onto lines. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
 | `JERSEY_WIDTH`, `JERSEY_HEIGHT`, `jerseyBox`, `VERSION` | The body's 200 by 232 units, the box a cut is drawn in (a little wider than the body for a cut whose sleeves reach past it), and the package's version. |

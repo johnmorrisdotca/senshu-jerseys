@@ -507,6 +507,31 @@ test("the national layouts: every country in eight layouts, one at a time, and a
   expect(errors).toEqual([]);
 });
 
+test("the fit: a control makes the shirt a women's cut, a preset keeps it, and every cut is shown both ways", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/?cut=hockey&vol=0");
+  const flat = await page.locator("#stage svg").first().innerHTML();
+  await page.locator('[data-testid="seg-fit"] button[data-value="womens"]').click();
+  await expect(page).toHaveURL(/fit=womens/);
+  await expect(page.locator("#stage svg title")).toContainText("Women's Hockey sweater");
+  await expect.poll(() => page.locator("#stage svg").first().innerHTML()).not.toBe(flat);
+  await page.locator('[data-testid="preset"]').selectOption({ index: 1 });
+  await expect(page).toHaveURL(/fit=womens/);
+  await expect(page.locator("#fit-grid li")).toHaveCount(7);
+  await expect(page.locator("#fit-grid li svg")).toHaveCount(14);
+  await page.getByTestId("fit-soccer-womens").click();
+  await expect(page).toHaveURL(/cut=soccer/);
+  await expect(page.locator("#stage svg title")).toContainText("Women's Soccer shirt");
+  expect(await noSideways(page)).toBe(true);
+  await page.goto("/?fit=womens&vol=1&yaw=90");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  await page.goto("/?lang=ja");
+  await expect(page.locator("#fit-grid li").first()).toBeVisible();
+  expect(await noSideways(page)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test("the officials section shows the caps, and a number on a striped referee goes on both sleeves", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#official-caps figure")).toHaveCount(5);

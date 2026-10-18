@@ -1,6 +1,6 @@
 // A jersey, front or back: its silhouette from the cut's measures, what the cut carries (collar, sleeves, stripes, panels), its pattern, the cloth's folds and edge, and the
 // number, name and crest. Every drawing is a pure function of its options; every id in it comes from a hash of them, so two drawings on one page never share one by accident.
-import { CUTS, type CollarId, type CutId, type CutSpec } from "./cuts.ts";
+import { CUTS, cutSpec, type CollarId, type CutId, type CutSpec } from "./cuts.ts";
 import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, worst, type Rgb } from "./colour.ts";
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
 import { resolve, type Bands, type ChestBadgeR, type JerseyOptions, type Resolved, type SleeveSide } from "./options.ts";
@@ -83,7 +83,7 @@ const outerAt = (s: SleeveGeo, f: number): Pt => lerp(s.S, s.P, f);
 const innerAt = (s: SleeveGeo, f: number): Pt => lerp(s.A, s.Q, f);
 
 export function shapeOf(r: Resolved): Shape {
-  const spec = CUTS[r.cut];
+  const spec = cutSpec(r.cut, r.fit);
   const tank = r.sleeve === "none";
   const nw = NECK_W[r.collar] + (tank && r.collar !== "round" ? 2 : 0);
   const ay = tank && spec.tank === undefined ? spec.ay + 12 : spec.ay;
@@ -977,7 +977,9 @@ export function sleeveDraws(r: Resolved, side: SleeveSide, width: (t: number) =>
 }
 
 /** A string id prefix for a drawing: the same options always give the same one. */
-export const uidOf = (r: Resolved, extra = ""): string => `sj${hashOf(JSON.stringify(r) + extra)}`;
+/** What a drawing's ids are hashed from: the options as resolved, the men's fit left out so that its drawings keep the ids they had. */
+export const keyOf = (r: Resolved): string => JSON.stringify({ ...r, fit: r.fit === "mens" ? undefined : r.fit });
+export const uidOf = (r: Resolved, extra = ""): string => `sj${hashOf(keyOf(r) + extra)}`;
 
 /** The options as a drawing's accessible name, in the language asked for. */
 export function jerseyTitle(r: Resolved): string {

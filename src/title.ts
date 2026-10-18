@@ -5,7 +5,7 @@ import type { Resolved } from "./options.ts";
 export function titleOf(r: Resolved): string {
   if (r.title !== undefined) return r.title;
   const w = TITLE_WORDS[r.language];
-  const cut = CUT_NAMES[r.cut][r.language];
+  const cut = (r.fit === "womens" ? w.womens : "") + CUT_NAMES[r.cut][r.language];
   const number = r.number === undefined ? "" : r.language === "ja" ? `、${w.number}${r.number}` : `, ${w.number} ${r.number}`;
   const view = r.view === "both" ? w.both : r.view === "back" ? w.back : w.front;
   return r.language === "ja" ? `${cut}${number}（${view}）` : `${cut}${number}, ${view}`;

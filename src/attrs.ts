@@ -5,7 +5,7 @@ import { bandsOf, type Bands, type ChestBadge, type JerseyOptions, type SleeveDe
 
 /** Every attribute that sets an option; the element watches these. */
 export const OPTION_ATTRIBUTES = [
-  "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
+  "cut", "fit", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
   "patch", "chest-badges", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
   "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate", "national",
@@ -124,6 +124,8 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
   };
   const cut = read("cut");
   if (cut !== null && (CUT_IDS as readonly string[]).includes(cut)) o.cut = cut as CutId;
+  const fit = read("fit");
+  if (fit === "mens" || fit === "womens") o.fit = fit;
   const colors = read("colors");
   if (colors !== null && colors.trim() !== "") o.colors = colors.split(",").map((c) => bare(c.trim())).slice(0, 5);
   for (const [name, key] of [["body", "body"], ["trim", "trim"], ["accent", "accent"], ["number-fill", "numberFill"], ["number-outline", "numberOutline"], ["pants", "pants"], ["pants-trim", "pantsTrim"], ["socks", "socks"], ["socks-trim", "socksTrim"], ["helmet", "helmet"]] as const) colour(name, key);
@@ -201,7 +203,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   set("accent", o.accent === undefined ? undefined : c(o.accent));
   set("number-fill", o.numberFill === undefined ? undefined : c(o.numberFill));
   set("number-outline", o.numberOutline === undefined ? undefined : c(o.numberOutline));
-  for (const [k, v] of [["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["badge", o.badge], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
+  for (const [k, v] of [["fit", o.fit], ["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["badge", o.badge], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
   for (const [k, v] of [["raglan", o.raglan], ["piping", o.piping], ["sleeve-numbers", o.sleeveNumbers], ["kit", o.kit], ["pocket", o.pocket], ["protector", o.protector]] as const) set(k, v);
   if (o.patternSleeves === false) out["pattern-sleeves"] = "false";
   if (o.chestBadges !== undefined && o.chestBadges !== null) set("chest-badges", chestToText(o.chestBadges, hash));

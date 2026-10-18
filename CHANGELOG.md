@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Women's cuts.** `fit: "womens"` (the `fit` attribute, `?fit=womens` in the demo) on every sport's cut: a shorter body, narrower shoulders and chest, narrower and slightly shorter sleeves, a waist that tapers in and a hem that flares back out (curved where the men's is level; a hockey sweater's stays level). The places for the number, name, text, crest and badges move and shrink with it. Every pattern, stripe, yoke, name, number, sleeve number, chest badge and national layout follows the women's outline, flat and in the volume view, whose body is lofted from it and stays closed at every angle. `fit: "mens"` is the default and its drawings are unchanged; the title says "Women's". `FIT_IDS`, `cutSpec(cut, fit)`, a fit control, and a men's and women's sheet of every cut in the demo, `docs/fit.md`.
+
 ### Changed
 
 - **The diagonal national layout reads top-down.** The country's name now starts high on the chest and runs down toward the hem, with the split mark above it on the wearer's left, as on the Canada jersey it follows. `direction: "up"` (`national: "canada:diagonal:up"`, `{ country, layout, direction }`) keeps the old rising look. The name stays on its own side of the cut and the mark clears it, flat and on the turning garment (`NATIONAL_DIRECTIONS`).

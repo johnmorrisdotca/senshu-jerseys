@@ -1,6 +1,6 @@
 // The demo's script: a jersey to try (every option, turned by a drag or by itself), the wall of every preset, the retired-number banners, title banners, a matchup and a lineup,
 // caps and helmets, and the code that puts it in a page. Everything the controls say is in the address. The words are in words.js.
-import { CUT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
+import { CUT_IDS, FIT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { WORDS } from "./words.js";
 
@@ -186,6 +186,7 @@ function buildControls() {
 
   group();
   add(row("cut", () => seg("cut", CUT_IDS, (v) => say(`cutShort_${v}`))));
+  add(row("fit", () => seg("fit", ["mens", "womens"], (v) => say(`fit_${v}`))));
   add(row("view", () => seg("view", ["front", "back", "both"], (v) => say(`view_${v}`))));
   add(row("look", () => seg("look", ["cloth", "flat", "line"], (v) => say(`look_${v}`))));
 
@@ -409,11 +410,13 @@ function applyPreset(id) {
   const keepNumber = attrs.number;
   const keepName = attrs.name;
   const keepView = attrs.view;
+  const keepFit = attrs.fit;
   for (const k of Object.keys(attrs)) delete attrs[k];
   Object.assign(attrs, { look: "cloth", "name-arch": "arched" }, attributesFromOptions(p.options));
   if (keepNumber !== undefined) attrs.number = keepNumber;
   if (keepName !== undefined) attrs.name = keepName;
   if (keepView !== undefined) attrs.view = keepView;
+  if (keepFit !== undefined) attrs.fit = keepFit;
   delete attrs.colors;
   render();
 }
@@ -681,6 +684,23 @@ function buildNational() {
     grid.append(li);
   }
 }
+// ----- The fits: every cut as a men's and as a women's shirt, side by side; a tap puts the pair's women's (or men's) on the stage.
+function buildFits() {
+  const grid = $("fit-grid");
+  grid.replaceChildren();
+  const base = { colors: [attrs.body ?? DEFAULTS.body, attrs.trim ?? DEFAULTS.trim, attrs.accent ?? DEFAULTS.accent], pattern: "stripes", number: 19, language: lang() };
+  for (const cut of CUT_IDS) {
+    const li = el("li", { "data-cut": cut });
+    for (const fit of FIT_IDS) {
+      const open = el("button", { type: "button", class: "fam-button", "data-testid": `fit-${cut}-${fit}`, text: say(`fit_${fit}`), onclick: () => { attrs.cut = cut; attrs.fit = fit; delete attrs.sleeve; delete attrs.collar; ui.preset = ""; render(); $("try").scrollIntoView({ block: "start" }); } });
+      const box = el("div", { class: "wsvg", role: "img", "aria-label": `${say(`cutShort_${cut}`)}, ${say(`fit_${fit}`)}` });
+      box.innerHTML = renderJersey({ ...base, cut, fit, size: 120 });
+      li.append(el("div", { class: "fit" }, box, open));
+    }
+    li.append(el("strong", { text: say(`cutShort_${cut}`) }));
+    grid.append(li);
+  }
+}
 $("styles-way").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (b === null || presetsApi === undefined) return;
@@ -794,6 +814,7 @@ async function loadPresets() {
   buildWall();
   buildStyles();
   buildNational();
+  buildFits();
   buildOfficials();
   drawOfficialCaps();
   drawBuilders();

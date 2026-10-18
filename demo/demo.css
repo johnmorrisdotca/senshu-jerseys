@@ -41,6 +41,10 @@ output { min-width: 3.5rem; font-variant-numeric: tabular-nums; color: var(--mut
 .chips .fam-chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 .wallbar .fam-row select, .wallbar .fam-row input { max-width: 100%; }
 .wallgrid { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.fitgrid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.fitgrid li { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: start; }
+.fitgrid .fit { display: grid; gap: 6px; justify-items: center; }
+.fitgrid li strong { grid-column: 1 / -1; order: 3; }
 .wallgrid li[hidden] { display: none; }
 .wcard { width: 100%; min-height: 176px; display: grid; justify-items: center; align-content: start; gap: 2px; padding: 8px 6px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); text-align: center; }
 .wcard:hover { border-color: var(--ink); }

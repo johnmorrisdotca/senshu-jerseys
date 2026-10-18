@@ -4,6 +4,10 @@
 export const CUT_IDS = ["hockey", "baseball", "basketball", "football", "soccer", "rugby", "handball"] as const;
 export type CutId = (typeof CUT_IDS)[number];
 
+/** The fit of a cut: `mens` is the straight, boxy shirt cut for pads; `womens` the tailored one, with a shorter body, narrower shoulders and sleeves, and a waist that tapers in and flares out again to the hem. */
+export const FIT_IDS = ["mens", "womens"] as const;
+export type FitId = (typeof FIT_IDS)[number];
+
 export const SLEEVE_IDS = ["long", "elbow", "short", "none"] as const;
 export type SleeveId = (typeof SLEEVE_IDS)[number];
 
@@ -113,3 +117,46 @@ export const CUTS: Readonly<Record<CutId, CutSpec>> = {
     tv: { t: 0.45, h: 14 },
   },
 };
+
+const r1 = (n: number): number => Math.round(n * 10) / 10;
+
+/**
+ * The cut as a woman's shirt: the same table, narrowed. The shoulders and the chest are narrower, the body is shorter, the waist comes in by about a fifth and the hem flares back out a little (a curved hem
+ * where the men's is level, but a hockey sweater's is kept level), and the sleeves are narrower and a little shorter. The places for the number, the name and the badges follow: they move with the body
+ * and shrink with it, never past it. `fit: "mens"` is the table as it stands.
+ */
+function womensOf(m: CutSpec): CutSpec {
+  const su = m.su - Math.max(4, Math.round(m.su * 0.08));
+  const au = m.au - 3;
+  const hy = m.hy - Math.round((m.hy - m.ay) * 0.11);
+  const wu = au - (m.tank === undefined ? 10 : 8);
+  const hu = wu + (m.tank === undefined ? 9 : 8);
+  const kx = au / m.au;
+  const ky = (hy - m.ny) / (m.hy - m.ny);
+  const spotOf = (s: Spot, tall: boolean): Spot => {
+    const y = r1(m.ny + (s.y - m.ny) * ky);
+    const w = r1(s.w * kx * (m.tank !== undefined && !tall ? 0.92 : 1));
+    const h = tall ? r1(s.h * ky) : s.h;
+    // A place off the middle keeps inside the body where it is lowest, at the waist.
+    const room = (y + h / 2 > m.ay ? wu : m.tank !== undefined ? au - 10 : au) - 2.5 - w / 2;
+    const dx = Math.sign(s.x - 100) * Math.min(Math.abs(s.x - 100) * kx, Math.max(0, room));
+    return { x: r1(100 + dx), y, w, h };
+  };
+  const sleeves: CutSpec["sleeves"] = {};
+  for (const id of SLEEVE_IDS) {
+    const sp = m.sleeves[id];
+    if (sp !== undefined) sleeves[id] = { a: sp.a, l: r1(sp.l * (id === "short" ? 0.88 : 0.96)), cw: Math.max(24, sp.cw - 4) };
+  }
+  const w: CutSpec = {
+    ...m, su, au, hy, wu, hu, drop: m.id === "hockey" ? m.drop : m.drop + 2, sleeves,
+    number: { front: spotOf(m.number.front, true), back: spotOf(m.number.back, true) }, name: spotOf(m.name, false), text: spotOf(m.text, false), crest: spotOf(m.crest, true), patch: spotOf(m.patch, true),
+    tv: { t: m.tv.t, h: r1(m.tv.h * 0.9) },
+  };
+  if (m.tank !== undefined) w.tank = { su: m.tank.su - 4, sy: m.tank.sy, bulge: m.tank.bulge };
+  return w;
+}
+
+const WOMENS = Object.fromEntries(CUT_IDS.map((id) => [id, womensOf(CUTS[id])])) as Readonly<Record<CutId, CutSpec>>;
+
+/** The table of a cut in a fit: `CUTS[cut]` for `mens`, the tailored one for `womens`. */
+export const cutSpec = (cut: CutId, fit: FitId = "mens"): CutSpec => (fit === "womens" ? WOMENS[cut] : CUTS[cut]);
