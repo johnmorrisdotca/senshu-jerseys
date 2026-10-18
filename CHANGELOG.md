@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-17
+
 ### Added
 
 - **National layouts.** `national: "canada:diagonal"` (or `{ country, layout, text? }`) draws a country's own simplified mark and its flag in one of eight layouts: `quadrant`, `diagonal` (the mark cut along a slant, the name set up the cut), `centred`, `arched` (the name arched over the mark, marks at the hem corners and on the sleeves), `serrated`, `stepped`, `wordmark` and the whole `flag` (the stars over the chest and shoulders for the United States). All twelve countries of the national hockey styles have a mark (a leaf, a star, a Nordic cross, a plain cross, a wedge, a double cross, bars, a disc, a lily) and a flag; the marks are this package's own shapes, never a federation's crest. They work on every cut, in every look, flat and on the turning garment. `NATIONAL_COUNTRIES`, `NATIONAL_LAYOUTS`, `NATIONAL_NAMES`, `nationalStyle` (in `presets/hockey-styles`), the `national` attribute of the element and `embed.html`, a gallery of every country in each layout in the demo, and `docs/national.md`. The jersey bundle's size limit is raised to 28 kB gzipped (the banner's to 25, the turn's to 30, the element's to 36).
