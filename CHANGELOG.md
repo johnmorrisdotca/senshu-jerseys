@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-10-17
+
 ### Fixed
 
 - **Name and number letters are no longer cut off.** Glyph strokes were butt-capped, so the foot of an M, R, I or H stem stopped half a stroke short of the letter's box and the outline (a stroke of the same shape) never closed round the end. They are square-capped now, fill and outline, the dot, comma, colon and apostrophe were redrawn to match, and the Q's tail stays inside its box. Tests hold every letter and digit, in every weight, to its box.
