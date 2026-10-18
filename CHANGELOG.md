@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-18
+
 ### Added
 
 - **Shrinking sleeve bands, sawtooth sleeves and a pointed yoke.** `sleeveStripes` and `hemStripes` take `{ shrink: { count, from, to, colour?, gap? } }` (bands and gaps that thin out toward the cuff or the hem), `sleeveTeeth` draws a row of teeth where two sleeve colours meet (`at`, `colour`, `count`, `depth`, `direction`), and `yoke: "pointed"` ends in a V. The `hockey-patterns` presets ("Shrinking bands" and "Sawtooth sleeves", home and away) show them in plain colours; nothing in them is a team's mark. The preset spec has `sh=`, `hh=` and `tt=` and `y=p`.
