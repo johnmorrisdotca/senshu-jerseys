@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **A captain's C and A look like the ones on a hockey sweater.** They are the bare letter in a heavy block face with a thick outline in a contrasting colour (the second trim, white or black, whichever sets it off from the letter and the cloth), no disc, flat and on the turning garment. `style: "disc"` on a chest badge, and `patchStyle: "disc"` (the `patch-style` attribute) on the old `patch`, keep the round patch.
+
 ### Fixed
 
 - **Sleeves are closed tubes in the volume view.** Each sleeve's cuff has a lining, so a side or three-quarter view no longer looks up an open tube (a T-shirt, soccer, baseball, football, rugby and handball sleeve, in both fits). A tank's rows now run in order from the neck to the hem, which removes the ragged edge and the see-through wedges at its side, and its side wall samples a little further in from the outline. `test/volume.test.ts` checks that nothing behind an arm shows through, in every cut and both fits.

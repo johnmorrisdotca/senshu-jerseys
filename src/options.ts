@@ -56,6 +56,9 @@ export interface SleeveDetail {
 }
 
 export const CHEST_KINDS = ["C", "A", "patch", "flag"] as const;
+/** How a captain's C or A is drawn: the bare `letter` in a heavy block face with a thick outline, as it is sewn on a hockey sweater, or on a `disc`. */
+export const CAPTAIN_STYLES = ["letter", "disc"] as const;
+export type CaptainStyle = (typeof CAPTAIN_STYLES)[number];
 export type ChestKind = (typeof CHEST_KINDS)[number];
 
 /**
@@ -70,6 +73,8 @@ export interface ChestBadge {
   text?: string;
   /** For a `patch` (and the C and A): `round` (the C and A's own), `shield` or `square`. */
   shape?: BadgeId;
+  /** For the C and A: `"letter"` (the default) or `"disc"`, the letter on a round patch. The letter takes `fill` (the jersey's trim by default), `outline` (the colour that sets it off best from the trim, from the body and the second trim) and `ink` as its colour if `fill` is not given. */
+  style?: CaptainStyle;
   /** For a `flag`: its bands as colours, 2 to 5, from the top (or the left); `direction` says which; a `canton` colour fills the top corner next to the hoist and a `disc` colour is a circle in the middle. */
   flag?: { stripes?: readonly string[]; direction?: "horizontal" | "vertical"; canton?: string; disc?: string };
   /** An SVG document, or an emblem id, to show in the badge's place instead of its drawing (a flag from a flag package, a federation's patch). */
@@ -165,6 +170,8 @@ export interface JerseyOptions {
    */
   national?: NationalOptions;
   patch?: PatchId;
+  /** How the old `patch` is drawn: `"letter"` (the default) or `"disc"`. */
+  patchStyle?: CaptainStyle;
   /** Badges on the chest: a captain's letter, a flag, a patch, each on the wearer's left or right, in any number up to four. The `patch` option is the one C or A of old. */
   chestBadges?: ChestBadge | readonly ChestBadge[];
   /** The number on the sleeves: `true` or `"both"` for both, or `"left"` or `"right"` (the wearer's) for one. `sleeveLeft` and `sleeveRight` place each sleeve's number and patch. */
@@ -198,6 +205,7 @@ export interface ChestBadgeR {
   side?: "left" | "right";
   text?: string;
   shape: BadgeId;
+  style: CaptainStyle;
   flag?: { stripes: Rgb[]; vertical: boolean; canton?: Rgb; disc?: Rgb };
   art?: string;
   size: number;
@@ -262,6 +270,8 @@ export interface Resolved {
   frontNumber?: string;
   national?: NationalR;
   patch: PatchId;
+  /** Set only when the old patch is a disc: the letter is the default and adds nothing to the options. */
+  patchStyle?: "disc";
   chest?: ChestBadgeR[];
   /** The sleeves' numbers and patches by the wearer's side: absent for a side with none. */
   sleeveSides?: { left?: SleeveSide; right?: SleeveSide };
@@ -386,6 +396,7 @@ function chestOf(o: JerseyOptions, spec: CutSpec): ChestBadgeR[] | undefined {
     const b: ChestBadgeR = {
       kind,
       shape: kind === "patch" ? pick(BADGE_IDS, d.shape, "round") : "round",
+      style: pick(CAPTAIN_STYLES, d.style, "letter"),
       size: within(d.size, 8, 40) ?? (kind === "flag" ? 14 : kind === "patch" ? 16 : spec.patch.w),
       dx: within(d.dx, -40, 40) ?? 0,
       dy: within(d.dy, -40, 40) ?? 0,
@@ -480,6 +491,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     national,
     frontNumber: o.frontNumber === true ? digits(o.number, 2) : o.frontNumber === false || o.frontNumber === undefined ? undefined : digits(o.frontNumber, 2),
     patch: pick(PATCH_IDS, o.patch, ""),
+    patchStyle: o.patchStyle === "disc" ? "disc" : undefined,
     chest: chestOf(o, spec),
     sleeveSides: sleeve === "none" ? undefined : sleeveSidesOf(o, spec, sleeve),
     crest: typeof o.crest === "string" && o.crest.length <= 200_000 ? o.crest : undefined,

@@ -1,6 +1,6 @@
 # Chest badges
 
-`chestBadges` puts captain's and alternate's letters, flags and patches on the chest, each on the wearer's left or right breast. The old `patch: "C"` (or `"A"`) is still there and still the cut's one circle; `chestBadges` is for more, or for something else.
+`chestBadges` puts captain's and alternate's letters, flags and patches on the chest, each on the wearer's left or right breast. The old `patch: "C"` (or `"A"`) is still there, in the cut's one place; `chestBadges` is for more, or for something else.
 
 **Left and right are the wearer's:** `"left"` is the wearer's left breast, the right of the picture. A cut puts its C on its own side (hockey the wearer's left, football, soccer and rugby the right, so that the left is free for a crest); a badge with no `side` takes that side.
 
@@ -27,6 +27,7 @@ console.log(captain.length < alternate.length + 1000, flagOnly.includes("clipPat
 | `kind` | `"C"`, `"A"`, `"patch"` (a shape with up to three letters) or `"flag"` (a rectangle). `"C"` by default. |
 | `side` | `"left"` or `"right"`, the wearer's. |
 | `text` | For a patch: up to three letters. |
+| `style` | For the C and A: `"letter"` (the default) is the bare letter in a heavy block face with a thick outline, as it is sewn on a hockey sweater, size about a sleeve number; `"disc"` puts it on a round patch. The letter is the jersey's trim (`fill` or `ink` change it) and its outline whichever of the second trim, white or black sets it off best from the letter and the body (`outline` changes it). The old `patch` takes `patchStyle` the same way. |
 | `shape` | For a patch: `"round"`, `"shield"` or `"square"`. |
 | `flag` | For a flag: `stripes`, 2 to 5 colours from the top (or the left), `direction` (`"horizontal"` or `"vertical"`), and the colours of a `canton` (the corner by the hoist) and a `disc` (a circle in the middle). |
 | `art` | An SVG document or an emblem id, shown in the badge's place: a flag from a flag package, a federation's patch. It is shown as an image, so nothing in it runs. An id needs `useEmblems` or the `emblems` option, as for `crest`. |

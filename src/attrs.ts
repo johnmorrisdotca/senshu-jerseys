@@ -7,7 +7,7 @@ import { bandsOf, type Bands, type ChestBadge, type JerseyOptions, type SleeveDe
 export const OPTION_ATTRIBUTES = [
   "cut", "fit", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
-  "patch", "chest-badges", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
+  "patch", "patch-style", "chest-badges", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
   "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate", "national",
 ] as const;
 
@@ -50,7 +50,7 @@ export function detailToText(d: SleeveDetail, hash = true): string {
 
 const CHEST_NUMERIC = new Set(["size", "dx", "dy"]);
 const CHEST_COLOURS = new Set(["fill", "outline", "ink"]);
-const CHEST_TEXT = ["kind", "side", "text", "shape", "art"] as const;
+const CHEST_TEXT = ["kind", "side", "text", "shape", "style", "art"] as const;
 
 /**
  * The chest badges from text: badges separated by `|`, each `key:value` pairs separated by `;`: `kind:C;side:left|kind:flag;side:right;flag:d52b1e+fff+d52b1e;flag-direction:vertical`. The keys are the badge's (`kind`, `side`,
@@ -129,7 +129,7 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
   const colors = read("colors");
   if (colors !== null && colors.trim() !== "") o.colors = colors.split(",").map((c) => bare(c.trim())).slice(0, 5);
   for (const [name, key] of [["body", "body"], ["trim", "trim"], ["accent", "accent"], ["number-fill", "numberFill"], ["number-outline", "numberOutline"], ["pants", "pants"], ["pants-trim", "pantsTrim"], ["socks", "socks"], ["socks-trim", "socksTrim"], ["helmet", "helmet"]] as const) colour(name, key);
-  for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "front-text-angle", "patch", "crest", "view", "look", "language", "title", "description", "badge", "national"]) text(name);
+  for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "front-text-angle", "patch", "patch-style", "crest", "view", "look", "language", "title", "description", "badge", "national"]) text(name);
   for (const name of ["raglan", "piping", "kit", "pattern-sleeves", "pocket", "protector"]) {
     const f = flag(read(name));
     if (f !== undefined) o[name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = f;
@@ -203,7 +203,7 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   set("accent", o.accent === undefined ? undefined : c(o.accent));
   set("number-fill", o.numberFill === undefined ? undefined : c(o.numberFill));
   set("number-outline", o.numberOutline === undefined ? undefined : c(o.numberOutline));
-  for (const [k, v] of [["fit", o.fit], ["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["badge", o.badge], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
+  for (const [k, v] of [["fit", o.fit], ["pattern", o.pattern], ["collar", o.collar], ["sleeve", o.sleeve], ["yoke", o.yoke], ["closure", o.closure], ["name", o.name], ["name-arch", o.nameArch], ["front-text", o.frontText], ["front-text-angle", o.frontTextAngle], ["patch", o.patch], ["patch-style", o.patchStyle], ["badge", o.badge], ["view", o.view], ["look", o.look], ["language", o.language], ["title", o.title]] as const) set(k, v);
   for (const [k, v] of [["raglan", o.raglan], ["piping", o.piping], ["sleeve-numbers", o.sleeveNumbers], ["kit", o.kit], ["pocket", o.pocket], ["protector", o.protector]] as const) set(k, v);
   if (o.patternSleeves === false) out["pattern-sleeves"] = "false";
   if (o.chestBadges !== undefined && o.chestBadges !== null) set("chest-badges", chestToText(o.chestBadges, hash));

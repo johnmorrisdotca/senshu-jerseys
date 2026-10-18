@@ -780,7 +780,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     const p = spec.patch;
     const patchFill = r.trim;
     const letterInk = inkOn([patchFill], [r.body, r.trim2, BLACK, WHITE]);
-    if (line) marks += `<circle cx="${p.x}" cy="${p.y}" r="${p.w / 2}" fill="none" stroke="currentColor" stroke-width="4"/>`;
+    if (r.patchStyle !== "disc") marks += `<g transform="translate(${p.x} ${p.y})">${captainLetter(r, r.patch, p.w, undefined, undefined)}</g>`;
+    else if (line) marks += `<circle cx="${p.x}" cy="${p.y}" r="${p.w / 2}" fill="none" stroke="currentColor" stroke-width="4"/>`;
     else {
       marks += `<circle cx="${p.x}" cy="${p.y}" r="${p.w / 2}" fill="${trimHex}" stroke="${hexOf(shade(r.trim, -0.4))}" stroke-width="1"/>`;
       marks += drawRun(layout(r.patch, p.x, p.y, { height: p.w * 0.58, weight: "bold" }), hexOf(letterInk), undefined, undefined);
@@ -905,6 +906,8 @@ function chestBadgeMarks(r: Resolved, sh: Shape, uid: string, emblems: EmblemRen
         }
         g = `<clipPath id="${clip}"><path d="${rect}"/></clipPath><g clip-path="url(#${clip})">${body}</g><path d="${rect}" fill="none" stroke="${hexOf(edgeRgb)}" stroke-width=".8"/>`;
       }
+    } else if (b.kind !== "patch" && b.style === "letter") {
+      g = captainLetter(r, b.kind, b.size, b.fill ?? b.ink, b.outline);
     } else {
       const shape = b.kind === "patch" ? b.shape : "round";
       const body = shapePath(shape, b.size);
@@ -929,6 +932,20 @@ export interface SleeveDraw {
   h: number;
   at: number;
   around: number;
+}
+
+/**
+ * A captain's or an alternate's letter as it is sewn on a hockey sweater: the bare letter in a heavy block face, `size` tall, with a thick outline in a colour that sets it off, no disc behind it. The letter is the jersey's trim and the outline
+ * the second trim, white or black, whichever sets it off best from both the letter and the body, unless they are given.
+ */
+function captainLetter(r: Resolved, letter: string, size: number, fill: Rgb | undefined, outline: Rgb | undefined): string {
+  const run = layout(letter, 0, 0, { height: size * 1.05, weight: "bold" });
+  if (r.look === "line") return drawRun(run, "currentColor", undefined, undefined);
+  const ink = fill ?? (contrast(r.trim, r.body) >= 2.5 ? r.trim : inkOn([r.body], [r.trim, r.trim2, WHITE, BLACK], 3));
+  // The outline must set the letter off from the cloth too, so it is judged against both.
+  const score = (c: Rgb): number => Math.min(contrast(c, ink) * 1.5, contrast(c, r.body));
+  const edge = outline ?? [r.trim2, WHITE, BLACK].filter((c): c is Rgb => c !== undefined).sort((a, b) => score(b) - score(a))[0] as Rgb;
+  return drawRun(run, hexOf(ink), { colour: hexOf(edge), width: Math.max(1.3, run.sw * 0.32) }, undefined);
 }
 
 /** A badge's plain shape, centred on the origin, `s` across: a circle, a shield or a square. */

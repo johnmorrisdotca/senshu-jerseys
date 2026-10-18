@@ -19,7 +19,8 @@ const layout = (o: object) => {
 test("the old patch is where it was, and a C asked for through chestBadges is in the same place", () => {
   for (const cut of CUT_IDS) {
     const spot = CUTS[cut].patch;
-    assert.ok(renderJersey({ ...BASE, cut, patch: "C" }).includes(`cx="${spot.x}" cy="${spot.y}"`), `${cut}: the circle of old`);
+    assert.ok(renderJersey({ ...BASE, cut, patch: "C", patchStyle: "disc" }).includes(`cx="${spot.x}" cy="${spot.y}"`), `${cut}: the circle of old, when it is asked for`);
+    assert.ok(!renderJersey({ ...BASE, cut, patch: "C" }).includes(`cx="${spot.x}" cy="${spot.y}"`), `${cut}: the letter alone is the default`);
     const next = layout({ cut, chestBadges: { kind: "C" } })[0];
     assert.equal(next?.x, spot.x, `${cut}: the cut's own side and place`);
     assert.equal(next?.y, spot.y);
@@ -136,4 +137,27 @@ test("what comes from outside cannot reach the markup", () => {
     assert.equal(wellFormed(svg), null);
     assert.doesNotMatch(svg, /NaN|undefined|Infinity/);
   }
+});
+
+test("a captain's C and A are bare block letters with a thick outline, no disc, and the disc is a style to ask for", () => {
+  for (const cut of CUT_IDS) {
+    for (const kind of ["C", "A"] as const) {
+      const letter = renderJersey({ ...BASE, cut, chestBadges: { kind } });
+      const disc = renderJersey({ ...BASE, cut, chestBadges: { kind, style: "disc" } });
+      assert.equal(wellFormed(letter), null);
+      assert.ok(!/<path d="M[^"]*a[\d.]+ [\d.]+ 0 1 0 [^"]*" fill="#fff"/.test(letter), `${cut} ${kind}: no round patch`);
+      assert.ok(disc.includes("a10 10 0 1 0") || disc.includes("0 1 0"), `${cut} ${kind}: the disc is still there when asked for`);
+      assert.ok(letter.length !== disc.length);
+    }
+  }
+  const svg = renderJersey({ ...BASE, cut: "hockey", colors: ["#111111", "#d4a017", "#ffffff"], chestBadges: { kind: "C" } });
+  assert.match(svg, /stroke="#ffffff"[^>]*stroke-width="[\d.]+"\/><path[^>]*stroke="#d4a017"/, "a gold letter inside a white outline on a black jersey");
+  assert.equal(resolve({ ...BASE, chestBadges: { kind: "C", style: "<x>" as never } }).chest?.[0]?.style, "letter", "anything else is the letter");
+  assert.equal(resolve({ ...BASE, patch: "C", patchStyle: "bogus" as never }).patchStyle, undefined);
+  assert.match(renderJersey({ ...BASE, cut: "hockey", patch: "C", patchStyle: "disc" }), /<circle/);
+  assert.doesNotMatch(renderJersey({ ...BASE, cut: "hockey", patch: "C" }), /<circle cx="1[34]\d"/);
+  assert.equal(chestFromText("kind:C;style:disc")[0]?.style, "disc");
+  assert.equal(optionsFromAttributes((n) => (n === "patch-style" ? "disc" : null)).patchStyle, "disc");
+  assert.match(renderJersey({ ...BASE, cut: "hockey", look: "line", chestBadges: { kind: "C" } }), /currentColor/);
+  for (const yaw of [0, 60, 90]) assert.equal(wellFormed(jerseyFrame({ ...BASE, cut: "hockey", volume: true, chestBadges: { kind: "A", side: "right" }, yaw })), null);
 });
