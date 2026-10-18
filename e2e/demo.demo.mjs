@@ -490,5 +490,5 @@ test("the officials section shows the caps, and a number on a striped referee go
   expect(await noSideways(page)).toBe(true);
   await page.goto("/?preset=ref:nhl-modern-referee&number=14");
   await expect(page.locator("#stage svg")).toBeVisible();
-  expect(await page.locator("#stage").innerHTML()).toContain("rotate(");
+  await expect.poll(() => page.locator("#stage").innerHTML()).toContain("rotate(");
 });
