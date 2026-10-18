@@ -41,8 +41,8 @@ export function letterDiscs(svg: string): { at: P; r: number }[] {
   const walk = (n: Node, m: Matrix, inDefs: boolean): void => {
     const here = mul(m, transformOf(n.attrs["transform"]));
     if (n.tag === "defs" || n.tag === "clipPath") return;
-    if (n.tag === "path" && n.attrs["stroke-linecap"] === "butt" && n.attrs["fill"] === "none" && !inDefs) {
-      // A glyph stroke (the only butt-capped strokes there are); the widest of its strokes, the outline, is what to keep clear.
+    if (n.tag === "path" && n.attrs["stroke-linecap"] === "square" && n.attrs["fill"] === "none" && !inDefs) {
+      // A glyph stroke (the only square-capped strokes there are); the widest of its strokes, the outline, is what to keep clear.
       const r = (Number(n.attrs["stroke-width"] ?? 0) / 2) * scaleOf(here);
       const pts = pathPoints(n.attrs["d"] ?? "");
       for (const sub of (n.attrs["d"] ?? "").split(/(?=M)/)) {
@@ -105,7 +105,7 @@ export function letteringOf(svg: string): Lettering[] {
   const walk = (n: Node, m: Matrix): void => {
     const here = mul(m, transformOf(n.attrs["transform"]));
     if (n.tag === "defs" || n.tag === "clipPath") return;
-    if (n.tag === "path" && n.attrs["stroke-linecap"] === "butt" && n.attrs["fill"] === "none") {
+    if (n.tag === "path" && n.attrs["stroke-linecap"] === "square" && n.attrs["fill"] === "none") {
       const d = n.attrs["d"] ?? "";
       const stroke = n.attrs["stroke"] ?? "";
       const width = Number(n.attrs["stroke-width"] ?? 0);

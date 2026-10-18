@@ -88,7 +88,7 @@ export function layout(text: string, cx: number, cy: number, o: RunOptions): Run
 export function drawRun(run: Run, fill: string, edge: { colour: string; width: number } | undefined, stitch: string | undefined): string {
   if (run.kind === "glyph") {
     if (run.d === "") return "";
-    const strokes = 'fill="none" stroke-linejoin="miter" stroke-miterlimit="2.5" stroke-linecap="butt"';
+    const strokes = 'fill="none" stroke-linejoin="miter" stroke-miterlimit="2.5" stroke-linecap="square"';
     let out = "";
     // A wide outline is rounded at the corners: mitred, it would throw a spike from every sharp turn of a letter.
     if (edge !== undefined && edge.width > 0) out += `<path d="${run.d}" ${edge.width > run.sw * 0.25 ? strokes.replace('stroke-linejoin="miter" stroke-miterlimit="2.5"', 'stroke-linejoin="round"') : strokes} stroke="${edge.colour}" stroke-width="${n2(run.sw + edge.width * 2)}"/>`;
