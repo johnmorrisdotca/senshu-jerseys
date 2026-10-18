@@ -541,3 +541,16 @@ test("the officials section shows the caps, and a number on a striped referee go
   await expect(page.locator("#stage svg")).toBeVisible();
   await expect.poll(() => page.locator("#stage").innerHTML()).toContain("rotate(");
 });
+
+test("the tilt slider tips the garment forward up to 30 degrees, is kept in the address and goes with the volume", async ({ page }) => {
+  await page.goto("/?cut=hockey&number=9&pitch=30&yaw=40");
+  const stage = page.locator("#stage");
+  await expect(stage.locator("svg[data-vol]")).toBeVisible();
+  expect(await stage.locator("svg").getAttribute("data-vol")).toContain('"pitch":30');
+  await expect(page.getByTestId("pitch")).toHaveValue("30");
+  await page.getByTestId("pitch").fill("0");
+  expect(await stage.locator("svg").getAttribute("data-vol")).toContain('"pitch":0');
+  await expect(page).toHaveURL(/pitch=0/);
+  await page.getByTestId("vol").click();
+  await expect(page.locator("#pitchbar")).toBeHidden();
+});
