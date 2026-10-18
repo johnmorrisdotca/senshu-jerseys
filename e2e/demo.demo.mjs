@@ -483,6 +483,30 @@ test("the twelve national styles are on a sheet, home or away, and a tap puts on
   expect(errors).toEqual([]);
 });
 
+test("the national layouts: every country in eight layouts, one at a time, and a tap puts it on the stage", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  const grid = page.locator("#national-grid");
+  await expect(page.locator("#national-layouts button")).toHaveCount(8);
+  await expect(grid.locator("li")).toHaveCount(12);
+  await expect(grid.locator("li svg").first()).toBeVisible();
+  const before = await grid.locator("li svg").first().innerHTML();
+  await page.getByTestId("nlayout-flag").click();
+  await expect(page).toHaveURL(/nl=flag/);
+  await expect.poll(() => grid.locator("li svg").first().innerHTML()).not.toBe(before);
+  await page.getByTestId("national-usa").click();
+  await expect(page).toHaveURL(/national=usa%3Aflag/);
+  await expect(page.locator("#stage svg")).toBeVisible();
+  expect(await noSideways(page)).toBe(true);
+  await page.goto("/?national=canada:diagonal&view=back");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  await page.goto("/?lang=ja");
+  await expect(page.locator("#national-layouts button").first()).toBeVisible();
+  expect(await noSideways(page)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 test("the officials section shows the caps, and a number on a striped referee goes on both sleeves", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#official-caps figure")).toHaveCount(5);

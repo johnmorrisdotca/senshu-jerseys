@@ -10,7 +10,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
   <img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-3178c6">
 </p>
 
-<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
 
 <p align="center">
 <picture>
@@ -384,13 +384,14 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `OPTION_ATTRIBUTES`, `attributesFromOptions`, `optionsFromAttributes`, `jerseyToParams`, `jerseyFromParams` | Options as attributes and as a query. |
 | `CUT_IDS`, `CUTS`, `COLLAR_IDS`, `SLEEVE_IDS`, `BADGE_IDS`, `PATTERN_IDS`, `TEXT_ANGLE_IDS`, `YOKE_IDS`, `CLOSURE_IDS`, `VIEW_IDS`, `LOOK_IDS`, `ARCH_IDS`, `PATCH_IDS`, `CHEST_KINDS`, `LANGUAGE_IDS` | The lists of what an option may be, and each cut's measures. |
 | `CUT_NAMES`, `PATTERN_NAMES` | English and Japanese names. |
+| `NATIONAL_COUNTRIES`, `NATIONAL_LAYOUTS`, `NATIONAL_NAMES` | The twelve countries, the eight national layouts, and the words each country sets on the chest: [national layouts](./docs/national.md). |
 | `HELMET_KINDS`, `HELMET_MARKS`, `BANNER_SHAPES`, `BANNER_KINDS`, `TITLE_BANNER_KINDS`, `logoHref`, `yearLines` | The helmets, their marks, the banner shapes, the rafter or hanging kind, championship pennant or garden, a check of a caller-supplied logo, and championship years split onto lines. |
 | `contrast`, `readColour` | The contrast ratio of two colours, and a colour read from text. |
 | `JERSEY_WIDTH`, `JERSEY_HEIGHT`, `jerseyBox`, `VERSION` | The body's 200 by 232 units, the box a cut is drawn in (a little wider than the body for a cut whose sleeves reach past it), and the package's version. |
 
 ### Options
 
-`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `armbands`, `pocket`, `badge`, `protector`, `plate`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `sleeveLeft`, `sleeveRight`, `chestBadges`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
+`cut`, `colors` or `body`, `trim`, `accent`, `numberFill`, `numberOutline`, `pattern`, `repeat`, `stripeCount`, `patternSleeves`, `collar`, `sleeve`, `yoke`, `closure`, `raglan`, `piping`, `armStripes`, `sleeveStripes`, `hemStripes`, `cuffs`, `armbands`, `pocket`, `badge`, `protector`, `plate`, `chestBand`, `chestY`, `collarColor`, `sleeveColor`, `panels`, `number`, `name`, `nameArch`, `national`, `frontText`, `frontTextAngle`, `frontNumber`, `patch`, `sleeveNumbers`, `sleeveLeft`, `sleeveRight`, `chestBadges`, `crest`, `view`, `look`, `size`, `language`, `title`, `description`, `kit`, `pants`, `pantsTrim`, `pantsBands`, `socks`, `socksTrim`, `socksBands` and `helmet`. A value that is not one of the allowed ones is replaced by the default; nothing throws. `size` is the width of one jersey's body in pixels (200 by default); a cut whose sleeves reach past the body (football, rugby, soccer, baseball and handball) is drawn in a box a little wider, so its document is a little wider than `size`.
 
 ## Theming
 
@@ -423,7 +424,7 @@ The package's own words (cut and pattern names, accessible titles) are in Englis
 
 More than fifteen hundred uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
 
-Apart from the real teams, `presets/hockey-styles` holds twelve original national hockey styles, home and away, each with a layout of its own and made to be personalised (`personalStyle`): see [national styles](./docs/hockey-styles.md).
+Apart from the real teams, `presets/hockey-styles` holds twelve original national hockey styles, home and away, each with a layout of its own and made to be personalised (`personalStyle`): see [national styles](./docs/hockey-styles.md), and [national layouts](./docs/national.md) for each country's own mark or flag in eight arrangements (`national: "canada:diagonal"`).
 
 The colours and layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes, and recorded as data here; no picture is copied. Treat them as a first reading, not a proof: where a source gave only colour names the layout is the plainest one that fits, and a row that could not be confirmed is marked `unsure` in its source. Corrections with a source are welcome.
 

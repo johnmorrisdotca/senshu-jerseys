@@ -1,6 +1,6 @@
 // The demo's script: a jersey to try (every option, turned by a drag or by itself), the wall of every preset, the retired-number banners, title banners, a matchup and a lineup,
 // caps and helmets, and the code that puts it in a page. Everything the controls say is in the address. The words are in words.js.
-import { CUT_IDS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
+import { CUT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { WORDS } from "./words.js";
 
@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", cmp: "0", sw: "home" };
+const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -665,11 +665,28 @@ function buildStyles() {
   }
   for (const b of $("styles-way").children) b.setAttribute("aria-pressed", String(b.dataset.way === ui.sw));
 }
+// ----- The national layouts: every country in one layout at a time (the mark, the diagonal, the arch, the flag...), home or away; a tap puts it on the stage.
+function buildNational() {
+  const chips = $("national-layouts");
+  chips.replaceChildren();
+  for (const layout of NATIONAL_LAYOUTS) chips.append(el("button", { type: "button", class: "fam-chip", "data-layout": layout, "aria-pressed": String(ui.nl === layout), "data-testid": `nlayout-${layout}`, text: say(`nl_${layout}`), onclick: () => { ui.nl = layout; buildNational(); syncUrl(); } }));
+  const grid = $("national-grid");
+  grid.replaceChildren();
+  for (const p of presetsApi.PRESETS.filter((q) => q.league === "style" && q.way === ui.sw)) {
+    const id = p.id.slice(6).replace(/-2026-(home|away)$/, "");
+    const name = lang() === "ja" ? p.ja : p.team;
+    const open = el("button", { type: "button", class: "fam-button", "data-testid": `national-${id}`, text: say("tryThis"), onclick: () => { applyPreset(p.id); attrs.national = `${id}:${ui.nl}`; render(); $("try").scrollIntoView({ block: "start" }); } });
+    const li = el("li", { "data-id": p.id }, el("div", { class: "wsvg", role: "img", "aria-label": `${name}, ${say(`nl_${ui.nl}`)}` }), el("strong", { text: name }), open);
+    li.querySelector(".wsvg").innerHTML = renderJersey({ ...p.options, national: `${id}:${ui.nl}`, number: 19, size: 120, language: lang() });
+    grid.append(li);
+  }
+}
 $("styles-way").addEventListener("click", (e) => {
   const b = e.target.closest("button");
   if (b === null || presetsApi === undefined) return;
   ui.sw = b.dataset.way;
   buildStyles();
+  buildNational();
   syncUrl();
 });
 
@@ -776,6 +793,7 @@ async function loadPresets() {
   if (ui.preset !== "" && presetsApi.byId.has(ui.preset) && Object.keys(attrs).length <= Object.keys(DEFAULTS).length + 1 && !params.has("body")) applyPreset(ui.preset);
   buildWall();
   buildStyles();
+  buildNational();
   buildOfficials();
   drawOfficialCaps();
   drawBuilders();
@@ -851,6 +869,7 @@ function everything() {
     fillPresetSelects();
     buildWall();
     buildStyles();
+    buildNational();
     buildOfficials();
     drawOfficialCaps();
   }

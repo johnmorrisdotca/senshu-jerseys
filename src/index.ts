@@ -25,6 +25,8 @@ export { COLLAR_IDS, CUT_IDS, CUTS, SLEEVE_IDS } from "./cuts.ts";
 export type { CollarId, CutId, CutSpec, SleeveId, Spot } from "./cuts.ts";
 export { ARCH_IDS, BADGE_IDS, CHEST_KINDS, CLOSURE_IDS, LANGUAGE_IDS, LOOK_IDS, PATCH_IDS, PATTERN_IDS, TEXT_ANGLE_IDS, VIEW_IDS, YOKE_IDS } from "./options.ts";
 export type { ArchId, BadgeId, Bands, ChestBadge, ChestKind, ClosureId, JerseyOptions, SleeveDetail, LanguageId, LookId, PatchId, PatternId, TextAngleId, ViewId, YokeId } from "./options.ts";
+export { NATIONAL_COUNTRIES, NATIONAL_LAYOUTS, NATIONAL_NAMES } from "./national.ts";
+export type { NationalCountry, NationalLayout, NationalOptions } from "./national.ts";
 export { CUT_NAMES, PATTERN_NAMES } from "./names.ts";
 export { contrast, readColour } from "./colour.ts";
 export { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox } from "./jersey.ts";

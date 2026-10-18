@@ -1,6 +1,7 @@
 // The options of a jersey, read from outside: every value is checked against the lists below, a colour is read as `#rgb`, `#rrggbb` or `rgb()`, and text is cleaned.
 import { COLLAR_IDS, CUT_IDS, CUTS, type CollarId, type CutId, type SleeveId } from "./cuts.ts";
 import { clean, lum, readColour, type Rgb } from "./colour.ts";
+import { NATIONAL_TEXT, nationalOf, type NationalOptions, type NationalR } from "./national.ts";
 
 export const PATTERN_IDS = ["solid", "stripes", "hoops", "halves", "quarters", "sash", "chevron", "pinstripes", "yoke", "chest-band"] as const;
 export type PatternId = (typeof PATTERN_IDS)[number];
@@ -155,6 +156,12 @@ export interface JerseyOptions {
    */
   frontTextAngle?: TextAngleId;
   frontNumber?: boolean | string | number;
+  /**
+   * A national layout of the country's own mark and flag: `"canada:quadrant"`, or `{ country, layout, text? }`. The countries and layouts are `NATIONAL_COUNTRIES` and `NATIONAL_LAYOUTS`. The marks are
+   * simplified shapes of this package's own, never a federation's crest. The stepped, wordmark, arched and full-flag layouts set the chest text (the country's name unless `text` says otherwise), and any
+   * `frontText`, `frontTextAngle` or `chestBand` you give wins.
+   */
+  national?: NationalOptions;
   patch?: PatchId;
   /** Badges on the chest: a captain's letter, a flag, a patch, each on the wearer's left or right, in any number up to four. The `patch` option is the one C or A of old. */
   chestBadges?: ChestBadge | readonly ChestBadge[];
@@ -250,6 +257,7 @@ export interface Resolved {
   frontText?: string;
   frontTextAngle: TextAngleId;
   frontNumber?: string;
+  national?: NationalR;
   patch: PatchId;
   chest?: ChestBadgeR[];
   /** The sleeves' numbers and patches by the wearer's side: absent for a side with none. */
@@ -420,7 +428,10 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
   const edged = second !== undefined;
   const sleeveBands = typeof o.sleeveStripes === "number" ? stripesOf(o.sleeveStripes, edged) : (bandsOf(o.sleeveStripes) ?? stripesOf(sleeve === "none" ? 0 : spec.sleeveStripes, edged));
   const hemBands = typeof o.hemStripes === "number" ? stripesOf(o.hemStripes, edged) : (bandsOf(o.hemStripes) ?? stripesOf(spec.hemStripes, edged));
-  const chestBands = o.chestBand === true ? [14, 1] : (bandsOf(o.chestBand) ?? []);
+  const national = nationalOf(o.national);
+  const nationalAngle = national === undefined ? undefined : NATIONAL_TEXT[national.layout];
+  const nationalBands = national?.layout === "wordmark" && o.chestBand === undefined ? [3, 1, 28, 0, 3, 2] : [];
+  const chestBands = o.chestBand === true ? [14, 1] : (bandsOf(o.chestBand) ?? nationalBands);
   const view = pick(VIEW_IDS, o.view, "front");
   const size = typeof o.size === "number" && Number.isFinite(o.size) ? Math.max(8, Math.min(4000, o.size)) : 200;
   const reads = (v: unknown): Rgb | undefined => readColour(v);
@@ -451,7 +462,7 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     pocket: o.pocket === true,
     badge: (BADGE_IDS as readonly unknown[]).includes(o.badge) ? (o.badge as BadgeId) : undefined,
     protector: o.protector === true,
-    chestY: typeof o.chestY === "number" && Number.isFinite(o.chestY) ? Math.max(40, Math.min(190, o.chestY)) : undefined,
+    chestY: typeof o.chestY === "number" && Number.isFinite(o.chestY) ? Math.max(40, Math.min(190, o.chestY)) : national?.layout === "wordmark" ? spec.text.y - 22 : undefined,
     collarColor: idx3(o.collarColor, 1),
     sleeveColor: o.sleeveColor === undefined ? undefined : idx(o.sleeveColor, 0),
     panels: idx(o.panels, 1),
@@ -459,8 +470,9 @@ export function resolve(options: JerseyOptions | undefined): Resolved {
     number: digits(o.number, 2),
     name: clean(o.name, 18)?.toUpperCase(),
     nameArch: pick(ARCH_IDS, o.nameArch, "arched"),
-    frontText: clean(o.frontText, 14)?.toUpperCase(),
-    frontTextAngle: pick(TEXT_ANGLE_IDS, o.frontTextAngle, cut === "basketball" ? "arch" : "straight"),
+    frontText: clean(o.frontText, 14)?.toUpperCase() ?? (nationalAngle === undefined || national === undefined ? undefined : national.text),
+    frontTextAngle: pick(TEXT_ANGLE_IDS, o.frontTextAngle, nationalAngle ?? (cut === "basketball" ? "arch" : "straight")),
+    national,
     frontNumber: o.frontNumber === true ? digits(o.number, 2) : o.frontNumber === false || o.frontNumber === undefined ? undefined : digits(o.frontNumber, 2),
     patch: pick(PATCH_IDS, o.patch, ""),
     chest: chestOf(o, spec),

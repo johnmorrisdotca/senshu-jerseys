@@ -4,7 +4,7 @@
 
 Twelve original national hockey jersey styles, each in a home and an away colourway: 24 presets that are richer than a colour label. Every country has its own layout (a yoke, a band, a sash, raglan sleeves, chevrons, halves, hoops, stripe sets) and its own collar, cuffs and number treatment, and every one is ready to be given a name, a number and colours of the caller's.
 
-They are **not** any team's real jersey. Only the colours are the ones the countries are known by. No crest, coat of arms, flag, wordmark, federation, sponsor or maker's mark is drawn, and no commercial picture was copied; the layouts are drawn here. A badge, a flag or a crest is the caller's, through `chestBadges` ([chest badges](./chest.md)) or `crest`.
+They are **not** any team's real jersey. Only the colours are the ones the countries are known by. No crest, coat of arms, federation, sponsor or maker's mark is drawn, and no commercial picture was copied; the layouts are drawn here. A badge, a flag or a crest is the caller's (or one of the [national layouts](./national.md), which draw each country's own simplified mark and flag), through `chestBadges` ([chest badges](./chest.md)) or `crest`.
 
 ```js
 import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";

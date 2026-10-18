@@ -5,6 +5,7 @@ import { BLACK, WHITE, blend, contrast, hashOf, hexOf, inkOn, lum, shade, worst,
 import { crestDocument, crestImage, type EmblemRenderer } from "./emblems.ts";
 import { resolve, type Bands, type ChestBadgeR, type JerseyOptions, type Resolved, type SleeveSide } from "./options.ts";
 import { cubic, lerp, n2, poly, quad, rounded, type Pt } from "./path.ts";
+import { flagGrounds, nationalPlan, type Layer, type NationalArm } from "./national.ts";
 import { drawRun, layout } from "./text.ts";
 
 export const JERSEY_WIDTH = 200;
@@ -459,6 +460,16 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     if (r.trim2Given && kind !== "square") addIn(`<path d="M${n2(100 - spec.su - 10)} ${n2(sh.ay - 14)}Q100 ${n2(2 * (ny + 36) - (sh.ay - 14))} ${n2(100 + spec.su + 10)} ${n2(sh.ay - 14)}" stroke="${trim2Hex}" stroke-width="2.6" fill="none"/>`);
   }
 
+  // ---- A national layout: the country's mark and flag, under the bands (fills) and over them (marks). ----
+  let nat: ReturnType<typeof nationalPlan> | undefined;
+  const clipFor = (l: Layer): string => (l.clip === "outline" ? idc : l.clip === "torso" ? idt : l.clip === "arm0" ? idl : idr);
+  if (r.national !== undefined && !line) {
+    const arms: NationalArm[] = L !== undefined && R !== undefined ? [L, R].map((s) => ({ S: s.S, P: s.P, A: s.A, Q: s.Q })) : [];
+    nat = nationalPlan(r.national, spec, view, uid, arms, { body, trim: trimHex, trim2: trim2Hex });
+    defs += nat.defs;
+    for (const l of nat.under) addIn(`<g clip-path="url(#${clipFor(l)})">${mirror && l.clip === "outline" ? `<g transform="matrix(-1 0 0 1 200 0)">${l.svg}</g>` : l.svg}</g>`);
+  }
+
   // ---- Side panels of a tank, and the shoulder: bands down each side. ----
   if (!line && sh.tank && r.panels !== 0) {
     const pc = r.panels === 2 ? trim2Hex : trimHex;
@@ -699,7 +710,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
   // ---- Crest, patch, text and numbers. ----
   // A plate behind the back's lettering is its ground; else the cloth, and the pattern's other colour when the pattern runs behind it.
   const plated = r.plate !== undefined && view === "back" && !line && (r.name !== undefined || r.number !== undefined);
-  const grounds = (where: "number" | "name" | "chest"): Rgb[] => (plated && where !== "chest" ? [r.plate as Rgb] : patternBehind(r, view, where) && !line ? patternGrounds(r) : [r.body]);
+  const flagged = r.national?.layout === "flag" && !line ? flagGrounds(r.national.country) : undefined;
+  const grounds = (where: "number" | "name" | "chest"): Rgb[] => (flagged !== undefined ? [...flagged] : plated && where !== "chest" ? [r.plate as Rgb] : patternBehind(r, view, where) && !line ? patternGrounds(r) : [r.body]);
   const tint = hexOf(r.body);
   let marks = "";
   const markRun = (text: string, spot: { x: number; y: number; w: number; h: number }, weight: "bold" | "black", where: "number" | "name" | "chest", arch?: number, tracking?: number, slant?: number, maxHeight?: number): string => {
@@ -709,6 +721,8 @@ export function jerseyView(r: Resolved, view: "front" | "back", uid: string, emb
     const width = outline === undefined ? 0 : Math.max(1.1, run.sw * (heavy ? HEAVY : 0.14));
     return drawRun(run, hexOf(fill), outline === undefined ? undefined : { colour: hexOf(outline), width }, cloth && weight === "black" && run.sw > 7 ? hexOf(shade(fill, lum(fill) > 0.4 ? -0.5 : 0.5)) : undefined);
   };
+  if (nat !== undefined) for (const l of nat.over) marks += `<g clip-path="url(#${clipFor(l)})">${l.svg}</g>`;
+  if (nat?.slant !== undefined) marks += `<g transform="rotate(${n2(nat.slant.deg)} ${n2(nat.slant.x)} ${n2(nat.slant.y)})">${markRun(nat.slant.text, nat.slant, "bold", "chest", undefined, 0.5)}</g>`;
   if (view === "front") {
     const crestSvg = r.crest === undefined ? undefined : crestDocument(r.crest, emblems, tint, trimHex);
     // The left chest: a pocket, and a badge spot on it (empty and plain, or the caller's crest).

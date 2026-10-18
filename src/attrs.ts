@@ -8,7 +8,7 @@ export const OPTION_ATTRIBUTES = [
   "cut", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
   "patch", "chest-badges", "sleeve-numbers", "sleeve-left", "sleeve-right", "crest", "view", "look", "language", "size", "title", "description", "kit", "pants", "pants-trim", "socks", "socks-trim", "helmet",
-  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate",
+  "repeat", "pants-bands", "socks-bands", "stripe-count", "pattern-sleeves", "arm-stripes", "cuffs", "front-text-angle", "armbands", "pocket", "badge", "protector", "plate", "national",
 ] as const;
 
 const bare = (v: string): string => (/^[0-9a-f]{3}$|^[0-9a-f]{6}$/i.test(v) ? `#${v}` : v);
@@ -127,7 +127,7 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
   const colors = read("colors");
   if (colors !== null && colors.trim() !== "") o.colors = colors.split(",").map((c) => bare(c.trim())).slice(0, 5);
   for (const [name, key] of [["body", "body"], ["trim", "trim"], ["accent", "accent"], ["number-fill", "numberFill"], ["number-outline", "numberOutline"], ["pants", "pants"], ["pants-trim", "pantsTrim"], ["socks", "socks"], ["socks-trim", "socksTrim"], ["helmet", "helmet"]] as const) colour(name, key);
-  for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "front-text-angle", "patch", "crest", "view", "look", "language", "title", "description", "badge"]) text(name);
+  for (const name of ["pattern", "collar", "sleeve", "yoke", "closure", "name", "name-arch", "front-text", "front-text-angle", "patch", "crest", "view", "look", "language", "title", "description", "badge", "national"]) text(name);
   for (const name of ["raglan", "piping", "kit", "pattern-sleeves", "pocket", "protector"]) {
     const f = flag(read(name));
     if (f !== undefined) o[name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = f;
@@ -224,6 +224,8 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   set("panels", o.panels);
   set("size", o.size);
   set("crest", o.crest);
+  if (typeof o.national === "string") set("national", o.national);
+  else if (o.national !== undefined && o.national !== null && typeof o.national === "object" && typeof o.national.country === "string") set("national", `${o.national.country}:${o.national.layout ?? "centred"}`);
   for (const [k, v] of [["pants", o.pants], ["pants-trim", o.pantsTrim], ["socks", o.socks], ["socks-trim", o.socksTrim], ["helmet", o.helmet]] as const) set(k, v === undefined ? undefined : c(v));
   return out;
 }

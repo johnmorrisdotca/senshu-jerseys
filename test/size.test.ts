@@ -15,7 +15,8 @@ async function bundle(contents: string): Promise<{ text: string; bytes: number; 
 
 // Measured 2026-10-14 (esbuild 0.25, minified, gzipped). A limit has room for an edit and not for a regression.
 // The jersey is the drawing of a shirt in seven cuts with its own letters, so it weighs about 17 kB (with the kit, which takes the cap and the helmet); a league of presets is about 5 kB for 180 teams.
-const LIMITS = { jersey: 24 * 1024, cap: 5.5 * 1024, helmet: 6.3 * 1024, banner: 20 * 1024, turn: 25 * 1024, element: 32 * 1024, league: 7.5 * 1024, nhl: 7 * 1024, nhlAll: 12.5 * 1024 };
+// The national layouts (twelve marks, twelve flags, eight arrangements) added about 3.6 kB to the jersey, and so to what bundles it: the jersey's limit is 28 kB, the banner's 25, the turn's 30 and the element's 36.
+const LIMITS = { jersey: 28 * 1024, cap: 5.5 * 1024, helmet: 6.3 * 1024, banner: 25 * 1024, turn: 30 * 1024, element: 36 * 1024, league: 7.5 * 1024, nhl: 7 * 1024, nhlAll: 12.5 * 1024 };
 
 test("the jersey alone, bundled by itself, stays small and leaves the turn, the element and the presets out", async () => {
   const b = await bundle(`import { renderJersey } from "./src/index.ts"; console.log(renderJersey({ number: 9 }));`);

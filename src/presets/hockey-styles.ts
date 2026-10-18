@@ -1,7 +1,8 @@
 // Twelve national hockey jersey styles of our own: each country's colours in a layout drawn here (a yoke, a band, a sash, raglan sleeves, chevrons, halves), home and away, ready to be given a name, a number, colours of the
-// caller's. They are not any team's real jersey: no crest, coat of arms, flag, wordmark, federation, sponsor or maker's mark is drawn, and the colours are the ones the countries' flags and teams are known by. The presets are frozen,
+// caller's. They are not any team's real jersey: no crest, coat of arms, wordmark, federation, sponsor or maker's mark is drawn (`nationalStyle` adds a country's own simplified mark and flag in a national layout), and the colours are the ones the countries' flags and teams are known by. The presets are frozen,
 // so a page that holds one cannot change what another draws; `personalStyle` makes a fresh set of options from one.
 import type { JerseyOptions } from "../options.ts";
+import type { NationalLayout } from "../national.ts";
 import { defineLeague, type Preset } from "./core.ts";
 
 /** The twelve countries, in the order the style sheet shows them: id, English name, Japanese name. */
@@ -79,4 +80,14 @@ export function personalStyle(id: string, who: StylePersonal = {}): JerseyOption
   const base: Record<string, unknown> = { ...preset.options };
   if (who.colors !== undefined) for (const k of ["body", "trim", "accent", "numberFill", "numberOutline"]) delete base[k];
   return { ...base, ...who } as JerseyOptions;
+}
+
+/**
+ * A national style in one of the eight national layouts (`NATIONAL_LAYOUTS`): the country's two colourways and stripes, its own mark and flag drawn at the scale of the shirt. `away` takes the away colours and `text` the words
+ * set on the chest (the country's name by default); the rest is `personalStyle`'s. `undefined` for a country that is not one of the twelve.
+ */
+export function nationalStyle(country: string, layout: NationalLayout, who: StylePersonal & { away?: boolean; text?: string } = {}): JerseyOptions | undefined {
+  const { away, text, ...rest } = who;
+  const base = personalStyle(`style:${country}-2026-${away === true ? "away" : "home"}`, rest);
+  return base === undefined ? undefined : { ...base, national: { country, layout, ...(text === undefined ? {} : { text }) } };
 }
