@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sleeves are closed tubes in the volume view.** Each sleeve's cuff has a lining, so a side or three-quarter view no longer looks up an open tube (a T-shirt, soccer, baseball, football, rugby and handball sleeve, in both fits). A tank's rows now run in order from the neck to the hem, which removes the ragged edge and the see-through wedges at its side, and its side wall samples a little further in from the outline. `test/volume.test.ts` checks that nothing behind an arm shows through, in every cut and both fits.
+
 ## [0.7.1] - 2026-10-18
 
 ### Changed

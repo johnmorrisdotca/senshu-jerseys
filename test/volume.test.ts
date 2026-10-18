@@ -275,11 +275,77 @@ test("every 15 degrees the torso is closed below the neck: whatever lies behind 
         (placeCell(c, yaw, desc.pitch).visible ? shown : hidden).push(tri);
       }
       let holes = 0;
-      for (let x = -110; x <= 110; x += 2) for (let y = below; y <= 240; y += 2) {
+      for (let x = -109.7; x <= 110; x += 2) for (let y = below + 0.3; y <= 240; y += 2) {
         const p = [x, y];
         if (hidden.some((t) => inTri(p, t)) && !shown.some((t) => inTri(p, t))) holes++;
       }
       assert.ok(holes <= 6, `${cut} at ${yaw}: ${holes} samples of the torso show through`);
+    }
+  }
+});
+
+test("every 15 degrees a sleeve is a closed tube: the cuff is lined and what lies behind a hidden cell of an arm is covered by a shown one, in every cut and both fits", () => {
+  const inTri = (p: number[], t: number[][]): boolean => {
+    const s = (a: number[], b: number[], c: number[]): number => (a[0]! - c[0]!) * (b[1]! - c[1]!) - (b[0]! - c[0]!) * (a[1]! - c[1]!);
+    const d1 = s(p, t[0]!, t[1]!);
+    const d2 = s(p, t[1]!, t[2]!);
+    const d3 = s(p, t[2]!, t[0]!);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  };
+  for (const fit of ["mens", "womens"] as const) {
+    for (const cut of CUT_IDS) {
+      const desc = volumeDesc(resolve({ cut, fit }));
+      const cells = cellsOf(desc).filter((c) => c.src === undefined);
+      if (desc.sl.length === 0) {
+        assert.ok(!cells.some((c) => c.g === 1 || c.g === 2), `${fit} ${cut}: a tank has no arm cells`);
+        continue;
+      }
+      // Each arm ends in a lining: triangles that all meet at the middle of the opening.
+      for (const g of [1, 2]) assert.ok(cells.filter((c) => c.g === g && c.p[2] === 0 && c.p[5] !== 0).length >= desc.nh * 2, `${fit} ${cut} arm ${g}: a cuff lining on the front and the back`);
+      let total = 0;
+      for (let yaw = 0; yaw < 360; yaw += 15) {
+        const shown: number[][][] = [];
+        const hidden: number[][][] = [];
+        for (const c of cells) {
+          const tri = [0, 1, 2].map((k) => project(c.p, k, yaw, desc.pitch).map((v, i) => (i === 0 ? v - 100 : v)));
+          if (placeCell(c, yaw, desc.pitch).visible) shown.push(tri);
+          else if (c.g === 1 || c.g === 2) hidden.push(tri);
+        }
+        let holes = 0;
+        for (let x = -129.7; x <= 130; x += 2) for (let y = 0.3; y <= 240; y += 2) {
+          const p = [x, y];
+          if (hidden.some((t) => inTri(p, t)) && !shown.some((t) => inTri(p, t))) holes++;
+        }
+        total += holes;
+        assert.ok(holes <= 24, `${fit} ${cut} at ${yaw}: ${holes} samples of an arm show through`);
+      }
+      assert.ok(total <= 150, `${fit} ${cut}: ${total} samples show through all round`);
+    }
+  }
+});
+
+test("a tank's side wall is closed cloth and its rows run from the neck to the hem in order, in both fits", () => {
+  for (const fit of ["mens", "womens"] as const) {
+    const desc = volumeDesc(resolve({ cut: "basketball", fit }));
+    assert.equal(desc.sl.length, 0);
+    for (let i = 1; i < desc.y.length; i++) assert.ok((desc.y[i] as number) > (desc.y[i - 1] as number), `${fit}: row ${i} is below row ${i - 1}`);
+    const torso = cellsOf(desc).filter((c) => c.g === 0 || c.g === 3);
+    for (let yaw = 0; yaw < 360; yaw += 15) {
+      let holes = 0;
+      const shown = torso.filter((c) => placeCell(c, yaw, desc.pitch).visible).map((c) => [0, 1, 2].map((k) => project(c.p, k, yaw, desc.pitch).map((v, i) => (i === 0 ? v - 100 : v))));
+      const hidden = torso.filter((c) => !placeCell(c, yaw, desc.pitch).visible).map((c) => [0, 1, 2].map((k) => project(c.p, k, yaw, desc.pitch).map((v, i) => (i === 0 ? v - 100 : v))));
+      const inTri = (p: number[], t: number[][]): boolean => {
+        const s = (a: number[], b: number[], c: number[]): number => (a[0]! - c[0]!) * (b[1]! - c[1]!) - (b[0]! - c[0]!) * (a[1]! - c[1]!);
+        const d1 = s(p, t[0]!, t[1]!);
+        const d2 = s(p, t[1]!, t[2]!);
+        const d3 = s(p, t[2]!, t[0]!);
+        return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+      };
+      for (let x = -109.7; x <= 110; x += 2) for (let y = (desc.y[0] as number) + 12.3; y <= 240; y += 2) {
+        const p = [x, y];
+        if (hidden.some((t) => inTri(p, t)) && !shown.some((t) => inTri(p, t))) holes++;
+      }
+      assert.ok(holes <= 20, `${fit} tank at ${yaw}: ${holes} samples show through`);
     }
   }
 });

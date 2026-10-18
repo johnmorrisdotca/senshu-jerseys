@@ -22,6 +22,8 @@ export interface VolumeDesc {
   sd: { g: 1 | 2; f: number; a: number; da: number; df: number; w: number; h: number; dir: 1 | -1 }[];
   /** How far the camera looks down, in degrees. */
   pitch: number;
+  /** A sleeveless cut: its side wall samples further in from the drawing's edge, past the outline's stroke. */
+  tank?: true;
 }
 
 /** A matrix's linear part is written to four decimals: it is multiplied by coordinates up to 200, so two would put a cell a unit off its neighbour. */
@@ -29,6 +31,8 @@ const n4 = (x: number): string => String(Math.round(x * 10000) / 10000 || 0);
 const rad = (deg: number): number => (deg * Math.PI) / 180;
 const PAD = 1.2;
 const SLEEVE_DEPTH = 0.75;
+/** How far down the sleeve the cuff's lining samples, as a part of its length. */
+const CAP_FROM = 0.86;
 /** The exponent of the torso's cross-section in depth: 2 is an ellipse, more is a fuller, squarer body that fills out to the sleeves. */
 const FULL = 4;
 const BODY_DEPTH = 0.6;
@@ -79,7 +83,9 @@ export function volumeDesc(r: Resolved, pitch = 8): VolumeDesc {
   const seam = sh.half.slice(3);
   const below = [seam[1], seam[3], seam[5], seam[seam.length - 1]].filter((p): p is [number, number] => p !== undefined).map((p) => p[1]);
   const arm = sh.half.slice(2, sh.half.length - 8).filter((_, i) => i % 2 === 0).map((p) => p[1]);
-  const y = sh.tank ? [ny, sy, ...arm.filter((v) => v > sy + 2 && v < ay - 2), ay, ...below, hem] : [ny, sy, (sy + ay) / 2, ay, ...below, hem];
+  // A tank has no side seam in `seam` below its sleeves' armhole: its half outline is the armhole first, then the side from the armpit down, which gets a row at each of its own points a little apart.
+  const side = sh.half.filter((p) => p[1] > ay + 6 && p[1] < hem - 6).map((p) => p[1]);
+  const y = sh.tank ? [ny, sy, ...arm.filter((v) => v > sy + 2 && v < ay - 2), ay, ...side, hem] : [ny, sy, (sy + ay) / 2, ay, ...below, hem];
   const chest = BODY_DEPTH * spec.au;
   const neck = BODY_DEPTH * sh.nw;
   const a = y.map((v) => widthAt(sh.half, v) + PAD);
@@ -99,7 +105,7 @@ export function volumeDesc(r: Resolved, pitch = 8): VolumeDesc {
   const r2 = (v: number): number => Math.round(v * 100) / 100;
   const sd: VolumeDesc["sd"] = [];
   for (const d of detailsOf(r, sl)) sd.push(d.at);
-  return { y: y.map(r2), a: a.map(r2), b: b.map(r2), nt: 8, nf: 3, nh: 5, sl, sd, pitch };
+  return { y: y.map(r2), a: a.map(r2), b: b.map(r2), nt: 8, nf: 3, nh: 5, sl, sd, pitch, ...(sh.tank ? { tank: true as const } : {}) };
 }
 
 /** The drawings of what the sleeves carry, in the order of `VolumeDesc.sd`, each upright and centred on its own origin. */
@@ -171,6 +177,14 @@ function normalOf(p: readonly number[], cx: number, cy: number, cz: number): [nu
   return [nx / len, ny / len, nz / len];
 }
 
+/** Which way round a cell's corners go on its drawing, as against round the garment: the sign that decides whether its map mirrors the drawing. */
+function winding(c: Cell): number {
+  const t = (c.tex[2]! - c.tex[0]!) * (c.tex[5]! - c.tex[1]!) - (c.tex[4]! - c.tex[0]!) * (c.tex[3]! - c.tex[1]!);
+  const e = [1, 2].map((k) => [c.p[3 * k]! - c.p[0]!, c.p[3 * k + 1]! - c.p[1]!, c.p[3 * k + 2]! - c.p[2]!]) as [number[], number[]];
+  const cross = [e[0][1]! * e[1][2]! - e[0][2]! * e[1][1]!, e[0][2]! * e[1][0]! - e[0][0]! * e[1][2]!, e[0][0]! * e[1][1]! - e[0][1]! * e[1][0]!];
+  return Math.sign(t) * Math.sign(cross[0]! * c.n[0] + cross[1]! * c.n[1] + cross[2]! * c.n[2]);
+}
+
 /** Every cell of the garment. */
 export function cellsOf(d: VolumeDesc): Cell[] {
   const cells: Cell[] = [];
@@ -206,16 +220,17 @@ export function cellsOf(d: VolumeDesc): Cell[] {
       const z1 = SIDE * (d.b[j + 1] as number);
       const w0 = texHalf(d, j) + EDGE;
       const w1 = texHalf(d, j + 1) + EDGE;
-      const inner = 2.2;
+      const inner = d.tank ? 4 : 2.2;
+      const outer = d.tank ? 2.4 : EDGE;
       for (const back of [false, true]) {
         const sg = back ? -1 : 1;
         const tex: number[] = [];
         const p: number[] = [];
         for (const c of [
           { inset: inner, z: z0, x: s * a0, y: y0, w: w0 },
-          { inset: EDGE, z: -OVERLAP * z0, x: s * a0, y: y0, w: w0 },
+          { inset: outer, z: -OVERLAP * z0, x: s * a0, y: y0, w: w0 },
           { inset: inner, z: z1, x: s * a1, y: y1, w: w1 },
-          { inset: EDGE, z: -OVERLAP * z1, x: s * a1, y: y1, w: w1 },
+          { inset: outer, z: -OVERLAP * z1, x: s * a1, y: y1, w: w1 },
         ]) {
           tex.push(100 + (back ? -s : s) * (c.w - c.inset), c.y);
           p.push(c.x, c.y, sg * c.z);
@@ -232,6 +247,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
     const A = [q[4], q[5]] as const;
     const Q = [q[6], q[7]] as const;
     for (const back of [false, true]) {
+      const tube = cells.length;
       for (let k = 0; k < d.nf; k++) {
         for (let i = 0; i < d.nh; i++) {
           const tex: number[] = [];
@@ -265,6 +281,35 @@ export function cellsOf(d: VolumeDesc): Cell[] {
           const n = normalOf(p, (o[0] + inn[0]) / 2 - 100, (o[1] + inn[1]) / 2, 0);
           cells.push(...split(g, back, tex, p, n));
         }
+      }
+      // The cuff is closed by a lining: a fan from the middle of the opening, sampling the cloth a little above the hem, so a side view never looks up an open tube.
+      const ringAt = (f: number, th: number): { tex: number[]; p: number[] } => {
+        const o = lerp2(S, P, f);
+        const inn = lerp2(A, Q, f);
+        const wx = inn[0] - o[0];
+        const wy = inn[1] - o[1];
+        const w = Math.hypot(wx, wy) || 1;
+        const u = 0.5 + 0.5 * Math.sin(th);
+        const tx = o[0] + u * wx;
+        const r = (w / 2) * Math.sin(th);
+        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * SLEEVE_DEPTH * (w / 2) * Math.cos(th)] };
+      };
+      const ref = cells[tube] as Cell;
+      const lining = ringAt(CAP_FROM, 0);
+      const hem = ringAt(1, 0);
+      let nx = P[1] - Q[1];
+      let ny = Q[0] - P[0];
+      if (nx * (P[0] - S[0]) + ny * (P[1] - S[1]) < 0) {
+        nx = -nx;
+        ny = -ny;
+      }
+      const nl = Math.hypot(nx, ny) || 1;
+      for (let i = 0; i < d.nh; i++) {
+        const u = ringAt(1, tAt(i, d.nh));
+        const v = ringAt(1, tAt(i + 1, d.nh));
+        const fan: Cell = { g, back, tex: [...lining.tex, ...u.tex, ...v.tex], p: [hem.p[0] as number, hem.p[1] as number, 0, ...u.p, ...v.p], n: [nx / nl, ny / nl, 0] };
+        // Seen from the cuff the lining is the arm's cloth inside out, so its drawing is turned over the middle line to keep its sense.
+        cells.push(winding(fan) === winding(ref) ? fan : { ...fan, tex: fan.tex.map((t, k) => (k % 2 === 0 ? 2 * (lining.tex[0] as number) - t : t)) });
       }
     }
   }
