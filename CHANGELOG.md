@@ -6,6 +6,16 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-10-20
+
+The npm page and the demo open on a jersey that turns. No change to the package's code beyond its version.
+
+### Changed
+
+- **README: the first thing is a turning jersey.** A hockey sweater turning in 3D, four jerseys of four sports turning out of step and the hockey patterns turning, each an animated webp in a light and a dark twin (`docs/images/hero-turn-*.webp`, `kits-turn-*.webp`, `patterns-turn-*.webp`, each under 1 MB), then "The best of it": the seven cuts, the hockey patterns, the officials and the banners, a picture each. The detail of cuffs, diagonal text and arm bands moved to `docs/cuffs-and-text.md` (nothing removed); the README is shorter than before.
+- **The pictures are made by a script from the demo:** `pnpm animations` (`scripts/animations.mjs`) takes one frame per angle with Playwright and joins them with `img2webp`.
+- **Demo: it opens on the jersey turning by itself**, with its controls (the angle, Pause, Front, the fixed views, the volume switch) under it and the stage pinned in view while the options scroll past, on a phone and on a desk. Changing the cut, the look, the fit or the colours while it turns leaves the turn going from where it was. The address holds `turn=0` once it is paused (an address with an angle opens still); a reader who prefers reduced motion gets it still.
+
 ### Fixed
 
 - The shared background module in `scripts/` (tooling for the demo and the README pictures; the package ships none of it) is now the family's version 1.0.1: the `id` it is given is made safe (letters, digits, `_` and `-`; `bg-` in front of one that does not start with a letter) before it is written into element ids and `url(#...)`. `test/family-backgrounds.test.ts` draws every preset with hostile ids.
