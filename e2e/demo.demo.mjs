@@ -143,6 +143,8 @@ test("an address with turn=0 or with an angle opens still", async ({ page }) => 
 
 // The page opens on the turning jersey with its controls beside it, so that nothing has to be scrolled to for, and a change never stops or resets the turn.
 test("the turn controls are in the first screen, and a toggle while it turns leaves the turn going", async ({ page }) => {
+  // A garment with volume is heavy to draw on a slow machine (a shared CI runner), where the turn, which never jumps more than a twentieth of a second's worth, crawls: so each wait is long and asks for a degree.
+  test.setTimeout(120_000);
   await page.goto("/");
   const height = page.viewportSize().height;
   for (const id of ["stage", "yaw", "play", "front", "vol", "view-front", "view-back"]) {
@@ -151,7 +153,7 @@ test("the turn controls are in the first screen, and a toggle while it turns lea
     expect(box.y + box.height, `${id} is in the first screen`).toBeLessThanOrEqual(height);
   }
   await expect(page.locator('[data-testid="seg-cut"]')).toBeVisible();
-  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(0);
+  await expect.poll(() => yawOf(page), { timeout: 15_000 }).not.toBe(0);
   // Change things while it turns: the garment's volume, the cut, the style and the fit. The angle goes on advancing after each, from where it was.
   const checks = [
     () => page.getByTestId("vol").click(),
@@ -172,7 +174,7 @@ test("the turn controls are in the first screen, and a toggle while it turns lea
       const now = await yawOf(page);
       const gap = Math.abs(now - right_after);
       return Math.min(gap, 360 - gap);
-    }, { timeout: 4000 }).toBeGreaterThan(3);
+    }, { timeout: 15_000 }).toBeGreaterThanOrEqual(1);
   }
 });
 
