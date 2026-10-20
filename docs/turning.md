@@ -1,5 +1,12 @@
 # Turning
 
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-dark.webp">
+<img alt="A hockey sweater on ice as a garment with volume, turned in seven steps from the front through the side to the back: the sleeves swing round, the body turns with its thickness, and the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.webp" width="640">
+</picture>
+</p>
+
 A jersey turns about its vertical axis as a thin piece of cloth: 2.5D, flat drawings on a turning plane. Nothing here is a 3D engine; each frame is a string of SVG.
 
 - **0 degrees** is the front, drawn at full width.

@@ -10,7 +10,25 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
   <img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-3178c6">
 </p>
 
-<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/cuffs-and-text.md">Cuffs and text</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-turn-dark.webp">
+<img alt="A red hockey sweater with the name Beaumont and the number 9 turning in 3D on an ice surface: the front, then the sleeves swing round through the side, then the back, and round again." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-turn-light.webp" width="760">
+</picture>
+</p>
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-dark.webp">
+<img alt="Four jerseys turning in 3D, each a quarter turn behind the one before: a hockey sweater, a pale blue striped soccer shirt, a basketball tank and a pinstriped baseball jersey, under floodlights." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-light.webp" width="760">
+</picture>
+</p>
+
+## The best of it
+
+- **Seven cuts, front and back**: hockey, baseball, basketball, football, soccer, rugby and handball, each on the ground of its own sport, and each also in one line.
 
 <p align="center">
 <picture>
@@ -19,22 +37,41 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 </picture>
 </p>
 
-<table align="center">
-<tr>
-<td align="center" valign="top">
+- **Hockey patterns that turn**: shrinking sleeve bands, sawtooth sleeves and a pointed yoke ([hockey patterns](./docs/hockey-patterns.md)).
+
+<p align="center">
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-dark.webp">
-<img alt="A hockey sweater on ice as a garment with volume, turned in seven steps from the front through the side to the back: the sleeves swing round, the body turns with its thickness, and the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.webp" width="470">
-</picture><br><em>Turned: the front, the side, then the back</em>
-</td>
-<td align="center" valign="top">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-turn-dark.webp">
+<img alt="Four hockey sweaters turning in 3D on ice, each a little behind the one before: a white and a navy sweater with a pointed yoke and sleeve bands that thin out toward the cuff, and a black and a white sweater with sleeves that end in a row of teeth." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-turn-light.webp" width="760">
+</picture>
+</p>
+
+- **Officials**: referees, linesmen and umpires of seven sports ([officials](./docs/officials.md)).
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-dark.webp">
+<img alt="Eight officials' shirts under floodlights, front above and back below: the NHL referee with orange armbands and the linesman without, a basketball referee, an NFL referee, yellow and cyan soccer referees with a chest pocket and a plain badge, a baseball umpire in navy with a chest protector and a yellow rugby referee." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-light.webp" width="760">
+</picture>
+</p>
+
+- **Retired-number banners**, and championship pennants and garden flags ([banners](#caps-helmets-and-retired-banners)).
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-dark.webp">
+<img alt="Twelve retired-number banners on royal purple: a rectangle, a pennant and a shield in the colours of Canada, the USA and Japan with a made-up name, number and years, and the same six again with their colours turned round." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-light.webp" width="760">
+</picture>
+</p>
+
+- **On a phone**, and **turned by hand**: drag, arrow keys or the automatic turn ([turning](./docs/turning.md)).
+
+<p align="center">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-dark.webp">
 <img alt="Four jerseys on a phone, front and back, two by two: a hockey sweater on ice, a soccer shirt on a pitch, a basketball tank on hardwood and a pinstriped baseball jersey on an infield." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-light.webp" width="200">
-</picture><br><em>On a phone</em>
-</td>
-</tr>
-</table>
+</picture>
+</p>
 
 > **Status: preview.** Seven cuts, ten patterns, caps, helmets, banners, a matchup and a lineup, turning, a custom element, and presets of the colours and stripes of real teams. The presets are a first reading from public descriptions: see [Presets](#presets) before relying on one.
 
@@ -171,39 +208,7 @@ console.log(svg.includes("<title")); // true
 
 ### Cuffs, diagonal text and wide arm bands
 
-`cuffs` is the sleeve's end in a contrasting colour: a length in drawing units, or `[length, colour]` with the colour `1` the trim, `2` the second trim or `3` the number's fill. A seam shows where the knit starts, and it is drawn over the sleeve's stripes. `frontTextAngle` sets how the chest text runs: `"straight"`, `"arch"` (the basketball default), `"diagonal-up"` (each letter a step higher than the last, rising to the right) or `"diagonal-down"`. The letters are stepped along the slant, upright, and fitted to the chest of whichever cut it is. A wide band with thin edges at the elbow, and a set of three colours, need no new option: they are `sleeveStripes` and `hemStripes` lists, where the first pair is the gap from the cuff.
-
-`sleeveStripes` and `hemStripes` also take `{ shrink: { count, from, to, colour?, gap? } }`: `count` bands (2 to 8) whose widths go evenly from `from` at the cuff or the hem to `to`, each followed by a gap of `gap` times its own width (1 by default), so the stripes and the space between them both thin out; `colour` is `1` (the default) or `2`. `sleeveTeeth: { at, colour, count, depth, direction }` is a sawtooth edge round each sleeve: the colour (`1` or `2`) fills from a row of `count` teeth `depth` units deep, `at` percent of the way down, to the cuff, and the teeth point to the `"shoulder"` (the default) or the `"cuff"`. `yoke: "pointed"` is a yoke that ends in a V. All are shapes made from numbers and colours, never a mark. See `hockey-patterns` in [presets](./docs/presets.md).
-
-```js
-import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
-
-// A white shirt with a pointed red yoke and five sleeve bands that thin out toward the cuff.
-const thinning = renderJersey({ cut: "hockey", colors: ["#ffffff", "#c8102e", "#1b2a6b"], yoke: "pointed", sleeveStripes: { shrink: { count: 5, from: 9, to: 2 } }, hemStripes: { shrink: { count: 3, from: 7, to: 3 } } });
-// Red sleeves under a black body with a row of white teeth where they change colour.
-const teeth = renderJersey({ cut: "hockey", colors: ["#151515", "#c8102e", "#ffffff"], yoke: "curved", sleeveColor: 1, sleeveTeeth: { at: 58, colour: 2, count: 7, depth: 9 } });
-console.log([thinning, teeth].every((svg) => svg.startsWith("<svg"))); // true
-```
-
-
-```js
-import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
-
-// Red tips: a white shirt with a red yoke and red cuffs 18 units long.
-const tips = renderJersey({ cut: "hockey", colors: ["#ffffff", "#af1e2d", "#192168"], pattern: "yoke", yoke: "curved", cuffs: [18, 1], sleeveStripes: 0 });
-// The caller's own word on a slant, rising to the right, and falling to the right.
-const up = renderJersey({ cut: "hockey", colors: ["#0038a8", "#ffffff", "#ce1126"], frontText: "HOMETOWN", frontTextAngle: "diagonal-up" });
-const down = renderJersey({ cut: "hockey", colors: ["#0038a8", "#ffffff", "#ce1126"], frontText: "HOMETOWN", frontTextAngle: "diagonal-down" });
-// A wide ice-blue band at the elbow with thin red edges (a gap of 20, an edge, the band, an edge), and the same at the hem.
-const band = renderJersey({ cut: "hockey", colors: ["#001628", "#99d9d9", "#e9072b"], sleeveStripes: [20, 0, 3, 2, 14, 1, 3, 2], hemStripes: [3, 0, 3, 2, 8, 1, 3, 2] });
-// A set of three: yellow, white and yellow, with the body showing between.
-const set = renderJersey({ cut: "hockey", colors: ["#c8102e", "#f1be48", "#ffffff"], sleeveStripes: [20, 0, 4, 1, 3, 0, 8, 2, 3, 0, 4, 1] });
-
-console.log(up !== down); // true
-console.log([tips, band, set].every((svg) => svg.startsWith("<svg"))); // true
-```
-
-The upper-arm number is `sleeveNumbers: true`: it sits where the cut puts the number on a sleeve (hockey: a third of the way down the arm; the other cuts: near the middle of it), turned to the sleeve's slant. `"left"` or `"right"` (the wearer's) picks a side, and `sleeveLeft` and `sleeveRight` give each sleeve its own number, size, place, colours and a plain patch; on the turning garment (`volume: true`) they stay on the arm as it turns: see [sleeves](./docs/sleeves.md). A `patch` (`"C"` or `"A"`) is on the front only, on the cut's own side of the chest; `chestBadges` places captain's and alternate's letters, plain patches and flags, each on the wearer's left or right breast: see [chest badges](./docs/chest.md).
+`cuffs` ends the sleeve in a contrasting colour, `frontTextAngle` sets how the chest text runs (`"straight"`, `"arch"`, `"diagonal-up"`, `"diagonal-down"`), a wide elbow band and sets of three colours need only `sleeveStripes` and `hemStripes`, and `sleeveNumbers`, `sleeveLeft`, `sleeveRight` and `patch` put numbers and patches on the arms and chest. The options, their values and every example are on one page: [cuffs, diagonal text and wide arm bands](./docs/cuffs-and-text.md), with [sleeves](./docs/sleeves.md) and [chest badges](./docs/chest.md).
 
 ### Numbers and names that read
 
@@ -256,13 +261,6 @@ console.log(MLB.some((p) => p.team === "Houston Astros")); // true
 
 The officials' shirts are presets (`ref:nhl-modern-referee`, `ref:soccer-yellow`, `ref:mlb-umpire-navy`) built from options of their own: `armbands` (a colour, a width and a place on the upper arm), `pocket`, `badge` (a plain spot, never a federation's mark), `protector`, the `zip` and `point` collars, and `collarColor: 3`. [docs/officials.md](./docs/officials.md) lists them with their sources.
 
-<p align="center">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-dark.webp">
-<img alt="Eight officials' shirts under floodlights, front above and back below: the NHL referee with orange armbands and the linesman without, a basketball referee, an NFL referee, yellow and cyan soccer referees with a chest pocket and a plain badge, a baseball umpire in navy with a chest protector and a yellow rugby referee." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/officials-desk-light.webp" width="760">
-</picture>
-</p>
-
 ```js
 import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
 
@@ -294,13 +292,6 @@ console.log(renderJersey({ ...set, kit: true }) === renderKit(set)); // true
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-dark.webp">
 <img alt="Six caps from the front and from the side, in the colours of Canada, the USA and Japan, lettered CAN, USA and JPN, on an infield; below them, on turf, football, hockey and batting helmets facing right and left, with a number or a star." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/caps-desk-light.webp" width="760">
-</picture>
-</p>
-
-<p align="center">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-dark.webp">
-<img alt="Twelve retired-number banners on royal purple: a rectangle, a pennant and a shield in the colours of Canada, the USA and Japan with a made-up name, number and years, and the same six again with their colours turned round." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/banners-desk-light.webp" width="760">
 </picture>
 </p>
 
@@ -460,13 +451,6 @@ More than fifteen hundred uniforms of one team in one era, each written as a sho
 Apart from the real teams, `presets/hockey-styles` holds twelve original national hockey styles, home and away, each with a layout of its own and made to be personalised (`personalStyle`): see [national styles](./docs/hockey-styles.md), and [national layouts](./docs/national.md) for each country's own mark or flag in eight arrangements (`national: "canada:diagonal"`).
 
 The four `presets/hockey-patterns` sweaters show the shrinking sleeve bands, the sawtooth sleeves and the pointed yoke ([hockey patterns](./docs/hockey-patterns.md)).
-
-<p align="center">
-<picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-desk-dark.webp">
-<img alt="Four hockey sweaters on ice, front above and back below: a white and a navy sweater with a pointed yoke and sleeve bands that thin out toward the cuff, and a black and a white sweater with sleeves that end in a row of teeth." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-desk-light.webp" width="760">
-</picture>
-</p>
 
 <p align="center">
 <picture>
