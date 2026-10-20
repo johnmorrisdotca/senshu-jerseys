@@ -3,9 +3,18 @@
 .jump a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--rule); border-radius: 22px; background: var(--surface); text-decoration: none; font-size: .9rem; font-weight: 600; }
 .jump a:hover { border-color: var(--ink); }
 .fam-fine { color: var(--muted); font-size: .8rem; margin: 0; }
-.try { display: grid; grid-template-columns: minmax(0, 1fr); }
-.stagebox { order: -1; }
-@media (min-width: 900px) { .try { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); } .stagebox { order: 0; position: sticky; top: 8px; align-self: start; } }
+/* The jersey and its turn controls stay in view while the options scroll past: on a phone the pinned stage sits on top and the panel runs under it; on a desk the panel is on the left and the stage stays on the right. */
+.try { display: flex; flex-direction: column; overflow: clip; }
+.stagebox { display: contents; }
+.stagepin { order: -3; position: sticky; top: 0; z-index: 4; display: grid; gap: 6px; padding: 8px 14px 8px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.stagebox > :not(.stagepin) { order: -2; margin: 10px 14px 0; }
+.stagebox > #pitchbar { margin-top: 6px; }
+@media (min-width: 900px) {
+  .try { display: grid; grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); }
+  .stagebox { display: grid; align-content: start; gap: 10px; padding: 14px; }
+  .stagebox > :not(.stagepin) { order: 0; margin: 0; }
+  .stagepin { order: 0; top: 8px; padding: 0; border-bottom: 0; gap: 10px; }
+}
 .controls { padding: 14px; gap: 8px; border-bottom: 1px solid var(--rule); }
 @media (min-width: 900px) { .controls { border-bottom: 0; border-right: 1px solid var(--rule); } }
 .controls h3 { margin: 10px 0 0; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
@@ -18,16 +27,17 @@
 .colour { display: inline-flex; gap: 6px; align-items: center; }
 .swatch { width: 44px; height: 44px; padding: 2px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); cursor: pointer; }
 .swatch.unset { opacity: .45; }
-.stagebox { padding: 14px; display: grid; gap: 10px; }
-.stage { display: grid; justify-items: center; align-items: center; min-height: 340px; padding: 10px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 4%, var(--surface)); overflow-x: auto; outline-offset: 3px; }
-.stage svg { display: block; max-width: 100%; height: auto; }
+.stage { display: grid; justify-items: center; align-items: center; min-height: 0; padding: 6px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 4%, var(--surface)); overflow-x: auto; outline-offset: 3px; }
+.stage svg { display: block; max-width: 100%; max-height: 24vh; height: auto; }
+@media (min-width: 900px) { .stage { min-height: 340px; padding: 10px; } .stage svg { max-height: none; } }
 .stage:focus-visible { outline: 2px solid var(--ink); }
 .viewbtns { display: flex; flex-wrap: wrap; gap: 6px; }
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .compare figure { margin: 0; text-align: center; }
 .compare svg { max-width: 100%; height: auto; }
 .compare figcaption { font-size: .85rem; }
-.turnbar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.turnbar { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+@media (max-width: 899px) { .stagepin #turnbar output { display: none; } .stagepin #turnbar .fam-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } .stagepin .range { min-width: 4rem; } .viewbar { justify-content: space-between; } }
 .range { flex: 1 1 8rem; min-width: 7rem; height: 44px; margin: 0; -webkit-appearance: none; appearance: none; background: transparent; }
 .range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--rule); }
 .range::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rule); }
@@ -77,3 +87,13 @@ input.fam-field { height: 44px; }
 .wallmore { margin: 10px 0 0; text-align: center; }
 .controls .sep { border: 0; border-top: 1px solid var(--rule); margin: 8px 0 2px; width: 100%; }
 .builders .fam-panel { align-content: start; }
+/* On a phone the page opens on the turning jersey and its controls: a shorter header, and the sentence under "Try it" is left for the desk. */
+@media (max-width: 899px) {
+  main { padding-top: 12px; }
+  header { margin-bottom: 6px; gap: 4px 12px; }
+  .intro { min-height: 0; }
+  header nav { gap: 6px 8px; }
+  #try-h { margin: 6px 0 6px; }
+  #try > p { display: none; }
+}
+@media (max-width: 899px) { .stagepin .viewbar, .stagepin .viewbar .viewbtns { gap: 4px; } .stagepin .viewbar .fam-button { padding-inline: 9px; font-size: .8rem; } }

@@ -10,41 +10,38 @@
 <main>
   <!--family:header-->
 
-  <nav class="jump" id="jump" aria-label="Sections" data-say-label="navLabel">
-    <a href="#try" data-say="navTry"></a><a href="#styles" data-say="navStyles"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#titles" data-say="navTitles"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
-  </nav>
-
   <section class="more" id="try" aria-labelledby="try-h">
     <h2 id="try-h" data-say="tryTitle"></h2>
     <p data-say="tryText"></p>
     <div class="fam-panels try">
       <div class="fam-panel controls" id="controls"></div>
       <div class="stagebox">
-        <div class="stage" id="stage" data-testid="stage"></div>
-        <div class="fam-row"><label class="fam-label" for="background" data-say="background">Background</label><select class="fam-field" id="background" data-testid="background" data-say-label="backgroundHint" aria-label="A picture behind the stage, for the preview only: the jersey the package draws stays plain"><option value="" data-say="backgroundNone">None</option><option value="midnight">midnight</option><option value="crimson">crimson</option><option value="royal">royal</option><option value="emerald">emerald</option><option value="pitch">pitch</option><option value="ice">ice</option><option value="hardwood">hardwood</option><option value="infield">infield</option><option value="turf">turf</option><option value="ball-panels">ball-panels</option><option value="swirl">swirl</option><option value="waves">waves</option><option value="glow">glow</option><option value="floodlights">floodlights</option><option value="confetti">confetti</option><option value="carbon">carbon</option><option value="aurora">aurora</option><option value="sunburst">sunburst</option><option value="chevrons">chevrons</option><option value="halftone">halftone</option><option value="argyle">argyle</option><option value="contour">contour</option><option value="stardust">stardust</option><option value="mesh">mesh</option><option value="spotlight">spotlight</option></select></div>
-        <div class="turnbar" id="turnbar">
-          <label class="fam-label" for="yaw" data-say="angle"></label>
-          <input class="range" type="range" id="yaw" min="-180" max="180" step="1" value="0" data-testid="yaw" />
-          <output id="yaw-out" for="yaw">0°</output>
-          <button type="button" class="fam-button" id="play" data-testid="play" aria-pressed="false" data-say="play"></button>
-          <button type="button" class="fam-button" id="front" data-testid="front" data-say="front"></button>
+        <div class="stagepin">
+          <div class="stage" id="stage" data-testid="stage"></div>
+          <div class="turnbar" id="turnbar">
+            <label class="fam-label" for="yaw" data-say="angle"></label>
+            <input class="range" type="range" id="yaw" min="-180" max="180" step="1" value="0" data-testid="yaw" />
+            <output id="yaw-out" for="yaw">0°</output>
+            <button type="button" class="fam-button" id="play" data-testid="play" aria-pressed="false" data-say="play"></button>
+            <button type="button" class="fam-button" id="front" data-testid="front" data-say="front"></button>
+          </div>
+          <div class="turnbar viewbar" id="viewbar">
+            <button type="button" class="fam-button" id="vol" data-testid="vol" aria-pressed="true" data-say="volume"></button>
+            <span class="viewbtns" role="group" data-say-label="viewsLabel" aria-label="Fixed views">
+              <button type="button" class="fam-button" data-yaw-view="0" data-testid="view-front" data-say="viewFront"></button>
+              <button type="button" class="fam-button" data-yaw-view="-90" data-testid="view-left" data-say="viewLeft"></button>
+              <button type="button" class="fam-button" data-yaw-view="180" data-testid="view-back" data-say="viewBack"></button>
+              <button type="button" class="fam-button" data-yaw-view="90" data-testid="view-right" data-say="viewRight"></button>
+              <button type="button" class="fam-button" data-yaw-view="40" data-testid="view-three" data-say="viewThree"></button>
+            </span>
+          </div>
         </div>
         <div class="turnbar" id="pitchbar">
           <label class="fam-label" for="pitch" data-say="tilt"></label>
           <input class="range" type="range" id="pitch" min="0" max="30" step="1" value="8" data-testid="pitch" />
           <output id="pitch-out" for="pitch">8°</output>
         </div>
-        <div class="turnbar" id="viewbar">
-          <button type="button" class="fam-button" id="vol" data-testid="vol" aria-pressed="true" data-say="volume"></button>
-          <button type="button" class="fam-button" id="cmp" data-testid="cmp" aria-pressed="false" data-say="compare"></button>
-          <span class="viewbtns" role="group" data-say-label="viewsLabel" aria-label="Fixed views">
-            <button type="button" class="fam-button" data-yaw-view="0" data-testid="view-front" data-say="viewFront"></button>
-            <button type="button" class="fam-button" data-yaw-view="-90" data-testid="view-left" data-say="viewLeft"></button>
-            <button type="button" class="fam-button" data-yaw-view="180" data-testid="view-back" data-say="viewBack"></button>
-            <button type="button" class="fam-button" data-yaw-view="90" data-testid="view-right" data-say="viewRight"></button>
-            <button type="button" class="fam-button" data-yaw-view="40" data-testid="view-three" data-say="viewThree"></button>
-          </span>
-        </div>
+        <div class="fam-row"><label class="fam-label" for="background" data-say="background">Background</label><select class="fam-field" id="background" data-testid="background" data-say-label="backgroundHint" aria-label="A picture behind the stage, for the preview only: the jersey the package draws stays plain"><option value="" data-say="backgroundNone">None</option><option value="midnight">midnight</option><option value="crimson">crimson</option><option value="royal">royal</option><option value="emerald">emerald</option><option value="pitch">pitch</option><option value="ice">ice</option><option value="hardwood">hardwood</option><option value="infield">infield</option><option value="turf">turf</option><option value="ball-panels">ball-panels</option><option value="swirl">swirl</option><option value="waves">waves</option><option value="glow">glow</option><option value="floodlights">floodlights</option><option value="confetti">confetti</option><option value="carbon">carbon</option><option value="aurora">aurora</option><option value="sunburst">sunburst</option><option value="chevrons">chevrons</option><option value="halftone">halftone</option><option value="argyle">argyle</option><option value="contour">contour</option><option value="stardust">stardust</option><option value="mesh">mesh</option><option value="spotlight">spotlight</option></select><button type="button" class="fam-button" id="cmp" data-testid="cmp" aria-pressed="false" data-say="compare"></button></div>
         <div class="compare" id="compare" data-testid="compare" hidden>
           <figure><div id="cmp-flat"></div><figcaption data-say="flatLabel"></figcaption></figure>
           <figure><div id="cmp-vol"></div><figcaption data-say="volLabel"></figcaption></figure>
@@ -53,6 +50,10 @@
       </div>
     </div>
   </section>
+
+  <nav class="jump" id="jump" aria-label="Sections" data-say-label="navLabel">
+    <a href="#try" data-say="navTry"></a><a href="#styles" data-say="navStyles"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#titles" data-say="navTitles"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
+  </nav>
 
   <section class="more" id="styles" aria-labelledby="styles-h">
     <h2 id="styles-h" data-say="stylesTitle"></h2>

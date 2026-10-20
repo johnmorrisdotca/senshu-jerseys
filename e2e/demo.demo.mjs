@@ -35,7 +35,7 @@ test("the controls change the drawing, and the address says so", async ({ page }
 });
 
 test("dragging turns the jersey from the front to the back, and the keys do too", async ({ page }) => {
-  await page.goto("/?cut=hockey&number=9&name=Gray&vol=0");
+  await page.goto("/?cut=hockey&number=9&name=Gray&vol=0&turn=0");
   const stage = page.locator("#stage");
   await expect(stage.locator("svg")).toBeVisible();
   expect(await yawOf(page)).toBe(0);
@@ -73,7 +73,7 @@ const frontOffset = (page) =>
   });
 
 test("a drag to the right takes the front of the jersey to the right, a drag to the left to the left, and the arrows do the same", async ({ page }) => {
-  await page.goto("/?cut=hockey&number=9&name=Gray&vol=0");
+  await page.goto("/?cut=hockey&number=9&name=Gray&vol=0&turn=0");
   const stage = page.locator("#stage");
   await expect(stage.locator("svg")).toBeVisible();
   // Pointer events on the stage, as in the test above, so that it is the same on every project whatever is scrolled into view.
@@ -104,26 +104,76 @@ test("a drag to the right takes the front of the jersey to the right, a drag to 
   expect(await frontOffset(page)).toBeLessThan(-0.3);
 });
 
-test("nothing moves until Play is pressed, then it turns, and Pause stops it", async ({ page }) => {
+test("the jersey turns by itself when the page opens, Pause stops it and Auto-turn starts it again", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#stage svg")).toBeVisible();
-  await page.waitForTimeout(700);
-  expect(await yawOf(page)).toBe(0);
   const play = page.locator('[data-testid="play"]');
-  await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "true");
   await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(0);
+  // The address says it is turning by leaving the angle out; pausing writes the angle and turn=0.
+  expect(page.url()).not.toMatch(/yaw=/);
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "false");
+  await expect(page).toHaveURL(/turn=0/);
   const stopped = await yawOf(page);
   await page.waitForTimeout(500);
   expect(await yawOf(page)).toBe(stopped);
+  await play.click();
+  await expect(play).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(stopped);
+  await play.click();
   // Space on the focused stage toggles it too.
   await page.locator("#stage").focus();
   await page.keyboard.press("Space");
   await expect(play).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Space");
   await expect(play).toHaveAttribute("aria-pressed", "false");
+});
+
+test("an address with turn=0 or with an angle opens still", async ({ page }) => {
+  await page.goto("/?turn=0");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  await page.waitForTimeout(600);
+  expect(await yawOf(page)).toBe(0);
+  await page.goto("/?yaw=70");
+  await expect(page.locator('[data-testid="play"]')).toHaveAttribute("aria-pressed", "false");
+  await page.waitForTimeout(600);
+  expect(await yawOf(page)).toBe(70);
+});
+
+// The page opens on the turning jersey with its controls beside it, so that nothing has to be scrolled to for, and a change never stops or resets the turn.
+test("the turn controls are in the first screen, and a toggle while it turns leaves the turn going", async ({ page }) => {
+  await page.goto("/");
+  const height = page.viewportSize().height;
+  for (const id of ["stage", "yaw", "play", "front", "vol", "view-front", "view-back"]) {
+    const box = await page.locator(`[data-testid="${id}"]`).boundingBox();
+    expect(box, id).not.toBeNull();
+    expect(box.y + box.height, `${id} is in the first screen`).toBeLessThanOrEqual(height);
+  }
+  await expect(page.locator('[data-testid="seg-cut"]')).toBeVisible();
+  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(0);
+  // Change things while it turns: the garment's volume, the cut, the style and the fit. The angle goes on advancing after each, from where it was.
+  const checks = [
+    () => page.getByTestId("vol").click(),
+    () => page.getByTestId("vol").click(),
+    () => page.locator('[data-testid="seg-cut"] button[data-value="soccer"]').click(),
+    () => page.locator('[data-testid="seg-look"] button[data-value="line"]').click(),
+    () => page.locator('[data-testid="seg-look"] button[data-value="cloth"]').click(),
+  ];
+  for (const change of checks) {
+    const before = await yawOf(page);
+    await change();
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-pressed", "true");
+    // Not reset to the front: the angle is near where it was (the turn is 40 degrees a second) and keeps moving.
+    const right_after = await yawOf(page);
+    const wrapped = Math.abs(right_after - before);
+    expect(Math.min(wrapped, 360 - wrapped), "the angle was not reset").toBeLessThan(45);
+    await expect.poll(async () => {
+      const now = await yawOf(page);
+      const gap = Math.abs(now - right_after);
+      return Math.min(gap, 360 - gap);
+    }, { timeout: 4000 }).toBeGreaterThan(3);
+  }
 });
 
 test("a reader who prefers reduced motion gets a still jersey from the element and from the frame", async ({ browser }) => {
@@ -291,9 +341,9 @@ test("in Japanese the words change, and nothing scrolls sideways", async ({ page
 
 test("44 pixels is the least a control gives a finger", async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto("/");
+  await page.goto("/?turn=0");
   await expect(page.locator('[data-testid="chip-mlb"]')).toBeVisible();
-  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #background, #turnbar button, #turnbar input, #wallbar button, #wallbar select, #wallbar input, #officials-sports button, #teams select, #teams button, #embed button").all();
+  const controls = await page.locator("#controls button:not([hidden]), #controls select:not([hidden]), #controls input:not([hidden]), #background, #turnbar button, #turnbar input, #viewbar button, #cmp, #wallbar button, #wallbar select, #wallbar input, #officials-sports button, #teams select, #teams button, #embed button").all();
   expect(controls.length).toBeGreaterThan(40);
   for (const control of controls) {
     if (!(await control.isVisible())) continue;
@@ -352,7 +402,7 @@ test("the stage draws a garment with volume, and the fixed views turn it to the 
 });
 
 test("the garment turns by hand and by the keys, and the volume and the comparison are switches kept in the address", async ({ page }) => {
-  await page.goto("/?cut=hockey&number=9&name=Gray");
+  await page.goto("/?cut=hockey&number=9&name=Gray&turn=0");
   const stage = page.locator("#stage");
   await expect(stage.locator("svg[data-vol]")).toBeVisible();
   await stage.focus();

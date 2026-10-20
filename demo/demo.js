@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", vol: "1", pitch: "8", cmp: "0", sw: "home" };
+const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", turn: "1", vol: "1", pitch: "8", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -30,7 +30,8 @@ function syncUrl() {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(attrs)) if (DEFAULTS[k] !== v) q.set(k, v);
   for (const k of Object.keys(DEFAULTS)) if (!(k in attrs)) q.set(k, "");
-  for (const [k, v] of Object.entries(ui)) if (UI_DEFAULTS[k] !== v) q.set(k, v);
+  // While it turns the angle changes every frame: the address then says "turning" (the default) and leaves the angle out, so a reload starts the turn again.
+  for (const [k, v] of Object.entries(ui)) if (UI_DEFAULTS[k] !== v && !(k === "yaw" && ui.turn === "1" && playing())) q.set(k, v);
   // Safari refuses more than a hundred of these in thirty seconds; the address is a convenience, so a refusal must not stop the drawing.
   try { history.replaceState(null, "", q.size === 0 ? location.pathname + location.hash : `?${q}${location.hash}`); } catch { /* the address stays */ }
 }
@@ -374,7 +375,9 @@ function drawStage() {
   }
   const yaw = Number(ui.yaw) || 0;
   if (turn === undefined) {
-    turn = bindTurn(stage, stageOptions(), { yaw, speed: 40, onChange: onYaw, onPlay: syncPlay });
+    // The jersey turns by itself when the page opens (not for a reader who prefers reduced motion), unless the address holds an angle or says turn=0.
+    const autoPlay = ui.turn === "1" && !params.has("yaw");
+    turn = bindTurn(stage, stageOptions(), { yaw, speed: 40, autoPlay, onChange: onYaw, onPlay: (on) => { ui.turn = on ? "1" : "0"; syncPlay(); syncUrl(); } });
   } else {
     turn.update({ ...stageOptions(), yaw: turn.yaw() });
   }
