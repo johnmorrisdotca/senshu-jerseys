@@ -6,6 +6,15 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-19
+
+The npm page shows the hockey patterns of 0.8.0. No change to the package's code.
+
+### Changed
+
+- **README and docs: a showcase for the shrinking sleeve bands, the sawtooth sleeves and the pointed yoke.** A new picture of the four `hockey-patterns` sweaters, front and back, in a light and a dark twin, a new page, `docs/hockey-patterns.md`, with a short example, and a link to it from the README; the turning sweater's picture is remade with the closed sleeves. `ONLY=<name> node scripts/screenshots.mjs` takes one picture.
+- **`CONTRIBUTING.md` has a release-checklist line for visual features:** new visual feature? update the README images and add a showcase section if the examples do not show it well.
+
 ## [0.8.0] - 2026-10-18
 
 ### Added

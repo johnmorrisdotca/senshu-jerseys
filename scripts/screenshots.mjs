@@ -1,5 +1,5 @@
 // Takes the README's pictures into docs/images, as webp made in the browser: the seven cuts front, back and in line (each cut on the ground of its own sport), a hockey sweater turned through
-// seven angles, the officials, the caps and helmets, the retired-number banners, the championship banners, a women's and a men's cut, a national layout, and jerseys on a phone (each light and dark). Every sheet stands on the family's shared backgrounds
+// seven angles, the officials, the hockey patterns, the caps and helmets, the retired-number banners, the championship banners, a women's and a men's cut, a national layout, and jerseys on a phone (each light and dark). Every sheet stands on the family's shared backgrounds
 // (scripts/family-backgrounds.ts, drawn in code, copied from taisen-brackets and never edited here), in the dark or the light variant, and its labels and line drawings take the ink the
 // background returns, so they read. The grid runs edge to edge, every row is full, and a sheet may be cut into zones that each have a background of their own (the cuts, one ground per sport).
 // It serves the demo on port 7302, or TEST_PORT (this package's own block, tests and tools from 7301 up) and stops the server it started. It needs a build (`pnpm screenshots` builds first).
@@ -80,10 +80,11 @@ try {
       const S = await import("/dist/index.js");
       const T = await import("/dist/turn-entry.js");
       const O = await import("/dist/presets/officials.js");
+      const H = await import("/dist/presets/hockey-patterns.js");
       const box = document.createElement("div");
       box.id = "sheet";
       box.style.cssText = `position:relative;display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));grid-template-rows:${rows.map((h) => `${h}px`).join(" ")};gap:${gap}px;padding:${pad}px;width:${width}px;box-sizing:border-box;font:600 11px system-ui,sans-serif`;
-      box.innerHTML = placed.map((z) => z.svg).join("") + new Function("S", "T", "O", `return (${source})(S, T, O)`)(S, T, O);
+      box.innerHTML = placed.map((z) => z.svg).join("") + new Function("S", "T", "O", "H", `return (${source})(S, T, O, H)`)(S, T, O, H);
       const cells = [...box.children].filter((cell) => cell.tagName === "FIGURE");
       cells.forEach((cell, i) => {
         const col = i % cols;
@@ -165,6 +166,14 @@ try {
     { kind: "garden", colors: ["#0b2a6a", "#c8102e", "#ffffff"], city: "NORTHWIND", club: "GULLS", title: "League", subtitle: "Champions", years: [1972, 1979, 1983] },
     { kind: "garden", colors: ["#c8102e", "#ffffff"], city: "KOBE", club: "RAIJIN", title: "Shield", subtitle: "Champions", years: [1996] },
   ].map((o) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.renderTitleBanner({ size: 200, ...o })}</figure>`).join("");
+  // The 2026 hockey patterns, home and away: shrinking bands with a pointed yoke, and sawtooth sleeves. The front above, with the preset's name, and the back below.
+  const patterns = (S, T, O, H) => {
+    S.usePresets(H.HOCKEY_PATTERNS);
+    const ids = H.HOCKEY_PATTERNS.map((p) => p.id);
+    const label = (id) => S.presetOptions(id) && H.HOCKEY_PATTERNS.find((p) => p.id === id).team + (id.endsWith("home") ? ", home" : ", away");
+    const one = (id, i, view) => `<figure style="margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center">${S.renderJersey({ ...S.presetOptions(id), number: [9, 17, 19, 88][i], name: ["Beaumont", "Okafor", "Tanaka", "Lindqvist"][i], view, size: 210 })}${view === "front" ? `<figcaption style="color:var(--muted)">${label(id)}</figcaption>` : ""}</figure>`;
+    return ids.map((id, i) => one(id, i, "front")).join("") + ids.map((id, i) => one(id, i, "back")).join("");
+  };
   // Which preset stands behind which picture (dark and light variants): each cut on the ground of its sport (ice, infield, hardwood, turf, pitch), the officials under floodlights (midnight in the dark),
   // the caps and the helmets on an infield and on turf, the banners on royal purple (crimson in the dark), the phone's four jerseys on four grounds and the turned sweater on ice.
   const grounds = ["ice", "infield", "hardwood", "turf", "pitch", "turf", "hardwood"];
@@ -175,6 +184,7 @@ try {
     await sheet(`fit-desk-${scheme}`, { width: 1000, cols: 4, rows: [250], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, fitted);
     await sheet(`national-desk-${scheme}`, { width: 760, cols: 2, rows: [300], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, national);
     await sheet(`titles-desk-${scheme}`, { width: 1400, cols: 3, rows: [270, 270], scheme, zones: [{ preset: scheme === "dark" ? "crimson" : "royal", intensity: 0.9 }] }, titles);
+    await sheet(`patterns-desk-${scheme}`, { width: 1000, cols: 4, rows: [280, 250], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, patterns);
     await sheet(`officials-desk-${scheme}`, { width: 1400, cols: 8, rows: [230, 215], scheme, zones: [{ preset: scheme === "dark" ? "midnight" : "floodlights", intensity: 0.9 }] }, officials);
     await sheet(`caps-desk-${scheme}`, { width: 1400, cols: 6, rows: [170, 170, 170, 170], scheme, zones: [{ preset: "infield", rows: [0, 2], intensity: 0.9 }, { preset: "turf", rows: [2, 4], intensity: 0.9 }] }, gear);
     await sheet(`banners-desk-${scheme}`, { width: 1400, cols: 6, rows: [270, 270], scheme, zones: [{ preset: scheme === "dark" ? "crimson" : "royal", intensity: 0.9 }] }, banners);

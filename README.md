@@ -10,7 +10,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
   <img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-3178c6">
 </p>
 
-<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
 
 <p align="center">
 <picture>
@@ -458,6 +458,15 @@ The package's own words (cut and pattern names, accessible titles) are in Englis
 More than fifteen hundred uniforms of one team in one era, each written as a short line of colours and stripes and read into `renderJersey`'s options: [docs/presets.md](./docs/presets.md) lists every one with its id. They reproduce **colours and stripe patterns only, with no logos or crests**: no club crest, logo, monogram, wordmark or sponsor mark is drawn, and the chest stays empty or takes your own `crest`. That holds for defunct teams too, whose marks are still owned and sold today. Where a uniform's identity is mostly its chest mark, the preset still reads by its colours and stripes.
 
 Apart from the real teams, `presets/hockey-styles` holds twelve original national hockey styles, home and away, each with a layout of its own and made to be personalised (`personalStyle`): see [national styles](./docs/hockey-styles.md), and [national layouts](./docs/national.md) for each country's own mark or flag in eight arrangements (`national: "canada:diagonal"`).
+
+The four `presets/hockey-patterns` sweaters show the shrinking sleeve bands, the sawtooth sleeves and the pointed yoke ([hockey patterns](./docs/hockey-patterns.md)).
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-desk-dark.webp">
+<img alt="Four hockey sweaters on ice, front above and back below: a white and a navy sweater with a pointed yoke and sleeve bands that thin out toward the cuff, and a black and a white sweater with sleeves that end in a row of teeth." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-desk-light.webp" width="760">
+</picture>
+</p>
 
 <p align="center">
 <picture>
