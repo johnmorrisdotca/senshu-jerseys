@@ -19,7 +19,7 @@
       // A frame that draws what its address says: ?cut=hockey&colors=af1e2d,ffffff,192168&number=9&view=both, and `turn=1` to let it be turned by hand or `turn=auto` to turn by itself.
       // The address is read as text and the drawing checks every value; the frame fetches nothing.
       import { jerseyFromParams, renderJersey } from "./dist/index.js";
-      import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
+      import { bindTurn, jerseyFrame, turnDirection } from "./dist/turn-entry.js";
       const frame = document.getElementById("frame");
       const q = new URLSearchParams(location.search);
       const options = { ...jerseyFromParams(q), size: 400 };
@@ -32,7 +32,7 @@
         const box = document.createElement("div");
         box.style.width = "min(100%, 70vh)";
         frame.append(box);
-        bindTurn(box, { ...options, view: options.view === "back" ? "back" : "front", volume }, { autoPlay: turn === "auto", yaw: q.has("yaw") ? still : options.view === "back" ? 180 : 0 });
+        bindTurn(box, { ...options, view: options.view === "back" ? "back" : "front", volume }, { autoPlay: turn === "auto", direction: turnDirection(q.get("direction")), yaw: q.has("yaw") ? still : options.view === "back" ? 180 : 0 });
       } else if (volume && options.view !== "both") {
         frame.innerHTML = jerseyFrame({ ...options, view: "front", volume, yaw: q.has("yaw") ? still : options.view === "back" ? 180 : 0 });
       } else {

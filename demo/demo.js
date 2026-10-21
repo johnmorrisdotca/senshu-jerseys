@@ -11,7 +11,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", turn: "1", vol: "1", pitch: "8", cmp: "0", sw: "home" };
+const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", turn: "0", dir: "ccw", vol: "1", pitch: "8", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -305,8 +305,13 @@ function syncControls() {
   $("background").value = ui.background;
 }
 
-// ----- The stage: the jersey, turned by a drag, the keys or the Auto-turn button.
+// ----- The stage: the jersey, turned by a drag, the keys, the Auto-turn button, or by itself while the mouse is over it.
 let turn;
+/** True while the jersey turns only because the mouse is over it (leaving stops it); Auto-turn and `?turn=1` are the reader's own and are not undone by leaving. */
+let hoverPlay = false;
+/** The angle the automatic turn runs at, in degrees a second: half of what the first version ran at. */
+const TURN_SPEED = 20;
+const direction = () => (ui.dir === "cw" ? "clockwise" : "counterclockwise");
 let backgrounds;
 const dark = matchMedia("(prefers-color-scheme: dark)");
 /**
@@ -362,6 +367,7 @@ function drawStage() {
   $("viewbar").hidden = !canTurn;
   $("pitchbar").hidden = !canTurn || ui.vol !== "1";
   $("vol").setAttribute("aria-pressed", String(ui.vol === "1"));
+  $("direction").setAttribute("aria-pressed", String(ui.dir === "cw"));
   if (!canTurn) {
     turn?.destroy();
     turn = undefined;
@@ -375,9 +381,9 @@ function drawStage() {
   }
   const yaw = Number(ui.yaw) || 0;
   if (turn === undefined) {
-    // The jersey turns by itself when the page opens (not for a reader who prefers reduced motion), unless the address holds an angle or says turn=0.
+    // The jersey waits still when the page opens and turns while the mouse is over it; `?turn=1` has it turn by itself from the start (not for a reader who prefers reduced motion), unless the address holds an angle.
     const autoPlay = ui.turn === "1" && !params.has("yaw");
-    turn = bindTurn(stage, stageOptions(), { yaw, speed: 40, autoPlay, onChange: onYaw, onPlay: (on) => { ui.turn = on ? "1" : "0"; syncPlay(); syncUrl(); } });
+    turn = bindTurn(stage, stageOptions(), { yaw, speed: TURN_SPEED, direction: direction(), autoPlay, onChange: onYaw, onPlay: (on) => { ui.turn = on && !hoverPlay ? "1" : "0"; syncPlay(); syncUrl(); } });
   } else {
     turn.update({ ...stageOptions(), yaw: turn.yaw() });
   }
@@ -853,9 +859,41 @@ $("pitch").addEventListener("input", () => {
   syncUrl();
 });
 $("play").addEventListener("click", () => {
+  hoverPlay = false;
   turn?.togglePlay();
   syncPlay();
 });
+$("direction").addEventListener("click", () => {
+  ui.dir = ui.dir === "cw" ? "ccw" : "cw";
+  $("direction").setAttribute("aria-pressed", String(ui.dir === "cw"));
+  turn?.setDirection(direction());
+  syncUrl();
+});
+// The mouse over the jersey turns it and leaving stops it; a tap (a touch or a pen, not a drag) turns it and a second tap holds it. A reader who prefers reduced motion is never turned for by the pointer.
+{
+  const stage = $("stage");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  let lastPointer = "mouse";
+  let downYaw = 0;
+  stage.addEventListener("pointerdown", (event) => { lastPointer = event.pointerType; downYaw = turn?.yaw() ?? 0; });
+  stage.addEventListener("pointerenter", (event) => {
+    if (event.pointerType !== "mouse" || reduced.matches || turn === undefined || playing()) return;
+    hoverPlay = true;
+    turn.play();
+  });
+  stage.addEventListener("pointerleave", (event) => {
+    if (event.pointerType !== "mouse" || !hoverPlay) return;
+    hoverPlay = false;
+    turn?.pause();
+  });
+  stage.addEventListener("click", () => {
+    if (lastPointer === "mouse" || turn === undefined) return;
+    const moved = Math.abs(((turn.yaw() - downYaw + 540) % 360) - 180);
+    if (moved > 3) return;
+    hoverPlay = false;
+    turn.togglePlay();
+  });
+}
 $("vol").addEventListener("click", () => { ui.vol = ui.vol === "1" ? "0" : "1"; drawStage(); syncUrl(); });
 $("cmp").addEventListener("click", () => { ui.cmp = ui.cmp === "1" ? "0" : "1"; drawCompare(); syncUrl(); });
 for (const b of document.querySelectorAll("[data-yaw-view]")) {

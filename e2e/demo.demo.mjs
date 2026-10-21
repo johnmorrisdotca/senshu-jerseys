@@ -104,23 +104,66 @@ test("a drag to the right takes the front of the jersey to the right, a drag to 
   expect(await frontOffset(page)).toBeLessThan(-0.3);
 });
 
-test("the jersey turns by itself when the page opens, Pause stops it and Auto-turn starts it again", async ({ page }) => {
+// The signed shortest way round from one angle to another, in degrees: positive is the front swinging to the viewer's right (counterclockwise from above, the way it has always turned).
+const gap = (from, to) => ((to - from + 540) % 360) - 180;
+
+test("the jersey waits still when the page opens, turns while the mouse is over it, and stops where it leaves", async ({ page, hasTouch }) => {
+  test.skip(hasTouch, "a touch screen has no pointer to hover with: the tap test covers it");
   await page.goto("/");
   await expect(page.locator("#stage svg")).toBeVisible();
   const play = page.locator('[data-testid="play"]');
+  await expect(play).toHaveAttribute("aria-pressed", "false");
+  await page.waitForTimeout(800);
+  expect(await yawOf(page)).toBe(0);
+  expect(page.url()).not.toMatch(/turn=/);
+  await page.locator("#stage").hover();
   await expect(play).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(0);
-  // The address says it is turning by leaving the angle out; pausing writes the angle and turn=0.
+  await expect.poll(() => yawOf(page), { timeout: 8000 }).not.toBe(0);
+  // Hovering is not the reader's own choice: the address does not say "turn".
+  expect(page.url()).not.toMatch(/turn=/);
+  await page.mouse.move(2, 2);
+  await expect(play).toHaveAttribute("aria-pressed", "false");
+  const stopped = await yawOf(page);
+  await page.waitForTimeout(600);
+  expect(await yawOf(page)).toBe(stopped);
+  // Over it again and it goes on from there.
+  await page.locator("#stage").hover();
+  await expect.poll(() => yawOf(page), { timeout: 8000 }).not.toBe(stopped);
+});
+
+test("a tap on the jersey turns it and a second tap holds it", async ({ page, hasTouch }) => {
+  test.skip(!hasTouch, "needs a touch screen");
+  await page.goto("/");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  const play = page.locator('[data-testid="play"]');
+  await page.locator("#stage").tap();
+  await expect(play).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => yawOf(page), { timeout: 8000 }).not.toBe(0);
+  await page.locator("#stage").tap();
+  await expect(play).toHaveAttribute("aria-pressed", "false");
+  const stopped = await yawOf(page);
+  await page.waitForTimeout(600);
+  expect(await yawOf(page)).toBe(stopped);
+});
+
+test("Auto-turn keeps it going wherever the pointer is, Pause stops it, and ?turn=1 starts it with the page", async ({ page }) => {
+  await page.goto("/?turn=1");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  const play = page.locator('[data-testid="play"]');
+  await expect(play).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => yawOf(page), { timeout: 8000 }).not.toBe(0);
+  // The address says it is turning by leaving the angle out; pausing writes the angle (and no turn=1).
   expect(page.url()).not.toMatch(/yaw=/);
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "false");
-  await expect(page).toHaveURL(/turn=0/);
+  await expect(page).not.toHaveURL(/turn=1/);
   const stopped = await yawOf(page);
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(600);
   expect(await yawOf(page)).toBe(stopped);
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(stopped);
+  await expect(page).toHaveURL(/turn=1/);
+  await expect.poll(() => yawOf(page), { timeout: 8000 }).not.toBe(stopped);
   await play.click();
   // Space on the focused stage toggles it too.
   await page.locator("#stage").focus();
@@ -128,6 +171,28 @@ test("the jersey turns by itself when the page opens, Pause stops it and Auto-tu
   await expect(play).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Space");
   await expect(play).toHaveAttribute("aria-pressed", "false");
+});
+
+test("the jersey turns the other way on request: the button, the address, and the same speed", async ({ page }) => {
+  await page.goto("/?turn=1&vol=0");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  const reverse = page.locator('[data-testid="direction"]');
+  await expect(reverse).toHaveAttribute("aria-pressed", "false");
+  const start = await yawOf(page);
+  await expect.poll(async () => gap(start, await yawOf(page)), { timeout: 8000 }).toBeGreaterThan(3);
+  await reverse.click();
+  await expect(reverse).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/dir=cw/);
+  // It goes on from where it was, and now the angle falls.
+  const turned = await yawOf(page);
+  await expect.poll(async () => gap(turned, await yawOf(page)), { timeout: 8000 }).toBeLessThan(-3);
+  await reverse.click();
+  await expect(page).not.toHaveURL(/dir=/);
+  // An address with dir=cw opens turning the other way, with the button pressed.
+  await page.goto("/?turn=1&dir=cw&vol=0");
+  await expect(page.locator('[data-testid="direction"]')).toHaveAttribute("aria-pressed", "true");
+  const first = await yawOf(page);
+  await expect.poll(async () => gap(first, await yawOf(page)), { timeout: 8000 }).toBeLessThan(-3);
 });
 
 test("an address with turn=0 or with an angle opens still", async ({ page }) => {
@@ -141,13 +206,31 @@ test("an address with turn=0 or with an angle opens still", async ({ page }) => 
   expect(await yawOf(page)).toBe(70);
 });
 
+test("a reader who prefers reduced motion is not turned for by the pointer, and Auto-turn still works", async ({ browser }, testInfo) => {
+  const hasTouch = testInfo.project.use.hasTouch === true;
+  const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1280, height: 900 }, hasTouch });
+  const page = await context.newPage();
+  await page.goto("/?turn=1");
+  await expect(page.locator("#stage svg")).toBeVisible();
+  if (!hasTouch) {
+    await page.locator("#stage").hover();
+    await page.waitForTimeout(800);
+    expect(await yawOf(page)).toBe(0);
+    await page.mouse.move(2, 2);
+  }
+  await page.locator('[data-testid="play"]').click();
+  await expect(page.locator('[data-testid="play"]')).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => yawOf(page), { timeout: 8000 }).not.toBe(0);
+  await context.close();
+});
+
 // The page opens on the turning jersey with its controls beside it, so that nothing has to be scrolled to for, and a change never stops or resets the turn.
 test("the turn controls are in the first screen, and a toggle while it turns leaves the turn going", async ({ page }) => {
   // A garment with volume is heavy to draw on a slow machine (a shared CI runner), where the turn, which never jumps more than a twentieth of a second's worth, crawls: so each wait is long and asks for a degree.
   test.setTimeout(120_000);
-  await page.goto("/");
+  await page.goto("/?turn=1");
   const height = page.viewportSize().height;
-  for (const id of ["stage", "yaw", "play", "front", "vol", "view-front", "view-back"]) {
+  for (const id of ["stage", "yaw", "play", "direction", "front", "vol", "view-front", "view-back"]) {
     const box = await page.locator(`[data-testid="${id}"]`).boundingBox();
     expect(box, id).not.toBeNull();
     expect(box.y + box.height, `${id} is in the first screen`).toBeLessThanOrEqual(height);
@@ -166,7 +249,7 @@ test("the turn controls are in the first screen, and a toggle while it turns lea
     const before = await yawOf(page);
     await change();
     await expect(page.getByTestId("play")).toHaveAttribute("aria-pressed", "true");
-    // Not reset to the front: the angle is near where it was (the turn is 40 degrees a second) and keeps moving.
+    // Not reset to the front: the angle is near where it was (the turn is 20 degrees a second) and keeps moving.
     const right_after = await yawOf(page);
     const wrapped = Math.abs(right_after - before);
     expect(Math.min(wrapped, 360 - wrapped), "the angle was not reset").toBeLessThan(45);
@@ -194,6 +277,42 @@ test("the embed frame draws what its address says, and turns when asked", async 
   await page.goto("/embed.html?cut=hockey&number=9&turn=auto");
   await expect(page.locator("#frame svg")).toBeVisible();
   await expect.poll(async () => Number(await page.locator("#frame svg").getAttribute("data-yaw")), { timeout: 4000 }).not.toBe(0);
+});
+
+test("the embed frame and the element turn the other way when told to", async ({ page }) => {
+  await page.goto("/embed.html?cut=hockey&number=9&turn=auto&direction=clockwise");
+  await expect(page.locator("#frame svg")).toBeVisible();
+  const embedYaw = async () => Number(await page.locator("#frame svg").getAttribute("data-yaw"));
+  const first = await embedYaw();
+  await expect.poll(async () => gap(first, await embedYaw()), { timeout: 8000 }).toBeLessThan(-3);
+  await page.goto("/embed.html?cut=hockey&number=9&turn=auto");
+  const second = await embedYaw();
+  await expect.poll(async () => gap(second, await embedYaw()), { timeout: 8000 }).toBeGreaterThan(3);
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    await import("/dist/element-define.js");
+    const el = document.createElement("senshu-jersey");
+    el.setAttribute("cut", "hockey");
+    el.setAttribute("turnable", "");
+    el.setAttribute("autoplay", "");
+    el.setAttribute("speed", "90");
+    el.setAttribute("direction", "clockwise");
+    document.body.append(el);
+    const yaw = () => Number(el.shadowRoot.querySelector("svg").getAttribute("data-yaw"));
+    await new Promise((r) => setTimeout(r, 40));
+    const start = yaw();
+    await new Promise((r) => setTimeout(r, 600));
+    const clockwise = yaw();
+    el.setAttribute("direction", "counterclockwise");
+    await new Promise((r) => setTimeout(r, 40));
+    const turnaround = yaw();
+    await new Promise((r) => setTimeout(r, 600));
+    const counter = yaw();
+    el.remove();
+    return { start, clockwise, turnaround, counter };
+  });
+  expect(gap(result.start, result.clockwise)).toBeLessThan(-5);
+  expect(gap(result.turnaround, result.counter)).toBeGreaterThan(5);
 });
 
 test("<senshu-jersey> draws from attributes, redraws when one changes, turns by hand, and cleans up", async ({ page }) => {
