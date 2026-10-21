@@ -84,7 +84,9 @@ Draws the jersey into a container and lets the reader turn it.
 | Home | Back to the front. |
 | Space | Starts and stops the automatic turn. |
 
-It returns `{ yaw, setYaw, playing, play, pause, togglePlay, update, destroy }`. `settings` has `yaw` (where to start), `autoPlay`, `speed` (degrees a second, 40 by default), `force` and `onChange`.
+It returns `{ yaw, setYaw, playing, play, pause, togglePlay, direction, setDirection, update, destroy }`. `settings` has `yaw` (where to start), `autoPlay`, `speed` (degrees a second, 40 by default), `direction`, `force`, `onChange` and `onPlay`.
+
+- **Which way it turns by itself: `direction`.** Seen from above, `"counterclockwise"` (the default, and how it has always turned) swings the front to the viewer's right and brings the wearer's right side round; `"clockwise"` swings the front to the viewer's left and brings the wearer's left side round. `handle.setDirection("clockwise")` changes it while it turns, without stopping it; `handle.direction()` says which it is, and `turnDirection(value)` is the check the option goes through (anything but `"clockwise"` is counterclockwise). A drag, the arrow keys and `setYaw` are not reversed: a drag to the right always swings the front to the right. The `<senshu-jersey>` element has the attribute `direction`, `embed.html` the address parameter `direction=clockwise`, and the demo a Reverse button, kept in the address as `dir=cw` (the demo turns at 20 degrees a second, waits still until the mouse is over the jersey or a tap, and `?turn=1` starts it with the page).
 
 - **Nothing runs while nobody asked.** There is no timer. The automatic turn is a loop of animation frames with the time between frames taken from the clock and clamped to 50 ms, so a tab that was away does not jump.
 - It **pauses while you drag** and goes on after, and **stops while the tab is hidden** and goes on when it is back.
@@ -95,7 +97,7 @@ It returns `{ yaw, setYaw, playing, play, pause, togglePlay, update, destroy }`.
 ```js no-run
 import { bindTurn } from "@johnmorrisdotca/senshu-jerseys/turn";
 
-const handle = bindTurn(document.querySelector("#shirt"), { cut: "soccer", number: 10, name: "Gray" }, { autoPlay: true, speed: 30 });
+const handle = bindTurn(document.querySelector("#shirt"), { cut: "soccer", number: 10, name: "Gray" }, { autoPlay: true, speed: 30, direction: "clockwise" });
 handle.pause();
 handle.setYaw(180);
 ```

@@ -5,7 +5,7 @@
 //   node scripts/animations.mjs                 all of them (needs a build: `pnpm animations` builds first)
 //   ONLY=hero-turn node scripts/animations.mjs  one scene (hero-turn, kits-turn, patterns-turn), both twins
 //   IMAGES_OUT=dir                              writes somewhere else than docs/images
-//   FRAMES=48 DELAY=70 QUALITY=80               the number of frames in the circle, the milliseconds each is shown, the webp quality
+//   FRAMES=48 DELAY=140 QUALITY=80              the number of frames in the circle, the milliseconds each is shown (140: half the speed of the first pictures, which used 70), the webp quality
 //
 // It serves the demo on port 7303, or TEST_PORT (this package's own block, tests and tools from 7301 up), and stops the server it started.
 import { spawn, spawnSync } from "node:child_process";
@@ -22,7 +22,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const out = process.env.IMAGES_OUT ?? `${root}docs/images`;
 const only = process.env.ONLY ? process.env.ONLY.split(",") : null;
 const frames = Number(process.env.FRAMES ?? 48);
-const delay = Number(process.env.DELAY ?? 70);
+const delay = Number(process.env.DELAY ?? 140);
 const quality = Number(process.env.QUALITY ?? 80);
 const port = Number(process.env.TEST_PORT ?? 7303);
 const MAX_BYTES = 1.5 * 1024 * 1024;

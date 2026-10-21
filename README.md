@@ -14,17 +14,27 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 
 <p align="center">
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-turn-dark.webp">
-<img alt="A red hockey sweater with the name Beaumont and the number 9 turning in 3D on an ice surface: the front, then the sleeves swing round through the side, then the back, and round again." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-turn-light.webp" width="760">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-dark.webp">
+<img alt="Seven jerseys, one in each cut, each on the ground of its sport: a hockey sweater with a lace-up collar and sleeve stripes on ice, a pinstriped baseball jersey on an infield, a basketball tank on a hardwood floor, a football jersey with sleeve stripes on turf, a hooped soccer shirt on a pitch, a rugby shirt on turf and a handball shirt on hardwood. Below each, the back with a name and a number, and the same shirt drawn in one line." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-light.webp" width="760">
 </picture>
 </p>
 
-<p align="center">
+<table align="center">
+<tr>
+<td align="center" valign="top">
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-dark.webp">
-<img alt="Four jerseys turning in 3D, each a quarter turn behind the one before: a hockey sweater, a pale blue striped soccer shirt, a basketball tank and a pinstriped baseball jersey, under floodlights." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-light.webp" width="760">
-</picture>
-</p>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-dark.webp">
+<img alt="A hockey sweater on ice as a garment with volume, turned in seven steps from the front through the side to the back: the sleeves swing round, the body turns with its thickness, and the back appears with its name and number." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/turn-desk-light.webp" width="470">
+</picture><br><em>Turned: the front, the side, then the back</em>
+</td>
+<td align="center" valign="top">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-dark.webp">
+<img alt="Four jerseys on a phone, front and back, two by two: a hockey sweater on ice, a soccer shirt on a pitch, a basketball tank on hardwood and a pinstriped baseball jersey on an infield." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-light.webp" width="200">
+</picture><br><em>On a phone</em>
+</td>
+</tr>
+</table>
 
 ## The best of it
 
@@ -32,8 +42,8 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 
 <p align="center">
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-dark.webp">
-<img alt="Seven jerseys, one in each cut, each on the ground of its sport: a hockey sweater with a lace-up collar and sleeve stripes on ice, a pinstriped baseball jersey on an infield, a basketball tank on a hardwood floor, a football jersey with sleeve stripes on turf, a hooped soccer shirt on a pitch, a rugby shirt on turf and a handball shirt on hardwood. Below each, the back with a name and a number, and the same shirt drawn in one line." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-desk-light.webp" width="760">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-dark.webp">
+<img alt="Four jerseys turning in 3D, each a quarter turn behind the one before: a hockey sweater, a pale blue striped soccer shirt, a basketball tank and a pinstriped baseball jersey, under floodlights." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-light.webp" width="760">
 </picture>
 </p>
 
@@ -68,8 +78,8 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 
 <p align="center">
 <picture>
-<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-dark.webp">
-<img alt="Four jerseys on a phone, front and back, two by two: a hockey sweater on ice, a soccer shirt on a pitch, a basketball tank on hardwood and a pinstriped baseball jersey on an infield." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/phone-light.webp" width="200">
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-turn-dark.webp">
+<img alt="A red hockey sweater with the name Beaumont and the number 9 turning in 3D on an ice surface: the front, then the sleeves swing round through the side, then the back, and round again." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/hero-turn-light.webp" width="760">
 </picture>
 </p>
 
@@ -110,7 +120,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Whole uniforms**: the pants or shorts, the socks and the helmet that go with the jersey.
 - **Presets**: more than fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
 - **Officials**: referees, linesmen and umpires of hockey, basketball, football, soccer, baseball, rugby and lacrosse, with armbands, a chest pocket, a plain badge spot, zip and long-point collars, and a few historic looks ([docs/officials.md](./docs/officials.md)).
-- **Turning** (`./turn`): drag, arrow keys, Home and Space, or an automatic turn that waits for you.
+- **Turning** (`./turn`): drag, arrow keys, Home and Space, or an automatic turn that waits for you, in either direction (`direction: "clockwise"` or `"counterclockwise"`).
 - **A custom element** (`./element`) and an **embed page** for sites that cannot run script.
 - English and Japanese labels. TypeScript types. No dependencies.
 
@@ -119,7 +129,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 | Part | Entry | What it is |
 | --- | --- | --- |
 | Drawing | `@johnmorrisdotca/senshu-jerseys` | `renderJersey`, `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner`, `kitMatchup`, `jerseyLineup`, and what they need. Pure: strings in, strings out. |
-| Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns). |
+| Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns, either way: `turnDirection`). |
 | Element | `@johnmorrisdotca/senshu-jerseys/element`, `/define` | `<senshu-jersey>`, and the import that registers it. |
 | Presets | `@johnmorrisdotca/senshu-jerseys/presets/<league>` | One module per league: `nhl`, `mlb`, `nba`, `nfl`, `cfl`, `soccer` and the others in [docs/presets.md](./docs/presets.md). |
 
@@ -373,9 +383,10 @@ import { bindTurn } from "@johnmorrisdotca/senshu-jerseys/turn";
 
 const turn = bindTurn(document.querySelector("#shirt"), { cut: "hockey", number: 9, name: "Gray" }, { autoPlay: false });
 turn.play(); // or turn.pause(), turn.togglePlay(), turn.setYaw(180)
+turn.setDirection("clockwise"); // seen from above: the other way (the default, `"counterclockwise"`, swings the front to the viewer's right)
 ```
 
-See [turning](./docs/turning.md) for the pointer, the keys and `prefers-reduced-motion`, and for `volume: true`, which turns the shirt as a garment with depth (a body, sleeves, a hem) instead of a flat card.
+See [turning](./docs/turning.md) for the pointer, the keys, the direction and `prefers-reduced-motion`, and for `volume: true`, which turns the shirt as a garment with depth (a body, sleeves, a hem) instead of a flat card.
 
 ### Read and write options as text
 

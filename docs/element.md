@@ -20,7 +20,7 @@ Every option of `renderJersey` is an attribute. The drawing is in an open shadow
 | `kit`, `pants`, `pants-trim`, `pants-bands`, `socks`, `socks-trim`, `socks-bands`, `helmet` | The whole uniform. |
 | `preset` | The id of a preset loaded with `usePresets`. |
 | `turnable` | The reader can turn it (drag, arrow keys, Home, Space). |
-| `autoplay`, `speed`, `yaw` | Turn by itself (not under `prefers-reduced-motion`), how fast, and where from. |
+| `autoplay`, `speed`, `direction`, `yaw` | Turn by itself (not under `prefers-reduced-motion`), how fast, which way (`clockwise` or `counterclockwise`, the default), and where from. |
 
 Setting `options` as a property lays an object under the attributes. `play()`, `pause()` and `togglePlay()` start and stop the turn. The element cleans up when it is removed from the page.
 

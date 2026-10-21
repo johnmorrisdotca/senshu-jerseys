@@ -6,6 +6,20 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-21
+
+The jersey can turn the other way, and the pictures and the demo are slower and wait for the pointer.
+
+### Added
+
+- **`direction` for the automatic turn**: `bindTurn(container, options, { direction: "clockwise" })` (seen from above; the default, `"counterclockwise"`, is how it has always turned, the front swinging to the viewer's right). `handle.setDirection(direction)` changes it while it turns without stopping it, `handle.direction()` reads it, and `turnDirection(value)` is the check the option goes through (`./turn`). A drag, the keys and `setYaw` are not reversed. The `<senshu-jersey>` element has the attribute `direction`, `embed.html` the parameter `direction=clockwise`. Tests: `test/turn.test.ts` and the demo's.
+
+### Changed
+
+- **README: it opens on the still picture again** (seven jerseys, one in each cut) with the turned and phone pictures under it, as before 0.8.2. The moving pictures sit lower, each beside its own point of "The best of it" (the four kits beside the cuts, the hockey patterns, the single sweater beside turning), never stacked.
+- **The moving pictures turn at half the speed** (`pnpm animations` shows each frame 140 ms, it was 70; `DELAY=70` for the old pace).
+- **Demo: the jersey waits still and turns while the mouse is over it.** Leaving stops it where it is; a tap on a phone turns it and a second tap holds it (a drag turns it by hand as before). Auto-turn keeps it going wherever the pointer is, and `?turn=1` starts it with the page. The turn is 20 degrees a second (it was 40). A **Reverse** button (`逆回転`, "reverse rotation", with the label `逆向きに回す`, "Turn the other way") turns it the other way, kept in the address as `dir=cw`. A reader who prefers reduced motion is never turned for by the pointer. `turn=0`, `yaw=` and the other addresses work as before; the package's own default speed (40) is unchanged.
+
 ## [0.8.2] - 2026-10-20
 
 The npm page and the demo open on a jersey that turns. No change to the package's code beyond its version.
