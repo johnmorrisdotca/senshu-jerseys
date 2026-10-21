@@ -43,7 +43,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 <p align="center">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-dark.webp">
-<img alt="Four jerseys turning in 3D, each a quarter turn behind the one before: a hockey sweater, a pale blue striped soccer shirt, a basketball tank and a pinstriped baseball jersey, under floodlights." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-light.webp" width="760">
+<img alt="Five jerseys under floodlights: a hockey sweater, a pale blue striped soccer shirt, a basketball tank, a football jersey and a pinstriped baseball jersey. Four stand still, a little turned, and only the basketball tank in the centre turns in 3D." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/kits-turn-light.webp" width="760">
 </picture>
 </p>
 
@@ -52,7 +52,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 <p align="center">
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-turn-dark.webp">
-<img alt="Four hockey sweaters turning in 3D on ice, each a little behind the one before: a white and a navy sweater with a pointed yoke and sleeve bands that thin out toward the cuff, and a black and a white sweater with sleeves that end in a row of teeth." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-turn-light.webp" width="760">
+<img alt="Three hockey sweaters on ice: a white one with a pointed yoke and sleeve bands that thin out toward the cuff, and two with sleeves that end in a row of teeth, one black and one white. The two outer sweaters stand still and only the black one in the centre turns in 3D." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/patterns-turn-light.webp" width="760">
 </picture>
 </p>
 

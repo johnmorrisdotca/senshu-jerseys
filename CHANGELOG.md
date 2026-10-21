@@ -6,6 +6,14 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-21
+
+The turning pictures show one thing moving: in a row, only the centre one turns.
+
+### Changed
+
+- **Only the centre jersey turns in the README's rows** (`pnpm animations`): five jerseys of five sports (the basketball tank turns, and a football jersey joins the row) and three hockey patterns (the black sawtooth sweater turns); the others stand still, a little turned. The hero sweater, which is alone, is unchanged, and so are the speed (half of the first pictures') and the still hero first. The demo already keeps every jersey still until the pointer is over it; nothing there changed.
+
 ## [0.9.0] - 2026-10-21
 
 The jersey can turn the other way, and the pictures and the demo are slower and wait for the pointer.

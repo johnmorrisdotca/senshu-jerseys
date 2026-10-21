@@ -1,4 +1,4 @@
-// Makes the README's moving pictures into docs/images, as animated webp: a hockey sweater turning through a full circle, four jerseys of four sports turning out of step, and the hockey patterns turning.
+// Makes the README's moving pictures into docs/images, as animated webp: a hockey sweater turning through a full circle, and two rows (five jerseys of five sports, three hockey patterns) in which only the centre one turns and the others stand still.
 // Each is drawn by the package's own turn (`jerseyFrame`, the frames the demo's turntable shows) inside the demo page, on one of the family's shared backgrounds (scripts/family-backgrounds.ts), in a light and
 // a dark twin. Playwright takes one png per angle and `img2webp` (libwebp's tool: `brew install webp`) joins them into a looping lossy animation, each file well under 1.5 MB.
 //
@@ -38,21 +38,25 @@ const kits = (S, T, H, yaw) => {
     { cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9, name: "Beaumont" },
     { cut: "soccer", colors: ["#6cace4", "#ffffff"], pattern: "stripes", stripeCount: 9, number: 10, name: "Gray" },
     { cut: "basketball", colors: ["#1f3a8a", "#f4f0e4", "#e8b900"], number: 23, name: "Morris" },
+    { cut: "football", colors: ["#1f5a3d", "#ffffff", "#e8b900"], number: 12, name: "Okafor" },
     { cut: "baseball", colors: ["#f4f0e4", "#1b2a6b"], pattern: "pinstripes", number: 3, name: "Ruthven" },
   ];
-  // Each one a quarter turn behind the one before, so the row is never all front or all back.
-  return looks.map((look, i) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${T.jerseyFrame({ ...look, volume: true, pitch: 8, yaw: yaw + i * 90, size: 190 })}</figure>`).join("");
+  // Only the centre one turns; the others stand still, a little turned, so they read as jerseys and not as flat pictures.
+  const rest = [-14, 14, 0, -14, 14];
+  return looks.map((look, i) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${T.jerseyFrame({ ...look, volume: true, pitch: 8, yaw: i === 2 ? yaw : rest[i], size: 160 })}</figure>`).join("");
 };
 const patterns = (S, T, H, yaw) => {
   S.usePresets(H.HOCKEY_PATTERNS);
-  const ids = H.HOCKEY_PATTERNS.map((p) => p.id).slice(0, 4);
-  return ids.map((id, i) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${T.jerseyFrame({ ...S.presetOptions(id), number: [9, 17, 19, 88][i], name: ["Beaumont", "Okafor", "Morris", "Lindqvist"][i], volume: true, pitch: 8, yaw: yaw + i * 45, size: 190 })}</figure>`).join("");
+  // The home shrinking-bands sweater, the home sawtooth sweater (the centre one, which turns) and the away sawtooth sweater.
+  const ids = [H.HOCKEY_PATTERNS[0].id, H.HOCKEY_PATTERNS[2].id, H.HOCKEY_PATTERNS[3].id];
+  const rest = [-14, 0, 14];
+  return ids.map((id, i) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${T.jerseyFrame({ ...S.presetOptions(id), number: [9, 17, 88][i], name: ["Beaumont", "Okafor", "Lindqvist"][i], volume: true, pitch: 8, yaw: i === 1 ? yaw : rest[i], size: 230 })}</figure>`).join("");
 };
 
 const SCENES = [
   { name: "hero-turn", width: 760, height: 460, cols: 1, preset: "ice", intensity: 0.9, make: hero },
-  { name: "kits-turn", width: 760, height: 300, cols: 4, preset: "floodlights", intensity: 0.8, make: kits },
-  { name: "patterns-turn", width: 760, height: 300, cols: 4, preset: "ice", intensity: 0.9, make: patterns },
+  { name: "kits-turn", width: 760, height: 300, cols: 5, preset: "floodlights", intensity: 0.8, make: kits },
+  { name: "patterns-turn", width: 760, height: 300, cols: 3, preset: "ice", intensity: 0.9, make: patterns },
 ];
 
 const server = spawn(process.execPath, ["scripts/dev.mjs"], { cwd: root, env: { ...process.env, PORT: String(port) }, stdio: "ignore" });
