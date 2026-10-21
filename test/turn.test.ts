@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { JERSEY_WIDTH } from "../src/jersey.ts";
-import { applyTurn, jerseyFrame, normalYaw, turnState } from "../src/turn-entry.ts";
+import { SENSHU_ATTRIBUTES } from "../src/element-entry.ts";
+import { applyTurn, bindTurn, jerseyFrame, normalYaw, turnDirection, turnState } from "../src/turn-entry.ts";
 import { wellFormed } from "./helpers.ts";
 
 const YAWS = [-720, -270, -180, -135, -90, -45, 0, 30, 45, 89.9, 90, 90.1, 135, 180, 270, 360, 1000];
@@ -102,4 +103,51 @@ test("applyTurn moves the transforms of a frame that is already there, as the co
   assert.ok(calls.some(([k, v]) => k === "bdisplay" || (k === "btransform" && v.startsWith("matrix("))));
   assert.ok(calls.some(([k, v]) => k === "fdisplay" && v === "none"));
   assert.ok(calls.some(([k]) => k === "svgdata-yaw"));
+});
+
+// A container and a window with just what bindTurn uses, and a clock that only moves when the test says so.
+function fakeStage() {
+  let now = 0;
+  let next: ((time: number) => void) | null = null;
+  const win = {
+    matchMedia: () => ({ matches: false }),
+    requestAnimationFrame: (callback: (time: number) => void) => { next = callback; return 1; },
+    cancelAnimationFrame: () => { next = null; },
+    performance: { now: () => now },
+  };
+  const doc = { defaultView: win, hidden: false, addEventListener() {}, removeEventListener() {} };
+  const container = { ownerDocument: doc, innerHTML: "", style: {}, clientWidth: 300, querySelector: () => null, setAttribute() {}, addEventListener() {}, removeEventListener() {}, replaceChildren() {} };
+  return { container: container as unknown as HTMLElement, frame(ms: number) { now += ms; const callback = next; next = null; callback?.(now); } };
+}
+
+test("the automatic turn goes counterclockwise by default and clockwise when asked, at the same speed, and the direction can change while it turns", () => {
+  assert.equal(turnDirection("clockwise"), "clockwise");
+  for (const other of ["counterclockwise", "anticlockwise", "CLOCKWISE", "", undefined, null, 1, {}]) assert.equal(turnDirection(other), "counterclockwise", String(other));
+  assert.ok((SENSHU_ATTRIBUTES as readonly string[]).includes("direction"));
+  for (const [direction, sign] of [[undefined, 1], ["counterclockwise", 1], ["clockwise", -1]] as const) {
+    const seen: number[] = [];
+    const stage = fakeStage();
+    const handle = bindTurn(stage.container, { cut: "hockey" }, { autoPlay: true, speed: 40, ...(direction === undefined ? {} : { direction }), onChange: (yaw) => seen.push(yaw) });
+    assert.equal(handle.direction(), direction ?? "counterclockwise");
+    stage.frame(50);
+    stage.frame(50);
+    // 40 degrees a second for a twentieth of a second is two degrees, twice.
+    assert.deepEqual(seen, [sign * 2, sign * 4], String(direction));
+    handle.setDirection(sign === 1 ? "clockwise" : "counterclockwise");
+    stage.frame(50);
+    assert.equal(seen.at(-1), sign * 2, "it goes back the way it came, from where it was");
+    assert.equal(handle.playing(), true, "changing the direction does not stop it");
+    handle.destroy();
+  }
+});
+
+test("the direction does not change what a drag or setYaw does", () => {
+  const stage = fakeStage();
+  const handle = bindTurn(stage.container, { cut: "hockey" }, { direction: "clockwise" });
+  handle.setYaw(30);
+  assert.equal(handle.yaw(), 30);
+  handle.setYaw(-170);
+  handle.setYaw(190);
+  assert.equal(handle.yaw(), -170);
+  handle.destroy();
 });

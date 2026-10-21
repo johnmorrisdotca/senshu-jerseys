@@ -162,6 +162,18 @@ export function applyTurn(svg: Element, yawDeg: unknown, thickness = 14): number
   return st.yaw;
 }
 
+/**
+ * Which way the jersey turns by itself, seen from above. `"counterclockwise"` is how it has always turned: the front swings to the viewer's right and the wearer's right side comes round to face
+ * the viewer. `"clockwise"` is the other way: the front swings to the viewer's left and the wearer's left side comes round. Dragging, the keys and `setYaw` are not affected: a drag to the right
+ * always swings the front to the right.
+ */
+export type TurnDirection = "clockwise" | "counterclockwise";
+
+/** A direction from anything: `"clockwise"` is clockwise, and everything else is the default, `"counterclockwise"`. */
+export function turnDirection(value: unknown): TurnDirection {
+  return value === "clockwise" ? "clockwise" : "counterclockwise";
+}
+
 export interface TurnSettings {
   /** The angle to start at. */
   yaw?: number;
@@ -169,6 +181,8 @@ export interface TurnSettings {
   autoPlay?: boolean;
   /** Degrees a second while it turns by itself (40 by default). */
   speed?: number;
+  /** Which way it turns by itself (`"counterclockwise"`, the way it always has, by default). */
+  direction?: TurnDirection;
   /** Turn by itself even where the reader prefers reduced motion. */
   force?: boolean;
   /** Called with the angle after each change. */
@@ -184,6 +198,10 @@ export interface TurnHandle {
   play(): void;
   pause(): void;
   togglePlay(): void;
+  /** Which way it turns by itself. */
+  direction(): TurnDirection;
+  /** Change which way it turns by itself, at once and without stopping it. */
+  setDirection(direction: TurnDirection): void;
   /** Draw again with new options, keeping the angle. */
   update(options: TurnOptions): void;
   destroy(): void;
@@ -199,6 +217,7 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
   let opts: TurnOptions = { ...options };
   let yaw = normalYaw(settings.yaw ?? opts.yaw ?? 0);
   const speed = typeof settings.speed === "number" && Number.isFinite(settings.speed) ? settings.speed : 40;
+  let way = turnDirection(settings.direction);
   let svg: Element | null = null;
   let alive = true;
   let want = false;
@@ -228,7 +247,7 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
     // The time since the last frame, clamped, so that a tab that was away does not jump.
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
-    show(yaw + speed * dt);
+    show(yaw + (way === "clockwise" ? -1 : 1) * speed * dt);
     frame = win?.requestAnimationFrame(tick) ?? 0;
   };
   const start = (): void => {
@@ -313,6 +332,10 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
     togglePlay() {
       if (want) handle.pause();
       else handle.play();
+    },
+    direction: () => way,
+    setDirection(next) {
+      way = turnDirection(next);
     },
     update(next) {
       if (!alive) return;

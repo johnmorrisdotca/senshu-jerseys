@@ -1,14 +1,14 @@
-// `<senshu-jersey>`: a jersey as a standard custom element. Every option is an attribute; `turnable` lets a reader turn it by hand, `autoplay` and `speed` turn it by itself.
+// `<senshu-jersey>`: a jersey as a standard custom element. Every option is an attribute; `turnable` lets a reader turn it by hand, `autoplay`, `speed` and `direction` turn it by itself.
 import { OPTION_ATTRIBUTES, optionsFromAttributes } from "./attrs.ts";
 import type { JerseyOptions } from "./options.ts";
 import { presetOptions } from "./registry.ts";
 import { renderJersey } from "./render.ts";
-import { bindTurn, jerseyFrame, type TurnHandle } from "./turn.ts";
+import { bindTurn, jerseyFrame, turnDirection, type TurnHandle } from "./turn.ts";
 
 /** The tag of the element. */
 export const SENSHU_TAG = "senshu-jersey";
 
-export const SENSHU_ATTRIBUTES = [...OPTION_ATTRIBUTES, "preset", "turnable", "autoplay", "speed", "yaw", "volume", "pitch"] as const;
+export const SENSHU_ATTRIBUTES = [...OPTION_ATTRIBUTES, "preset", "turnable", "autoplay", "speed", "direction", "yaw", "volume", "pitch"] as const;
 
 // Importing the module in a server or a test with no DOM must not fail: the class stands on an empty base there.
 const Base: typeof HTMLElement = typeof HTMLElement === "undefined" ? (class {} as unknown as typeof HTMLElement) : HTMLElement;
@@ -100,8 +100,11 @@ export class SenshuJersey extends Base {
     const speed = Number(this.getAttribute("speed"));
     const yaw = Number(this.getAttribute("yaw"));
     if (this.#turn === undefined) {
-      this.#turn = bindTurn(box, options, { yaw: Number.isFinite(yaw) ? yaw : 0, autoPlay: this.hasAttribute("autoplay"), speed: Number.isFinite(speed) && speed > 0 ? speed : undefined });
-    } else this.#turn.update(options);
+      this.#turn = bindTurn(box, options, { yaw: Number.isFinite(yaw) ? yaw : 0, autoPlay: this.hasAttribute("autoplay"), speed: Number.isFinite(speed) && speed > 0 ? speed : undefined, direction: turnDirection(this.getAttribute("direction")) });
+    } else {
+      this.#turn.setDirection(turnDirection(this.getAttribute("direction")));
+      this.#turn.update(options);
+    }
   }
 }
 
