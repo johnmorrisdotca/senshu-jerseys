@@ -53,13 +53,21 @@ test("the IJF size check passes every named size and cites the rules", () => {
   }
 });
 
-test("a turning frame shows an edge and both faces", () => {
-  const still = renderJudogi({ mode: "jacket", colour: "white" });
+test("a turning frame is the jersey volume pipeline, and the cloth is not a cartoon", () => {
+  const front = renderJudogi({ mode: "jacket", colour: "white", view: "front" });
   const edge = judogiFrame({ mode: "jacket", colour: "white", yaw: 90 });
-  const back = judogiFrame({ mode: "jacket", colour: "white", yaw: 180 });
+  const back = judogiFrame({ mode: "jacket", colour: "white", view: "back" });
+  const pants = renderJudogi({ mode: "pants", colour: "white", view: "front" });
+  const flat = renderJudogi({ mode: "pants", colour: "white", view: "flat" });
   assert.equal(wellFormed(edge), null);
   assert.equal(wellFormed(back), null);
-  assert.ok(edge.includes("data-yaw"));
-  assert.ok(edge.length !== still.length);
-  assert.ok(back.includes('data-judogi="back"'));
+  assert.equal(wellFormed(pants), null);
+  assert.ok(front.includes('data-vol="'));
+  assert.ok(edge.includes('data-yaw="90"'));
+  assert.notEqual(front, edge);
+  assert.notEqual(front, back);
+  assert.ok(pants.includes('data-vol="'));
+  assert.ok(!flat.includes('data-vol="'));
+  assert.ok(!pants.includes("<ellipse"));
+  assert.ok(!pants.includes("rx="));
 });

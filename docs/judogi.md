@@ -1,6 +1,6 @@
 # Judogi
 
-Jacket, trousers and belt as original SVG. Contest white or blue, rank-belt colours, named sizes, a product layout of separate pieces, or a worn suit with no body drawn. The designer keeps every choice in the address and can save SVG or PNG.
+Jacket, trousers and belt as original SVG. Contest white or blue, rank-belt colours, named sizes, a product layout of separate pieces, or a worn suit with no body drawn. Front and back use the same turning volume as the jerseys: a body with depth, hanging sleeves and straight legs. The designer keeps every choice in the address and can save SVG or PNG.
 
 Look at the [designer](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html) (`?colour=white&mode=pieces&belt=black&size=170`).
 

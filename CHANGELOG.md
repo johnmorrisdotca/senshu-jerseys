@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-10-23
+
+### Fixed
+
+- **Judogi cloth.** The jacket and the trousers are a garment with the same turning volume as the jerseys: a body with depth, sleeves that hang from the shoulder, and straight legs under the hip. The cloth is heavy cotton, with soft shading. The lapel is an edge, left over right. The diamond weave sits only on the jacket's skirt. Knee panels are stitching in the same cloth. The drawstring is a bow. No maker or federation marks.
+
 ## [0.10.0] - 2026-10-23
 
 ### Added
