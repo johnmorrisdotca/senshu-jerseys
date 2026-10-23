@@ -4,6 +4,11 @@ export { renderJersey } from "./render.ts";
 export { titleOf } from "./title.ts";
 export { renderCap } from "./cap.ts";
 export type { CapOptions } from "./cap.ts";
+export {
+  JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS,
+  judogiCheck, judogiFrame, judogiHeightCm, renderJudogi,
+} from "./judogi.ts";
+export type { JudogiBelt, JudogiCheck, JudogiColour, JudogiMode, JudogiOptions, JudogiSize, JudogiView } from "./judogi.ts";
 export { HELMET_KINDS, HELMET_MARKS, renderHelmet } from "./helmet.ts";
 export type { HelmetKind, HelmetMark, HelmetOptions } from "./helmet.ts";
 export { BANNER_KINDS, BANNER_SHAPES, logoHref, renderBanner } from "./banner.ts";

@@ -1,0 +1,7 @@
+.judo-layout { align-items: start; }
+.judo-layout .controls { display: grid; gap: 12px; }
+.judo-layout label { display: grid; gap: 6px; font: inherit; }
+.judo-layout select, .judo-layout button { min-height: 48px; }
+.judo-layout .stage { min-height: 320px; display: grid; place-items: center; }
+.judo-layout .stage svg { max-width: 100%; height: auto; }
+#judo-check { margin-top: 12px; max-width: 42rem; }

@@ -1,7 +1,7 @@
 <h1 align="center">Senshu Jerseys <sub>選手</sub></h1>
 
 <p align="center"><strong>Sports jerseys, sweaters and kits as SVG strings, front and back, with optional 2.5D turning.</strong><br>
-Hockey, baseball, basketball, football, soccer, rugby and handball cuts in stripes, hoops, halves and pinstripes; caps, helmets and retired-number banners; numbers and names drawn as vectors, so they look the same everywhere; and more than fifteen hundred presets of real teams' colours and stripes. Each one is a function that returns SVG. MIT, with no dependencies.</p>
+Hockey, baseball, basketball, football, soccer, rugby and handball cuts in stripes, hoops, halves and pinstripes; caps, helmets, retired-number banners and a judogi (jacket, trousers and belt); numbers and names drawn as vectors, so they look the same everywhere; and more than fifteen hundred presets of real teams' colours and stripes. Each one is a function that returns SVG. MIT, with no dependencies.</p>
 
 <p align="center">
   <a href="https://github.com/johnmorrisdotca/senshu-jerseys/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/johnmorrisdotca/senshu-jerseys/actions/workflows/ci.yml/badge.svg"></a>
@@ -10,7 +10,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
   <img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-3178c6">
 </p>
 
-<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/cuffs-and-text.md">Cuffs and text</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a></p>
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/cuffs-and-text.md">Cuffs and text</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a> · <a href="./docs/judogi.md">Judogi</a></p>
 
 <p align="center">
 <picture>
@@ -128,7 +128,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 
 | Part | Entry | What it is |
 | --- | --- | --- |
-| Drawing | `@johnmorrisdotca/senshu-jerseys` | `renderJersey`, `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner`, `kitMatchup`, `jerseyLineup`, and what they need. Pure: strings in, strings out. |
+| Drawing | `@johnmorrisdotca/senshu-jerseys` | `renderJersey`, `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner`, `renderJudogi`, `kitMatchup`, `jerseyLineup`, and what they need. Pure: strings in, strings out. |
 | Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns, either way: `turnDirection`). |
 | Element | `@johnmorrisdotca/senshu-jerseys/element`, `/define` | `<senshu-jersey>`, and the import that registers it. |
 | Presets | `@johnmorrisdotca/senshu-jerseys/presets/<league>` | One module per league: `nhl`, `mlb`, `nba`, `nfl`, `cfl`, `soccer` and the others in [docs/presets.md](./docs/presets.md). |
@@ -328,6 +328,15 @@ console.log(hanging.includes("Retired number banner 99")); // true
 console.log(pennant.includes("Championship banner")); // true
 ```
 
+A judogi (jacket, trousers and belt) is its own drawing. The designer demo keeps every choice in the address.
+
+```js
+import { JUDOGI_COLOURS, judogiCheck, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+console.log(JUDOGI_COLOURS.join(",")); // white,blue
+console.log(judogiCheck({ size: "170" }).ok); // true
+console.log(renderJudogi({ colour: "white", mode: "jacket" }).includes("<svg")); // true
+```
+
 A caller's own letters go on a cap (up to three) and a banner. Title banners set honour, city, club and years as condensed sports sans (SVG `<text>`), not the jersey's tackle-twill glyphs. No helmet, cap or banner draws a team's mark of its own: a hanging banner or a title banner shows a logo only when the caller passes one. Trophies and rings are in [Dougu Sports](https://github.com/johnmorrisdotca/dougu-sports).
 
 ### Two kits and a lineup
@@ -411,6 +420,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `renderJersey(options)`, `renderKit(options)` | A jersey (or the whole uniform) as SVG. |
 | `titleOf(resolved)` | The accessible title a drawing gets, in `language`. |
 | `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner` | A cap, a helmet, a retired-number banner, a championship pennant or garden flag. |
+| `renderJudogi`, `judogiFrame`, `judogiCheck`, `judogiHeightCm`, `JUDOGI_COLOURS`, `JUDOGI_BELTS`, `JUDOGI_BELT_LABELS`, `JUDOGI_MODES`, `JUDOGI_VIEWS`, `JUDOGI_SIZES` | A judogi: jacket, trousers and belt, contest white or blue, a turning frame, and the cited IJF size check. [Judogi](./docs/judogi.md). |
 | `kitMatchup`, `kitClash`, `jerseyLineup`, `formationRows` | Two kits face to face, whether they clash, a formation of shirts (tucked under each other with `overlap`), and the rows a formation means. |
 | `useEmblems` | Plug in an emblem renderer so that `crest` can be an id. |
 | `usePresets`, `presetOf`, `presetOptions`, `loadedPresets`, `decode`, `defineLeague` | Load presets, find one, and read or write a preset's one-line spec. |

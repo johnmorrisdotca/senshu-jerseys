@@ -29,6 +29,14 @@ export function renderIndex() {
   return withFamily(readFileSync(new URL("../demo/index.html", import.meta.url), "utf8"), { title: TITLE, description: DESCRIPTION });
 }
 
+/** demo/judogi.html, the judogi designer. */
+export function renderJudogi() {
+  return withFamily(readFileSync(new URL("../demo/judogi.html", import.meta.url), "utf8"), {
+    title: "Senshu Jerseys: judogi designer",
+    description: "Jacket, trousers and belt as SVG. Contest white or blue, rank belts, named sizes, pieces or a worn suit.",
+  });
+}
+
 /** demo/embed.html, the frame a page puts in an iframe: plain, no family blocks. */
 export function renderEmbed() {
   return readFileSync(new URL("../demo/embed.html", import.meta.url), "utf8");

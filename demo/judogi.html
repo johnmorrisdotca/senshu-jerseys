@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!--family:head-->
+  <link rel="stylesheet" href="family.css" />
+  <link rel="stylesheet" href="demo.css" />
+  <link rel="stylesheet" href="judogi.css" />
+</head>
+<body>
+<main>
+  <!--family:header-->
+  <section class="more" aria-labelledby="judo-h">
+    <h2 id="judo-h" data-say="judoTitle"></h2>
+    <p data-say="judoIntro"></p>
+    <p class="fam-fine"><a href="./" data-say="judoBack"></a></p>
+    <div class="fam-panels try judo-layout">
+      <div class="fam-panel controls" id="judo-controls"></div>
+      <div class="stagebox">
+        <div class="stagepin">
+          <div class="stage" id="judo-stage" data-testid="judo-stage"></div>
+          <div class="turnbar">
+            <label class="fam-label" for="judo-yaw" data-say="angle"></label>
+            <input class="range" type="range" id="judo-yaw" min="-180" max="180" step="1" value="0" data-testid="judo-yaw" />
+            <output id="judo-yaw-out" for="judo-yaw">0°</output>
+            <button type="button" class="fam-button" id="judo-front" data-say="front"></button>
+          </div>
+          <div class="fam-actions">
+            <button type="button" class="fam-button" id="judo-svg" data-testid="judo-svg" data-say="judoExportSvg"></button>
+            <button type="button" class="fam-button" id="judo-png" data-testid="judo-png" data-say="judoExportPng"></button>
+          </div>
+        </div>
+        <p class="fam-fine" id="judo-check" data-testid="judo-check"></p>
+      </div>
+    </div>
+  </section>
+  <!--family:unreviewed-->
+  <!--family:footer-->
+</main>
+<!--family:scripts judogi.js-->
+</body>
+</html>

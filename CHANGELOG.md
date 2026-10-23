@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-23
+
+### Added
+
+- **Judogi** (`renderJudogi`, `judogiFrame`, `judogiCheck`): jacket, trousers and belt as original SVG. Contest white or blue; rank belts including red-white; named sizes (1–7 and 150–200 cm); display modes pieces, suit, jacket, trousers or belt; front, back and flat; a turning frame with cloth thickness. The designer is `judogi.html`, choices in the address, export to SVG or PNG. No maker or federation marks. Sizes cite the IJF Judogi Rules (09 03 2022). [docs/judogi.md](docs/judogi.md).
+
 ## [0.9.1] - 2026-10-21
 
 The turning pictures show one thing moving: in a row, only the centre one turns.
