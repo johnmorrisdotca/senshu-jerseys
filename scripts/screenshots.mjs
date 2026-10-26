@@ -174,6 +174,14 @@ try {
     const one = (id, i, view) => `<figure style="margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center">${S.renderJersey({ ...S.presetOptions(id), number: [9, 17, 19, 88][i], name: ["Beaumont", "Okafor", "Tanaka", "Lindqvist"][i], view, size: 210 })}${view === "front" ? `<figcaption style="color:var(--muted)">${label(id)}</figcaption>` : ""}</figure>`;
     return ids.map((id, i) => one(id, i, "front")).join("") + ids.map((id, i) => one(id, i, "back")).join("");
   };
+  // The judogi: the white jacket with a black belt and its trousers turned a little, as product photographs show them, the blue suit
+  // worn, and the white jacket from the back with a brown belt. Each is the garment with volume, drawn by the package.
+  const judogi = (S) => [
+    S.renderJudogi({ mode: "jacket", belt: "black", yaw: 20, width: 250 }),
+    S.renderJudogi({ mode: "pants", yaw: 20, width: 172 }),
+    S.renderJudogi({ mode: "suit", colour: "blue", belt: "black", yaw: -20, width: 178 }),
+    S.renderJudogi({ mode: "jacket", view: "back", belt: "brown", yaw: -15, width: 250 }),
+  ].map((svg) => `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${svg}</figure>`).join("");
   // Which preset stands behind which picture (dark and light variants): each cut on the ground of its sport (ice, infield, hardwood, turf, pitch), the officials under floodlights (midnight in the dark),
   // the caps and the helmets on an infield and on turf, the banners on royal purple (crimson in the dark), the phone's four jerseys on four grounds and the turned sweater on ice.
   const grounds = ["ice", "infield", "hardwood", "turf", "pitch", "turf", "hardwood"];
@@ -187,6 +195,7 @@ try {
     await sheet(`patterns-desk-${scheme}`, { width: 1000, cols: 4, rows: [280, 250], scheme, zones: [{ preset: "ice", intensity: 0.9 }] }, patterns);
     await sheet(`officials-desk-${scheme}`, { width: 1400, cols: 8, rows: [230, 215], scheme, zones: [{ preset: scheme === "dark" ? "midnight" : "floodlights", intensity: 0.9 }] }, officials);
     await sheet(`caps-desk-${scheme}`, { width: 1400, cols: 6, rows: [170, 170, 170, 170], scheme, zones: [{ preset: "infield", rows: [0, 2], intensity: 0.9 }, { preset: "turf", rows: [2, 4], intensity: 0.9 }] }, gear);
+    await sheet(`judogi-desk-${scheme}`, { width: 1100, cols: 4, rows: [330], scheme, zones: [{ preset: scheme === "dark" ? "midnight" : "floodlights", intensity: 0.9 }] }, judogi);
     await sheet(`banners-desk-${scheme}`, { width: 1400, cols: 6, rows: [270, 270], scheme, zones: [{ preset: scheme === "dark" ? "crimson" : "royal", intensity: 0.9 }] }, banners);
   }
   await browser.close();

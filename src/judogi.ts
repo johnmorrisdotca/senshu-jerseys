@@ -2,10 +2,14 @@
 // colours, named IJF sizes, product pieces or a worn suit. No maker, federation or sponsor marks. Sizes and
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
-import { hashOf, hexOf, shade, type Rgb } from "./colour.ts";
-import { beltDesc, beltFace, flatFaces, jacketDesc, jacketFace, pantsDesc, pantsFace, type Face, type GiInk } from "./judogiCloth.ts";
+import { hashOf, type Rgb } from "./colour.ts";
+import { beltDesc, beltFace, beltPaint } from "./judogiBelt.ts";
+import type { BeltPaint, Face, GiInk } from "./judogiCloth.ts";
+import { jacketDesc, jacketFace } from "./judogiJacket.ts";
+import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { wrapSvg } from "./svg.ts";
-import { volumeMarkup, type VolumeDesc } from "./volume.ts";
+import { FACE_BOX, pieceMarkup } from "./pieceVolume.ts";
+import type { VolumeDesc } from "./volume.ts";
 
 export const JUDOGI_COLOURS = ["white", "blue"] as const;
 export type JudogiColour = (typeof JUDOGI_COLOURS)[number];
@@ -61,18 +65,9 @@ export interface JudogiCheck {
   notes: { id: string; met: boolean; fact: string }[];
 }
 
-const WHITE_GI: Rgb = [236, 234, 228];
-const BLUE_GI: Rgb = [27, 58, 122];
-const BELT_RGB: Record<Exclude<JudogiBelt, "none" | "red-white">, Rgb> = {
-  white: [247, 244, 236],
-  yellow: [230, 194, 0],
-  orange: [224, 112, 32],
-  green: [45, 122, 58],
-  blue: [42, 90, 160],
-  brown: [107, 58, 31],
-  black: [26, 26, 26],
-  red: [176, 16, 32],
-};
+/** Contest white is an off-white, never pure white; contest blue is a strong royal blue (as in contest photographs), not navy. */
+const WHITE_GI: Rgb = [248, 247, 243];
+const BLUE_GI: Rgb = [28, 74, 168];
 
 const HEIGHT_OF: Record<JudogiSize, number> = {
   "1": 150, "2": 160, "3": 170, "4": 175, "5": 180, "6": 190, "7": 200,
@@ -184,79 +179,78 @@ function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiM
   return `${c} judogi, ${m}, ${view}`;
 }
 
-interface BeltPaint { fill: string; edge: string; defs: string }
-
-function beltPaint(o: Ready): BeltPaint {
-  if (o.belt === "none") return { fill: "", edge: "", defs: "" };
-  if (o.belt === "red-white") {
-    const id = `${o.uid}kohaku`;
-    return {
-      fill: `url(#${id})`,
-      edge: hexOf(shade(BELT_RGB.red, -0.35)),
-      defs: `<pattern id="${id}" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="10" height="10" fill="${hexOf(BELT_RGB.white)}"/><rect width="5" height="10" fill="${hexOf(BELT_RGB.red)}"/></pattern>`,
-    };
-  }
-  const rgb = BELT_RGB[o.belt];
-  return { fill: hexOf(rgb), edge: hexOf(shade(rgb, -0.35)), defs: "" };
+function inkOf(o: Ready, part: string, belt?: BeltPaint): GiInk {
+  return { uid: `${o.uid}${part}`, cloth: o.cloth, ...(belt === undefined ? {} : { belt }) };
 }
 
-function inkOf(o: Ready, part: string, paint: BeltPaint): GiInk {
-  return { uid: `${o.uid}${part}`, cloth: o.cloth, beltFill: paint.fill, beltEdge: paint.edge };
-}
+/** Where each layout puts its pieces, at the jacket's scale: the view box, and the trousers' offset from the jacket. */
+const JACKET_BOX = [-14, -2, 228, 216] as const;
+const PANTS_BOX = [16, 0, 168, 284] as const;
+const BELT_BOX = [22, 14, 156, 110] as const;
+/** Product pictures show the trousers beside the jacket and a little lower; worn, their waistband sits under the belt. */
+const PIECES_AT = [172, 28] as const;
+const WORN_AT = 102;
 
-/** Front and back cloth wrapped on the jersey volume mesh. A back view starts half a turn round. */
+/** Each piece wrapped on its own volume; a back view starts half a turn round. A belt is tied on the jacket (the flat view lays it out on its own instead). */
 function compose(o: Ready): Sheet {
   if (o.view === "flat") return flatSheet(o);
   const yaw = normalYaw(o.yaw + (o.view === "back" ? 180 : 0));
   const depth = Math.max(0.2, o.thickness / 12);
-  const paint = beltPaint(o);
-  const worn = o.mode === "suit";
+  const paint = beltPaint(o.uid, o.belt);
+  const defs = paint?.defs ?? "";
   if (o.mode === "belt") {
-    const ink = inkOf(o, "b", paint);
-    const belt = volumeOf(`${o.uid}b`, beltDesc(depth), beltFace(ink, "front"), beltFace(ink, "back"), yaw);
-    return box(paint.defs + belt.defs, belt.body, -8, -8, 216, 108, yaw);
+    const p = paint ?? (beltPaint(o.uid, "white") as BeltPaint);
+    const belt = volumeOf(`${o.uid}b`, beltDesc(depth), beltFace(p, "front"), beltFace(p, "back"), yaw);
+    return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
   }
-  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketDesc(depth), jacketFace(inkOf(o, "j", paint), "front", worn), jacketFace(inkOf(o, "j", paint), "back", worn), yaw);
-  const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth), pantsFace(inkOf(o, "p", paint), "front"), pantsFace(inkOf(o, "p", paint), "back"), yaw);
-  if (jacket && !pants) return box(paint.defs + jacket.defs, jacket.body, -20, -16, 240, 236, yaw);
-  if (pants && !jacket) return box(paint.defs + pants.defs, pants.body, -16, -8, 232, 272, yaw);
-  if (worn && jacket && pants) return box(paint.defs + pants.defs + jacket.defs, `<g transform="translate(0 128)">${pants.body}</g>${jacket.body}`, -20, -16, 240, 412, yaw);
-  return box(paint.defs + (jacket?.defs ?? "") + (pants?.defs ?? ""), `${jacket?.body ?? ""}<g transform="translate(228 6)">${pants?.body ?? ""}</g>`, -20, -16, 470, 286, yaw);
+  const tied = o.mode === "pants" ? undefined : paint;
+  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketDesc(depth), jacketFace(inkOf(o, "j", tied), "front"), jacketFace(inkOf(o, "j", tied), "back"), yaw);
+  const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth), pantsFace(inkOf(o, "p"), "front"), pantsFace(inkOf(o, "p"), "back"), yaw);
+  if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs, jacket.body, JACKET_BOX, yaw);
+  if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);
+  if (jacket === undefined || pants === undefined) return box("", "", JACKET_BOX, yaw);
+  if (o.mode === "suit") {
+    const [x, y, w] = JACKET_BOX;
+    return box(defs + pants.defs + jacket.defs, `<g transform="translate(0 ${WORN_AT})">${pants.body}</g>${jacket.body}`, [x, y, w, WORN_AT + PANTS_BOX[1] + PANTS_BOX[3] - y], yaw);
+  }
+  const [px, py] = PIECES_AT;
+  return box(defs + jacket.defs + pants.defs, `${jacket.body}<g transform="translate(${px} ${py})">${pants.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], py + PANTS_BOX[3] - JACKET_BOX[1]], yaw);
 }
 
+/** The pieces drawn flat, as their front faces with no turn: the jacket, the trousers beside it, the belt under the jacket. */
 function flatSheet(o: Ready): Sheet {
-  const paint = beltPaint(o);
-  const inkJ = inkOf(o, "j", paint);
-  const inkP = inkOf(o, "p", paint);
-  if (o.mode === "jacket") {
-    const j = jacketFace(inkJ, "front", false);
-    return box(j.defs, j.body, 0, 0, 200, 220, 0);
-  }
-  if (o.mode === "pants") {
-    const p = pantsFace(inkP, "front");
-    return box(p.defs, p.body, 0, 0, 200, 270, 0);
-  }
+  const paint = beltPaint(o.uid, o.belt);
+  const defs = paint?.defs ?? "";
+  const flat = (f: Face): string => `${f.defs}`;
   if (o.mode === "belt") {
-    const b = beltFace(inkOf(o, "b", paint), "front");
-    return box(paint.defs + b.defs, b.body, 0, 0, 200, 100, 0);
+    const p = paint ?? (beltPaint(o.uid, "white") as BeltPaint);
+    const b = beltFace(p, "front");
+    return box(p.defs + flat(b), b.body, BELT_BOX, 0);
   }
-  const worn = o.mode === "suit";
-  const j = jacketFace(inkJ, "front", worn && o.belt !== "none");
-  const p = pantsFace(inkP, "front");
-  if (worn) return box(paint.defs + j.defs + p.defs, `<g transform="translate(0 124)">${p.body}</g>${j.body}`, -8, -8, 216, 400, 0);
-  const laid = o.belt === "none" ? undefined : beltFace(inkOf(o, "b", paint), "front");
-  const flat = flatFaces(j, p, laid);
-  return box(paint.defs + flat.defs, flat.body, -8, -8, 430, laid ? 320 : 276, 0);
+  const tied = o.mode === "suit" || o.mode === "jacket" ? paint : undefined;
+  const j = jacketFace(inkOf(o, "j", tied), "front");
+  const p = pantsFace(inkOf(o, "p"), "front");
+  if (o.mode === "jacket") return box(defs + flat(j), j.body, JACKET_BOX, 0);
+  if (o.mode === "pants") return box(flat(p), p.body, PANTS_BOX, 0);
+  if (o.mode === "suit") {
+    const [x, y, w] = JACKET_BOX;
+    return box(defs + flat(j) + flat(p), `<g transform="translate(0 ${WORN_AT})">${p.body}</g>${j.body}`, [x, y, w, WORN_AT + PANTS_BOX[1] + PANTS_BOX[3] - y], 0);
+  }
+  const [px, py] = PIECES_AT;
+  const laid = paint === undefined ? "" : `<g transform="translate(0 ${JACKET_BOX[3] - 6})">${beltFace(paint, "front").body}</g>`;
+  const extra = paint === undefined ? 0 : BELT_BOX[3];
+  return box(defs + flat(j) + flat(p), `${j.body}${laid}<g transform="translate(${px} ${py})">${p.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], Math.max(py + PANTS_BOX[3], JACKET_BOX[3] + extra) - JACKET_BOX[1]], 0);
 }
 
 function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number): { defs: string; body: string } {
-  const mk = volumeMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw, true);
-  const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc"><path d="${front.clip}"/></clipPath><clipPath id="${uid}Bc"><path d="${back.clip}"/></clipPath><g id="${uid}F">${front.body}</g><g id="${uid}B">${back.body}</g>${mk.defs}`;
+  const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw);
+  const clip = (f: Face): string => f.clip.map((d) => `<path d="${d}"/>`).join("");
+  const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}</g>${mk.defs}`;
   return { defs, body: mk.body };
 }
 
-function box(defs: string, body: string, x: number, y: number, w: number, h: number, yaw: number): Sheet {
-  return { defs, body, x, y, w, h, yaw };
+function box(defs: string, body: string, b: readonly [number, number, number, number], yaw: number): Sheet {
+  return { defs, body, x: b[0], y: b[1], w: b[2], h: b[3], yaw };
 }
 
 function normalYaw(yaw: unknown): number {
@@ -264,4 +258,3 @@ function normalYaw(yaw: unknown): number {
   const t = ((((yaw + 180) % 360) + 360) % 360) - 180;
   return Object.is(t, -0) ? 0 : t;
 }
-

@@ -129,7 +129,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 | Part | Entry | What it is |
 | --- | --- | --- |
 | Drawing | `@johnmorrisdotca/senshu-jerseys` | `renderJersey`, `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner`, `renderJudogi`, `kitMatchup`, `jerseyLineup`, and what they need. Pure: strings in, strings out. |
-| Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns, either way: `turnDirection`). |
+| Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns, either way: `turnDirection`); `judogiTurn` and `judogiPrepare` for a judogi on a page. |
 | Element | `@johnmorrisdotca/senshu-jerseys/element`, `/define` | `<senshu-jersey>`, and the import that registers it. |
 | Presets | `@johnmorrisdotca/senshu-jerseys/presets/<league>` | One module per league: `nhl`, `mlb`, `nba`, `nfl`, `cfl`, `soccer` and the others in [docs/presets.md](./docs/presets.md). |
 
@@ -328,7 +328,7 @@ console.log(hanging.includes("Retired number banner 99")); // true
 console.log(pennant.includes("Championship banner")); // true
 ```
 
-A judogi (jacket, trousers and belt) is its own drawing. The designer demo keeps every choice in the address.
+A judogi (jacket, trousers and belt) is its own drawing, each piece a garment with volume that turns: a stitched lapel crossing left over right, sleeves hanging from a dropped shoulder, a quilted skirt, and trousers whose hips part into two legs. The designer demo keeps every choice in the address. [Judogi](./docs/judogi.md).
 
 ```js
 import { JUDOGI_COLOURS, judogiCheck, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";

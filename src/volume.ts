@@ -24,6 +24,16 @@ export interface VolumeDesc {
   pitch: number;
   /** A sleeveless cut: its side wall samples further in from the drawing's edge, past the outline's stroke. */
   tank?: true;
+  /** A judogi piece (judogiCloth.ts, drawn by pieceVolume.ts) rather than a shirt: its second row is not sampled further in, since a piece's drawing has no rounded shoulder tip there (its first row is a collar). */
+  piece?: true;
+  /** The tubes hang below the body rather than from its sides (a pair of trousers' legs): both are drawn first, the near one over the far one, and the body over their tops. */
+  hang?: true;
+  /**
+   * For each row, how far its cross-section has gone from the body's round to two rounds side by side, 0 to 1: the hips of a pair of
+   * trousers parting into the legs. A row at 1 is the shape of the tops of two tubes of half its width, so legs that start there meet
+   * the body with no edge.
+   */
+  lobes?: number[];
 }
 
 /** A matrix's linear part is written to four decimals: it is multiplied by coordinates up to 200, so two would put a cell a unit off its neighbour. */
@@ -48,13 +58,32 @@ const EDGE = 0.6;
 
 /** The half width, on the drawing, a row samples: inside the outline's own edge, and further in at the shoulder tip, whose corner the drawing rounds off and leaves clear. */
 function texHalf(d: VolumeDesc, j: number): number {
-  return (d.a[j] as number) - PAD - EDGE - (j === 1 ? 5 : 0);
+  return (d.a[j] as number) - PAD - EDGE - (j === 1 && d.piece !== true ? 5 : 0);
 }
 
 /** Depth of the front (or back) half at parameter `t` (−90° the left, 90° the right): the superellipse, never thinner than the side wall. */
 function depthAt(b: number, t: number): number {
   const elliptical = b * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(Math.sin(t)), FULL)), 1 / FULL);
   return Math.max(SIDE * b, elliptical);
+}
+
+/** How deep the side wall of row `j` is on each half: as deep as the half's own edge, so the two always meet; none where the row has become two rounds. */
+function wallOf(d: VolumeDesc, j: number): number {
+  return zAt(d, j, Math.PI / 2);
+}
+
+/** Depth of row `j` of the body at parameter `t`: its round, or that round going over to two side by side (`VolumeDesc.lobes`). */
+function zAt(d: VolumeDesc, j: number, t: number): number {
+  const b = d.b[j] as number;
+  const round = depthAt(b, t);
+  const w = d.lobes?.[j] ?? 0;
+  if (w <= 0) return round;
+  // Each half of the row is one tube's top: a circle across that half, as deep as a tube of that width (`SLEEVE_DEPTH`).
+  const u = Math.abs(Math.sin(t));
+  const lobe = SLEEVE_DEPTH * ((d.a[j] as number) / 2) * Math.sqrt(Math.max(0, 1 - ((u - 0.5) / 0.5) ** 2));
+  // The outer half keeps some of the side wall's depth, which shrinks away as the row becomes two rounds (a leg has no flat side); the inner half goes in to the cleft between the legs.
+  const shaped = u >= 0.5 ? Math.max(SIDE * b * (1 - w), lobe) : lobe;
+  return round + (shaped - round) * w;
 }
 
 /** The half width of a polyline of `[u, y]` at `y`. */
@@ -199,7 +228,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
           const t = tAt(ii, d.nt);
           const halfW = texHalf(d, jj);
           tex.push(100 + halfW * Math.sin(t), d.y[jj] as number);
-          p.push(sg * (d.a[jj] as number) * Math.sin(t), d.y[jj] as number, sg * depthAt(d.b[jj] as number, t));
+          p.push(sg * (d.a[jj] as number) * Math.sin(t), d.y[jj] as number, sg * zAt(d, jj, t));
         }
         cells.push(...split(back ? 3 : 0, back, tex, p, normalOf(p, 0, (d.y[j]! + d.y[j + 1]!) / 2, 0)));
       }
@@ -216,8 +245,8 @@ export function cellsOf(d: VolumeDesc): Cell[] {
       const s = left ? -1 : 1;
       const a0 = d.a[j] as number;
       const a1 = d.a[j + 1] as number;
-      const z0 = SIDE * (d.b[j] as number);
-      const z1 = SIDE * (d.b[j + 1] as number);
+      const z0 = wallOf(d, j);
+      const z1 = wallOf(d, j + 1);
       const w0 = texHalf(d, j) + EDGE;
       const w1 = texHalf(d, j + 1) + EDGE;
       const inner = d.tank ? 4 : 2.2;
@@ -350,14 +379,14 @@ export function cellsOf(d: VolumeDesc): Cell[] {
 }
 
 /** A point turned by `yaw` about the vertical and tipped by `pitch`: the picture's x and y, and the way it faces the viewer. */
-function turn(x: number, y: number, z: number, cy: number, sy: number, cp: number, sp: number): [number, number, number] {
+export function turn(x: number, y: number, z: number, cy: number, sy: number, cp: number, sp: number): [number, number, number] {
   const x1 = x * cy + z * sy;
   const z1 = -x * sy + z * cy;
   return [x1, y * cp + z1 * sp, z1 * cp - y * sp];
 }
 
 /** Light from above, to the left and in front, as a unit vector (y is down). */
-const LIGHT: readonly [number, number, number] = [-0.4, -0.5, 0.77];
+export const LIGHT: readonly [number, number, number] = [-0.4, -0.5, 0.77];
 
 export interface Placed {
   visible: boolean;
@@ -413,14 +442,15 @@ export function nearSleeve(yaw: number): -1 | 0 | 1 {
   return Math.abs(s) < 0.02 ? 0 : s > 0 ? -1 : 1;
 }
 
-/** The order the groups of cells are drawn in, farthest first: the sleeve that is behind the body, the half of the body that is behind, the half in front, the sleeve in front. */
-export function groupOrder(yaw: number): number[] {
+/** The order the groups of cells are drawn in, farthest first: the sleeve that is behind the body, the half of the body that is behind, the half in front, the sleeve in front. Legs (`hang`) both come before the body. */
+export function groupOrder(yaw: number, hang = false): number[] {
   const torso = Math.cos(rad(yaw)) >= 0 ? [3, 0] : [0, 3];
-  return nearSleeve(yaw) === -1 ? [2, ...torso, 1] : [1, ...torso, 2];
+  const tubes = nearSleeve(yaw) === -1 ? [2, 1] : [1, 2];
+  return hang ? [...tubes, ...torso] : [tubes[0] as number, ...torso, tubes[1] as number];
 }
 
 /** The triangle of a cell, grown a little on every side so neighbouring cells overlap and no hairline shows between them. */
-function quadPath(tex: readonly number[]): string {
+export function quadPath(tex: readonly number[]): string {
   const cx = (tex[0]! + tex[2]! + tex[4]!) / 3;
   const cy = (tex[1]! + tex[3]! + tex[5]!) / 3;
   let d = "";

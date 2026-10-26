@@ -6,11 +6,15 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
-## [0.10.1] - 2026-10-23
+### Changed
 
-### Fixed
+- **The judogi, drawn again from the ground up.** 0.10.0's judogi was flat and did not look like one. The jacket now has a boxy body to mid-thigh with side vents, a shoulder that slopes and rounds into heavy sleeves hanging close to the body, and the collar as a thick band of six stitched rows standing round the back of the neck and running down the front, the wearer's left over the right, with the inside of the neck in shadow. The upper body has a fine grain weave and the skirt quilted diamonds below the waist seam. The trousers have a deep waistband gathered by a drawstring tied in a bow, hips that part into two legs (they turn as two legs, not as one board), reinforced knees and a turned hem. The belt ties with a square knot and two hanging ends, and stands alone as a tied ring. The pieces layout ties the chosen belt on the jacket. Contest white is brighter and contest blue a royal blue. The options are the same.
+- **A white cloth's shade.** A judogi piece is shaded smoothly, in opaque greys that multiply onto the cloth, so a white judogi no longer shows the grid of its cells as lines.
 
-- **Judogi cloth.** The jacket and the trousers are a garment with the same turning volume as the jerseys: a body with depth, sleeves that hang from the shoulder, and straight legs under the hip. The cloth is heavy cotton, with soft shading. The lapel is an edge, left over right. The diamond weave sits only on the jacket's skirt. Knee panels are stitching in the same cloth. The drawstring is a bow. No maker or federation marks.
+### Added
+
+- **`judogiTurn` and `judogiPrepare`** (from `@johnmorrisdotca/senshu-jerseys/turn`): turn a judogi already on a page to another angle in place, and paint its faces into pictures before it is shown, so it shows at once and turns at about thirty frames a second instead of one. The returned SVG keeps the drawing itself.
+- **The designer turns.** It stays still until a mouse comes over it or Auto-turn is pressed, turns in place with the angle slider, keeps its angle when a choice changes, and its controls are in the page's own style. A browser test holds it.
 
 ## [0.10.0] - 2026-10-23
 
