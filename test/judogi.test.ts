@@ -65,7 +65,7 @@ test("a turning frame is the jersey volume pipeline: each piece turns on its own
   assert.ok(edge.includes('data-yaw="90"'));
   assert.notEqual(front, edge);
   assert.notEqual(front, back);
-  // Jacket and trousers are two pieces, each with its description to turn it in place, and both faces of each marked for judogiPrepare.
+  // Jacket and trousers are two pieces, each with its description to turn it in place, and both faces of each marked with the box a page paints it in.
   assert.equal(pieces.match(/data-piece="/g)?.length, 2);
   assert.equal(pieces.match(/data-face="/g)?.length, 4);
   assert.ok(!flat.includes("data-piece=") && !flat.includes('data-vol="'));
@@ -102,7 +102,10 @@ test("a belt on its own keeps its shade on the belt, and casts its shadows only 
   const worn = judogiFrame({ mode: "jacket", belt: "black" });
   const alone = judogiFrame({ mode: "belt", belt: "black" });
   assert.equal(wellFormed(alone), null);
-  // On its own the belt's shade is kept to the belt: one clip shape for the ring, one for the knot and one for each end.
-  assert.equal(alone.match(/<clipPath id="[^"]*Fc">((?:<path d="[^"]*"\/>)+)<\/clipPath>/)?.[1]?.match(/<path/g)?.length, 4);
+  // On its own the belt's shade is kept to the shapes it is drawn with: the ring, the knot's two parts and the two ends.
+  const clip = alone.match(/<clipPath id="[^"]*Fc">((?:<path d="[^"]*"\/>)+)<\/clipPath>/)?.[1] ?? "";
+  assert.equal(clip.match(/<path/g)?.length, 5);
+  // The ring follows the belt's curve, not a box round it (a box left a grey halo where the belt sags).
+  assert.ok(clip.match(/<path d="([^"]*)"/)?.[1]?.includes("C"));
   assert.ok(worn.length > alone.length);
 });
