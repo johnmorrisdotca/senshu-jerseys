@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-26
+
 ### Changed
 
 - **The judogi, drawn again from the ground up.** 0.10.0's judogi was flat and did not look like one. The jacket now has a boxy body to mid-thigh with side vents, a shoulder that slopes and rounds into heavy sleeves hanging close to the body, and the collar as a thick band of six stitched rows standing round the back of the neck and running down the front, the wearer's left over the right, with the inside of the neck in shadow. The upper body has a fine grain weave and the skirt quilted diamonds below the waist seam. The trousers have a deep waistband gathered by a drawstring tied in a bow, hips that part into two legs (they turn as two legs, not as one board), reinforced knees and a turned hem. The belt ties with a square knot and two hanging ends, and stands alone as a tied ring. The pieces layout ties the chosen belt on the jacket. Contest white is brighter and contest blue a royal blue. The options are the same.
