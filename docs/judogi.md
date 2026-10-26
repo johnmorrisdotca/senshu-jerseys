@@ -31,18 +31,18 @@ judogiCheck({ size: "180" });
 
 ## On a page
 
-A judogi is detailed cloth, and every one of the few hundred cells a piece is made of draws its face again: drawn as it is, a pair of pieces takes about a second to paint. On a page, `judogiPrepare` paints each face once into a picture before the drawing is shown, and the cells show the picture; then `judogiTurn` moves the drawing to another angle in place, at about thirty frames a second on a desk. The SVG the package returns, and so a saved file, keeps the drawing itself.
+A judogi is detailed cloth, and every one of the few hundred cells a piece is made of draws its face again: as an SVG on a page, a pair of pieces takes about a second a frame to turn in Safari. `judogiCanvas` paints the SVG on a canvas instead: each face once into a picture, then every cell of a piece in one draw on the graphics card (WebGL 2), at the screen's full frame rate in Safari, Chrome and Firefox, phones included. Without WebGL 2 it paints on a 2D canvas, slower (about fifteen frames a second in Safari). Put the canvas on the page in place of the SVG, and call `dispose` when it leaves, since a browser keeps only so many canvases on the graphics card. The SVG the package returns, and so a saved file, keeps the drawing itself; `judogiTurn` turns that SVG in place where a canvas will not do.
 
 ```js no-run
 import { judogiFrame } from "@johnmorrisdotca/senshu-jerseys";
-import { judogiPrepare, judogiTurn } from "@johnmorrisdotca/senshu-jerseys/turn";
+import { judogiCanvas } from "@johnmorrisdotca/senshu-jerseys/turn";
 
 const holder = document.createElement("div");
 holder.innerHTML = judogiFrame({ mode: "pieces", belt: "black" });
-const svg = holder.firstElementChild;
-await judogiPrepare(svg);          // before it goes on the page
-document.querySelector("#stage").append(svg);
-judogiTurn(svg, 30);               // and again for each angle
+const painted = await judogiCanvas(holder.firstElementChild);
+document.querySelector("#stage").append(painted.canvas);
+painted.turn(30);                  // and again for each angle
+painted.dispose();                 // when it leaves the page
 ```
 
 The shade is opaque greys that multiply onto the cloth (CSS `mix-blend-mode`), which every current browser draws; a white cloth would show the grid of a half-transparent shade as lines.

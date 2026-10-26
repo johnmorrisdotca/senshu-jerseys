@@ -129,7 +129,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 | Part | Entry | What it is |
 | --- | --- | --- |
 | Drawing | `@johnmorrisdotca/senshu-jerseys` | `renderJersey`, `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner`, `renderJudogi`, `kitMatchup`, `jerseyLineup`, and what they need. Pure: strings in, strings out. |
-| Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns, either way: `turnDirection`); `judogiTurn` and `judogiPrepare` for a judogi on a page. |
+| Turning | `@johnmorrisdotca/senshu-jerseys/turn` | `jerseyFrame` (one angle) and `bindTurn` (a container that turns, either way: `turnDirection`); `judogiCanvas` (a judogi on a canvas that turns it) and `judogiTurn` (its SVG, in place). |
 | Element | `@johnmorrisdotca/senshu-jerseys/element`, `/define` | `<senshu-jersey>`, and the import that registers it. |
 | Presets | `@johnmorrisdotca/senshu-jerseys/presets/<league>` | One module per league: `nhl`, `mlb`, `nba`, `nfl`, `cfl`, `soccer` and the others in [docs/presets.md](./docs/presets.md). |
 

@@ -14,7 +14,7 @@ type Vec = [number, number, number];
  * A quadrilateral's smooth shade: its number, the way the cloth faces along its two side edges (each the mean of the two
  * quadrilaterals that share it, so neighbours meet at the same value), and the line on its drawing the shade runs along.
  */
-interface Smooth {
+export interface Smooth {
   k: number;
   n0: Vec;
   n1: Vec;
@@ -45,7 +45,7 @@ function edgeLine(tex: readonly number[]): [number, number, number, number] {
  * The smooth shade of every cell that is half of a quadrilateral (volume.ts splits each into two triangles in turn, sharing one
  * normal), by cell. A cuff's lining is fans, not quadrilaterals, and keeps a flat shade.
  */
-function smoothOf(cells: readonly Cell[]): (Smooth | undefined)[] {
+export function smoothOf(cells: readonly Cell[]): (Smooth | undefined)[] {
   const key = (p: readonly number[], i: number): string => `${Math.round(p[i]! * 50)},${Math.round(p[i + 1]! * 50)},${Math.round(p[i + 2]! * 50)}`;
   const quads: { i: number; corners: number[]; tex: number[]; n: Vec; left: string; right: string }[] = [];
   for (let i = 0; i + 1 < cells.length; i++) {
@@ -87,7 +87,7 @@ function smoothOf(cells: readonly Cell[]): (Smooth | undefined)[] {
  */
 const TILT = 0.2;
 
-function shadeOf(n: Vec, yaw: number, pitch: number): number {
+export function shadeOf(n: Vec, yaw: number, pitch: number): number {
   const k = Math.hypot(n[0], n[1] * TILT, n[2]) || 1;
   const r = (d: number): number => (d * Math.PI) / 180;
   const w = turn(n[0] / k, (n[1] * TILT) / k, n[2] / k, Math.cos(r(yaw)), Math.sin(r(yaw)), Math.cos(r(pitch)), Math.sin(r(pitch)));
@@ -96,25 +96,25 @@ function shadeOf(n: Vec, yaw: number, pitch: number): number {
 }
 
 /**
- * The box every piece's drawing lies inside, on its own 200-wide drawing. A face's group carries it (`data-face`), so that in a browser
- * `judogiPrepare` can paint the face into a picture of that box and put the picture in the group in place of the drawing: every cell
- * draws its face again, and a detailed drawing drawn some hundreds of times a frame is slow where a clipped picture is not.
+ * The box every piece's drawing lies inside, on its own 200-wide drawing. A face's group carries it (`data-face`), so that a browser can
+ * paint the face once into a picture of that box (`judogiCanvas` does): every cell draws its face again, and a detailed drawing drawn
+ * some hundreds of times a frame is slow where a picture is not.
  */
 export const FACE_BOX = [-40, -20, 280, 320] as const;
 
 /** A shade as the grey that multiplies the cloth by as much: 0 is white (no change), 0.5 a mid grey. */
-function greyOf(shade: number): string {
+export function greyOf(shade: number): string {
   const v = Math.round(255 * (1 - Math.max(0, Math.min(1, shade))));
   return `#${v.toString(16).padStart(2, "0").repeat(3)}`;
 }
 
 /** The order the left and right halves of a body with lobes are drawn in: the nearer one last. */
-function halfOrder(yaw: number): ("L" | "R")[] {
+export function halfOrder(yaw: number): ("L" | "R")[] {
   return nearSleeve(yaw) === -1 ? ["R", "L"] : ["L", "R"];
 }
 
 /** Which layer a cell is drawn in: its group, and for a body with lobes the half of it the cell lies in. */
-function layerOf(d: VolumeDesc, c: Cell): string {
+export function layerOf(d: VolumeDesc, c: Cell): string {
   if (d.lobes === undefined || (c.g !== 0 && c.g !== 3)) return `${c.g}`;
   return `${c.g}${c.p[0]! + c.p[3]! + c.p[6]! < 0 ? "L" : "R"}`;
 }

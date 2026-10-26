@@ -1,7 +1,7 @@
 // Judogi designer: one options object in the address, a preview that turns in place (by the angle slider, by hovering, or on its own),
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
 import { JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, judogiCheck, judogiFrame } from "./dist/index.js";
-import { judogiPrepare, judogiTurn } from "./dist/turn-entry.js";
+import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -37,17 +37,25 @@ const flat = () => state.view === "flat";
 const wrap = (a) => ((((Math.round(a) + 180) % 360) + 360) % 360) - 180;
 
 let drawing = 0;
+/** The judogi on the stage as a canvas that turns it, or undefined while the stage shows an SVG (a flat view). */
+let painted;
 
-/** The whole drawing, at the current angle: made off the page, its faces painted into pictures, then shown. A newer choice wins. */
+/** The whole drawing, at the current angle: made off the page and painted on a canvas, then shown. A newer choice wins. */
 async function draw() {
   const o = options();
   const mine = ++drawing;
   const holder = document.createElement("div");
   holder.innerHTML = judogiFrame(o);
   const svg = holder.firstElementChild;
-  if (svg !== null) await judogiPrepare(svg);
-  if (mine !== drawing) return;
-  $("judo-stage").replaceChildren(...holder.childNodes);
+  const canvas = svg === null || flat() ? undefined : await judogiCanvas(svg);
+  if (mine !== drawing) {
+    canvas?.dispose();
+    return;
+  }
+  painted?.dispose();
+  painted = canvas;
+  if (canvas === undefined) $("judo-stage").replaceChildren(...holder.childNodes);
+  else $("judo-stage").replaceChildren(canvas.canvas);
   $("judo-check").textContent = checkText(judogiCheck(o));
   for (const id of ["judo-yaw", "judo-play", "judo-front"]) $(id).disabled = flat();
   if (flat()) stop();
@@ -71,8 +79,10 @@ function showAngle() {
 /** Move the drawing already on the stage to the current angle, without drawing it again. */
 function turnTo(yaw) {
   state.yaw = yaw;
+  const shown = state.yaw + (state.view === "back" ? 180 : 0);
   const svg = $("judo-stage").querySelector("svg");
-  if (svg !== null && !flat()) judogiTurn(svg, state.yaw + (state.view === "back" ? 180 : 0));
+  if (painted !== undefined) painted.turn(shown);
+  else if (svg !== null && !flat()) judogiTurn(svg, shown);
   showAngle();
 }
 

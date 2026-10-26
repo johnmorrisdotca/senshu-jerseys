@@ -15,7 +15,8 @@ All notable changes to this project are written here. The format follows
 
 ### Added
 
-- **`judogiTurn` and `judogiPrepare`** (from `@johnmorrisdotca/senshu-jerseys/turn`): turn a judogi already on a page to another angle in place, and paint its faces into pictures before it is shown, so it shows at once and turns at about thirty frames a second instead of one. The returned SVG keeps the drawing itself.
+- **`judogiCanvas`** (from `@johnmorrisdotca/senshu-jerseys/turn`): paints a judogi's SVG on a canvas that turns it at the screen's full frame rate, every cell of a piece in one WebGL 2 draw, with a 2D canvas where WebGL 2 is missing. As an SVG, a pair of pieces took about a second a frame to turn in Safari. The returned SVG keeps the drawing itself.
+- **`judogiTurn`** (from the same entry): turns a judogi's SVG already on a page to another angle in place.
 - **The designer turns.** It stays still until a mouse comes over it or Auto-turn is pressed, turns in place with the angle slider, keeps its angle when a choice changes, and its controls are in the page's own style. A browser test holds it.
 
 ## [0.10.0] - 2026-10-23
