@@ -37,12 +37,14 @@ test("the angle slider turns the drawing in place, and a choice keeps the angle"
 });
 
 test("it turns on its own with the button, and stops on the second press", async ({ page }) => {
+  // A machine with no graphics card (CI's WebKit) draws a frame in seconds, not milliseconds: this holds that it turns, not how fast.
+  test.setTimeout(60_000);
   await page.goto("/judogi.html?mode=pants");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
   const play = page.locator('[data-testid="judo-play"]');
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => yawOf(page), { timeout: 4000 }).not.toBe(0);
+  await expect.poll(() => yawOf(page), { timeout: 20_000 }).not.toBe(0);
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "false");
   const stopped = await yawOf(page);
