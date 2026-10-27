@@ -99,11 +99,11 @@ export function collarCells(d: CollarDesc): Cell[] {
   const top = along(pairs(d.top), STEP);
   const under = along(pairs(d.under), STEP);
   const mids: Mid[] = [];
-  // The top lapel lies on the under one from below the neck to where the under one ends, so it is lifted by that one's thickness there.
+  // The top lapel lies on the under one only where they cross, just above where the under one ends, so it is lifted by that one's thickness there.
   const underFoot = under[under.length - 1]![1];
   for (const [x, y] of top) {
     const { p, n } = onBody(x, y);
-    const over = Math.max(0, Math.min(1, (y - 12) / 8)) * Math.max(0, Math.min(1, (underFoot + 10 - y) / 8));
+    const over = Math.max(0, Math.min(1, (y - (underFoot - 22)) / 10)) * Math.max(0, Math.min(1, (underFoot + 10 - y) / 6));
     mids.push({ p, out: n, t: thick(y), lift: GAP + over * (thick(y) + GAP), under: n });
   }
   // Round the neck: the body's cross-section there, from the top lapel's end round the side, the back and the other side to the under lapel's.
