@@ -43,3 +43,5 @@ export { EMBROIDERY_FONTS, EMBROIDERY_PLACES, FONT_STACKS, LOGO_PLACES, MARK_RUL
 export type { EmbroideryDirection, EmbroideryFontFace, EmbroideryFontName, EmbroideryPlace, JudogiEmblem, JudogiEmbroidery, JudogiLogo, LogoPlace, MarkRules } from "./judogiMarks.ts";
 export { THREAD_COLOURS, THREAD_LABELS, THREAD_RGB } from "./judogiThread.ts";
 export type { ThreadColour } from "./judogiThread.ts";
+export { LABEL_COLOURS, LABEL_COLOUR_LABELS } from "./judogiLabel.ts";
+export type { JudogiLabel, LabelColour } from "./judogiLabel.ts";

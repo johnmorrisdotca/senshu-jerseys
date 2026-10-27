@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-27
+
+### Added
+
+- **The "Approved Judogi" label** (`label` on `renderJudogi` and `judogiFrame`): the package's own woven label, on by one option on the jacket's bottom front beside the maker's logo spot, the trousers' front near the waist and the belt's left hanging end. "APPROVED" above, "JUDOGI" below, and between them one white judogi in a circle ringed by "SENSHU JERSEYS FEDERATION". Five colour variants (navy, forest green `深緑`, black, wine `えんじ`, cream `生成り`) or your own cloth and thread. Woven cloth: weave, satin thread, woven border, sheen, a curled corner. It is not the IJF's label (none of its coloured judogi, red border, serif lettering or name), and the made-up Senshu Jerseys Federation it names certifies nothing. The designer switches it on and off and picks the variant.
+
 ## [0.13.0] - 2026-10-27
 
 ### Added

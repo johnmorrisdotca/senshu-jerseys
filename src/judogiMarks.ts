@@ -11,6 +11,7 @@ import { esc, hashOf, lum, type Rgb } from "./colour.ts";
 import type { Mark } from "./judogiCloth.ts";
 import { HEM_X } from "./judogiCollar.ts";
 import { jacketSpots } from "./judogiJacket.ts";
+import { labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
 import { CM, cloth } from "./judogiPatch.ts";
 import { pantsSpots } from "./judogiPants.ts";
 import { readThread, satinDefs, satinRun, satinShape, satinStroke, type ThreadColour } from "./judogiThread.ts";
@@ -66,6 +67,8 @@ export interface JudogiLogo {
   widthCm?: number;
   heightCm?: number;
 }
+
+export type { JudogiLabel };
 
 export interface JudogiEmblem {
   /** The national emblem on the left chest: SVG text (a flag from Hata, say) or a `data:image/` address; a neutral placeholder without either. */
@@ -159,6 +162,7 @@ export interface MarkSpec {
   embroidery: ReadEmbroidery[];
   logos: ReadLogo[];
   emblem: ReadEmblem | undefined;
+  label: ReadLabel | undefined;
 }
 
 const num = (v: unknown, min: number, max: number, fallback: number): number =>
@@ -190,7 +194,7 @@ function readImage(svg: unknown, href: unknown): { src: string; aspect: number }
 }
 
 /** The marks from outside, made safe. Only the places the rules name are taken, and only the first of each. */
-export function readMarks(options: { embroidery?: unknown; logos?: unknown; emblem?: unknown; rules?: unknown }): MarkSpec | undefined {
+export function readMarks(options: { embroidery?: unknown; logos?: unknown; emblem?: unknown; rules?: unknown; label?: unknown }): MarkSpec | undefined {
   const rules: MarkRules = options.rules === "ajjf" ? "ajjf" : "ijf";
   const embroidery: ReadEmbroidery[] = [];
   const seen = new Set<string>();
@@ -258,8 +262,9 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       heightCm: num(e.heightCm, 1, 40, Math.round(h0 * 10) / 10),
     };
   }
-  if (embroidery.length === 0 && logos.length === 0 && emblem === undefined) return undefined;
-  return { rules, embroidery, logos, emblem };
+  const label = readLabel(options.label);
+  if (embroidery.length === 0 && logos.length === 0 && emblem === undefined && label === undefined) return undefined;
+  return { rules, embroidery, logos, emblem, label };
 }
 
 /** What the rules say of each mark asked for: met or not, with the source. A mark outside its limit is drawn at the limit, and reported here. */
@@ -280,6 +285,9 @@ export function markNotes(m: MarkSpec): { id: string; met: boolean; fact: string
     const piece = l.place.startsWith("pants") ? "pants" : l.place.startsWith("belt") ? "belt" : "jacket";
     const max = LOGO_AREA[m.rules][piece];
     notes.push({ id: `logo-${piece}`, met: l.widthCm * l.heightCm <= max + 1e-6, fact: `One manufacturer's logo to a garment, at most ${max} cm2 on the ${piece} (${src}).` });
+  }
+  if (m.label !== undefined) {
+    notes.push({ id: "label", met: true, fact: `The approval label goes on the bottom of the jacket on the front left near the reinforced edge, on the top front of the trousers close to the centre and at one of the two edges of the belt (${IJF}). This package's label is its own and certifies nothing.` });
   }
   if (m.emblem !== undefined) {
     notes.push({ id: "emblem", met: m.emblem.widthCm * m.emblem.heightCm <= EMBLEM_AREA + 1e-6, fact: `The national emblem is on the left chest, at most ${EMBLEM_AREA} cm2 (${IJF}).` });
@@ -454,6 +462,18 @@ export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltLen: num
       }
     }
   });
+  if (m.label !== undefined) {
+    // On the jacket beside the maker's logo spot, on the trousers under the waistband near the middle, and on the belt's left end near the knot, upright.
+    const put = (key: "jacket" | "pants" | "belt", w: number, spot: { x: number; y: number; rot?: number }): void => {
+      const o = labelMark(id(`L${key}`), m.label as ReadLabel, w);
+      if (key === "jacket") set.jacket.front = add(set.jacket.front, o, at(spot, o.body));
+      else if (key === "pants") set.pants.front = add(set.pants.front, o, at(spot, o.body));
+      else set.belt.left = add(set.belt.left, o, at(spot, o.body));
+    };
+    put("jacket", 12.5, { x: 119, y: 180 });
+    put("pants", 9, { x: 121, y: 40 });
+    put("belt", 7.6, { x: beltLen * 0.27, y: 0, rot: -90 });
+  }
   if (m.emblem !== undefined) {
     const o = emblemOf(m.emblem, clothRgb, id("m"));
     set.jacket.front = add(set.jacket.front, o, at(js.chest, o.body));

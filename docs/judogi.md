@@ -117,3 +117,15 @@ The package ships no Japanese font: a Japanese face is megabytes. A drawing save
 | Maker's logo | 30 cm2 on the jacket and trousers, 9 cm2 on the belt, one to a garment | 20 cm2 on the jacket and trousers |
 
 The package's own sizes are inside both. The small print of the retailer's chart is hard to read: check a figure against the federation's current rules before you rely on it. Wooden name-plate engraving is not drawn.
+
+## The Approved Judogi label
+
+`label: true` (or `{ colour, thread }`) sews the package's own woven label on all three pieces: at the jacket's bottom front on the wearer's left beside the maker's logo spot, on the front of the trousers just under the waistband near the middle, and on the belt's left hanging end, upright, near the knot, with the rest of the end left for embroidery. These are the places the IJF Judogi Rules (09 03 2022) give for its approval label.
+
+```js
+import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+
+renderJudogi({ mode: "pieces", belt: "black", label: { colour: "navy" } });
+```
+
+The label is a tribute and is nobody's: "APPROVED" across the top, "JUDOGI" across the bottom and, between them, one white judogi in a circle ringed by the words "SENSHU JERSEYS FEDERATION". The Senshu Jerseys Federation is made up, and **the label certifies nothing**. It is not the IJF's label and does not copy it: the colours, lettering, proportions and drawing are this package's own, with no coloured judogi in a ring, no red rectangular border, no serif lettering and no federation name. It is drawn as woven cloth: a fine weave, satin thread, a woven border, a sheen and a curl at one corner. `colour` is `navy` (the default), `forest` (`深緑`, deep green), `black`, `wine` (`えんじ`) or `cream` (`生成り`, unbleached), or `#rrggbb` for the cloth; `thread` is a thread preset or `#rrggbb`. They are `LABEL_COLOURS`. A label takes no size: it is 3.5 cm by 5 cm on the jacket and 2.6 cm by 3.7 cm on the trousers and the belt.

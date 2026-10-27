@@ -303,3 +303,27 @@ test("an artwork is an image, a font's CSS must be data-only, and outlines are p
   const nopath = renderJudogi({ embroidery: [{ place: "jacket-hem", path: { d: "M0 0<script>", width: 10, height: 10 } }] });
   assert.ok(!nopath.includes("<script"));
 });
+
+test("the approval label is the package's own on all three pieces, in five variants, and carries no federation's name", async () => {
+  const { LABEL_COLOURS } = await import("../src/judogiLabel.ts");
+  const base = { mode: "pieces" as const, belt: "black" as const };
+  const plain = renderJudogi(base);
+  const norm = (svg: string): string => svg.replace(/jg[0-9a-z]+/g, "jg");
+  for (const colour of LABEL_COLOURS) {
+    const svg = renderJudogi({ ...base, label: { colour } });
+    assert.equal(wellFormed(svg), null, colour);
+    assert.notEqual(norm(svg), norm(plain));
+    assert.ok(!svg.includes("IJF") && !svg.includes("INTERNATIONAL") && !svg.includes("OFFICIAL"));
+  }
+  // On all three: the same label in the flat drawing of each piece, and nothing without the option.
+  const jacket = renderJudogi({ mode: "jacket", belt: "none", view: "flat", label: true });
+  const pants = renderJudogi({ mode: "pants", view: "flat", label: true });
+  const belt = renderJudogi({ mode: "belt", belt: "black", view: "flat", label: true });
+  for (const [svg, bare] of [[jacket, renderJudogi({ mode: "jacket", belt: "none", view: "flat" })], [pants, renderJudogi({ mode: "pants", view: "flat" })], [belt, renderJudogi({ mode: "belt", belt: "black", view: "flat" })]] as const) {
+    assert.equal(wellFormed(svg), null);
+    assert.ok(norm(svg).length > norm(bare).length + 2000);
+  }
+  assert.equal(renderJudogi({ ...base, label: false }), plain);
+  const check = judogiCheck({ label: true });
+  assert.ok(check.notes.some((n) => n.id === "label" && /certifies nothing/.test(n.fact)));
+});

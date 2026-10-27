@@ -109,7 +109,7 @@ export function satinStroke(d: string, sw: number, rgb: Rgb): string {
   const t = threadOf(rgb);
   const cap = 'fill="none" stroke-linejoin="round"';
   const unit = Math.max(0.5, Math.min(1.1, sw * 0.4));
-  return `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.shadow}" stroke-opacity="0.34" stroke-width="${n2(sw + 0.9)}" transform="translate(0.35 0.5)"/>` +
+  return `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.shadow}" stroke-opacity="0.34" stroke-width="${n2(sw + Math.min(0.9, sw * 0.45))}" transform="translate(${n2(Math.min(0.35, sw * 0.2))} ${n2(Math.min(0.5, sw * 0.28))})"/>` +
     `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.fill}" stroke-width="${n2(sw)}"/>` +
     `<path d="${d}" ${cap} stroke="${t.gap}" stroke-opacity="0.55" stroke-width="${n2(sw * 0.98)}" stroke-dasharray="${n2(unit * 0.22)} ${n2(unit * 0.5)}"/>` +
     `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.sheen}" stroke-opacity="0.34" stroke-width="${n2(sw * 0.3)}" transform="translate(${n2(-sw * 0.12)} ${n2(-sw * 0.16)})"/>`;

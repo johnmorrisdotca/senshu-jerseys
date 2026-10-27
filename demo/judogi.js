@@ -2,7 +2,7 @@
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
 import {
   JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
-  EMBROIDERY_FONTS, EMBROIDERY_PLACES, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS,
+  EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS,
   judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
@@ -42,6 +42,8 @@ const state = {
   emblem: ["placeholder", "flag"].includes(params.get("emblem")) ? params.get("emblem") : "none",
   flag: (params.get("flag") ?? "ca").toLowerCase().replace(/[^a-z-]/g, "").slice(0, 6),
   rules: MARK_RULES.includes(params.get("rules")) ? params.get("rules") : "ijf",
+  // The "Approved Judogi" label, on the jacket, the trousers and the belt at once.
+  label: LABEL_COLOURS.includes(params.get("label")) ? params.get("label") : "none",
 };
 
 /** The flag's SVG, loaded from Hata (the package is not a dependency of this one: the demo asks for one flag when it is chosen). */
@@ -76,11 +78,12 @@ function options() {
   if (state.logo !== "none") o.logos = [{ place: state.logo }];
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
-  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined) o.rules = state.rules;
+  if (state.label !== "none") o.label = { colour: state.label };
+  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined || o.label !== undefined) o.rules = state.rules;
   return o;
 }
 
-const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf" };
+const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf", label: "none" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -239,10 +242,11 @@ function rows() {
         [`judo-e${n}f`, say("judoFont"), select(`judo-e${n}f`, EMBROIDERY_FONTS, (v) => say(`judoFont_${v}`))],
       ]),
     ])),
+    ["judo-label", say("judoLabel"), select("judo-label", ["none", ...LABEL_COLOURS], (v) => (v === "none" ? say("judoLabel_none") : pair(LABEL_COLOUR_LABELS)(v)))],
     ["judo-logo", say("judoLogo"), select("judo-logo", ["none", ...LOGO_PLACES], (v) => say(`judoLogo_${v}`))],
     ["judo-emblem", say("judoEmblem"), select("judo-emblem", ["none", "placeholder", "flag"], (v) => say(`judoEmblem_${v}`)), true],
     ...(state.emblem === "flag" ? [["judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")]] : []),
-    ...(state.e1p !== "none" || state.logo !== "none" || state.emblem !== "none" ? [["judo-rules", say("judoRules"), select("judo-rules", MARK_RULES, (v) => say(`judoRules_${v}`))]] : []),
+    ...(state.e1p !== "none" || state.logo !== "none" || state.emblem !== "none" || state.label !== "none" ? [["judo-rules", say("judoRules"), select("judo-rules", MARK_RULES, (v) => say(`judoRules_${v}`))]] : []),
   ];
 }
 
