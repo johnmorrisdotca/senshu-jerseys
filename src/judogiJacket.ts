@@ -20,12 +20,15 @@ import { sleeveAt, type VolumeDesc } from "./volume.ts";
  */
 const Y = [6, 12, 18, 26, 36, 58, 86, 104, 114, 124, 140, 170, 205];
 /** The drawing's half width at each row, hanging loose. */
-const LOOSE = [22, 30, 40, 52, 62, 59, 51.5, 45, 41, 41.5, 44, 48.5, 54];
+const LOOSE = [22, 30, 40, 51, 60.5, 58.5, 51.5, 45, 41, 41.5, 44, 48.5, 54];
 /** Belted: the belt holds the waist to a 30 cm half round, the skirt flaring out below it. */
-const TIED = [22, 30, 40, 52, 62, 59, 51.5, 45, 39.5, 40.5, 43.5, 49, 56];
-/** The half depth of the body at each row: thick cloth on the chest, drawn in with the waist by the belt. */
-const LOOSE_D = [12, 15, 18, 21, 23, 24, 24, 24, 24, 24, 24, 24, 24];
-const TIED_D = [12, 15, 18, 21, 23, 24, 23.5, 21.5, 20, 20.5, 22, 23.5, 24.5];
+const TIED = [22, 30, 40, 51, 60.5, 58.5, 51.5, 45, 39.5, 40.5, 43.5, 49, 56];
+/**
+ * The half depth of the body at each row, as a person's: some 24 cm deep at the chest with the thick cloth over it, against 34 cm
+ * across, about 21 cm at a belted waist, and the skirt as deep as the hips under it.
+ */
+const LOOSE_D = [14, 18, 22, 26, 29, 31, 32, 32, 31, 31, 31, 31.5, 32];
+const TIED_D = [14, 18, 22, 26, 29, 31, 32, 30, 27.5, 28, 29.5, 31, 32];
 const WAIST = 114;
 const HEM = Y[Y.length - 1] as number;
 
@@ -62,11 +65,12 @@ function rowAt(h: readonly number[], y: number): number {
  * as a straight curve (`CAP`), so the volume keeps its inner edge level with the outer: the sleeve's head is a band down the armhole,
  * not a tube that narrows to a point at the shoulder.
  */
-const S: Pt = [37, 36];
+const S: Pt = [39.5, 36];
 const P: Pt = [5, 162];
 const A: Pt = [57, 104];
 const Q: Pt = [40, 174];
-const CAP = [S[0] + (P[0] - S[0]) / 3, S[1] + (P[1] - S[1]) / 3, S[0] + (2 * (P[0] - S[0])) / 3, S[1] + (2 * (P[1] - S[1])) / 3];
+/** The outer edge as a straight curve, then where the armhole starts, a little in over the shoulder from its point. */
+const CAP = [S[0] + (P[0] - S[0]) / 3, S[1] + (P[1] - S[1]) / 3, S[0] + (2 * (P[0] - S[0])) / 3, S[1] + (2 * (P[1] - S[1])) / 3, S[0] + 8, S[1] - 5];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 const SLEEVE_Q = [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]];
 /** About how far down the sleeve, by length along its outer edge, its head comes down to the armpit's level. */
@@ -84,9 +88,10 @@ export const LAPEL_BAND = LAPEL - 1;
 export function jacketDesc(depth = 1, tied = false): VolumeDesc {
   const sl: VolumeDesc["sl"] = [
     { s: -1, q: SLEEVE_Q, c: CAP },
-    { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)], c: [200 - CAP[0]!, CAP[1]!, 200 - CAP[2]!, CAP[3]!] },
+    { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)], c: CAP.map((v, k) => (k % 2 === 0 ? 200 - v : v)) },
   ];
-  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 12, 6), full: FULL };
+  // The sleeves are round over the arms, a little flatter than deep.
+  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 20, 8), full: FULL, tube: 0.85 };
 }
 
 /**
@@ -130,7 +135,7 @@ function bodyOutline(tied: boolean): Pt[] {
 function sleeveOutline(side: -1 | 1): Pt[] {
   const pts: Pt[] = [];
   for (let k = 0; k <= 24; k++) pts.push(sleeveAt(SLEEVE_Q, CAP, k / 24)[0]);
-  pts.push(Q, A);
+  pts.push(Q, A, [CAP[4]!, CAP[5]!]);
   return side === -1 ? pts : pts.map(mirror);
 }
 
@@ -195,7 +200,7 @@ function edges(t: Tone, tied: boolean): string {
     s += `<rect x="${n2(x(182, 4.2) - 2.2)}" y="180.6" width="4.4" height="1.5" rx="0.6" fill="${t.seam}" fill-opacity="0.75"/>`;
     s += fold(`M${n2(x(184, 5.6))} 184L${n2(x(HEM - 1, 5.4))} ${HEM - 1}`, 2.4, t.light ? 0.2 : 0.3);
     const neck: Pt = [100 + side * 25, 14];
-    const tip: Pt = [100 + side * 61.5, 36];
+    const tip: Pt = [100 + side * 60, 36];
     s += seam(`M${n2(neck[0])} ${neck[1] + 0.8}L${n2(tip[0] - side * 1)} ${tip[1] + 0.6}`, t, 0.45);
   }
   const hem = halfAt(tied, HEM);

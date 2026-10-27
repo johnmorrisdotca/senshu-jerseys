@@ -21,7 +21,8 @@ const H = [50, 51, 53, 51, 50.2];
  */
 const H_WORN = [39, 40.5, 45, 49, 50.2];
 const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
-const D = [18, 20, 21.5, 21, 20];
+/** Half depths: a person's hips, some 24 cm deep with the cloth, going over to the two legs. */
+const D = [26, 28, 30, 28, 24];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.15, 0.42, 0.72, 1];
 const HEM = 262;
@@ -39,7 +40,8 @@ export function pantsDesc(depth = 1, worn = false): VolumeDesc {
     { s: -1, q: [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]] },
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)] },
   ];
-  return { ...pieceDesc(Y, hipsOf(worn).map((h) => h + 1.2), D, sl, depth, 10, 4, 6, LOBES), full: 2.6 };
+  // The legs are round, as deep as they are wide, over a person's thighs.
+  return { ...pieceDesc(Y, hipsOf(worn).map((h) => h + 1.2), D, sl, depth, 10, 4, 6, LOBES), full: 2.6, tube: 0.95 };
 }
 
 function hipOutline(h: readonly number[]): Pt[] {
