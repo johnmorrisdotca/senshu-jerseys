@@ -39,6 +39,9 @@ const STEP = 3;
 /** Where its drawing starts along the face strip, and the length after which it starts again (its rows are the same all along). */
 const X0 = -30;
 const REPEAT = 200;
+/** The first stretch of the top lapel from its foot, the lapel's hem, has a part of the strip to itself, so a name stitched there does not repeat further round the collar. */
+export const HEM_RUN = 80;
+export const HEM_X = 160;
 
 const sub = (p: Vec, q: Vec): Vec => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
 const add = (p: Vec, q: Vec, k = 1): Vec => [p[0] + q[0] * k, p[1] + q[1] * k, p[2] + q[2] * k];
@@ -207,7 +210,7 @@ function band(c: readonly Vec[], across: readonly Vec[], mids: readonly Mid[], w
   let run = 0;
   for (let k = 0; k + 1 < c.length; k++) {
     const step = Math.hypot(...sub(c[k + 1]!, c[k]!));
-    const x0 = X0 + (run % REPEAT);
+    const x0 = run < HEM_RUN ? HEM_X + run : X0 + (run % REPEAT);
     const x1 = x0 + step;
     run += step;
     const o = unit(add(mids[k]!.out, mids[k + 1]!.out));

@@ -6,6 +6,17 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-27
+
+### Added
+
+- **Embroidery** (`embroidery` on `renderJudogi` and `judogiFrame`): names and words stitched as satin thread (fine stitches across each stroke, a shadow under, a sheen along) in the places the rules name: the jacket's lapel hem, left chest, sleeves and shoulders, a belt's two ends (on the belt as it hangs, flat or turned) and the trousers' top. Latin in the package's own stroke letters, or Japanese and other text in a system font (`gothic`, `kaisho` `楷書体`, `gyosho` `行書体`, `cursive`), or in a font you pass (`font: { family, css }`, an `@font-face` with `data:` sources, which a saved SVG and the canvas painter both need), or as outlines you made (`path`). Text can run along, across or down. No font is shipped.
+- **Thread colours**: the twenty-four named presets, each with its Japanese name (`THREAD_COLOURS`, `THREAD_LABELS`, `THREAD_RGB`), or any `#rrggbb`.
+- **Manufacturer's logos** (`logos`): one to a garment in the named spots (the jacket's bottom front, a belt end, the trousers' waist and legs), your own SVG or a neutral placeholder.
+- **National emblem** (`emblem`): the left chest as a sewn patch with a stitched border, from a flag as SVG text (Hata's, by country code or region), your own artwork or a neutral placeholder.
+- **Limits** (`judogiCheck({ rules })`): each mark reported against the IJF Judogi Rules (09 03 2022) or the All Japan Judo Federation's marking rules, as a retailer's chart states them; drawings are held to the limits.
+- The designer has two embroidery lines, a logo spot, the emblem (a flag by code) and the rules, in the address.
+
 ## [0.12.0] - 2026-10-27
 
 ### Added

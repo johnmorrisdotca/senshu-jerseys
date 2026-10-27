@@ -49,6 +49,8 @@ const GAP = 0.3;
 /** Cells round the ring and down each end. */
 const ROUND = 72;
 const DOWN = 8;
+/** Where each hanging end's own stretch of the face strip starts, so a mark on one end does not repeat on the turns (which use the strip's first 60 units) or on the other end. */
+export const END_X = [130, 58] as const;
 
 const sub = (p: Vec, q: Vec): Vec => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
 const cross = (u: Vec, v: Vec): Vec => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
@@ -144,7 +146,7 @@ export function strapCells(s: StrapDesc): Cell[] {
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
   cells.push(...knotCells(s, cy, zFront, front));
-  for (const [from, to] of endsOf(cy)) cells.push(...endCells(from, to, zFront + s.t, s, front));
+  endsOf(cy).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number)));
   return cells;
 }
 
@@ -255,7 +257,7 @@ function endsOf(cy: number): [[number, number], [number, number]][] {
 }
 
 /** A hanging end: its front and back faces, its two long edges and its cut end, from under the knot (`z` deep) hanging a little away. */
-function endCells(from: [number, number], to: [number, number], z: number, s: StrapDesc, also?: Vec): Cell[] {
+function endCells(from: [number, number], to: [number, number], z: number, s: StrapDesc, also: Vec | undefined, xs: number): Cell[] {
   const dx = to[0] - from[0];
   const dy = to[1] - from[1];
   const l = Math.hypot(dx, dy) || 1;
@@ -277,8 +279,8 @@ function endCells(from: [number, number], to: [number, number], z: number, s: St
   for (let k = 0; k < DOWN; k++) {
     const f0 = k / DOWN;
     const f1 = (k + 1) / DOWN;
-    const x0 = X0 + f0 * l;
-    const x1 = X0 + f1 * l;
+    const x0 = xs + f0 * l;
+    const x1 = xs + f1 * l;
     const [la, lb, ra, rb] = [side(-1, f0), side(-1, f1), side(1, f0), side(1, f1)];
     const face: [number, number][] = [[x0, FACE_Y], [x1, FACE_Y], [x0, FACE_Y + s.w], [x1, FACE_Y + s.w]];
     const edge: [number, number][] = [[x0, EDGE1_Y], [x1, EDGE1_Y], [x0, EDGE1_Y + EDGE_H], [x1, EDGE1_Y + EDGE_H]];
@@ -323,6 +325,8 @@ export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
     `M-40 ${EDGE2_Y - 1.5}H240V${EDGE2_Y + EDGE_H + 1.5}H-40Z`,
     `M-40 ${EDGE1_Y - 1.5}H240V${EDGE1_Y + EDGE_H + 1.5}H-40Z`,
   ];
+  // What is sewn on each hanging end lies on that end's own stretch of the strip, its frame's origin at the knot's end and its middle on the strip's.
+  const sewn = (m: { body: string } | undefined, x: number): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(w / 2)})">${m.body}</g>`);
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
-  return { defs: "", body: faceStrip + edges, clip };
+  return { defs: p.strip?.defs ?? "", body: faceStrip + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

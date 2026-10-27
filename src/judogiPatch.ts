@@ -36,7 +36,7 @@ export const PATCH_COLOUR_LABELS: Record<PatchColour, { en: string; ja: string }
 
 export const ZEKKEN_INK_LABELS: Record<ZekkenInk, { en: string; ja: string }> = {
   black: { en: "Black", ja: "黒" },
-  vermilion: { en: "Vermilion", ja: "朱" },
+  vermilion: { en: "Vermilion", ja: "朱色" },
 };
 
 /** The back patch as a person sets it: every word and colour is theirs. */
@@ -139,7 +139,7 @@ const idOf = (uid: string, p: PatchSpec): string => `${uid}pt${hashOf(JSON.strin
  * A piece of cloth sewn down: its own cloth and weave, a turned edge, a soft shadow on the garment beside it, and the stitching along its
  * edge. `x, y, w, h` are its box in the drawing; `lines` are further straight stitches (an X's two strokes, or three verticals) drawn over it.
  */
-function cloth(id: string, x: number, y: number, w: number, h: number, base: Rgb, thread: Rgb): { defs: string; under: string; over: string } {
+export function cloth(id: string, x: number, y: number, w: number, h: number, base: Rgb, thread: Rgb): { defs: string; under: string; over: string } {
   const light = lum(base) > 0.4;
   const hi = hexOf(light ? blend(base, [255, 255, 255], 0.75) : shade(base, 0.22));
   const lo = hexOf(light ? blend(base, [70, 78, 96], 0.34) : blend(base, [0, 0, 0], 0.45));
@@ -168,7 +168,7 @@ function cloth(id: string, x: number, y: number, w: number, h: number, base: Rgb
 }
 
 /** A run of letters in a fill, centred on `(cx, cy)`, as the package's own strokes (or system text for characters it has no stroke for). */
-function letters(text: string, cx: number, cy: number, height: number, maxWidth: number, fill: string, weight: "regular" | "bold" | "black" = "bold"): string {
+export function letters(text: string, cx: number, cy: number, height: number, maxWidth: number, fill: string, weight: "regular" | "bold" | "black" = "bold"): string {
   if (text === "") return "";
   return drawRun(layout(text, cx, cy, { height, maxWidth, weight, tracking: 0.35 }), fill, undefined, undefined);
 }

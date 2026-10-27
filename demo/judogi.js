@@ -2,6 +2,7 @@
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
 import {
   JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
+  EMBROIDERY_FONTS, EMBROIDERY_PLACES, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS,
   judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
@@ -30,7 +31,33 @@ const state = {
   pcolour: PATCH_COLOURS.includes(params.get("pcolour")) ? params.get("pcolour") : "blue",
   pink: ZEKKEN_INKS.includes(params.get("pink")) ? params.get("pink") : "black",
   psew: params.get("psew") === "lines" ? "lines" : "x",
+  // Two lines of embroidery (a place, its words, thread and lettering), a maker's logo, the national emblem and the rules the check holds them to.
+  ...Object.fromEntries([1, 2].flatMap((n) => [
+    [`e${n}p`, EMBROIDERY_PLACES.includes(params.get(`e${n}p`)) ? params.get(`e${n}p`) : "none"],
+    [`e${n}t`, (params.get(`e${n}t`) ?? "").slice(0, 24)],
+    [`e${n}c`, THREAD_COLOURS.includes(params.get(`e${n}c`)) ? params.get(`e${n}c`) : n === 1 ? "navy" : "gold"],
+    [`e${n}f`, EMBROIDERY_FONTS.includes(params.get(`e${n}f`)) ? params.get(`e${n}f`) : "block"],
+  ])),
+  logo: LOGO_PLACES.includes(params.get("logo")) ? params.get("logo") : "none",
+  emblem: ["placeholder", "flag"].includes(params.get("emblem")) ? params.get("emblem") : "none",
+  flag: (params.get("flag") ?? "ca").toLowerCase().replace(/[^a-z-]/g, "").slice(0, 6),
+  rules: MARK_RULES.includes(params.get("rules")) ? params.get("rules") : "ijf",
 };
+
+/** The flag's SVG, loaded from Hata (the package is not a dependency of this one: the demo asks for one flag when it is chosen). */
+const flags = new Map();
+async function loadFlag(code) {
+  if (flags.has(code)) return flags.get(code);
+  let svg;
+  try {
+    const mod = await import(`https://cdn.jsdelivr.net/npm/@johnmorrisdotca/hata@1.7.2/dist/flags/${code}.js`);
+    svg = mod.default;
+  } catch {
+    svg = undefined;
+  }
+  flags.set(code, svg);
+  return svg;
+}
 
 const turning = { on: false, byHover: false, last: 0, frame: 0 };
 
@@ -42,10 +69,18 @@ function options() {
     if (state.patch === "ijf") Object.assign(o.backPatch, { colour: state.pcolour, sewing: state.psew, ...(state.pcode === "" ? {} : { code: state.pcode }) });
     else o.backPatch.ink = state.pink;
   }
+  const embroidery = [1, 2].filter((n) => state[`e${n}p`] !== "none").map((n) => ({
+    place: state[`e${n}p`], text: state[`e${n}t`] || (state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU"), thread: state[`e${n}c`], font: state[`e${n}f`],
+  }));
+  if (embroidery.length > 0) o.embroidery = embroidery;
+  if (state.logo !== "none") o.logos = [{ place: state.logo }];
+  if (state.emblem === "placeholder") o.emblem = {};
+  else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
+  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined) o.rules = state.rules;
   return o;
 }
 
-const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x" };
+const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -66,6 +101,7 @@ let painted;
 
 /** The whole drawing, at the current angle: made off the page and painted on a canvas, then shown. A newer choice wins. */
 async function draw() {
+  if (state.emblem === "flag") await loadFlag(state.flag);
   const o = options();
   const mine = ++drawing;
   const holder = document.createElement("div");
@@ -195,6 +231,18 @@ function rows() {
     ...(ijf ? [["judo-pcolour", say("judoPatchColour"), select("judo-pcolour", PATCH_COLOURS, pair(PATCH_COLOUR_LABELS))]] : []),
     ...(ijf ? [["judo-psew", say("judoPatchSewing"), select("judo-psew", ["x", "lines"], (v) => say(`judoPatchSewing_${v}`))]] : []),
     ...(zekken ? [["judo-pink", say("judoPatchInk"), select("judo-pink", ZEKKEN_INKS, pair(ZEKKEN_INK_LABELS))]] : []),
+    ...[1, 2].flatMap((n) => (n === 2 && state.e1p === "none" ? [] : [
+      [`judo-e${n}p`, `${say("judoEmb")} ${n}`, select(`judo-e${n}p`, ["none", ...EMBROIDERY_PLACES], (v) => say(`judoPlace_${v}`)), true],
+      ...(state[`e${n}p`] === "none" ? [] : [
+        [`judo-e${n}t`, say("judoEmbText"), text(`judo-e${n}t`, 24, state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU")],
+        [`judo-e${n}c`, say("judoThread"), select(`judo-e${n}c`, THREAD_COLOURS, pair(THREAD_LABELS))],
+        [`judo-e${n}f`, say("judoFont"), select(`judo-e${n}f`, EMBROIDERY_FONTS, (v) => say(`judoFont_${v}`))],
+      ]),
+    ])),
+    ["judo-logo", say("judoLogo"), select("judo-logo", ["none", ...LOGO_PLACES], (v) => say(`judoLogo_${v}`))],
+    ["judo-emblem", say("judoEmblem"), select("judo-emblem", ["none", "placeholder", "flag"], (v) => say(`judoEmblem_${v}`)), true],
+    ...(state.emblem === "flag" ? [["judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")]] : []),
+    ...(state.e1p !== "none" || state.logo !== "none" || state.emblem !== "none" ? [["judo-rules", say("judoRules"), select("judo-rules", MARK_RULES, (v) => say(`judoRules_${v}`))]] : []),
   ];
 }
 

@@ -63,6 +63,57 @@ renderJudogi({ mode: "jacket", view: "back", backPatch: { style: "zekken", name:
 
 **Zekken (`style: "zekken"`).** The domestic Japanese patch: white cloth, the surname large in the upper two thirds (`name`) and the affiliation small in the lower third (`line`), in black (`ink: "black"`) or vermilion (`ink: "vermilion"`). The All Japan Judo Federation's zekken rules, as a retailer's chart states them, give the cloth as 30 to 35 cm across and 25 to 30 cm tall (33 by 28 here), the lettering in gothic or regular brush script, black for men and vermilion for women, the patch sewn on 5 to 10 cm below the back collar (7.5 here) and stitched across its diagonals. Japanese lettering is drawn as text in the reader's own gothic font: the package has no Japanese font of its own.
 
-Words in the demo: `ゼッケン` (zekken, the numbered patch), `苗字` (surname), `所属` (affiliation), `黒` (black), `朱` (vermilion).
+Words in the demo: `ゼッケン` (zekken, the numbered patch), `苗字` (surname), `所属` (affiliation), `黒` (black), `朱色` (vermilion).
 
 `judogiCheck({ backPatch })` adds the patch's rules to the size check, each with its source, and fails when a patch is outside them (a zekken 20 cm wide, a back number 6 cm below the collar). Nothing is clamped: the drawing shows what you asked for, and the check tells you where it leaves the rules.
+
+## Embroidery, logos and the national emblem
+
+All three are drawn on the cloth's faces, so they turn with the pieces, and only in the places the rules name.
+
+```js
+import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+
+renderJudogi({
+  mode: "suit", belt: "black",
+  embroidery: [
+    { place: "jacket-hem", text: "TANAKA", thread: "gold" },
+    { place: "belt-end-left", text: "JUDO", thread: "red" },
+    { place: "jacket-chest", text: "柔道", font: "kaisho", direction: "down", thread: "red" },
+  ],
+  logos: [{ place: "pants-leg-left" }],
+  emblem: {},
+  rules: "ajjf",
+});
+```
+
+**Embroidery** is stitched thread: a satin stitch, drawn as fine stitches laid across each stroke with a shadow under it and a sheen along it. `place` is `jacket-hem` (the top lapel's lower end, the text running down the band), `jacket-chest`, `sleeve-left`, `sleeve-right`, `shoulder-left`, `shoulder-right` (down the sleeve's top, seen from behind), `belt-end-left`, `belt-end-right` (as seen from the front) or `pants-left`, `pants-right` (beside the waistband). One text to a place; the first wins, and so does any later place the rules do not name. `text` is Latin or Japanese; `direction` is `along` (the piece's own line), `across` or `down` (upright characters in a column); `heightCm` and `lengthCm` size it, and the drawing is held to the limits of the place.
+
+**Thread colours** are twenty-four presets, by English name with the Japanese beside them: red `赤`, gold-brown `金茶`, green `緑`, black `黒`, gold `ゴールド`, fluo pink `蛍光ピンク`, pink `ピンク`, blue `青`, yellow-green `黄緑`, white `白`, silver `シルバー`, fluo orange `蛍光オレンジ`, wine `えんじ`, navy `紺`, yellow `黄`, purple `紫`, grey `グレー`, fluo yellow `蛍光イエロー`, brown `茶`, dark navy `濃紺`, indigo `花紺`, light blue `水色`, silver-grey `シルバーグレー` and fluo green `蛍光グリーン`. `thread` takes any of these or your own `#rrggbb`. They are `THREAD_COLOURS`, with `THREAD_LABELS` for the names and `THREAD_RGB` for the colours.
+
+**Lettering.** `font: "block"` (the default) is the package's own stroke letters, with no font file; the rest set system text and are the page's to supply:
+
+| `font` | Is | Open families worth loading (each SIL OFL 1.1; check the licence before you ship one) |
+|---|---|---|
+| `gothic` | gothic, `ゴシック体` | Noto Sans JP |
+| `kaisho` | regular brush script, `楷書体` | Yuji Syuku, Klee One |
+| `gyosho` | semi-cursive script, `行書体` | Yuji Mai, Yuji Boku, Zen Kurenaido |
+| `cursive` | Latin script | the system's own |
+
+The package ships no Japanese font: a Japanese face is megabytes. A drawing saved as SVG, and the canvas painter (`judogiCanvas`, which draws the SVG as an image), can use only the fonts the computer has or the SVG carries, so pass the font with the text: `font: { family: "Yuji Syuku", css: "@font-face{font-family:'Yuji Syuku';src:url(data:font/woff2;base64,...)}" }`. The CSS must be `@font-face` rules with `data:` sources only (anything else is dropped). To keep it small, take a subset of just the characters you use: Google Fonts serves one when its address ends `&text=山田`, and `pyftsubset` makes one from a font file. Or skip fonts altogether and pass outlines you made yourself (opentype.js, say): `{ place, path: { d: "M...Z", width, height } }` is set as thread, scaled to the place.
+
+**Manufacturer's logo** (`logos`): one logo to a garment, in the spots the rules name: `jacket-hem` (bottom front, wearer's left), `belt-end-left`, `belt-end-right`, `pants-waist-left`, `pants-waist-right`, `pants-leg-left`, `pants-leg-right`. Give `svg` (SVG text) or `href` (a `data:image/` address) for your own artwork; without either a neutral placeholder is drawn, and the package ships nothing else. Artwork is drawn as an image, so nothing in it can run.
+
+**National emblem** (`emblem`): the left chest, a patch sewn on with a stitched border (`frame: "none"` for the artwork alone). Pass a flag as SVG text: [Hata](https://github.com/johnmorrisdotca/hata) gives one by country code, and by region (a Canadian province, say), as `import ca from "@johnmorrisdotca/hata/flags/ca"`; this package does not depend on it. Without artwork, a placeholder star in a ring.
+
+**Limits.** The rules are held in `judogiCheck({ rules })`, `"ijf"` (the default) or `"ajjf"`, and each mark is reported with its source; the drawing never exceeds them (a logo over its area is drawn scaled down, a text over its length is set shorter), and the check says what you asked for.
+
+| Place | IJF Judogi Rules (09 03 2022) | All Japan Judo Federation, as a retailer's chart states it |
+|---|---|---|
+| Name on the jacket's hem, the trousers' top, a belt end | 4 cm high, 20 cm long, one text to a place | about 20 cm long |
+| Left chest | the national emblem only, 100 cm2 | a text 24 cm by 18 cm, about 180 cm2 |
+| Sleeve | advertising, 10 cm by 10 cm | 10 cm by 15 cm, about 80 cm2 |
+| Shoulder | advertising stripe, 25 cm by 5 cm | not named |
+| Maker's logo | 30 cm2 on the jacket and trousers, 9 cm2 on the belt, one to a garment | 20 cm2 on the jacket and trousers |
+
+The package's own sizes are inside both. The small print of the retailer's chart is hard to read: check a figure against the federation's current rules before you rely on it. Wooden name-plate engraving is not drawn.

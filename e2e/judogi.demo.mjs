@@ -86,3 +86,21 @@ test("the back patch's choices are in the address, show only when they apply, an
   await expect(page.locator("#judo-stage svg")).toBeVisible();
   await expect(page.locator('[data-testid="judo-play"]')).toBeDisabled();
 });
+
+test("embroidery, the logo and the emblem are chosen in the page and kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&belt=black&e1p=jacket-hem&e1t=TANAKA&e1c=gold");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-e1t"]')).toHaveValue("TANAKA");
+  await expect(page.locator('[data-testid="judo-e2p"]')).toHaveCount(1);
+  await page.locator('[data-testid="judo-e2p"]').selectOption("belt-end-left");
+  await expect(page).toHaveURL(/e2p=belt-end-left/);
+  await page.locator('[data-testid="judo-logo"]').selectOption("jacket-hem");
+  await page.locator('[data-testid="judo-emblem"]').selectOption("placeholder");
+  await expect(page).toHaveURL(/emblem=placeholder/);
+  await expect(page.locator('[data-testid="judo-rules"]')).toHaveCount(1);
+  await page.locator('[data-testid="judo-rules"]').selectOption("ajjf");
+  await expect(page.locator("#judo-check")).toContainText("All Japan Judo Federation");
+  expect(errors).toEqual([]);
+});

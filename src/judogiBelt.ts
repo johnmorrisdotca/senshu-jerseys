@@ -89,7 +89,7 @@ function endSides(from: Pt, to: Pt): [Pt[], Pt[]] {
  * A hanging end, with its rows running down it. It is drawn in a frame along its own length and turned into place, so a pattern (a
  * kohaku belt's panels) runs along the end as it does along the turns, not across it.
  */
-function end(from: Pt, to: Pt, p: BeltPaint): string {
+function end(from: Pt, to: Pt, p: BeltPaint, marks = ""): string {
   const angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
   const c = Math.cos(angle);
   const s = Math.sin(angle);
@@ -97,7 +97,7 @@ function end(from: Pt, to: Pt, p: BeltPaint): string {
   const [left, right] = endSides(from, to).map(local) as [Pt[], Pt[]];
   const a = left[2] as Pt;
   const b = right[2] as Pt;
-  return `<g transform="translate(${n2(from[0])} ${n2(from[1])}) rotate(${n2((angle * 180) / Math.PI)})">` + length(left, right, p) +
+  return `<g transform="translate(${n2(from[0])} ${n2(from[1])}) rotate(${n2((angle * 180) / Math.PI)})">` + length(left, right, p) + marks +
     `<path d="M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}" stroke="${p.edge}" stroke-width="1" stroke-opacity="0.7"/></g>`;
 }
 
@@ -135,7 +135,7 @@ export function beltOnJacket(p: BeltPaint, t: Tone, face: "front" | "back", wais
     rows([k[0] as Pt, k[1] as Pt], [k[3] as Pt, k[2] as Pt], p, 8) +
     fold(`M${cx - 12} ${cy + 10}L${cx + 14} ${cy + 8}`, 3, 0.35) +
     length(down[0], down[1], p, 8);
-  const ends = hang.map(([from, to]) => end(from, to, p)).join("");
+  const ends = hang.map(([from, to], i) => end(from, to, p, (i === 0 ? p.ends?.left : p.ends?.right)?.body ?? "")).join("");
   // The shadows fall on the jacket; a belt on its own has nothing under it to take them.
   return shadow + turn + ends + knot;
 }

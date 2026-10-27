@@ -296,3 +296,62 @@ export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
     (ink.marks?.[face]?.defs ?? "");
   return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip };
 }
+
+/** A place on a face: where a mark's middle goes, and the angle its line of text runs at, in degrees (clockwise on the screen). */
+export interface Spot {
+  x: number;
+  y: number;
+  rot: number;
+}
+
+/**
+ * The places the rules name, on the jacket's faces. `left` and `right` are the wearer's: on the front the wearer's left is the picture's right,
+ * and from behind it is the picture's left. The chest is a hand's breadth under the shoulder on the wearer's left (IJF: the national emblem,
+ * 100 cm2); the hem logo is at the bottom front on the wearer's left, near the reinforced edge; the lapel's hem is the lower end of the top lapel,
+ * where a name is stitched along the band; the upper arm is a quarter of a metre down the sleeve from the collar; the shoulder strip
+ * (IJF's publicity zone, 25 by 5 cm) runs down the sleeve's top from the collar.
+ */
+export function jacketSpots(): {
+  chest: Spot;
+  hemLogo: Spot;
+  lapelHem: Spot;
+  /** How far along the collar band, from the top lapel's foot at the hem, the lapel hem's spot lies, and the band's width. */
+  lapelRun: { run: number; w: number };
+  sleeve: (wearer: "left" | "right") => Spot;
+  shoulder: (wearer: "left" | "right") => Spot;
+} {
+  const middle = offset(TOP_EDGE, -LAPEL / 2);
+  const [lx, ly] = atY(middle, 168);
+  const up = atY(middle, 140);
+  const down = atY(middle, 196);
+  const lean = (Math.atan2(down[1] - up[1], down[0] - up[0]) * 180) / Math.PI;
+  const side = (w: "left" | "right", back: boolean): -1 | 1 => ((w === "left") !== back ? 1 : -1);
+  return {
+    chest: { x: 133, y: 72, rot: 0 },
+    hemLogo: { x: 138, y: 187, rot: 0 },
+    lapelHem: { x: lx, y: ly, rot: lean },
+    lapelRun: { run: runFromHem(middle, ly), w: LAPEL_BAND },
+    sleeve: (w) => {
+      const sd = side(w, false);
+      const [x, y] = onSleeve(sd, 0.4, 0.5);
+      return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
+    },
+    shoulder: (w) => {
+      const sd = side(w, true);
+      const [x, y] = onSleeve(sd, 0.17, 0.16);
+      return { x, y, rot: sd === -1 ? 105.3 : 74.7 };
+    },
+  };
+}
+
+/** The length along a polyline that runs from the collar down to the hem, measured up from its last point, to height `y`. */
+function runFromHem(pts: readonly Pt[], y: number): number {
+  let run = 0;
+  for (let i = pts.length - 1; i > 0; i--) {
+    const p = pts[i]!;
+    const q = pts[i - 1]!;
+    if (y >= q[1]) return run + (Math.hypot(p[0] - q[0], p[1] - q[1]) * (p[1] - y)) / (p[1] - q[1] || 1);
+    run += Math.hypot(p[0] - q[0], p[1] - q[1]);
+  }
+  return run;
+}

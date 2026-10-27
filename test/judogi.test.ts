@@ -237,3 +237,69 @@ test("the size check reports a patch against its rules, and a bad one fails", ()
   assert.equal(judogiCheck({ backPatch: { style: "ijf", topCm: 6 } }).ok, false);
   assert.equal(judogiCheck().notes.every((n) => n.fact.includes("IJF")), true);
 });
+
+test("thread presets are the twenty-four named colours with the Japanese beside them", async () => {
+  const { THREAD_COLOURS, THREAD_LABELS, THREAD_RGB } = await import("../src/judogiThread.ts");
+  assert.equal(THREAD_COLOURS.length, 24);
+  for (const id of THREAD_COLOURS) {
+    assert.ok(THREAD_LABELS[id].en.length > 2 && [...THREAD_LABELS[id].ja].length >= 1, id);
+    assert.equal(THREAD_RGB[id].length, 3);
+  }
+  assert.equal(new Set(THREAD_COLOURS.map((id) => THREAD_RGB[id].join())).size, 24);
+});
+
+test("embroidery, logos and the emblem are drawn only in the rules' places, one to a place, and are reported against the limits", () => {
+  const base = { mode: "suit" as const, belt: "black" as const };
+  const plain = renderJudogi(base);
+  const marked = renderJudogi({
+    ...base,
+    embroidery: [{ place: "jacket-hem", text: "TANAKA", thread: "gold" }, { place: "belt-end-left", text: "JUDO" }, { place: "pants-left", text: "山田", font: "kaisho" }],
+    logos: [{ place: "jacket-hem" }, { place: "pants-leg-left" }, { place: "belt-end-right" }],
+    emblem: {},
+  });
+  assert.equal(wellFormed(marked), null);
+  assert.notEqual(plain, marked);
+  assert.ok(!marked.includes("IJF") && !marked.includes("OFFICIAL"));
+  // A place the rules do not name is ignored, and so is a second text in one place, and a second logo on one garment.
+  const odd = renderJudogi({ ...base, embroidery: [{ place: "knee" as never, text: "X" }] });
+  assert.equal(odd, plain);
+  const one = renderJudogi({ ...base, embroidery: [{ place: "jacket-hem", text: "AAA" }] });
+  const two = renderJudogi({ ...base, embroidery: [{ place: "jacket-hem", text: "AAA" }, { place: "jacket-hem", text: "BBB" }] });
+  const norm = (svg: string): string => svg.replace(/jg[0-9a-z]+/g, "jg");
+  assert.equal(norm(one), norm(two));
+  const logos = renderJudogi({ ...base, logos: [{ place: "jacket-hem" }, { place: "pants-leg-left" }] });
+  const jacketOnly = renderJudogi({ ...base, logos: [{ place: "jacket-hem" }] });
+  assert.notEqual(norm(logos), norm(jacketOnly));
+  const logoTwice = renderJudogi({ ...base, logos: [{ place: "jacket-hem" }, { place: "jacket-hem", widthCm: 1, heightCm: 1 }] });
+  assert.equal(norm(logoTwice), norm(jacketOnly));
+  // Limits: a text over 4 cm or 20 cm, a logo over 30 cm2, an emblem over 100 cm2.
+  assert.equal(judogiCheck({ embroidery: [{ place: "belt-end-left", text: "X", heightCm: 5 }] }).ok, false);
+  assert.equal(judogiCheck({ embroidery: [{ place: "belt-end-left", text: "X", lengthCm: 25 }] }).ok, false);
+  assert.equal(judogiCheck({ embroidery: [{ place: "belt-end-left", text: "X" }] }).ok, true);
+  assert.equal(judogiCheck({ logos: [{ place: "jacket-hem", widthCm: 7, heightCm: 5 }] }).ok, false);
+  assert.equal(judogiCheck({ logos: [{ place: "belt-end-left", widthCm: 4, heightCm: 3 }] }).ok, false);
+  assert.equal(judogiCheck({ emblem: { widthCm: 12, heightCm: 10 } }).ok, false);
+  assert.equal(judogiCheck({ emblem: {} }).ok, true);
+  // The two rule sets differ: the left chest is an AJJF place for text, not an IJF one; the maker's mark is 20 cm2 there, 30 cm2 here.
+  assert.equal(judogiCheck({ embroidery: [{ place: "jacket-chest", text: "X" }] }).ok, false);
+  assert.equal(judogiCheck({ rules: "ajjf", embroidery: [{ place: "jacket-chest", text: "X" }] }).ok, true);
+  assert.equal(judogiCheck({ logos: [{ place: "jacket-hem", widthCm: 5.5, heightCm: 5 }] }).ok, true);
+  assert.equal(judogiCheck({ rules: "ajjf", logos: [{ place: "jacket-hem", widthCm: 5.5, heightCm: 5 }] }).ok, false);
+});
+
+test("an artwork is an image, a font's CSS must be data-only, and outlines are paths only", () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"><rect width="30" height="20" fill="red"/></svg>';
+  const a = renderJudogi({ emblem: { svg } });
+  assert.ok(a.includes("<image") && a.includes("data:image/svg+xml"));
+  assert.ok(!a.includes("<rect width=\"30\""));
+  const evil = renderJudogi({ emblem: { svg: "<svg viewBox='0 0 1 1'><script>alert(1)</script></svg>" } });
+  assert.ok(!evil.includes("<script"));
+  const bad = renderJudogi({ embroidery: [{ place: "jacket-hem", text: "A", font: { family: "X", css: "@font-face{src:url(https://example.com/f.woff2)}" } }] });
+  assert.ok(!bad.includes("example.com") && !bad.includes("<style"));
+  const good = renderJudogi({ embroidery: [{ place: "jacket-hem", text: "A", font: { family: "Yuji Syuku", css: "@font-face{font-family:'Yuji Syuku';src:url(data:font/woff2;base64,AAAA)}" } }] });
+  assert.ok(good.includes("<style>") && good.includes("Yuji Syuku"));
+  const path = renderJudogi({ embroidery: [{ place: "jacket-hem", path: { d: "M0 0L10 0L10 10Z", width: 10, height: 10 } }] });
+  assert.equal(wellFormed(path), null);
+  const nopath = renderJudogi({ embroidery: [{ place: "jacket-hem", path: { d: "M0 0<script>", width: 10, height: 10 } }] });
+  assert.ok(!nopath.includes("<script"));
+});

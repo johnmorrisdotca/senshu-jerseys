@@ -39,3 +39,7 @@ export { contrast, readColour } from "./colour.ts";
 export { JERSEY_HEIGHT, JERSEY_WIDTH, jerseyBox } from "./jersey.ts";
 export type { JerseyBox } from "./jersey.ts";
 export { VERSION } from "./version.ts";
+export { EMBROIDERY_FONTS, EMBROIDERY_PLACES, FONT_STACKS, LOGO_PLACES, MARK_RULES } from "./judogiMarks.ts";
+export type { EmbroideryDirection, EmbroideryFontFace, EmbroideryFontName, EmbroideryPlace, JudogiEmblem, JudogiEmbroidery, JudogiLogo, LogoPlace, MarkRules } from "./judogiMarks.ts";
+export { THREAD_COLOURS, THREAD_LABELS, THREAD_RGB } from "./judogiThread.ts";
+export type { ThreadColour } from "./judogiThread.ts";

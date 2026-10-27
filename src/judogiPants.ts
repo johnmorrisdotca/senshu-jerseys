@@ -193,3 +193,15 @@ export function pantsFace(ink: GiInk, face: "front" | "back", worn = false): Fac
 }
 
 export const PANTS_HEM = HEM;
+
+/** The places the rules name on the trousers' front, `left` and `right` the wearer's (the picture's right and left): under the waistband at each side, and on each leg near the hem. */
+export function pantsSpots(): { waist: (w: "left" | "right") => { x: number; y: number }; leg: (w: "left" | "right") => { x: number; y: number } } {
+  const side = (w: "left" | "right"): -1 | 1 => (w === "left" ? 1 : -1);
+  return {
+    waist: (w) => ({ x: 100 + side(w) * 30, y: 34 }),
+    leg: (w) => {
+      const [x, y] = onLeg(side(w), (236 - S[1]) / (HEM - S[1]), 0.28);
+      return { x, y };
+    },
+  };
+}

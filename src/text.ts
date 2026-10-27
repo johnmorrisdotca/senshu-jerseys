@@ -17,6 +17,8 @@ export interface RunOptions {
   slant?: number;
   /** The most the whole run may rise, from its lowest letter's foot to its highest letter's top (with a slant); it is scaled down to fit. */
   maxHeight?: number;
+  /** Set the text as system text even where every character has a stroke glyph (a script font, or one the person passes). */
+  asText?: boolean;
 }
 
 /** One placed run: the path of the strokes (`d`) and their width (`sw`), or the system-text characters (`chars`). */
@@ -39,7 +41,7 @@ const wide = (c: string): boolean => /[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(c);
 export function layout(text: string, cx: number, cy: number, o: RunOptions): Run {
   const weight = WEIGHTS[o.weight ?? "bold"];
   const chars = [...text];
-  const glyphMode = drawable(text);
+  const glyphMode = o.asText !== true && drawable(text);
   const track = (o.tracking ?? 0.55) * weight;
   // The natural size: height 90 + the stroke. Widths in glyph units.
   const adv = chars.map((c) => (glyphMode ? (glyphOf(c)?.w ?? 0) + weight : wide(c) ? 100 : 62));

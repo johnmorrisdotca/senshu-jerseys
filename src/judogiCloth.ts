@@ -12,6 +12,10 @@ export interface BeltPaint {
   edge: string;
   stitch: string;
   defs: string;
+  /** What is sewn on the belt's two hanging ends, each drawn in its end's own frame: along the end from the knot, across it from its middle. */
+  ends?: { left?: Mark; right?: Mark };
+  /** Marks laid straight on a strap's face strip, in the strip's own units (the collar's lapel hem). */
+  strip?: Mark;
 }
 
 /** Marks sewn or woven on one face of a piece (patches, labels, embroidery): their defs and their drawing, in the face's own box. */
