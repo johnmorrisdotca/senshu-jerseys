@@ -185,11 +185,11 @@ function inkOf(o: Ready, part: string, belt?: BeltPaint): GiInk {
 }
 
 /** Where each layout puts its pieces, at the jacket's scale: the view box, and the trousers' offset from the jacket. */
-const JACKET_BOX = [-14, -2, 228, 216] as const;
-const PANTS_BOX = [16, 0, 168, 284] as const;
+const JACKET_BOX = [-30, -2, 260, 216] as const;
+const PANTS_BOX = [8, 0, 184, 270] as const;
 const BELT_BOX = [16, 6, 168, 124] as const;
 /** Product pictures show the trousers beside the jacket and a little lower; worn, their waistband sits under the belt. */
-const PIECES_AT = [172, 28] as const;
+const PIECES_AT = [206, 28] as const;
 const WORN_AT = 102;
 
 /** Each piece wrapped on its own volume; a back view starts half a turn round. A belt is tied on the jacket (the flat view lays it out on its own instead). */

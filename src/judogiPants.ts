@@ -1,7 +1,7 @@
-// The judogi trousers (zubon): a deep waistband gathered by a drawstring tied at the front, a hip block down to the crotch (a third of the
-// length, as product photographs show), and two wide legs narrowing a little to the hem, with reinforced knees, ending about 5 cm above the
+// The judogi trousers (zubon): a deep waistband gathered by a drawstring tied at the front, a full hip block down to a low crotch (nearly
+// two fifths of the length, as product photographs show), and two wide legs that part a little toward the hem, with reinforced knees, ending about 5 cm above the
 // ankle (IJF Judogi Rules, 09 03 2022). The hip block is the volume's body and each leg one of its tubes, so the legs turn as two legs and
-// not as one board. Drawn at the jacket's scale (2.63 units to the centimetre, 105 cm long for a 170 cm size). Original drawing.
+// not as one board. Drawn at the jacket's scale (2.63 units to the centimetre, 97 cm long for a 170 cm size). Original drawing.
 
 import { fold, lightDefs, pieceDesc, seam, smooth, stitch, toneOf, weaves, type Face, type GiInk, type Tone } from "./judogiCloth.ts";
 import { n2, poly, type Pt } from "./path.ts";
@@ -12,20 +12,20 @@ import type { VolumeDesc } from "./volume.ts";
  * its cross-section goes over from one round to two (`LOBES`), so at the crotch it is the shape of the tops of the two legs and the
  * cloth runs on into them with no edge.
  */
-const Y = [6, 19, 50, 70, 86];
+const Y = [6, 19, 50, 80, 104];
 /** The last rows are as wide as the legs' tops once the volume's padding is added, so the block has no ledge over them. */
-const H = [46, 47, 49, 48.8, 48.3];
-const D = [17, 19, 20, 19, 18];
+const H = [50, 51, 53, 52.6, 52.2];
+const D = [18, 20, 21.5, 21, 20];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.15, 0.42, 0.72, 1];
-const HEM = 276;
+const HEM = 262;
 
 /** A leg on the picture's left: the outer top S, the outer hem P, the inner top at the crotch A, the inner hem Q. The other is its mirror. */
 /** The legs start a little above the crotch, under the hip block, so the two never meet edge to edge and leave a hairline. */
-const S: Pt = [50.5, 83];
-const P: Pt = [58, HEM];
-const A: Pt = [99.4, 83];
-const Q: Pt = [95, HEM];
+const S: Pt = [46.8, 103.5];
+const P: Pt = [38, HEM];
+const A: Pt = [99.4, 103.5];
+const Q: Pt = [90, HEM];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 
 export function pantsDesc(depth = 1): VolumeDesc {
@@ -88,8 +88,8 @@ function leg(uid: string, t: Tone, side: -1 | 1, front: boolean): string {
   s += seam(down(side, side === -1 ? 0.988 : 0.012, 0.02, 1), t, 0.28);
   if (front) {
     // The knee: a second layer from above the knee to below it, stitched round twice, standing a little proud of the leg.
-    const k0 = 0.3;
-    const k1 = 0.56;
+    const k0 = 0.22;
+    const k1 = 0.58;
     const panel = poly([onLeg(side, k0, 0.06), onLeg(side, k0, 0.94), onLeg(side, k1, 0.94), onLeg(side, k1, 0.06)]);
     s += `<path d="${panel}" fill="#fff" fill-opacity="${t.light ? 0.18 : 0.06}"/>`;
     s += fold(across(side, k1 + 0.006, 0.06, 0.94), 2.6, t.light ? 0.16 : 0.28);
@@ -149,8 +149,8 @@ function front(uid: string, t: Tone): string {
   let s = leg(uid, t, -1, true) + leg(uid, t, 1, true);
   s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(t);
   s += waistband(t);
-  s += seam("M100 19C100.5 42 100 66 100 88", t, 0.55);
-  s += fold(smooth([[100, 44], [100, 68], [100, 86]]), 6, t.light ? 0.09 : 0.18);
+  s += seam("M100 19C100.5 48 100 78 100 106", t, 0.55);
+  s += fold(smooth([[100, 48], [100, 80], [100, 104]]), 6, t.light ? 0.09 : 0.18);
   s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
   s += drawstring(t);
   return s;
@@ -161,10 +161,10 @@ function back(uid: string, t: Tone): string {
   let s = leg(uid, t, -1, false) + leg(uid, t, 1, false);
   s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(t);
   s += waistband(t);
-  s += seam("M100 19C100 44 100.5 68 100 88", t, 0.6);
+  s += seam("M100 19C100 48 100.5 78 100 106", t, 0.6);
   // The seat: a soft curve of light over each side, and the cloth drawn in under it.
   s += fold(smooth([[64, 30], [76, 26], [92, 32]]), 10, 0.12, true) + fold(smooth([[136, 30], [124, 26], [108, 32]]), 10, 0.12, true);
-  s += fold(smooth([[70, 74], [84, 80], [97, 83]]), 7, t.light ? 0.07 : 0.14) + fold(smooth([[130, 74], [116, 80], [103, 83]]), 7, t.light ? 0.07 : 0.14);
+  s += fold(smooth([[68, 90], [83, 97], [97, 101]]), 7, t.light ? 0.07 : 0.14) + fold(smooth([[132, 90], [117, 97], [103, 101]]), 7, t.light ? 0.07 : 0.14);
   s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
   return s;
 }

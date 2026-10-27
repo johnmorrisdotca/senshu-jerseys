@@ -1,5 +1,5 @@
-// The judogi jacket (uwagi): a body to mid-thigh with side vents, drawn in at the waist when a belt is tied, wide sleeves slanting from a
-// sloping shoulder to a broad cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
+// The judogi jacket (uwagi): a straight body to mid-thigh with side vents, taken in a little at the waist when a belt is tied, broad
+// square shoulders and long wide sleeves held a little out from the body to a broad cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
 // left side crossing over the right (IJF Judogi Rules, 09 03 2022: left over right, lapel 4-5 cm). Drawn as two faces in the 200-wide box
 // that volume.ts wraps over the body: at 2.63 units to the centimetre for a 170 cm size, the jacket is 78 cm long and the lapel 4.7 cm
 // wide. The upper body carries a fine grain weave and the skirt below the waist seam quilted diamonds, as product photographs of contest
@@ -12,17 +12,17 @@ import type { VolumeDesc } from "./volume.ts";
 
 /**
  * The rows of the body: the top of the collar behind the neck, the neck, the round of the shoulder, the shoulder point, the chest, the
- * armpit, above the belt, the waist, below the belt, the waist seam and the hem. The shoulder slopes down from the neck, as the cloth
- * hangs from it in product photographs, and the skirt widens a little to the hem.
+ * armpit, above the belt, the waist, below the belt, the waist seam and the hem. The shoulders are broad and nearly level, and the body
+ * hangs straight to the hem: the heavy cloth barely gives to a belt, as product photographs on a form show.
  */
-const Y = [6, 14, 22, 34, 58, 86, 106, 114, 124, 140, 205];
+const Y = [6, 12, 18, 26, 58, 86, 106, 114, 124, 140, 205];
 /** The drawing's half width at each row, hanging loose. */
-const LOOSE = [22, 25, 38, 57, 57, 55.5, 55, 54.8, 55, 55.6, 59];
+const LOOSE = [22, 34, 50, 57, 57, 56, 55.5, 55.5, 55.5, 55.5, 56];
 /** Belted: the belt draws the waist in to a 37 cm half round, the cloth blousing over it above and flaring out below. */
-const TIED = [22, 25, 38, 57, 57, 55.5, 53, 48.5, 50, 55, 60];
+const TIED = [22, 34, 50, 57, 57, 56, 55, 53.5, 54, 55, 55.5];
 /** The half depth of the body at each row: thick cloth on a broad chest, drawn in with the waist by the belt. */
-const LOOSE_D = [12, 15, 18, 21, 25, 25.5, 25, 25, 25, 25, 24.5];
-const TIED_D = [12, 15, 18, 21, 25, 25.5, 23, 20.5, 21.5, 24, 24.5];
+const LOOSE_D = [12, 16, 20, 23, 25, 25.5, 25, 25, 25, 25, 24.5];
+const TIED_D = [12, 16, 20, 23, 25, 25.5, 24.5, 23, 23.5, 24.5, 24.5];
 const WAIST = 114;
 const HEM = Y[Y.length - 1] as number;
 
@@ -54,13 +54,14 @@ function rowAt(h: readonly number[], y: number): number {
 
 /**
  * A sleeve on the picture's left (the wearer's right): the shoulder point S, the outer cuff P, the armpit A, the inner cuff Q. The other is
- * its mirror. The sleeve leaves the sloping shoulder at a slant, widens to a broad open cuff and ends about two thirds of the way down the
- * jacket, as the product photographs show; its inner edge stays outside the body's, so on the drawing neither covers the other.
+ * its mirror. The sleeve is long, its cuff nearly level with the hem (it leaves about 5 cm to the wrist), held out from the body a little
+ * as photographs on a form show, and wide to an open cuff; its inner edge stays outside the body's, so on the drawing neither covers the
+ * other.
  */
-const S: Pt = [43, 34];
-const P: Pt = [8, 146];
+const S: Pt = [43, 26];
+const P: Pt = [-8, 183];
 const A: Pt = [45, 64];
-const Q: Pt = [42, 156];
+const Q: Pt = [30, 195];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 
 /** The lapel on top (the wearer's left, so the picture's right of the neck), by its free edge from the collar to the hem. */
@@ -167,7 +168,7 @@ function edges(t: Tone, tied: boolean): string {
     s += `<rect x="${n2(x(182, 4.2) - 2.2)}" y="180.6" width="4.4" height="1.5" rx="0.6" fill="${t.seam}" fill-opacity="0.75"/>`;
     s += fold(`M${n2(x(184, 5.6))} 184L${n2(x(HEM - 1, 5.4))} ${HEM - 1}`, 2.4, t.light ? 0.2 : 0.3);
     const neck: Pt = [100 + side * 25, 14];
-    const tip: Pt = [100 + side * 57.5, 34];
+    const tip: Pt = [100 + side * 57.5, 26];
     s += seam(`M${n2(neck[0])} ${neck[1] + 0.8}L${n2(tip[0] - side * 1)} ${tip[1] + 0.6}`, t, 0.45);
   }
   const hem = halfAt(tied, HEM);

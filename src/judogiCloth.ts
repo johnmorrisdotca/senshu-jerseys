@@ -168,8 +168,31 @@ export function atY(pts: readonly Pt[], y: number): Pt {
   return pts[pts.length - 1]!;
 }
 
+/**
+ * The rows no further apart than `ROW` units: each row's cells take one shade from top to bottom, so on white cloth a few tall rows show
+ * as bands with an edge between them (the trousers' hips did). Rows put in between follow the given ones in a straight line, as the
+ * cells did, so the shape does not change.
+ */
+const ROW = 8;
+function refine(y: readonly number[], cols: readonly (readonly number[])[]): [number[], number[][]] {
+  const ys: number[] = [y[0] as number];
+  const out = cols.map((c) => [c[0] as number]);
+  for (let j = 1; j < y.length; j++) {
+    const y0 = y[j - 1] as number;
+    const y1 = y[j] as number;
+    const n = Math.max(1, Math.ceil((y1 - y0) / ROW));
+    for (let k = 1; k <= n; k++) {
+      const f = k / n;
+      ys.push(Math.round((y0 + (y1 - y0) * f) * 100) / 100);
+      cols.forEach((c, i) => out[i]!.push(Math.round(((c[j - 1] as number) + ((c[j] as number) - (c[j - 1] as number)) * f) * 1000) / 1000));
+    }
+  }
+  return [ys, out];
+}
+
 /** A piece's volume: rows of the body (y, half width, half depth) and its tubes, in the format of volume.ts. `depth` scales how deep the body is. */
 export function pieceDesc(y: number[], a: number[], b: number[], sl: VolumeDesc["sl"], depth: number, nt = 12, nf = 6, nh = 7, lobes?: number[]): VolumeDesc {
   const k = Math.max(0.35, Math.min(1.6, depth));
-  return { y, a, b: b.map((v) => Math.round(v * k * 10) / 10), sl, sd: [], nt, nf, nh, pitch: 8, piece: true, ...(lobes === undefined ? {} : { hang: true as const, lobes }) };
+  const [ys, [ra, rb, rl]] = refine(y, [a, b.map((v) => Math.round(v * k * 10) / 10), lobes ?? y.map(() => 0)]) as [number[], number[][]];
+  return { y: ys, a: ra as number[], b: rb as number[], sl, sd: [], nt, nf, nh, pitch: 8, piece: true, ...(lobes === undefined ? {} : { hang: true as const, lobes: rl as number[] }) };
 }

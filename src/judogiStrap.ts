@@ -1,6 +1,6 @@
 // The belt as a solid strap, for the turning view: two turns of a band 4.5 cm wide and 5 mm thick (IJF Judogi Rules: 4-5 mm) round the
-// waist, with their outer face, their inner face, their top and bottom edges, a square knot that stands off the turns, and two hanging
-// ends each with a front, a back and two edges. A belt drawn on the jacket's faces is a sticker: turned to the side its ends vanish to a
+// waist, with their outer face, their inner face, their top and bottom edges, a square knot of two lengths of the same strap, and two
+// hanging ends each with a front, a back and two edges. A belt drawn on the jacket's faces is a sticker: turned to the side its ends vanish to a
 // line, and on its own the far half of the ring is never seen. Every cell samples one drawing, a straight length of belt laid out on its
 // face (`strapFace`): the face strip, the edge strips and the knot. So the panels of a kohaku belt run along the strap wherever it goes.
 // Kept apart from judogiBelt.ts so that the flat drawings do not carry it.
@@ -29,24 +29,22 @@ export interface StrapDesc {
 }
 
 /**
- * At 2.63 units to the centimetre: a rank belt 4 cm wide, a black (or kohaku) belt 4.75 cm, each 5 mm thick (IJF: 4-5 mm), stitched in
- * 10 rows (quality belts carry 8 to 15), the ends hanging 25 cm from the knot.
+ * At 2.63 units to the centimetre: a rank belt 4 cm wide, a black belt 4.75 cm and a master's red or red-white belt 5 cm, each 5 mm
+ * thick (IJF: 4-5 mm), stitched in 10 rows (quality belts carry 8 to 15), the ends hanging 25 cm from the knot.
  */
 export const STRAP_T = 1.3;
-export const strapWidth = (belt: string): number => (belt === "black" || belt === "red-white" ? 12.5 : 10.5);
+export const strapWidth = (belt: string): number => (belt === "red-white" || belt === "red" ? 13.2 : belt === "black" ? 12.5 : 10.5);
 const ROWS = 10;
 const HANG = 64;
-/** Where the strips lie on the strap's drawing: the face, the edge of the two turns, the edge of one, and the knot. */
+/** Where the strips lie on the strap's drawing: the face, the edge of the two turns and the edge of one. */
 const FACE_Y = 0;
 const EDGE2_Y = 26;
 const EDGE1_Y = 36;
 const EDGE_H = 4;
-const KNOT_Y = 60;
 /** Along a strip: where it starts on the drawing, and the length after which a kohaku belt's panels repeat. */
 const X0 = -30;
 const PERIOD = 80;
-/** How far the knot stands off the turns, and how far the cloth gaps from the jacket. */
-const KNOT_D = 4;
+/** How far the cloth gaps from the jacket. */
 const GAP = 0.3;
 /** Cells round the ring and down each end. */
 const ROUND = 72;
@@ -145,56 +143,110 @@ export function strapCells(s: StrapDesc): Cell[] {
   }
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
-  // The knot's top stays under the band's, so that from behind none of it shows over the far turns.
-  cells.push(...knotCells(cy + 7.2 - s.w / 2, zFront, s.t, front));
+  cells.push(...knotCells(s, cy, zFront, front));
   for (const [from, to] of endsOf(cy)) cells.push(...endCells(from, to, zFront + s.t, s, front));
   return cells;
 }
 
-/** The knot's face on the strap's drawing (tl, tr, bl, br), its middle at (100, KNOT_Y). */
-const KNOT: [number, number][] = [[87, KNOT_Y - 5.5], [113, KNOT_Y - 6], [88, KNOT_Y + 10], [114, KNOT_Y + 9]];
-
-/** The square knot: a block on the front of the turns, its face a little rounded, its four sides going back into the turns. */
-function knotCells(cy: number, z0: number, t: number, also?: Vec): Cell[] {
+/**
+ * A length of strap along a line of middles `c`: its face, its back and its two edges, `across` the way its width runs at each middle
+ * and `out` the way its face looks. Its drawing runs along the face strip from `x0`, so its rows and a kohaku belt's panels follow it.
+ */
+function ribbon(c: readonly Vec[], across: readonly Vec[], out: readonly Vec[], s: StrapDesc, x0: number, also?: Vec): Cell[] {
   const cells: Cell[] = [];
-  const n = 3;
-  const lerp = (u: number, v: number): [number, number] => {
-    const [tl, tr, bl, br] = KNOT;
-    const top = [tl[0] + (tr[0] - tl[0]) * u, tl[1] + (tr[1] - tl[1]) * u];
-    const foot = [bl[0] + (br[0] - bl[0]) * u, bl[1] + (br[1] - bl[1]) * u];
-    return [top[0]! + (foot[0]! - top[0]!) * v, top[1]! + (foot[1]! - top[1]!) * v];
+  const at = (k: number, side: number, face: number): Vec => {
+    const p = c[k] as Vec;
+    const a = across[k] as Vec;
+    const o = out[k] as Vec;
+    return [p[0] + a[0] * side * (s.w / 2) + o[0] * face * (s.t / 2), p[1] + a[1] * side * (s.w / 2) + o[1] * face * (s.t / 2), p[2] + a[2] * side * (s.w / 2) + o[2] * face * (s.t / 2)];
   };
-  const at = (u: number, v: number, z: number): Vec => {
-    const [x, y] = lerp(u, v);
-    return [x - 100, y - KNOT_Y + cy, z];
-  };
-  const bulge = (u: number, v: number): number => z0 + KNOT_D + 1.4 * Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const uv: [number, number][] = [[i / n, j / n], [(i + 1) / n, j / n], [i / n, (j + 1) / n], [(i + 1) / n, (j + 1) / n]];
-      cells.push(...quad(uv.map(([u, v]) => at(u, v, bulge(u, v))) as [Vec, Vec, Vec, Vec], uv.map(([u, v]) => lerp(u, v)), [0, 0, 1], also));
+  let x = x0;
+  for (let k = 0; k + 1 < c.length; k++) {
+    const step = Math.hypot(...sub(c[k + 1] as Vec, c[k] as Vec));
+    const x1 = x + step;
+    const o = unit([out[k]![0] + out[k + 1]![0], out[k]![1] + out[k + 1]![1], out[k]![2] + out[k + 1]![2]]);
+    const a = unit([across[k]![0] + across[k + 1]![0], across[k]![1] + across[k + 1]![1], across[k]![2] + across[k + 1]![2]]);
+    const face: [number, number][] = [[x, FACE_Y], [x1, FACE_Y], [x, FACE_Y + s.w], [x1, FACE_Y + s.w]];
+    const edge: [number, number][] = [[x, EDGE1_Y], [x1, EDGE1_Y], [x, EDGE1_Y + EDGE_H], [x1, EDGE1_Y + EDGE_H]];
+    cells.push(...quad([at(k, -1, 1), at(k + 1, -1, 1), at(k, 1, 1), at(k + 1, 1, 1)], face, o, also));
+    cells.push(...quad([at(k, -1, -1), at(k + 1, -1, -1), at(k, 1, -1), at(k + 1, 1, -1)], face, [-o[0], -o[1], -o[2]], also));
+    cells.push(...quad([at(k, -1, 1), at(k + 1, -1, 1), at(k, -1, -1), at(k + 1, -1, -1)], edge, [-a[0], -a[1], -a[2]], also));
+    cells.push(...quad([at(k, 1, 1), at(k + 1, 1, 1), at(k, 1, -1), at(k + 1, 1, -1)], edge, a, also));
+    x = x1;
+  }
+  return cells;
+}
+
+/** A smooth line through `pts` (Catmull-Rom), `n` middles to each span. */
+function through(pts: readonly Vec[], n: number): Vec[] {
+  const out: Vec[] = [];
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const p0 = pts[Math.max(0, i - 1)] as Vec;
+    const p1 = pts[i] as Vec;
+    const p2 = pts[i + 1] as Vec;
+    const p3 = pts[Math.min(pts.length - 1, i + 2)] as Vec;
+    for (let k = 0; k < n; k++) {
+      const t = k / n;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      out.push([0, 1, 2].map((d) => 0.5 * (2 * p1[d]! + (-p0[d]! + p2[d]!) * t + (2 * p0[d]! - 5 * p1[d]! + 4 * p2[d]! - p3[d]!) * t2 + (-p0[d]! + 3 * p1[d]! - 3 * p2[d]! + p3[d]!) * t3)) as Vec);
     }
   }
-  // The sides, round the face's edge: top, right, foot and left.
-  const rim: [number, number][] = [];
-  for (let i = 0; i < n; i++) rim.push([i / n, 0]);
-  for (let j = 0; j < n; j++) rim.push([1, j / n]);
-  for (let i = n; i > 0; i--) rim.push([i / n, 1]);
-  for (let j = n; j > 0; j--) rim.push([0, j / n]);
-  let along = 0;
-  rim.forEach(([u, v], k) => {
-    const [u1, v1] = rim[(k + 1) % rim.length] as [number, number];
-    const a = at(u, v, bulge(u, v));
-    const b = at(u1, v1, bulge(u1, v1));
-    const step = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const x0 = X0 + along;
-    along += step;
-    const mid = at((u + u1) / 2, (v + v1) / 2, 0);
-    const c = at(0.5, 0.5, 0);
-    const out: Vec = [mid[0] - c[0], mid[1] - c[1], 0];
-    cells.push(...quad([a, b, [a[0], a[1], z0 - t], [b[0], b[1], z0 - t]], [[x0, EDGE2_Y], [x0 + step, EDGE2_Y], [x0, EDGE2_Y + EDGE_H], [x0 + step, EDGE2_Y + EDGE_H]], out, also));
+  out.push(pts[pts.length - 1] as Vec);
+  return out;
+}
+
+/**
+ * The square knot, as a belt is tied: two lengths of the strap itself, not a block. One wraps across the front of the turns and rolls back
+ * into them at each side; the other comes up from behind the turns, folds over their top edge and runs down across the first to the
+ * right-hand end. `cy` is the band's middle at the front and `z0` the front of its turns.
+ */
+function knotCells(s: StrapDesc, cy: number, z0: number, also?: Vec): Cell[] {
+  const t = s.t;
+  const top = cy - s.w / 2;
+  // The wrap: across the front, standing off the turns by its own thickness and a little fuller in the middle, rolling back at its sides.
+  const wrap: Vec[] = [];
+  const half = 15;
+  for (let k = 0; k <= 10; k++) {
+    const u = -1 + k / 5;
+    const x = u * (half + 1.6);
+    const roll = Math.max(0, Math.abs(x) - half) / 1.6;
+    const z = z0 + t / 2 + (1.4 * Math.sqrt(Math.max(0, 1 - Math.min(1, Math.abs(x) / half) ** 2)) + 0.3) * (1 - roll) - 1.2 * t * roll;
+    wrap.push([x, cy + 1.5, z]);
+  }
+  const wrapOut = wrap.map((p, k): Vec => {
+    const q = wrap[Math.min(wrap.length - 1, k + 1)] as Vec;
+    const r = wrap[Math.max(0, k - 1)] as Vec;
+    return unit([-(q[2] - r[2]), 0, q[0] - r[0]]);
   });
-  return cells;
+  const cells = ribbon(wrap, wrap.map((): Vec => [0, 1, 0]), wrapOut, s, X0 + 20, also);
+  // The crossing end: from behind the turns, over their top edge (the round hump a tied knot shows at its top left), down across the wrap.
+  const front = z0 + t + 2.4;
+  const line = through([
+    [-11, top + 3, z0 - 1.5 * t],
+    [-10, top - 1.6, z0 + 0.2],
+    [-7, top + 1.4, front + 0.6],
+    [0, cy + 2, front + 1.1],
+    [6, cy + s.w / 2 + 2, front],
+    [7, cy + s.w / 2 + 6, z0 + t + 1],
+  ], 4);
+  // Its width runs square to the diagonal it makes on the front, kept square to the line where the line turns over the top.
+  const flat: Vec = unit([0.7, -0.71, 0]);
+  const across: Vec[] = [];
+  const out: Vec[] = [];
+  line.forEach((p, k) => {
+    const tan = unit(sub(line[Math.min(line.length - 1, k + 1)] as Vec, line[Math.max(0, k - 1)] as Vec));
+    const d = flat[0] * tan[0] + flat[1] * tan[1] + flat[2] * tan[2];
+    const a = unit([flat[0] - d * tan[0], flat[1] - d * tan[1], flat[2] - d * tan[2]]);
+    let o = unit(cross(tan, a));
+    // Over the fold the face turns from behind, through up, to the front: keep it turning one way.
+    const prev = out[k - 1];
+    if (prev === undefined ? o[2] < 0 && p[2] > z0 : o[0] * prev[0] + o[1] * prev[1] + o[2] * prev[2] < 0) o = [-o[0], -o[1], -o[2]];
+    across.push(a);
+    out.push(o);
+  });
+  if ((out[Math.floor(out.length / 2)] as Vec)[2] < 0) out.forEach((o, k) => (out[k] = [-o[0], -o[1], -o[2]]));
+  return [...cells, ...ribbon(line, across, out, s, X0, also)];
 }
 
 /** The two hanging ends, each from under the knot to its cut end, on the picture's 200-wide drawing (the belt's middle at x 100). */
@@ -248,8 +300,9 @@ export function strapDesc(s: StrapDesc, pitch: number): VolumeDesc {
 }
 
 /**
- * The strap's drawing: a straight length of belt along its face strip (stitched rows, its edges a little darker), the edges of two
- * turns and of one below it, and the knot. Each strip runs on past its ends, so a cell that is grown at its edge still finds cloth.
+ * The strap's drawing: a straight length of belt along its face strip (stitched rows, its edges a little darker), and the edges of two
+ * turns and of one below it. The knot is the strap itself, so it needs nothing of its own. Each strip runs on past its ends, so a cell
+ * that is grown at its edge still finds cloth.
  */
 export function strapFace(p: BeltPaint, w: number): Face {
   const rows = (y0: number, h: number, n: number): string => {
@@ -265,36 +318,11 @@ export function strapFace(p: BeltPaint, w: number): Face {
   const edges = strip(EDGE2_Y, EDGE_H) + `<rect x="-40" y="${EDGE2_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>` +
     `<path d="M-40 ${EDGE2_Y + EDGE_H / 2}H240" stroke="${p.edge}" stroke-width="0.6" stroke-opacity="0.8"/>` +
     strip(EDGE1_Y, EDGE_H) + `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>`;
-  // The knot: the turn of the belt it is tied over, and the end that comes down across it from the top left.
-  const [tl, tr, bl, br] = KNOT;
-  const pad = (q: [number, number], dx: number, dy: number): string => `${n2(q[0] + dx)} ${n2(q[1] + dy)}`;
-  const block = `M${pad(tl, -1.5, -1.5)}L${pad(tr, 1.5, -1.5)}L${pad(br, 1.5, 1.5)}L${pad(bl, -1.5, 1.5)}Z`;
-  let knot = `<path d="${block}" fill="${p.fill}"/>`;
-  for (let k = 1; k <= ROWS; k++) {
-    const f = k / (ROWS + 1);
-    knot += `<path d="M${n2(tl[0] + (bl[0] - tl[0]) * f)} ${n2(tl[1] + (bl[1] - tl[1]) * f)}L${n2(tr[0] + (br[0] - tr[0]) * f)} ${n2(tr[1] + (br[1] - tr[1]) * f)}" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
-  }
-  // The crossing end: a band from the knot's top left to its foot right, with its edges and the shadow it throws.
-  const c0: [number, number] = [93, KNOT_Y - 8];
-  const c1: [number, number] = [108, KNOT_Y + 11];
-  const cl = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]);
-  const ux = ((c1[1] - c0[1]) / cl) * (w / 2);
-  const uy = (-(c1[0] - c0[0]) / cl) * (w / 2);
-  const crossBand = `M${n2(c0[0] - ux)} ${n2(c0[1] - uy)}L${n2(c1[0] - ux)} ${n2(c1[1] - uy)}L${n2(c1[0] + ux)} ${n2(c1[1] + uy)}L${n2(c0[0] + ux)} ${n2(c0[1] + uy)}Z`;
-  knot += `<path d="M${n2(c0[0] + ux + 1.2)} ${n2(c0[1] + uy)}L${n2(c1[0] + ux + 1.2)} ${n2(c1[1] + uy)}" stroke="${p.edge}" stroke-opacity="0.5" stroke-width="2.4"/>`;
-  knot += `<path d="${crossBand}" fill="${p.fill}"/>`;
-  for (let k = 1; k <= ROWS; k++) {
-    const f = -1 + (2 * k) / (ROWS + 1);
-    knot += `<path d="M${n2(c0[0] + ux * f)} ${n2(c0[1] + uy * f)}L${n2(c1[0] + ux * f)} ${n2(c1[1] + uy * f)}" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
-  }
-  knot += `<path d="${crossBand}" fill="none" stroke="${p.edge}" stroke-width="0.6" stroke-opacity="0.8"/>`;
-  knot += `<path d="M${pad(tl, 0, 0)}L${pad(tr, 0, 0)}L${pad(br, 0, 0)}L${pad(bl, 0, 0)}Z" fill="none" stroke="${p.edge}" stroke-width="0.6" stroke-opacity="0.6"/>`;
   const clip = [
     `M-40 ${FACE_Y - 1.5}H240V${n2(FACE_Y + w + 1.5)}H-40Z`,
     `M-40 ${EDGE2_Y - 1.5}H240V${EDGE2_Y + EDGE_H + 1.5}H-40Z`,
     `M-40 ${EDGE1_Y - 1.5}H240V${EDGE1_Y + EDGE_H + 1.5}H-40Z`,
-    block,
   ];
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
-  return { defs: "", body: faceStrip + edges + knot, clip };
+  return { defs: "", body: faceStrip + edges, clip };
 }
