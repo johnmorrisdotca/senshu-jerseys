@@ -1,5 +1,5 @@
-// The judogi jacket (uwagi): a straight body to mid-thigh with side vents, taken in hard at the waist when a belt is tied, broad
-// shoulders whose sleeves are set on low and wide, as wide under the arm as at the cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
+// The judogi jacket (uwagi): a body to mid-thigh with side vents, taken in hard at the waist when a belt is tied, sloping shoulders
+// with straight sleeves set on at their points, as wide under the arm as at the cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
 // left side crossing over the right (IJF Judogi Rules, 09 03 2022: left over right, lapel 4-5 cm). Drawn as two faces in the 200-wide box
 // that volume.ts wraps over the body: at 2.63 units to the centimetre for a 170 cm size, the jacket is 78 cm long and the lapel 4.7 cm
 // wide. The upper body carries a fine grain weave and the skirt below the waist seam quilted diamonds, as product photographs of contest
@@ -12,21 +12,20 @@ import type { CollarDesc } from "./judogiCollar.ts";
 import { sleeveAt, type VolumeDesc } from "./volume.ts";
 
 /**
- * The rows of the body: the top of the collar behind the neck, the neck, the round of the shoulder, the shoulder point, the chest, the
- * armpit, above the belt, the waist, below the belt, the waist seam and the hem. The shoulders are broad, and loose the body hangs
- * straight to the hem.
+ * The rows of the body: the top of the collar behind the neck, the neck, the slope of the shoulder, the shoulder point, the armhole, the
+ * armpit, above the belt, the waist, below the belt, the waist seam, the skirt and the hem. Measured from a product photograph of a
+ * contest jacket tied on a form: the shoulders slope to the point where the sleeves are set on, the body narrows from there to the
+ * armpit a little inside the sleeves' heads (which cover its sides; turned, the page would show between them if they only met), it hangs straight and narrow from the armpit to the belt, about two thirds of the
+ * shoulders, and the skirt flares out below the belt to the hem.
  */
-const Y = [6, 12, 18, 26, 58, 86, 106, 114, 124, 140, 205];
+const Y = [6, 12, 18, 26, 36, 58, 86, 104, 114, 124, 140, 170, 205];
 /** The drawing's half width at each row, hanging loose. */
-const LOOSE = [22, 32.5, 45, 57, 57, 56, 55.5, 55.5, 55.5, 55.5, 56];
-/**
- * Belted: a belt pulls the thick cloth in hard, to about four fifths of the chest (product photographs of a jacket tied on a form), the
- * cloth blousing over it above and the skirt flaring out below it to the hem.
- */
-const TIED = [22, 32.5, 45, 57, 57, 55, 49, 44, 46, 50.5, 54.5];
-/** The half depth of the body at each row: thick cloth on a broad chest, drawn in with the waist by the belt. */
-const LOOSE_D = [12, 16, 20, 23, 25, 25.5, 25, 25, 25, 25, 24.5];
-const TIED_D = [12, 16, 20, 23, 25, 25, 22.5, 20.5, 21, 23, 24.5];
+const LOOSE = [22, 30, 40, 52, 62, 59, 51.5, 45, 41, 41.5, 44, 48.5, 54];
+/** Belted: the belt holds the waist to a 30 cm half round, the skirt flaring out below it. */
+const TIED = [22, 30, 40, 52, 62, 59, 51.5, 45, 39.5, 40.5, 43.5, 49, 56];
+/** The half depth of the body at each row: thick cloth on the chest, drawn in with the waist by the belt. */
+const LOOSE_D = [12, 15, 18, 21, 23, 24, 24, 24, 24, 24, 24, 24, 24];
+const TIED_D = [12, 15, 18, 21, 23, 24, 23.5, 21.5, 20, 20.5, 22, 23.5, 24.5];
 const WAIST = 114;
 const HEM = Y[Y.length - 1] as number;
 
@@ -57,20 +56,21 @@ function rowAt(h: readonly number[], y: number): number {
 }
 
 /**
- * A sleeve on the picture's left (the wearer's right): the shoulder point S, the outer cuff P, the armpit A, the inner cuff Q, and the two
- * controls of its outer edge (`CAP`). The other is its mirror. A judogi's sleeve is set on low and wide: from the shoulder point its head
- * runs on out along the line of the shoulder and rounds down into the arm, so the sleeve is about as wide under the arm as at the cuff,
- * and hangs almost straight, a little out from the body, its cuff some 13 cm above the hem (product photographs on a form).
+ * A sleeve on the picture's left (the wearer's right): the shoulder point S, the outer cuff P, the armpit A and the inner cuff Q. The
+ * other is its mirror. A judogi's sleeve is a straight band, set on at the shoulder point and as wide from under the arm to the cuff,
+ * angled a little out from the body (some 14 degrees in the photograph), its cuff some 12 cm above the hem. Its outer edge is given
+ * as a straight curve (`CAP`), so the volume keeps its inner edge level with the outer: the sleeve's head is a band down the armhole,
+ * not a tube that narrows to a point at the shoulder.
  */
-const S: Pt = [43, 26];
-const CAP = [26, 34.5, 9, 41];
-const P: Pt = [4, 176];
-const A: Pt = [45, 80];
-const Q: Pt = [34, 184];
+const S: Pt = [37, 36];
+const P: Pt = [5, 162];
+const A: Pt = [57, 104];
+const Q: Pt = [40, 174];
+const CAP = [S[0] + (P[0] - S[0]) / 3, S[1] + (P[1] - S[1]) / 3, S[0] + (2 * (P[0] - S[0])) / 3, S[1] + (2 * (P[1] - S[1])) / 3];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 const SLEEVE_Q = [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]];
 /** About how far down the sleeve, by length along its outer edge, its head comes down to the armpit's level. */
-const ARM = 0.35;
+const ARM = 0.5;
 
 /** The lapel on top (the wearer's left, so the picture's right of the neck), by its free edge from the collar to the hem. */
 const TOP_EDGE: Pt[] = [[110, 9], [106, 30], [100, 50], [92, 78], [84, 110], [78, 150], [74, 205]];
@@ -112,7 +112,7 @@ export function collarDesc(jd: VolumeDesc): CollarDesc {
       break;
     }
   }
-  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, top: top.flat(), under: under.slice(0, end + 1).flat(), w: LAPEL_BAND, t: 2.4, neck: 10 };
+  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, top: top.flat(), under: under.slice(0, end + 1).flat(), w: LAPEL_BAND, t: 2.4, neck: 8.5 };
 }
 
 /** The jacket's cross-section: rounder than a jersey's square body, as cloth hangs. */
@@ -154,13 +154,10 @@ function sleeve(uid: string, t: Tone, side: -1 | 1, back: boolean): string {
   const shadowSide = side === -1 ? 0.12 : 0.88;
   const innerSide = side === -1 ? 0.9 : 0.1;
   return `<path d="${out}" fill="${t.fill}"/><path d="${out}" fill="url(#${uid}S)"/>` +
-    // The sleeve is rounder than the drawing: darker at its under side, lighter along its top.
-    fold(along(shadowSide, 0.08, 0.95), 9, t.light ? 0.16 : 0.3) +
-    fold(along(innerSide, 0.04, 0.9), 8, t.light ? 0.2 : 0.32) +
-    fold(along(0.42, 0.14, 0.86), 9, 0.14, true) +
-    fold(along(0.7, 0.3, 0.82), 6, t.light ? 0.08 : 0.16) +
-    // The soft break above the elbow, where the heavy sleeve folds a little as it hangs.
-    fold(smooth([onSleeve(side, arm(0.44), 0.5), onSleeve(side, arm(0.48), 0.78), onSleeve(side, arm(0.51), 1)]), 6, t.light ? 0.12 : 0.22) +
+    // The sleeve is rounder than the drawing: a little darker along its edges, lighter along its top.
+    fold(along(shadowSide, 0.08, 0.95), 7, t.light ? 0.08 : 0.2) +
+    fold(along(innerSide, 0.04, 0.9), 6, t.light ? 0.1 : 0.22) +
+    fold(along(0.42, 0.14, 0.86), 9, 0.1, true) +
     seam(smooth([onSleeve(side, 0.015, 0), onSleeve(side, 0.012, 0.5), onSleeve(side, 0.015, 1)]), t, 0.5) +
     (back ? "" : stitch(along(0.985, 0.04, 0.88), t, 0.35, 0.55)) +
     // The cuff: a wide hem, turned and stitched twice.
@@ -188,16 +185,6 @@ function bodyCloth(uid: string, t: Tone, outline: string, tied: boolean): string
     stitch(`M${n2(100 - w)} ${WAIST + 2}Q100 ${WAIST + 4.5} ${n2(100 + w)} ${WAIST + 2}`, t, 0.36, 0.4);
 }
 
-/** The shadow a heavy sleeve throws on the body beside it, under the arm and down the side, where the two hang close. */
-function sleeveShadows(t: Tone, tied: boolean): string {
-  let s = "";
-  for (const side of [-1, 1] as const) {
-    const x = (y: number): Pt => [100 + side * (halfAt(tied, y) - 1.5), y];
-    s += fold(smooth([x(84), x(100), x(124), x(146)]), 8, t.light ? 0.2 : 0.32);
-  }
-  return s;
-}
-
 /** The side vents, the hem and the shoulder seams, on either face. */
 function edges(t: Tone, tied: boolean): string {
   let s = "";
@@ -208,7 +195,7 @@ function edges(t: Tone, tied: boolean): string {
     s += `<rect x="${n2(x(182, 4.2) - 2.2)}" y="180.6" width="4.4" height="1.5" rx="0.6" fill="${t.seam}" fill-opacity="0.75"/>`;
     s += fold(`M${n2(x(184, 5.6))} 184L${n2(x(HEM - 1, 5.4))} ${HEM - 1}`, 2.4, t.light ? 0.2 : 0.3);
     const neck: Pt = [100 + side * 25, 14];
-    const tip: Pt = [100 + side * 57.5, 26];
+    const tip: Pt = [100 + side * 61.5, 36];
     s += seam(`M${n2(neck[0])} ${neck[1] + 0.8}L${n2(tip[0] - side * 1)} ${tip[1] + 0.6}`, t, 0.45);
   }
   const hem = halfAt(tied, HEM);
@@ -252,12 +239,11 @@ function front(uid: string, ink: GiInk, t: Tone): string {
   // Soft folds of the skirt and of the body hanging from the shoulders.
   s += fold(smooth([[66, 124], [64, 160], [63, 200]]), 6, t.light ? 0.1 : 0.18);
   s += fold(smooth([[132, 122], [135, 160], [137, 200]]), 7, t.light ? 0.1 : 0.18);
-  s += fold(smooth([[150, 126], [151, 165], [151, 200]]), 3, t.light ? 0.08 : 0.14);
+  s += fold(smooth([[139, 130], [143, 165], [146, 200]]), 3, t.light ? 0.08 : 0.14);
   // The cloth drags from under each arm down toward the knot of the lapels.
-  s += fold(smooth([[52, 88], [62, 100], [74, 112]]), 10, t.light ? 0.07 : 0.14);
-  s += fold(smooth([[148, 88], [136, 101], [122, 112]]), 10, t.light ? 0.07 : 0.14);
+  s += fold(smooth([[58, 90], [66, 102], [76, 113]]), 10, t.light ? 0.07 : 0.14);
+  s += fold(smooth([[142, 90], [134, 102], [124, 113]]), 10, t.light ? 0.07 : 0.14);
   s += fold(smooth([[128, 40], [124, 70], [126, 104]]), 9, t.light ? 0.2 : 0.1, true);
-  s += sleeveShadows(t, tied);
   s += edges(t, tied);
   s += lapelBand(uid, t, TOP_EDGE, 1, t.light ? 0.2 : 0.3);
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
@@ -279,11 +265,10 @@ function back(uid: string, ink: GiInk, t: Tone): string {
   s += fold(smooth(foot.map((p) => [p[0], p[1] + 1.6] as Pt)), 3.2, t.light ? 0.22 : 0.32);
   s += seam(smooth(foot), t, 0.6);
   s += fold(smooth([[100, 24], [100, 70], [100, 110]]), 10, 0.14, true);
-  s += fold(smooth([[60, 120], [58, 160], [58, 200]]), 6, t.light ? 0.1 : 0.18);
-  s += fold(smooth([[140, 120], [142, 160], [142, 200]]), 6, t.light ? 0.1 : 0.18);
-  s += fold(smooth([[54, 88], [64, 100], [76, 112]]), 10, t.light ? 0.06 : 0.12);
-  s += fold(smooth([[146, 88], [136, 100], [124, 112]]), 10, t.light ? 0.06 : 0.12);
-  s += sleeveShadows(t, tied);
+  s += fold(smooth([[64, 124], [62, 160], [60, 200]]), 6, t.light ? 0.1 : 0.18);
+  s += fold(smooth([[136, 124], [138, 160], [140, 200]]), 6, t.light ? 0.1 : 0.18);
+  s += fold(smooth([[58, 90], [66, 102], [77, 113]]), 10, t.light ? 0.06 : 0.12);
+  s += fold(smooth([[142, 90], [134, 102], [123, 113]]), 10, t.light ? 0.06 : 0.12);
   s += edges(t, tied);
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
   if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);

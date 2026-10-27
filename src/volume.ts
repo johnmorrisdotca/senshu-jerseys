@@ -213,9 +213,11 @@ const lerp2 = (p: readonly number[], q: readonly number[], t: number): [number, 
 
 /**
  * Where a sleeve's outer and inner edges are, a part `f` of the way down it. Straight lines from the shoulder and the armpit to the cuff;
- * or, given `c` (two control points), the outer edge a curve from the shoulder point that runs out along the shoulder and rounds down
- * into the arm (a judogi's broad sleeve head), even in length along it, and the inner edge level with it: it stays at the armpit until
- * the outer edge has come down to it, so the sleeve is as wide under the arm as at the cuff and does not narrow to a point at the top.
+ * or, given `c` (two control points of its outer edge, which may lie on the straight line), a sleeve set on along an armhole: its outer
+ * edge runs from the shoulder point to the cuff, even in length along it, and its inner edge stays level with it, down the armhole from
+ * the shoulder point to the armpit and then down the arm to the cuff. So every cross-section runs across the sleeve, the head is a
+ * round that grows from the shoulder point, and the sleeve does not fan out from the armpit (turned, a fan shows the page between
+ * its sections).
  */
 export function sleeveAt(q: readonly number[], c: readonly number[] | undefined, f: number): [[number, number], [number, number]] {
   const S = [q[0]!, q[1]!];
@@ -224,18 +226,9 @@ export function sleeveAt(q: readonly number[], c: readonly number[] | undefined,
   const Q = [q[6]!, q[7]!];
   if (c === undefined) return [lerp2(S, P, f), lerp2(A, Q, f)];
   const o = capAt(S, c, P, f);
-  const g = Math.max(0, Math.min(1, (o[1] + f * (Q[1] - P[1]) - A[1]) / (Q[1] - A[1] || 1)));
-  return [o, lerp2(A, Q, g)];
-}
-
-/**
- * How deep a sleeve with a curved head (`c`) is, as a part of a round tube's depth, where its cross-section runs `across` of the way level
- * (the level part of its direction on the drawing). Up in the head the cross-section stands nearly upright along the armhole, and a round
- * that deep would stand out in front of the body's side and behind it; there it is only as deep as the body's side, and it grows round
- * as the cross-section turns level down the arm.
- */
-function capDepth(c: readonly number[] | undefined, across: number): number {
-  return c === undefined ? 1 : 0.45 + 0.55 * Math.abs(across);
+  const level = o[1] + f * (Q[1] - P[1]);
+  if (level <= A[1]) return [o, lerp2(S, A, Math.max(0, (level - S[1]) / (A[1] - S[1] || 1)))];
+  return [o, lerp2(A, Q, Math.min(1, (level - A[1]) / (Q[1] - A[1] || 1)))];
 }
 
 const CAP_STEPS = 64;
@@ -373,7 +366,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
             tex.push(back ? 200 - tx : tx, ty);
             const cx = (o[0] + inn[0]) / 2 - 100 + (rr * Math.sin(th) * wx) / w;
             const cy = (o[1] + inn[1]) / 2 + (rr * Math.sin(th) * wy) / w;
-            p.push(cx, cy, (back ? -1 : 1) * SLEEVE_DEPTH * rr * capDepth(sleeve.c, wx / w) * Math.cos(th));
+            p.push(cx, cy, (back ? -1 : 1) * SLEEVE_DEPTH * rr * Math.cos(th));
           };
           const f0 = k / d.nf;
           const f1 = (k + 1) / d.nf;
@@ -398,7 +391,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
         const u = 0.5 + 0.5 * Math.sin(th);
         const tx = o[0] + u * wx;
         const r = (w / 2) * Math.sin(th);
-        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * SLEEVE_DEPTH * (w / 2) * capDepth(sleeve.c, wx / w) * Math.cos(th)] };
+        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * SLEEVE_DEPTH * (w / 2) * Math.cos(th)] };
       };
       const ref = cells[tube] as Cell;
       const lining = ringAt(CAP_FROM, 0);

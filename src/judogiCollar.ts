@@ -32,8 +32,8 @@ const GAP = 0.3;
 const THIN_FROM = 60;
 const THIN_TO = 100;
 const THIN = 0.5;
-/** Round the back of the neck the band leans back a little, as a collar stands. */
-const LEAN = 0.45;
+/** Round the back of the neck the band leans in to the neck at its top, as a collar stands. */
+const LEAN = 0.7;
 /** About how far apart its middles are along it. */
 const STEP = 3;
 /** Where its drawing starts along the face strip, and the length after which it starts again (its rows are the same all along). */

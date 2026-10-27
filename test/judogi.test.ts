@@ -126,7 +126,7 @@ test("a belt is a solid strap: two turns 5 mm thick, a knot that stands off them
   const sideOn = cells.filter((c) => Math.abs(c.n[0]) > 0.9 && c.p[1]! > ring.y + 30 && placeCell(c, 90, 14).visible);
   assert.ok(sideOn.length > 0);
   // The worn turns' edges behind the jacket stay hidden from the front.
-  assert.ok(strapCells(tied).filter((c) => c.also !== undefined && c.p[2]! < -5).every((c) => !placeCell(c, 0, 8).visible));
+  assert.ok(strapCells(tied).filter((c) => c.also !== undefined && c.p[2]! < -0.6 * tied.b).every((c) => !placeCell(c, 0, 8).visible));
   // The jacket under it carries only the belt's shadow, not a drawing of it: jacket, collar and belt are pieces of their own.
   assert.ok(worn.match(/data-piece="/g)?.length === 3);
 });
@@ -166,18 +166,32 @@ test("the collar is a thick band of its own, standing round the back of the neck
   assert.ok(cells.some((cl) => Math.abs(cl.n[0]) > 0.8 && cl.p[1]! > 40 && placeCell(cl, 90, 8).visible));
 });
 
-test("a jacket's sleeve is as wide under the arm as at the cuff, its head rounding out from the shoulder", () => {
+test("a jacket's sleeve is a straight band, as wide under the arm as at the cuff, with a gap to the body below the armpit", () => {
   const jd = jacketDesc(1, true);
   const left = jd.sl[0]!;
+  const [sx, sy, px, py] = left.q as [number, number, number, number];
   const width = (f: number): number => {
     const [o, i] = sleeveAt(left.q, left.c, f);
     return Math.hypot(i[0] - o[0], i[1] - o[1]);
   };
-  const [o0] = sleeveAt(left.q, left.c, 0.1);
-  // The head runs out along the shoulder, more out than down, before it turns down the arm.
-  assert.ok(o0[0] < left.q[0]! - 10 && o0[1] - left.q[1]! < left.q[0]! - o0[0]);
+  // The outer edge runs straight from the shoulder point to the cuff.
+  for (const f of [0.2, 0.5, 0.8]) {
+    const [o] = sleeveAt(left.q, left.c, f);
+    const t = (o[1] - sy) / (py - sy);
+    assert.ok(Math.abs(o[0] - (sx + (px - sx) * t)) < 0.5, `straight at ${f}`);
+  }
   const cuff = width(1);
-  for (const f of [0.4, 0.6, 0.8]) assert.ok(Math.abs(width(f) - cuff) / cuff < 0.2, `width at ${f}`);
+  for (const f of [0.6, 0.8]) assert.ok(Math.abs(width(f) - cuff) / cuff < 0.15, `width at ${f}`);
+  // Below the armpit the sleeve's inner edge stands off the body.
+  const at = (y: number): number => {
+    let j = 0;
+    while (j + 2 < jd.y.length && jd.y[j + 1]! < y) j++;
+    return jd.a[j]! + ((jd.a[j + 1]! - jd.a[j]!) * (y - jd.y[j]!)) / (jd.y[j + 1]! - jd.y[j]!);
+  };
+  for (const f of [0.7, 0.9]) {
+    const [, i] = sleeveAt(left.q, left.c, f);
+    assert.ok(100 - at(i[1]) - i[0] > 2, `gap at ${f}`);
+  }
 });
 
 test("the pieces worn on the jacket go between its body and the sleeve nearest the eye", () => {

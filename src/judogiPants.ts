@@ -14,7 +14,13 @@ import type { VolumeDesc } from "./volume.ts";
  */
 const Y = [6, 19, 50, 80, 104];
 /** The last rows are as wide as the legs' tops once the volume's padding is added, so the block has no ledge over them. */
-const H = [50, 51, 53, 52.6, 52.2];
+const H = [50, 51, 53, 51, 50.2];
+/**
+ * Worn under the jacket, the drawstring gathers the waist to the body and the hips sit inside the jacket's skirt, as on a person: laid
+ * out flat, the trousers keep their full width.
+ */
+const H_WORN = [39, 40.5, 45, 49, 50.2];
+const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
 const D = [18, 20, 21.5, 21, 20];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.15, 0.42, 0.72, 1];
@@ -22,22 +28,22 @@ const HEM = 262;
 
 /** A leg on the picture's left: the outer top S, the outer hem P, the inner top at the crotch A, the inner hem Q. The other is its mirror. */
 /** The legs start a little above the crotch, under the hip block, so the two never meet edge to edge and leave a hairline. */
-const S: Pt = [46.8, 103.5];
-const P: Pt = [38, HEM];
-const A: Pt = [99.4, 103.5];
-const Q: Pt = [90, HEM];
+const S: Pt = [48.5, 103.5];
+const P: Pt = [45, HEM];
+const A: Pt = [97.8, 103.5];
+const Q: Pt = [92.5, HEM];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 
-export function pantsDesc(depth = 1): VolumeDesc {
+export function pantsDesc(depth = 1, worn = false): VolumeDesc {
   const sl: VolumeDesc["sl"] = [
     { s: -1, q: [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]] },
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)] },
   ];
-  return { ...pieceDesc(Y, H.map((h) => h + 1.2), D, sl, depth, 10, 4, 6, LOBES), full: 2.6 };
+  return { ...pieceDesc(Y, hipsOf(worn).map((h) => h + 1.2), D, sl, depth, 10, 4, 6, LOBES), full: 2.6 };
 }
 
-function hipOutline(): Pt[] {
-  const left: Pt[] = Y.map((y, j) => [100 - (H[j] as number), y]);
+function hipOutline(h: readonly number[]): Pt[] {
+  const left: Pt[] = Y.map((y, j) => [100 - (h[j] as number), y]);
   return [...left, ...[...left].reverse().map(mirror)];
 }
 
@@ -60,10 +66,10 @@ const down = (side: -1 | 1, u: number, f0: number, f1: number, sway = 0): string
  * A line down one side of the trousers, `u` of the way from the outer edge to the middle, from the waistband to the hem: across the hip
  * block first, then down the leg. The long folds follow these, so the shading runs on from the hips into the legs as the cloth does.
  */
-function fall(side: -1 | 1, u: number, sway = 0): string {
+function fall(hips: readonly number[], side: -1 | 1, u: number, sway = 0): string {
   const hipAt = (y: number): Pt => {
-    let h = H[0] as number;
-    for (let j = 1; j < Y.length; j++) if (y >= (Y[j - 1] as number)) h = (H[j - 1] as number) + (((H[j] as number) - (H[j - 1] as number)) * (Math.min(y, Y[j] as number) - (Y[j - 1] as number))) / ((Y[j] as number) - (Y[j - 1] as number));
+    let h = hips[0] as number;
+    for (let j = 1; j < Y.length; j++) if (y >= (Y[j - 1] as number)) h = (hips[j - 1] as number) + (((hips[j] as number) - (hips[j - 1] as number)) * (Math.min(y, Y[j] as number) - (Y[j - 1] as number))) / ((Y[j] as number) - (Y[j - 1] as number));
     const outer = 100 + side * (h + 1.2);
     return [outer + (100 - outer) * u, y];
   };
@@ -71,13 +77,13 @@ function fall(side: -1 | 1, u: number, sway = 0): string {
 }
 
 /** The long folds of one side, waistband to hem: shadow along the outer edge and the inside leg, the light down the front, and two softer folds. */
-function longFolds(t: Tone, side: -1 | 1): string {
+function longFolds(h: readonly number[], t: Tone, side: -1 | 1): string {
   const outer = 0.04;
-  return fold(fall(side, outer), 7, t.light ? 0.14 : 0.26) +
-    fold(fall(side, 0.93), 5, t.light ? 0.12 : 0.22) +
-    fold(fall(side, 0.44, 0.03), 9, 0.16, true) +
-    fold(fall(side, 0.7, -0.02), 6, t.light ? 0.07 : 0.14) +
-    fold(fall(side, 0.26, 0.02), 6, t.light ? 0.06 : 0.12);
+  return fold(fall(h, side, outer), 7, t.light ? 0.14 : 0.26) +
+    fold(fall(h, side, 0.93), 5, t.light ? 0.12 : 0.22) +
+    fold(fall(h, side, 0.44, 0.03), 9, 0.16, true) +
+    fold(fall(h, side, 0.7, -0.02), 6, t.light ? 0.07 : 0.14) +
+    fold(fall(h, side, 0.26, 0.02), 6, t.light ? 0.06 : 0.12);
 }
 
 /** A leg: twill cloth, its seams, the knee panel (front only) and the turned hem with a break where it would meet the foot. */
@@ -108,17 +114,19 @@ function leg(uid: string, t: Tone, side: -1 | 1, front: boolean): string {
 }
 
 /** The waistband: a deep turned channel round the top, gathered into small folds under it by the drawstring. */
-function waistband(t: Tone): string {
+function waistband(h: readonly number[], t: Tone): string {
   const [y0, y1] = [Y[0] as number, Y[1] as number];
-  let s = seam(`M${100 - (H[1] as number)} ${y1}L${100 + (H[1] as number)} ${y1}`, t, 0.7);
-  s += stitch(`M${100 - (H[0] as number)} ${y0 + 2.2}L${100 + (H[0] as number)} ${y0 + 2.2}`, t);
-  s += stitch(`M${100 - (H[1] as number)} ${y1 - 2.2}L${100 + (H[1] as number)} ${y1 - 2.2}`, t);
-  s += fold(`M${100 - (H[0] as number)} ${y0 + 1}L${100 + (H[0] as number)} ${y0 + 1}`, 2, 0.4, true);
+  let s = seam(`M${100 - (h[1] as number)} ${y1}L${100 + (h[1] as number)} ${y1}`, t, 0.7);
+  s += stitch(`M${100 - (h[0] as number)} ${y0 + 2.2}L${100 + (h[0] as number)} ${y0 + 2.2}`, t);
+  s += stitch(`M${100 - (h[1] as number)} ${y1 - 2.2}L${100 + (h[1] as number)} ${y1 - 2.2}`, t);
+  s += fold(`M${100 - (h[0] as number)} ${y0 + 1}L${100 + (h[0] as number)} ${y0 + 1}`, 2, 0.4, true);
   // Gathers under the band: soft, uneven, longer at the sides where the drawstring pulls the most cloth in.
   for (const [x, len] of [[58, 17], [68, 12], [78, 9], [87, 6], [113, 6], [122, 9], [132, 13], [142, 16]] as const) {
-    const lean = (x - 100) * 0.05;
-    s += fold(smooth([[x, y1 + 1], [x + lean, y1 + len / 2], [x + lean * 1.6, y1 + len]]), 4, t.light ? 0.08 : 0.16);
-    s += fold(smooth([[x + 4, y1 + 1], [x + 4 + lean, y1 + len * 0.6]]), 3, 0.12, true);
+    // Placed for the full width, drawn in with a gathered waist.
+    const gx = 100 + ((x - 100) * (h[1] as number)) / (H[1] as number);
+    const lean = (gx - 100) * 0.05;
+    s += fold(smooth([[gx, y1 + 1], [gx + lean, y1 + len / 2], [gx + lean * 1.6, y1 + len]]), 4, t.light ? 0.08 : 0.16);
+    s += fold(smooth([[gx + 4, y1 + 1], [gx + 4 + lean, y1 + len * 0.6]]), 3, 0.12, true);
   }
   return s;
 }
@@ -140,15 +148,15 @@ function drawstring(t: Tone): string {
 }
 
 /** The long folds of both sides, drawn over the hip block and the legs together. */
-function hipSides(t: Tone): string {
-  return longFolds(t, -1) + longFolds(t, 1);
+function hipSides(h: readonly number[], t: Tone): string {
+  return longFolds(h, t, -1) + longFolds(h, t, 1);
 }
 
-function front(uid: string, t: Tone): string {
-  const hip = poly(hipOutline());
+function front(uid: string, t: Tone, h: readonly number[]): string {
+  const hip = poly(hipOutline(h));
   let s = leg(uid, t, -1, true) + leg(uid, t, 1, true);
-  s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(t);
-  s += waistband(t);
+  s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
+  s += waistband(h, t);
   s += seam("M100 19C100.5 48 100 78 100 106", t, 0.55);
   s += fold(smooth([[100, 48], [100, 80], [100, 104]]), 6, t.light ? 0.09 : 0.18);
   s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
@@ -156,11 +164,11 @@ function front(uid: string, t: Tone): string {
   return s;
 }
 
-function back(uid: string, t: Tone): string {
-  const hip = poly(hipOutline());
+function back(uid: string, t: Tone, h: readonly number[]): string {
+  const hip = poly(hipOutline(h));
   let s = leg(uid, t, -1, false) + leg(uid, t, 1, false);
-  s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(t);
-  s += waistband(t);
+  s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
+  s += waistband(h, t);
   s += seam("M100 19C100 48 100.5 78 100 106", t, 0.6);
   // The seat: a soft curve of light over each side, and the cloth drawn in under it.
   s += fold(smooth([[64, 30], [76, 26], [92, 32]]), 10, 0.12, true) + fold(smooth([[136, 30], [124, 26], [108, 32]]), 10, 0.12, true);
@@ -170,12 +178,13 @@ function back(uid: string, t: Tone): string {
 }
 
 /** The trousers' front or back, in the 200-wide box the volume samples. */
-export function pantsFace(ink: GiInk, face: "front" | "back"): Face {
+export function pantsFace(ink: GiInk, face: "front" | "back", worn = false): Face {
   const t = toneOf(ink.cloth);
   const uid = `${ink.uid}${face === "front" ? "f" : "b"}`;
-  const clip = [poly(hipOutline()), poly(legOutline(-1)), poly(legOutline(1))];
+  const h = hipsOf(worn);
+  const clip = [poly(hipOutline(h)), poly(legOutline(-1)), poly(legOutline(1))];
   const all = `<clipPath id="${uid}all">${clip.map((d) => `<path d="${d}"/>`).join("")}</clipPath>`;
-  return { defs: weaves(uid, t) + lightDefs(uid, t) + all, body: face === "front" ? front(uid, t) : back(uid, t), clip };
+  return { defs: weaves(uid, t) + lightDefs(uid, t) + all, body: face === "front" ? front(uid, t, h) : back(uid, t, h), clip };
 }
 
 export const PANTS_HEM = HEM;
