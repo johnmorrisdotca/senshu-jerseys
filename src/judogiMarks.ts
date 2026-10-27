@@ -11,6 +11,7 @@ import { esc, hashOf, lum, type Rgb } from "./colour.ts";
 import type { Mark } from "./judogiCloth.ts";
 import { HEM_X } from "./judogiCollar.ts";
 import { jacketSpots } from "./judogiJacket.ts";
+import { neckLabel, readBranding, sizeTag, sLogo, type ReadBranding } from "./judogiBrand.ts";
 import { labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
 import { CM, cloth } from "./judogiPatch.ts";
 import { pantsSpots } from "./judogiPants.ts";
@@ -24,7 +25,7 @@ export const EMBROIDERY_PLACES = [
 ] as const;
 export type EmbroideryPlace = (typeof EMBROIDERY_PLACES)[number];
 
-export const LOGO_PLACES = ["jacket-hem", "belt-end-left", "belt-end-right", "pants-waist-left", "pants-waist-right", "pants-leg-left", "pants-leg-right"] as const;
+export const LOGO_PLACES = ["jacket-hem", "jacket-shoulder-left", "jacket-shoulder-right", "belt-end-left", "belt-end-right", "pants-waist-left", "pants-waist-right", "pants-leg-left", "pants-leg-right"] as const;
 export type LogoPlace = (typeof LOGO_PLACES)[number];
 
 export const EMBROIDERY_FONTS = ["block", "gothic", "kaisho", "gyosho", "cursive"] as const;
@@ -147,6 +148,8 @@ export interface ReadLogo {
   thread: { name: string; rgb: Rgb } | undefined;
   widthCm: number;
   heightCm: number;
+  /** Put by the branding: the Senshu S unless artwork is given. */
+  brand?: true;
 }
 
 export interface ReadEmblem {
@@ -163,6 +166,9 @@ export interface MarkSpec {
   logos: ReadLogo[];
   emblem: ReadEmblem | undefined;
   label: ReadLabel | undefined;
+  branding: ReadBranding | undefined;
+  /** The neck label's own cloth and thread. */
+  brandLabel: ReadLabel | undefined;
 }
 
 const num = (v: unknown, min: number, max: number, fallback: number): number =>
@@ -194,7 +200,7 @@ function readImage(svg: unknown, href: unknown): { src: string; aspect: number }
 }
 
 /** The marks from outside, made safe. Only the places the rules name are taken, and only the first of each. */
-export function readMarks(options: { embroidery?: unknown; logos?: unknown; emblem?: unknown; rules?: unknown; label?: unknown }): MarkSpec | undefined {
+export function readMarks(options: { embroidery?: unknown; logos?: unknown; emblem?: unknown; rules?: unknown; label?: unknown; branding?: unknown; size?: unknown }): MarkSpec | undefined {
   const rules: MarkRules = options.rules === "ajjf" ? "ajjf" : "ijf";
   const embroidery: ReadEmbroidery[] = [];
   const seen = new Set<string>();
@@ -247,6 +253,26 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       });
     }
   }
+  // The branding's S goes wherever a maker's logo may, one to a garment, where the person has not put a logo of their own.
+  const branding = readBranding(options.branding, typeof options.size === "string" ? options.size : "170");
+  if (branding !== undefined && branding.logos) {
+    const img = readImage(branding.logo?.svg, branding.logo?.href);
+    const spot: Record<"jacket" | "pants" | "belt", LogoPlace> = {
+      jacket: branding.spots.jacket === "hem" ? "jacket-hem" : (`jacket-${branding.spots.jacket}` as LogoPlace),
+      pants: `pants-${branding.spots.pants === "leg-left" || branding.spots.pants === "leg-right" ? branding.spots.pants.replace("leg-", "leg-") : branding.spots.pants}` as LogoPlace,
+      belt: branding.spots.belt === "right" ? "belt-end-right" : "belt-end-left",
+    };
+    for (const piece of ["jacket", "pants", "belt"] as const) {
+      if (pieces.has(piece)) continue;
+      pieces.add(piece);
+      const aspect = img?.aspect ?? 1;
+      const h0 = Math.sqrt((LOGO_AREA[rules][piece] * 0.97) / aspect);
+      logos.push({
+        place: spot[piece], image: img?.src, aspect, thread: branding.thread === undefined ? undefined : readThread(branding.thread, "gold"),
+        widthCm: Math.round(h0 * aspect * 10) / 10, heightCm: Math.round(h0 * 10) / 10, brand: true,
+      });
+    }
+  }
   let emblem: ReadEmblem | undefined;
   if (options.emblem !== null && typeof options.emblem === "object" && options.emblem !== undefined) {
     const e = options.emblem as JudogiEmblem;
@@ -262,9 +288,12 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       heightCm: num(e.heightCm, 1, 40, Math.round(h0 * 10) / 10),
     };
   }
-  const label = readLabel(options.label);
-  if (embroidery.length === 0 && logos.length === 0 && emblem === undefined && label === undefined) return undefined;
-  return { rules, embroidery, logos, emblem, label };
+  // The approval label takes the brand's cloth and thread unless it is given its own.
+  const inherit = (l: unknown): unknown => (l === true ? { colour: branding?.colour, thread: branding?.thread } : l !== null && typeof l === "object" ? { colour: branding?.colour, thread: branding?.thread, ...(l as object) } : l);
+  const label = readLabel(inherit(options.label));
+  const brandLabel = branding !== undefined && branding.neckLabel ? readLabel({ colour: branding.colour, thread: branding.thread }) : undefined;
+  if (embroidery.length === 0 && logos.length === 0 && emblem === undefined && label === undefined && brandLabel === undefined) return undefined;
+  return { rules, embroidery, logos, emblem, label, branding, brandLabel };
 }
 
 /** What the rules say of each mark asked for: met or not, with the source. A mark outside its limit is drawn at the limit, and reported here. */
@@ -378,6 +407,7 @@ function logoOf(m: MarkSpec, l: ReadLogo, cloth: Rgb, id: string): Out {
   }
   const rgb = l.thread?.rgb ?? (piece === "belt" ? readThread("gold", "gold").rgb : lum(cloth) > 0.4 ? readThread("navy", "navy").rgb : readThread("white", "white").rgb);
   if (l.image !== undefined) return { defs: "", body: imageIn(l.image, w, h) };
+  if (l.brand === true) return sLogo(rgb, w, h, `${id}S`);
   return { defs: satinDefs(`${id}S`, rgb), body: placeholderLogo(rgb, w, h) };
 }
 
@@ -449,6 +479,7 @@ export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltLen: num
     const o = logoOf(m, l, clothRgb, id(`l${i}`));
     switch (l.place) {
       case "jacket-hem": set.jacket.front = add(set.jacket.front, o, at(js.hemLogo, o.body)); break;
+      case "jacket-shoulder-left": case "jacket-shoulder-right": set.jacket.back = add(set.jacket.back, o, at({ ...js.shoulder(l.place === "jacket-shoulder-left" ? "left" : "right"), rot: 0 }, o.body)); break;
       case "pants-waist-left": case "pants-waist-right": {
         const s = ps.waist(l.place === "pants-waist-left" ? "left" : "right");
         set.pants.front = add(set.pants.front, o, at({ x: s.x + (l.place === "pants-waist-left" ? 6 : -6), y: s.y - 2 }, o.body));
@@ -457,11 +488,17 @@ export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltLen: num
       case "pants-leg-left": case "pants-leg-right": set.pants.front = add(set.pants.front, o, at(ps.leg(l.place === "pants-leg-left" ? "left" : "right"), o.body)); break;
       case "belt-end-left": case "belt-end-right": {
         const key = l.place === "belt-end-left" ? "left" : "right";
-        set.belt[key] = add(set.belt[key], o, at({ x: beltLen * 0.3, y: 0 }, o.body));
+        set.belt[key] = add(set.belt[key], o, at({ x: beltLen * (m.label !== undefined ? 0.52 : 0.3), y: 0 }, o.body));
         break;
       }
     }
   });
+  if (m.branding !== undefined && m.brandLabel !== undefined) {
+    // Inside the back of the neck, seen through the opening of the jacket below the collar: the neck label, and the size tag sewn under it.
+    const nl = neckLabel(id("Bn"), m.branding, m.brandLabel, 11);
+    const tag = sizeTag(id("Bt"), m.branding.sizeTag, m.brandLabel, 4.6);
+    set.jacket.front = add(add(set.jacket.front, nl, at({ x: 100, y: 25 }, nl.body)), tag, at({ x: 100, y: 33.6 }, tag.body));
+  }
   if (m.label !== undefined) {
     // On the jacket beside the maker's logo spot, on the trousers under the waistband near the middle, and on the belt's left end near the knot, upright.
     const put = (key: "jacket" | "pants" | "belt", w: number, spot: { x: number; y: number; rot?: number }): void => {

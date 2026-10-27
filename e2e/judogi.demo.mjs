@@ -104,3 +104,19 @@ test("embroidery, the logo and the emblem are chosen in the page and kept in the
   await expect(page.locator("#judo-check")).toContainText("All Japan Judo Federation");
   expect(errors).toEqual([]);
 });
+
+test("the branding is one switch with its mark, words and colour, kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&brand=1&bk=chikara&bt=3B");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-bk"]')).toHaveValue("chikara");
+  await expect(page.locator('[data-testid="judo-bt"]')).toHaveValue("3B");
+  await page.locator('[data-testid="judo-bk"]').selectOption("kokoro");
+  await expect(page).toHaveURL(/bk=kokoro/);
+  await page.locator('[data-testid="judo-bn"]').fill("KAZE");
+  await expect(page).toHaveURL(/bn=KAZE/);
+  await page.locator('[data-testid="judo-brand"]').selectOption("0");
+  await expect(page.locator('[data-testid="judo-bk"]')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

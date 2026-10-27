@@ -327,3 +327,33 @@ test("the approval label is the package's own on all three pieces, in five varia
   const check = judogiCheck({ label: true });
   assert.ok(check.notes.some((n) => n.id === "label" && /certifies nothing/.test(n.fact)));
 });
+
+test("branding is one swappable option: a neck label with a size tag, the brush mark, and the S wherever a maker's logo may go, one to a garment", async () => {
+  const { BRAND_KANJI, kanjiPath, sPath, readBranding } = await import("../src/judogiBrand.ts");
+  const norm = (svg: string): string => svg.replace(/jg[0-9a-z]+/g, "jg");
+  assert.deepEqual([...BRAND_KANJI], ["te", "chikara", "kokoro"]);
+  for (const k of BRAND_KANJI) assert.ok(kanjiPath(k).length > 400 && kanjiPath(k).startsWith("M"));
+  assert.ok(sPath().length > 200);
+  assert.equal(readBranding(false, "170"), undefined);
+  assert.equal(readBranding(true, "3")?.sizeTag, "3");
+  assert.equal(readBranding({ sizeTag: "3B" }, "170")?.sizeTag, "3B");
+  assert.equal(readBranding({}, "170")?.name, "SENSHU");
+  const base = { mode: "pieces" as const, belt: "black" as const };
+  const plain = renderJudogi(base);
+  for (const kanji of ["te", "chikara", "kokoro", "選"]) {
+    const svg = renderJudogi({ ...base, branding: { kanji } });
+    assert.equal(wellFormed(svg), null, kanji);
+    assert.notEqual(norm(svg), norm(plain));
+    assert.ok(!svg.includes("IJF") && !svg.includes("OFFICIAL"));
+  }
+  // A person's own logo keeps its garment; the S goes on the others; switched off, it is not added.
+  const own = renderJudogi({ ...base, logos: [{ place: "jacket-hem" }], branding: true });
+  const ownOnly = renderJudogi({ ...base, logos: [{ place: "jacket-hem" }], branding: { logos: false, neckLabel: false } });
+  assert.notEqual(norm(own), norm(ownOnly));
+  assert.equal(norm(renderJudogi({ ...base, branding: { logos: false, neckLabel: false } })), norm(plain));
+  // Swappable: the neck label alone differs with the name, and the check cites the logo limits (one logo, 30 cm2).
+  assert.notEqual(norm(renderJudogi({ ...base, branding: { name: "KAZE" } })), norm(renderJudogi({ ...base, branding: true })));
+  assert.ok(judogiCheck({ branding: true }).notes.some((n) => n.id.startsWith("logo-")));
+  assert.equal(judogiCheck({ branding: true }).ok, true);
+  assert.equal(wellFormed(renderJudogi({ mode: "suit", view: "back", branding: { spots: { jacket: "shoulder-left", pants: "waist-right", belt: "right" } } })), null);
+});

@@ -45,3 +45,5 @@ export { THREAD_COLOURS, THREAD_LABELS, THREAD_RGB } from "./judogiThread.ts";
 export type { ThreadColour } from "./judogiThread.ts";
 export { LABEL_COLOURS, LABEL_COLOUR_LABELS } from "./judogiLabel.ts";
 export type { JudogiLabel, LabelColour } from "./judogiLabel.ts";
+export { BRAND_KANJI, BRAND_KANJI_LABELS } from "./judogiBrand.ts";
+export type { BrandKanji, JudogiBranding } from "./judogiBrand.ts";

@@ -2,7 +2,7 @@
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
 import {
   JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
-  EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS,
+  BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS,
   judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
@@ -44,6 +44,13 @@ const state = {
   rules: MARK_RULES.includes(params.get("rules")) ? params.get("rules") : "ijf",
   // The "Approved Judogi" label, on the jacket, the trousers and the belt at once.
   label: LABEL_COLOURS.includes(params.get("label")) ? params.get("label") : "none",
+  // The Senshu branding: on or off, its brush mark, its words, the size on the tag and its colour.
+  brand: params.get("brand") === "1" ? "1" : "0",
+  bk: BRAND_KANJI.includes(params.get("bk")) ? params.get("bk") : "te",
+  bn: (params.get("bn") ?? "").slice(0, 16),
+  bl: (params.get("bl") ?? "").slice(0, 20),
+  bt: (params.get("bt") ?? "").slice(0, 5),
+  bc: LABEL_COLOURS.includes(params.get("bc")) ? params.get("bc") : "navy",
 };
 
 /** The flag's SVG, loaded from Hata (the package is not a dependency of this one: the demo asks for one flag when it is chosen). */
@@ -79,11 +86,14 @@ function options() {
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
   if (state.label !== "none") o.label = { colour: state.label };
-  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined || o.label !== undefined) o.rules = state.rules;
+  if (state.brand === "1") {
+    o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
+  }
+  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined || o.label !== undefined || o.branding !== undefined) o.rules = state.rules;
   return o;
 }
 
-const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf", label: "none" };
+const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -242,11 +252,19 @@ function rows() {
         [`judo-e${n}f`, say("judoFont"), select(`judo-e${n}f`, EMBROIDERY_FONTS, (v) => say(`judoFont_${v}`))],
       ]),
     ])),
+    ["judo-brand", say("judoBrand"), select("judo-brand", ["0", "1"], (v) => say(v === "1" ? "judoBrand_on" : "judoBrand_off")), true],
+    ...(state.brand === "1" ? [
+      ["judo-bk", say("judoBrandKanji"), select("judo-bk", BRAND_KANJI, (v) => `${BRAND_KANJI_LABELS[v].char}  ${say(`judoKanji_${v}`)}`)],
+      ["judo-bn", say("judoBrandName"), text("judo-bn", 16, "SENSHU")],
+      ["judo-bl", say("judoBrandLine"), text("judo-bl", 20, "SINCE 2026")],
+      ["judo-bt", say("judoBrandTag"), text("judo-bt", 5, state.size)],
+      ["judo-bc", say("judoBrandColour"), select("judo-bc", LABEL_COLOURS, pair(LABEL_COLOUR_LABELS))],
+    ] : []),
     ["judo-label", say("judoLabel"), select("judo-label", ["none", ...LABEL_COLOURS], (v) => (v === "none" ? say("judoLabel_none") : pair(LABEL_COLOUR_LABELS)(v)))],
     ["judo-logo", say("judoLogo"), select("judo-logo", ["none", ...LOGO_PLACES], (v) => say(`judoLogo_${v}`))],
     ["judo-emblem", say("judoEmblem"), select("judo-emblem", ["none", "placeholder", "flag"], (v) => say(`judoEmblem_${v}`)), true],
     ...(state.emblem === "flag" ? [["judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")]] : []),
-    ...(state.e1p !== "none" || state.logo !== "none" || state.emblem !== "none" || state.label !== "none" ? [["judo-rules", say("judoRules"), select("judo-rules", MARK_RULES, (v) => say(`judoRules_${v}`))]] : []),
+    ...(state.e1p !== "none" || state.logo !== "none" || state.emblem !== "none" || state.label !== "none" || state.brand === "1" ? [["judo-rules", say("judoRules"), select("judo-rules", MARK_RULES, (v) => say(`judoRules_${v}`))]] : []),
   ];
 }
 

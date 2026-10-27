@@ -129,3 +129,21 @@ renderJudogi({ mode: "pieces", belt: "black", label: { colour: "navy" } });
 ```
 
 The label is a tribute and is nobody's: "APPROVED" across the top, "JUDOGI" across the bottom and, between them, one white judogi in a circle ringed by the words "SENSHU JERSEYS FEDERATION". The Senshu Jerseys Federation is made up, and **the label certifies nothing**. It is not the IJF's label and does not copy it: the colours, lettering, proportions and drawing are this package's own, with no coloured judogi in a ring, no red rectangular border, no serif lettering and no federation name. It is drawn as woven cloth: a fine weave, satin thread, a woven border, a sheen and a curl at one corner. `colour` is `navy` (the default), `forest` (`深緑`, deep green), `black`, `wine` (`えんじ`) or `cream` (`生成り`, unbleached), or `#rrggbb` for the cloth; `thread` is a thread preset or `#rrggbb`. They are `LABEL_COLOURS`. A label takes no size: it is 3.5 cm by 5 cm on the jacket and 2.6 cm by 3.7 cm on the trousers and the belt.
+
+## Branding
+
+`branding: true` puts the package's own made-up brand, Senshu (`選手`, "athlete"), everywhere a brand goes:
+
+- **A woven neck label** inside the back of the collar, seen through the opening of the jacket: dark cloth, the name in spaced Latin letters across the top, a bold brush mark in a ring in the middle with a brush stroke either side, and a small line under it (`SINCE 2026` by default), sewn on with satin thread, a woven border and a slight curl.
+- **A size tag** sewn under it, with the size you chose for the garment (`3`, `170`) or your own text (`3B`).
+- **The S as the maker's logo**, a stylised S in one brush stroke, at the spots the rules name for a manufacturer's logo, one to a garment: the jacket's bottom front (or a shoulder: `spots.jacket: "shoulder-left"`), a trouser leg (or a waist) and a belt end. A logo you give in `logos` keeps its garment.
+- The approval label (`label`) takes the brand's cloth and thread.
+
+```js
+import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+
+renderJudogi({ mode: "pieces", belt: "black", size: "3", branding: true });
+renderJudogi({ mode: "jacket", branding: { name: "KAZE", kanji: "chikara", line: "MODEL 7", sizeTag: "3B", colour: "black", thread: "silver", logo: { svg: '<svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>' } } });
+```
+
+**The brush mark** is drawn here as tapered strokes (no font): `te` `手` (hand, as in `選手`, an athlete; the default), `chikara` `力` (strength) or `kokoro` `心` (heart, spirit). Give `kanji` any other text and it is set in a system font instead (the same `font` rules as embroidery apply: the font has to be on the computer or in the drawing). **Swapping:** `name`, `line` and `sizeTag` are your words; `colour` is a cloth variant (`navy`, `forest`, `black`, `wine`, `cream`) or `#rrggbb` and `thread` a thread preset or `#rrggbb`; `logo` is your artwork (SVG text or a `data:image/` address) in place of the S; `neckLabel: false` and `logos: false` turn a part off. Nothing here is a real maker's or federation's mark, and the package ships no other brand.

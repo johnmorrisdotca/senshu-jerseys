@@ -7,6 +7,7 @@ import { beltFace, beltPaint } from "./judogiBelt.ts";
 import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
 import { collarPiece } from "./judogiCollar.ts";
 import { BACK_COLLAR_FOOT, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
+import type { JudogiBranding } from "./judogiBrand.ts";
 import { buildMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
@@ -70,6 +71,8 @@ export interface JudogiOptions {
   emblem?: JudogiEmblem;
   /** The package's own woven "Approved Judogi" label on the jacket, the trousers and the belt: `true`, or a colour variant and thread. */
   label?: boolean | JudogiLabel;
+  /** The Senshu branding: a woven neck label with a size tag, the brush kanji mark, and the S as the maker's logo, every part swappable. `true` for the defaults. */
+  branding?: boolean | JudogiBranding;
   /** Whose limits the check holds marks to: the IJF's (default) or the All Japan Judo Federation's. */
   rules?: MarkRules;
 }

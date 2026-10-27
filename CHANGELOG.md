@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-10-27
+
+### Added
+
+- **Branding** (`branding` on `renderJudogi` and `judogiFrame`): the package's own made-up brand Senshu (`選手`), in one swappable option. A woven neck label inside the back of the collar (the name in spaced letters, a brush mark in a ring, a small line, satin thread on dark cloth with a woven border), a size tag sewn under it (the garment's size, or yours such as `3B`), and the stylised S as the maker's logo at the spots the rules name (the jacket's bottom front or a shoulder, a trouser leg or waist, a belt end), one to a garment. The brush mark is drawn as tapered strokes, with no font: `手` hand (default), `力` strength or `心` heart, spirit; any other text is set in a system font. The name, the small line, the size, the cloth and thread colours, the logo (your own SVG in place of the S) and the spots are all yours to change. The approval label takes the brand's colours. New logo places `jacket-shoulder-left` and `jacket-shoulder-right`.
+
 ## [0.14.0] - 2026-10-27
 
 ### Added

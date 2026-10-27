@@ -84,28 +84,48 @@ function judogiIcon(thread: Rgb, ground: Rgb, id: string, light: boolean): strin
  * The label, centred on the origin and `w` units wide (`w / 0.7` high). `id` names its own patterns. Letters follow a circle clockwise over the top and
  * counter-clockwise under the bottom so that both read upright.
  */
-export function labelMark(id: string, l: ReadLabel, w: number): { defs: string; body: string } {
-  const h = w / LABEL_ASPECT;
+/** The woven base every label shares, centred on the origin, `w` by `h`: its shadow and cloth with the weave, then (to draw after the lettering) its woven border, sheen and curled corner. */
+export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: string; under: string; over: string; thread: string } {
   const light = lum(l.cloth) > 0.4;
   const cloth = hexOf(l.cloth);
   const deep = hexOf(blend(l.cloth, [0, 0, 0], 0.5));
   const lit = hexOf(blend(l.cloth, [255, 255, 255], light ? 0.7 : 0.3));
   const thread = hexOf(l.thread);
-  // The weave: threads across and along, one pair light and one dark, fine enough that twenty or so show across the label.
-  const t = w / 44;
+  const side = Math.min(w, h);
+  // The weave: threads across and along, one pair light and one dark, fine enough that some forty show across the label's short side.
+  const t = side / 40;
   const defs = satinDefs(`${id}S`, l.thread) +
     `<pattern id="${id}W" width="${n2(t * 2)}" height="${n2(t * 2)}" patternUnits="userSpaceOnUse"><rect width="${n2(t)}" height="${n2(t)}" fill="${deep}" fill-opacity="${light ? 0.12 : 0.26}"/><rect x="${n2(t)}" y="${n2(t)}" width="${n2(t)}" height="${n2(t)}" fill="${deep}" fill-opacity="${light ? 0.12 : 0.26}"/><rect x="${n2(t)}" width="${n2(t)}" height="${n2(t)}" fill="${lit}" fill-opacity="${light ? 0.5 : 0.16}"/></pattern>` +
     `<linearGradient id="${id}G" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.2"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#101620" stop-opacity="0.22"/></linearGradient>` +
-    `<clipPath id="${id}C"><rect x="${n2(-w / 2)}" y="${n2(-h / 2)}" width="${n2(w)}" height="${n2(h)}" rx="${n2(w * 0.05)}"/></clipPath>`;
-  const rect = (grow = 0, dx = 0, dy = 0): string => `x="${n2(-w / 2 - grow + dx)}" y="${n2(-h / 2 - grow + dy)}" width="${n2(w + grow * 2)}" height="${n2(h + grow * 2)}" rx="${n2(w * 0.05 + grow)}"`;
-  let s = "";
-  for (const [k, o] of [[1.4, 0.04], [0.9, 0.06], [0.5, 0.09], [0.2, 0.12]] as const) s += `<rect ${rect(k, 0.4, 0.7)} fill="#1a2230" fill-opacity="${o}"/>`;
-  s += `<rect ${rect()} fill="${cloth}"/><g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}W)"/></g>`;
+    `<clipPath id="${id}C"><rect x="${n2(-w / 2)}" y="${n2(-h / 2)}" width="${n2(w)}" height="${n2(h)}" rx="${n2(side * 0.05)}"/></clipPath>`;
+  const rect = (grow = 0, dx = 0, dy = 0): string => `x="${n2(-w / 2 - grow + dx)}" y="${n2(-h / 2 - grow + dy)}" width="${n2(w + grow * 2)}" height="${n2(h + grow * 2)}" rx="${n2(side * 0.05 + grow)}"`;
+  let under = "";
+  for (const [k, o] of [[side * 0.11, 0.04], [side * 0.07, 0.06], [side * 0.04, 0.09], [side * 0.016, 0.12]] as const) under += `<rect ${rect(k, side * 0.03, side * 0.055)} fill="#1a2230" fill-opacity="${o}"/>`;
+  under += `<rect ${rect()} fill="${cloth}"/><g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}W)"/></g>`;
   // A woven border (two lines of thread with the cloth between them), inset from the edge.
-  const edge = w * 0.075;
-  s += `<rect x="${n2(-w / 2 + edge)}" y="${n2(-h / 2 + edge)}" width="${n2(w - 2 * edge)}" height="${n2(h - 2 * edge)}" rx="${n2(w * 0.025)}" fill="none" stroke="${thread}" stroke-width="${n2(w * 0.022)}"/>`;
-  s += `<rect x="${n2(-w / 2 + edge * 1.7)}" y="${n2(-h / 2 + edge * 1.7)}" width="${n2(w - 3.4 * edge)}" height="${n2(h - 3.4 * edge)}" rx="${n2(w * 0.015)}" fill="none" stroke="${thread}" stroke-width="${n2(w * 0.01)}" stroke-opacity="0.8"/>`;
+  const edge = side * 0.075;
+  let over = `<rect x="${n2(-w / 2 + edge)}" y="${n2(-h / 2 + edge)}" width="${n2(w - 2 * edge)}" height="${n2(h - 2 * edge)}" rx="${n2(side * 0.025)}" fill="none" stroke="${thread}" stroke-width="${n2(side * 0.022)}"/>`;
+  over += `<rect x="${n2(-w / 2 + edge * 1.7)}" y="${n2(-h / 2 + edge * 1.7)}" width="${n2(w - 3.4 * edge)}" height="${n2(h - 3.4 * edge)}" rx="${n2(side * 0.015)}" fill="none" stroke="${thread}" stroke-width="${n2(side * 0.01)}" stroke-opacity="0.8"/>`;
+  // The sheen across the weave, and a slight curl at the bottom right corner: a lit fold and its shadow.
+  const c = side * 0.22;
+  over += `<g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}G)"/>` +
+    `<path d="M${n2(w / 2)} ${n2(h / 2 - c)}L${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2)}Z" fill="#fff" fill-opacity="${light ? 0.35 : 0.14}"/>` +
+    `<path d="M${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2 - c)}" stroke="#101620" stroke-opacity="0.3" stroke-width="0.5"/></g>`;
+  over += `<rect ${rect()} fill="none" stroke="${deep}" stroke-width="0.6" stroke-opacity="0.8"/>`;
+  return { defs, under, over, thread };
+}
+
+/**
+ * The approval label, centred on the origin and `w` units wide (`w / 0.7` high). `id` names its own patterns. Letters follow a circle clockwise over the top and
+ * counter-clockwise under the bottom so that both read upright.
+ */
+export function labelMark(id: string, l: ReadLabel, w: number): { defs: string; body: string } {
+  const h = w / LABEL_ASPECT;
+  const light = lum(l.cloth) > 0.4;
+  const base = woven(id, l, w, h);
+  const thread = base.thread;
   const font = "system-ui";
+  let s = base.under;
   const word = (text: string, cy: number, hh: number): string => satinRun(layout(text, 0, cy, { height: hh, maxWidth: w * 0.74, weight: "black", tracking: 0.3 }), l.thread, `${id}S`, font);
   s += word("APPROVED", -h * 0.375, h * 0.065) + word("JUDOGI", h * 0.375, h * 0.065);
   // The circle: an outer ring, the ring of words, an inner ring and the judogi.
@@ -130,13 +150,8 @@ export function labelMark(id: string, l: ReadLabel, w: number): { defs: string; 
     return out;
   };
   s += arc("SENSHU JERSEYS", true) + arc("FEDERATION", false);
-  // The judogi, inside the inner ring, a little above its middle so the belt knot sits at the centre.
+  // The judogi, inside the inner ring.
   const k = (R * 0.62 * 2 * 0.86) / 100;
   s += `<g transform="translate(${n2(-50 * k)} ${n2(cy - 50 * k)}) scale(${n2(k)})">${judogiIcon(l.thread, l.cloth, id, light)}</g>`;
-  // The sheen across the weave, and a slight curl at the bottom right corner: a lit fold and its shadow.
-  s += `<g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}G)"/>` +
-    `<path d="M${n2(w / 2)} ${n2(h / 2 - w * 0.22)}L${n2(w / 2 - w * 0.22)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2)}Z" fill="#fff" fill-opacity="${light ? 0.35 : 0.14}"/>` +
-    `<path d="M${n2(w / 2 - w * 0.22)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2 - w * 0.22)}" stroke="#101620" stroke-opacity="0.3" stroke-width="0.5"/></g>`;
-  s += `<rect ${rect()} fill="none" stroke="${deep}" stroke-width="0.6" stroke-opacity="0.8"/>`;
-  return { defs, body: s };
+  return { defs: base.defs, body: s + base.over };
 }
