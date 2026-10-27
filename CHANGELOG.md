@@ -6,6 +6,14 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-27
+
+### Added
+
+- **Back patches** (`backPatch` on `renderJudogi` and `judogiFrame`): the IJF-style back number (a name band, the nation's three letters large, an optional bottom band for a club or sponsor; band colours blue, gold, red, black, white or your own; stitched round its edge and crossed into an X or three lines) and the Japanese domestic zekken `ゼッケン` (white cloth, the surname large in the upper two thirds, the affiliation below, black or vermilion `朱` ink). A patch is sewn cloth: a turned and stitched edge, a soft shadow, the weave over its lettering. It lies on the jacket's back, curves with the body and turns with it. Places and sizes cite the IJF Judogi Rules (09 03 2022) and the All Japan Judo Federation's zekken rules as a retailer's chart states them; no federation mark is drawn. `judogiCheck` reports a patch against its rules.
+- **`flat-back` view**: the cloth laid out, seen from behind.
+- The designer has the back patch's choices (style, words, colour, ink, stitching), all in the address.
+
 ## [0.11.0] - 2026-10-26
 
 ### Changed

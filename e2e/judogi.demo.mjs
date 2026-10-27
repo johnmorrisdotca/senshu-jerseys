@@ -70,3 +70,19 @@ test("the flat view stays a drawing, with nothing to turn", async ({ page }) => 
   await expect(page.locator("#judo-stage canvas")).toHaveCount(0);
   await expect(page.locator('[data-testid="judo-play"]')).toBeDisabled();
 });
+
+test("the back patch's choices are in the address, show only when they apply, and the flat back is a drawing", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&view=back&patch=ijf&pname=M.%20TANAKA&pcode=JPN");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-pcode"]')).toHaveValue("JPN");
+  await expect(page.locator('[data-testid="judo-pink"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-patch"]').selectOption("zekken");
+  await expect(page).toHaveURL(/patch=zekken/);
+  await expect(page.locator('[data-testid="judo-pink"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-pcode"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-pname"]').fill("SATO");
+  await expect(page).toHaveURL(/pname=SATO/);
+  await page.goto("/judogi.html?view=flat-back&patch=zekken");
+  await expect(page.locator("#judo-stage svg")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-play"]')).toBeDisabled();
+});

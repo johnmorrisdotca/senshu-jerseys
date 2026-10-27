@@ -420,7 +420,7 @@ console.log(embedCode(options, "iframe").includes("embed.html?cut=rugby")); // t
 | `renderJersey(options)`, `renderKit(options)` | A jersey (or the whole uniform) as SVG. |
 | `titleOf(resolved)` | The accessible title a drawing gets, in `language`. |
 | `renderCap`, `renderHelmet`, `renderBanner`, `renderTitleBanner` | A cap, a helmet, a retired-number banner, a championship pennant or garden flag. |
-| `renderJudogi`, `judogiFrame`, `judogiCheck`, `judogiHeightCm`, `JUDOGI_COLOURS`, `JUDOGI_BELTS`, `JUDOGI_BELT_LABELS`, `JUDOGI_MODES`, `JUDOGI_VIEWS`, `JUDOGI_SIZES` | A judogi: jacket, trousers and belt, contest white or blue, a turning frame, and the cited IJF size check. [Judogi](./docs/judogi.md). |
+| `renderJudogi`, `judogiFrame`, `judogiCheck`, `judogiHeightCm`, `JUDOGI_COLOURS`, `JUDOGI_BELTS`, `JUDOGI_BELT_LABELS`, `JUDOGI_MODES`, `JUDOGI_VIEWS`, `JUDOGI_SIZES`, `PATCH_STYLES`, `PATCH_COLOURS`, `PATCH_COLOUR_LABELS`, `PATCH_FACTS`, `ZEKKEN_INKS`, `ZEKKEN_INK_LABELS` | A judogi: jacket, trousers and belt, contest white or blue, a turning frame, back patches (the IJF-style back number and the zekken), and the cited size check. [Judogi](./docs/judogi.md). |
 | `kitMatchup`, `kitClash`, `jerseyLineup`, `formationRows` | Two kits face to face, whether they clash, a formation of shirts (tucked under each other with `overlap`), and the rows a formation means. |
 | `useEmblems` | Plug in an emblem renderer so that `crest` can be an id. |
 | `usePresets`, `presetOf`, `presetOptions`, `loadedPresets`, `decode`, `defineLeague` | Load presets, find one, and read or write a preset's one-line spec. |

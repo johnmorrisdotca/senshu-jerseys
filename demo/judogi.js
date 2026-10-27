@@ -1,6 +1,9 @@
 // Judogi designer: one options object in the address, a preview that turns in place (by the angle slider, by hovering, or on its own),
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
-import { JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, judogiCheck, judogiFrame } from "./dist/index.js";
+import {
+  JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
+  judogiCheck, judogiFrame,
+} from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { WORDS } from "./words.js";
 
@@ -19,21 +22,42 @@ const state = {
   view: JUDOGI_VIEWS.includes(params.get("view")) ? params.get("view") : "front",
   size: JUDOGI_SIZES.includes(params.get("size")) ? params.get("size") : "170",
   yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
+  // The back patch: its style, the words on it and its colours. Every one is in the address.
+  patch: PATCH_STYLES.includes(params.get("patch")) ? params.get("patch") : "none",
+  pname: (params.get("pname") ?? "").slice(0, 24),
+  pcode: (params.get("pcode") ?? "").slice(0, 3),
+  pline: (params.get("pline") ?? "").slice(0, 28),
+  pcolour: PATCH_COLOURS.includes(params.get("pcolour")) ? params.get("pcolour") : "blue",
+  pink: ZEKKEN_INKS.includes(params.get("pink")) ? params.get("pink") : "black",
+  psew: params.get("psew") === "lines" ? "lines" : "x",
 };
 
 const turning = { on: false, byHover: false, last: 0, frame: 0 };
 
+/** The options the package takes, made from the page's state. A word left empty is the package's own default. */
 function options() {
-  return { colour: state.colour, belt: state.belt, mode: state.mode, view: state.view, size: state.size, language: lang() === "ja" ? "ja" : "en", yaw: state.yaw, width: 360 };
+  const o = { colour: state.colour, belt: state.belt, mode: state.mode, view: state.view, size: state.size, language: lang() === "ja" ? "ja" : "en", yaw: state.yaw, width: 360 };
+  if (state.patch !== "none") {
+    o.backPatch = { style: state.patch, ...(state.pname === "" ? {} : { name: state.pname }), ...(state.pline === "" ? {} : { line: state.pline }) };
+    if (state.patch === "ijf") Object.assign(o.backPatch, { colour: state.pcolour, sewing: state.psew, ...(state.pcode === "" ? {} : { code: state.pcode }) });
+    else o.backPatch.ink = state.pink;
+  }
+  return o;
 }
+
+const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x" };
 
 function syncUrl() {
   const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(state)) if (String(v) !== "" && !(k === "yaw" && (Number(v) === 0 || turning.on))) q.set(k, String(v));
+  for (const [k, v] of Object.entries(state)) {
+    if (String(v) === "" || (k === "yaw" && (Number(v) === 0 || turning.on))) continue;
+    if (k in DEFAULTS && String(v) === String(DEFAULTS[k])) continue;
+    q.set(k, String(v));
+  }
   history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
 }
 
-const flat = () => state.view === "flat";
+const flat = () => state.view === "flat" || state.view === "flat-back";
 const wrap = (a) => ((((Math.round(a) + 180) % 360) + 360) % 360) - 180;
 
 let drawing = 0;
@@ -64,11 +88,10 @@ async function draw() {
 
 /** What the size check found, in the page's language: the facts themselves are English, so the Japanese page says only whether the size meets them. */
 function checkText(check) {
-  const source = "IJF Judogi Rules, 09 03 2022";
-  const facts = (notes) => notes.map((n) => n.fact.replace(` (${source}).`, ".")).join(" ");
   const head = `${say("judoOk")}: ${check.heightCm} cm.`;
   if (lang() === "ja") return check.ok ? head : "";
-  return check.ok ? `${head} ${facts(check.notes)} (${source})` : `${facts(check.notes.filter((n) => !n.met))} (${source})`;
+  // Each fact carries its own source: the IJF's rules for the garment, and the rules a patch follows.
+  return check.ok ? `${head} ${check.notes.map((n) => n.fact).join(" ")}` : check.notes.filter((n) => !n.met).map((n) => n.fact).join(" ");
 }
 
 function showAngle() {
@@ -131,6 +154,21 @@ function select(id, values, labels) {
   return el;
 }
 
+/** A line of text, with the package's own default shown where nothing is typed. */
+function text(id, max, placeholder) {
+  const el = document.createElement("input");
+  el.id = id;
+  el.type = "text";
+  el.className = "fam-field";
+  el.dataset.testid = id;
+  el.maxLength = max;
+  el.autocomplete = "off";
+  el.spellcheck = false;
+  el.placeholder = placeholder;
+  el.value = state[id.replace("judo-", "")];
+  return el;
+}
+
 /** A belt's name in the page's language only. */
 function beltLabel(id) {
   if (id === "none") return say("judoBeltNone");
@@ -138,28 +176,52 @@ function beltLabel(id) {
   return lang() === "ja" ? pair.ja : pair.en;
 }
 
-function controls() {
-  const box = $("judo-controls");
-  box.replaceChildren();
-  const rows = [
+const pair = (labels) => (v) => (lang() === "ja" ? labels[v].ja : labels[v].en);
+
+/** The controls, in groups. A field that does not apply to the choices made is not shown. */
+function rows() {
+  const ijf = state.patch === "ijf";
+  const zekken = state.patch === "zekken";
+  return [
     ["judo-colour", say("judoColour"), select("judo-colour", JUDOGI_COLOURS, (v) => say(v === "blue" ? "judoBlue" : "judoWhite"))],
     ["judo-belt", say("judoBelt"), select("judo-belt", JUDOGI_BELTS, beltLabel)],
     ["judo-mode", say("judoMode"), select("judo-mode", JUDOGI_MODES, (v) => say(`judoMode_${v}`))],
     ["judo-view", say("judoView"), select("judo-view", JUDOGI_VIEWS, (v) => say(`judoView_${v}`))],
     ["judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)],
+    ["judo-patch", say("judoPatch"), select("judo-patch", PATCH_STYLES, (v) => say(`judoPatch_${v}`)), true],
+    ...(ijf || zekken ? [["judo-pname", say(zekken ? "judoPatchSurname" : "judoPatchName"), text("judo-pname", 24, zekken ? "山田" : "A. ATHLETE")]] : []),
+    ...(ijf ? [["judo-pcode", say("judoPatchCode"), text("judo-pcode", 3, "SJF")]] : []),
+    ...(ijf || zekken ? [["judo-pline", say(zekken ? "judoPatchAffiliation" : "judoPatchLine"), text("judo-pline", 28, "")]] : []),
+    ...(ijf ? [["judo-pcolour", say("judoPatchColour"), select("judo-pcolour", PATCH_COLOURS, pair(PATCH_COLOUR_LABELS))]] : []),
+    ...(ijf ? [["judo-psew", say("judoPatchSewing"), select("judo-psew", ["x", "lines"], (v) => say(`judoPatchSewing_${v}`))]] : []),
+    ...(zekken ? [["judo-pink", say("judoPatchInk"), select("judo-pink", ZEKKEN_INKS, pair(ZEKKEN_INK_LABELS))]] : []),
   ];
-  for (const [id, label, input] of rows) {
+}
+
+let typing = 0;
+function controls() {
+  const box = $("judo-controls");
+  box.replaceChildren();
+  for (const [id, label, input, rebuild] of rows()) {
     const row = document.createElement("label");
     row.htmlFor = id;
     const span = document.createElement("span");
     span.textContent = label;
     row.append(span, input);
     box.append(row);
-    input.addEventListener("change", () => {
+    const change = () => {
       state[id.replace("judo-", "")] = input.value;
       syncUrl();
+      // A choice that changes which fields apply builds them again; typing keeps the field it is in.
+      if (rebuild) controls();
       draw();
-    });
+    };
+    if (input.type === "text") {
+      input.addEventListener("input", () => {
+        globalThis.clearTimeout(typing);
+        typing = globalThis.setTimeout(change, 250);
+      });
+    } else input.addEventListener("change", change);
   }
 }
 

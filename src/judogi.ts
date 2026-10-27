@@ -4,9 +4,10 @@
 
 import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint } from "./judogiBelt.ts";
-import { toneOf, type BeltPaint, type Face, type GiInk } from "./judogiCloth.ts";
+import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
 import { collarPiece } from "./judogiCollar.ts";
-import { beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
+import { BACK_COLLAR_FOOT, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
+import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
 import { wrapSvg } from "./svg.ts";
@@ -22,7 +23,7 @@ export type JudogiBelt = (typeof JUDOGI_BELTS)[number];
 export const JUDOGI_MODES = ["pieces", "suit", "jacket", "pants", "belt"] as const;
 export type JudogiMode = (typeof JUDOGI_MODES)[number];
 
-export const JUDOGI_VIEWS = ["front", "back", "flat"] as const;
+export const JUDOGI_VIEWS = ["front", "back", "flat", "flat-back"] as const;
 export type JudogiView = (typeof JUDOGI_VIEWS)[number];
 
 /** Traditional 1–7 and the IJF height sizes in centimetres (150–200, every 5). */
@@ -58,6 +59,8 @@ export interface JudogiOptions {
   yaw?: number;
   /** Cloth thickness at the edge, in drawing units (0–28; 12 by default). */
   thickness?: number;
+  /** A patch sewn on the back of the jacket: the IJF-style back number or the Japanese zekken. None by default. */
+  backPatch?: JudogiBackPatch;
 }
 
 export interface JudogiCheck {
@@ -93,6 +96,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const sleeve = Math.round(h * 0.32);
   const trouser = Math.round(h * 0.58);
   const beltHang = 25;
+  const patch = readPatch(options?.backPatch);
   const notes = [
     { id: "jacket-cover", met: jacket >= h * 0.38 && jacket <= h * 0.48, fact: "Jacket reaches mid-thigh and covers the buttocks (IJF Judogi Rules, 09 03 2022)." },
     { id: "sleeve-wrist", met: sleeve >= h * 0.28 && sleeve <= h * 0.36, fact: "Sleeves cover the arm and leave about 5 cm to the wrist (IJF Judogi Rules, 09 03 2022)." },
@@ -102,6 +106,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
     { id: "belt-width", met: true, fact: "Belt width is 4–5 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "belt-ends", met: beltHang >= 20 && beltHang <= 30, fact: "Belt hanging ends are 20–30 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "contest-colour", met: true, fact: "Contest judogi is white or blue (IJF Judogi Rules, 09 03 2022)." },
+    ...(patch === undefined ? [] : patchNotes(patch)),
   ];
   return { ok: notes.every((n) => n.met), size, heightCm: h, notes };
 }
@@ -112,7 +117,7 @@ export function renderJudogi(options?: JudogiOptions): string {
   const drawn = compose(o);
   return wrapSvg({
     id: o.uid, x: drawn.x, y: drawn.y, w: drawn.w, h: drawn.h, width: o.width,
-    title: o.title, description: o.description, defs: drawn.defs, body: drawn.body, yaw: o.view === "flat" ? undefined : drawn.yaw,
+    title: o.title, description: o.description, defs: drawn.defs, body: drawn.body, yaw: isFlat(o.view) ? undefined : drawn.yaw,
   });
 }
 
@@ -135,6 +140,7 @@ interface Ready {
   thickness: number;
   cloth: Rgb;
   uid: string;
+  patch: PatchSpec | undefined;
 }
 
 interface Sheet {
@@ -159,10 +165,11 @@ function read(options?: JudogiOptions): Ready {
   const width = typeof o.width === "number" && Number.isFinite(o.width) ? Math.max(48, Math.min(2400, o.width)) : 320;
   const yaw = typeof o.yaw === "number" && Number.isFinite(o.yaw) ? o.yaw : 0;
   const thickness = typeof o.thickness === "number" && Number.isFinite(o.thickness) ? Math.max(0, Math.min(28, o.thickness)) : 12;
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness]))}`;
+  const patch = readPatch(o.backPatch);
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, patch]))}`;
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, cloth, uid,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, cloth, uid, patch,
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
       : "A judogi: jacket, trousers and belt. No maker or federation marks.",
@@ -173,7 +180,7 @@ function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiM
   if (language === "ja") {
     const c = colour === "blue" ? "青" : "白";
     const m = { pieces: "上衣とズボン", suit: "着用", jacket: "上衣", pants: "ズボン", belt: "帯" }[mode];
-    const v = { front: "前", back: "後ろ", flat: "平置き" }[view];
+    const v = { front: "前", back: "後ろ", flat: "平置き", "flat-back": "平置き、後ろ" }[view];
     return `${c}の柔道着、${m}、${v}`;
   }
   const c = colour === "blue" ? "Blue" : "White";
@@ -181,8 +188,15 @@ function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiM
   return `${c} judogi, ${m}, ${view}`;
 }
 
-function inkOf(o: Ready, part: string, belt?: BeltPaint): GiInk {
-  return { uid: `${o.uid}${part}`, cloth: o.cloth, ...(belt === undefined ? {} : { belt }) };
+function inkOf(o: Ready, part: string, belt?: BeltPaint, marks?: GiInk["marks"]): GiInk {
+  return { uid: `${o.uid}${part}`, cloth: o.cloth, ...(belt === undefined ? {} : { belt }), ...(marks === undefined ? {} : { marks }) };
+}
+
+/** What is sewn on the jacket's faces. */
+function jacketMarks(o: Ready): GiInk["marks"] | undefined {
+  if (o.patch === undefined) return undefined;
+  const back: Mark = backPatch(`${o.uid}j`, o.patch, BACK_COLLAR_FOOT);
+  return { back };
 }
 
 /** Where each layout puts its pieces, at the jacket's scale: the view box, and the trousers' offset from the jacket. */
@@ -195,7 +209,7 @@ const WORN_AT = 102;
 
 /** Each piece wrapped on its own volume; a back view starts half a turn round. A belt is tied on the jacket (the flat view lays it out on its own instead). */
 function compose(o: Ready): Sheet {
-  if (o.view === "flat") return flatSheet(o);
+  if (isFlat(o.view)) return flatSheet(o);
   const yaw = normalYaw(o.yaw + (o.view === "back" ? 180 : 0));
   const depth = Math.max(0.2, o.thickness / 12);
   const paint = beltPaint(o.uid, o.belt);
@@ -209,7 +223,7 @@ function compose(o: Ready): Sheet {
     return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
   }
   const tied = o.mode === "pants" ? undefined : paint;
-  const ink = { ...inkOf(o, "j", tied), beltApart: true as const };
+  const ink = { ...inkOf(o, "j", tied, jacketMarks(o)), beltApart: true as const };
   const body = jacketDesc(depth, tied !== undefined);
   // The collar and a tied belt are pieces of their own worn on the jacket: drawn after its body and before the sleeve nearest the eye.
   const jacketVolume: VolumeDesc = { ...body, worn: tied === undefined ? 1 : 2 };
@@ -234,19 +248,23 @@ function compose(o: Ready): Sheet {
   return box(defs + jacket.defs + beltDefs + pants.defs, `${jacket.body}${belted}<g transform="translate(${px} ${py})">${pants.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], py + PANTS_BOX[3] - JACKET_BOX[1]], yaw);
 }
 
-/** The pieces drawn flat, as their front faces with no turn: the jacket, the trousers beside it, the belt under the jacket. */
+/** Whether a view is the cloth laid out with no turn: its front, or its back. */
+export const isFlat = (view: JudogiView): boolean => view === "flat" || view === "flat-back";
+
+/** The pieces drawn flat, as their front faces (or their back faces) with no turn: the jacket, the trousers beside it, the belt under the jacket. */
 function flatSheet(o: Ready): Sheet {
+  const side = o.view === "flat-back" ? "back" : "front";
   const paint = beltPaint(o.uid, o.belt);
   const defs = paint?.defs ?? "";
   const flat = (f: Face): string => `${f.defs}`;
   if (o.mode === "belt") {
     const p = paint ?? (beltPaint(o.uid, "white") as BeltPaint);
-    const b = beltFace(p, "front");
+    const b = beltFace(p, side);
     return box(p.defs + flat(b), b.body, BELT_BOX, 0);
   }
   const tied = o.mode === "suit" || o.mode === "jacket" ? paint : undefined;
-  const j = jacketFace(inkOf(o, "j", tied), "front");
-  const p = pantsFace(inkOf(o, "p"), "front", o.mode === "suit");
+  const j = jacketFace(inkOf(o, "j", tied, jacketMarks(o)), side);
+  const p = pantsFace(inkOf(o, "p"), side, o.mode === "suit");
   if (o.mode === "jacket") return box(defs + flat(j), j.body, JACKET_BOX, 0);
   if (o.mode === "pants") return box(flat(p), p.body, PANTS_BOX, 0);
   if (o.mode === "suit") {
@@ -254,7 +272,7 @@ function flatSheet(o: Ready): Sheet {
     return box(defs + flat(j) + flat(p), `<g transform="translate(0 ${WORN_AT})">${p.body}</g>${j.body}`, [x, y, w, WORN_AT + PANTS_BOX[1] + PANTS_BOX[3] - y], 0);
   }
   const [px, py] = PIECES_AT;
-  const laid = paint === undefined ? "" : `<g transform="translate(0 ${JACKET_BOX[3] - 6})">${beltFace(paint, "front").body}</g>`;
+  const laid = paint === undefined ? "" : `<g transform="translate(0 ${JACKET_BOX[3] - 6})">${beltFace(paint, side).body}</g>`;
   const extra = paint === undefined ? 0 : BELT_BOX[3];
   return box(defs + flat(j) + flat(p), `${j.body}${laid}<g transform="translate(${px} ${py})">${p.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], Math.max(py + PANTS_BOX[3], JACKET_BOX[3] + extra) - JACKET_BOX[1]], 0);
 }

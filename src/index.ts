@@ -9,6 +9,8 @@ export {
   judogiCheck, judogiFrame, judogiHeightCm, renderJudogi,
 } from "./judogi.ts";
 export type { JudogiBelt, JudogiCheck, JudogiColour, JudogiMode, JudogiOptions, JudogiSize, JudogiView } from "./judogi.ts";
+export { PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_FACTS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS } from "./judogiPatch.ts";
+export type { JudogiBackPatch, PatchColour, PatchStyle, ZekkenInk } from "./judogiPatch.ts";
 export { HELMET_KINDS, HELMET_MARKS, renderHelmet } from "./helmet.ts";
 export type { HelmetKind, HelmetMark, HelmetOptions } from "./helmet.ts";
 export { BANNER_KINDS, BANNER_SHAPES, logoHref, renderBanner } from "./banner.ts";

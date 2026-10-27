@@ -14,9 +14,17 @@ export interface BeltPaint {
   defs: string;
 }
 
+/** Marks sewn or woven on one face of a piece (patches, labels, embroidery): their defs and their drawing, in the face's own box. */
+export interface Mark {
+  defs: string;
+  body: string;
+}
+
 export interface GiInk {
   uid: string;
   cloth: Rgb;
+  /** What is sewn on each face of the piece, drawn over its cloth and under the light that falls on it. */
+  marks?: { front?: Mark; back?: Mark };
   /** The belt tied on the jacket, when one is. */
   belt?: BeltPaint;
   /** The belt is a strap of its own over the jacket (the turning view, judogiStrap.ts): the jacket's faces carry only its shadows. */

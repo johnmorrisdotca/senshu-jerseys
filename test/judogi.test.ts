@@ -207,3 +207,33 @@ test("the pieces worn on the jacket go between its body and the sleeve nearest t
   assert.ok(near.length > 0 && (near[0] === 1 || near[0] === 2) && near.every((g) => g === near[0]));
   assert.ok(jobs[0]!.lists.flat().every((i) => pieces[0]!.cells[i]!.g !== near[0]));
 });
+
+test("a back patch is drawn on the back of the jacket only, turns with it, and prints no federation mark", async () => {
+  const { readPatch, PATCH_FACTS } = await import("../src/judogiPatch.ts");
+  for (const style of ["ijf", "zekken"] as const) {
+    const plain = renderJudogi({ mode: "jacket", view: "back", belt: "black" });
+    const patched = renderJudogi({ mode: "jacket", view: "back", belt: "black", backPatch: { style, name: style === "ijf" ? "M. TANAKA" : "山田", code: "JPN", line: "CLUB" } });
+    assert.equal(wellFormed(patched), null);
+    assert.notEqual(plain, patched);
+    assert.ok(!patched.includes("IJF") && !patched.includes("OFFICIAL"));
+    // On the front the jacket is unchanged apart from ids.
+    assert.equal(wellFormed(renderJudogi({ mode: "suit", view: "flat-back", backPatch: { style } })), null);
+    assert.equal(wellFormed(judogiFrame({ mode: "pieces", yaw: 70, backPatch: { style } })), null);
+  }
+  assert.equal(readPatch({ style: "none" }), undefined);
+  assert.equal(readPatch(undefined), undefined);
+  // The rules' own places: 3 cm for the back number, 5 to 10 cm and a 30 to 35 by 25 to 30 cloth for the zekken.
+  assert.equal(readPatch({ style: "ijf" })?.topCm, PATCH_FACTS.ijf.top);
+  const z = readPatch({ style: "zekken" });
+  assert.ok(z && z.widthCm >= 30 && z.widthCm <= 35 && z.heightCm >= 25 && z.heightCm <= 30 && z.topCm >= 5 && z.topCm <= 10);
+});
+
+test("the size check reports a patch against its rules, and a bad one fails", () => {
+  const ok = judogiCheck({ backPatch: { style: "zekken" } });
+  assert.equal(ok.ok, true);
+  assert.ok(ok.notes.some((n) => n.id === "zekken-size"));
+  const bad = judogiCheck({ backPatch: { style: "zekken", widthCm: 20, topCm: 15 } });
+  assert.equal(bad.ok, false);
+  assert.equal(judogiCheck({ backPatch: { style: "ijf", topCm: 6 } }).ok, false);
+  assert.equal(judogiCheck().notes.every((n) => n.fact.includes("IJF")), true);
+});

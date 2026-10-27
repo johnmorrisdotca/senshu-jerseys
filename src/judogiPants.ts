@@ -154,19 +154,20 @@ function hipSides(h: readonly number[], t: Tone): string {
   return longFolds(h, t, -1) + longFolds(h, t, 1);
 }
 
-function front(uid: string, t: Tone, h: readonly number[]): string {
+function front(uid: string, t: Tone, h: readonly number[], marks = ""): string {
   const hip = poly(hipOutline(h));
   let s = leg(uid, t, -1, true) + leg(uid, t, 1, true);
   s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
   s += waistband(h, t);
   s += seam("M100 19C100.5 48 100 78 100 106", t, 0.55);
   s += fold(smooth([[100, 48], [100, 80], [100, 104]]), 6, t.light ? 0.09 : 0.18);
+  s += marks;
   s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
   s += drawstring(t);
   return s;
 }
 
-function back(uid: string, t: Tone, h: readonly number[]): string {
+function back(uid: string, t: Tone, h: readonly number[], marks = ""): string {
   const hip = poly(hipOutline(h));
   let s = leg(uid, t, -1, false) + leg(uid, t, 1, false);
   s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
@@ -175,6 +176,7 @@ function back(uid: string, t: Tone, h: readonly number[]): string {
   // The seat: a soft curve of light over each side, and the cloth drawn in under it.
   s += fold(smooth([[64, 30], [76, 26], [92, 32]]), 10, 0.12, true) + fold(smooth([[136, 30], [124, 26], [108, 32]]), 10, 0.12, true);
   s += fold(smooth([[68, 90], [83, 97], [97, 101]]), 7, t.light ? 0.07 : 0.14) + fold(smooth([[132, 90], [117, 97], [103, 101]]), 7, t.light ? 0.07 : 0.14);
+  s += marks;
   s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
   return s;
 }
@@ -186,7 +188,8 @@ export function pantsFace(ink: GiInk, face: "front" | "back", worn = false): Fac
   const h = hipsOf(worn);
   const clip = [poly(hipOutline(h)), poly(legOutline(-1)), poly(legOutline(1))];
   const all = `<clipPath id="${uid}all">${clip.map((d) => `<path d="${d}"/>`).join("")}</clipPath>`;
-  return { defs: weaves(uid, t) + lightDefs(uid, t) + all, body: face === "front" ? front(uid, t, h) : back(uid, t, h), clip };
+  const mark = ink.marks?.[face];
+  return { defs: weaves(uid, t) + lightDefs(uid, t) + all + (mark?.defs ?? ""), body: face === "front" ? front(uid, t, h, mark?.body) : back(uid, t, h, mark?.body), clip };
 }
 
 export const PANTS_HEM = HEM;

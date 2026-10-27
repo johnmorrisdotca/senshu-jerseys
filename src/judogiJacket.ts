@@ -30,6 +30,8 @@ const TIED = [22, 30, 40, 51, 60.5, 58.5, 51.5, 45, 39.5, 40.5, 43.5, 49, 56];
 const LOOSE_D = [14, 18, 22, 26, 29, 31, 32, 32, 31, 31, 31, 31.5, 32];
 const TIED_D = [14, 18, 22, 26, 29, 31, 32, 30, 27.5, 28, 29.5, 31, 32];
 const WAIST = 114;
+/** Where the collar's foot crosses the middle of the back: a back patch is measured from here. */
+export const BACK_COLLAR_FOOT = 19.5;
 const HEM = Y[Y.length - 1] as number;
 
 /** The half widths of the body, tied with a belt or hanging loose. */
@@ -251,6 +253,7 @@ function front(uid: string, ink: GiInk, t: Tone): string {
   s += fold(smooth([[128, 40], [124, 70], [126, 104]]), 9, t.light ? 0.2 : 0.1, true);
   s += edges(t, tied);
   s += lapelBand(uid, t, TOP_EDGE, 1, t.light ? 0.2 : 0.3);
+  s += ink.marks?.front?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
   if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
   return s;
@@ -275,6 +278,7 @@ function back(uid: string, ink: GiInk, t: Tone): string {
   s += fold(smooth([[58, 90], [66, 102], [77, 113]]), 10, t.light ? 0.06 : 0.12);
   s += fold(smooth([[142, 90], [134, 102], [123, 113]]), 10, t.light ? 0.06 : 0.12);
   s += edges(t, tied);
+  s += ink.marks?.back?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
   if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
   return s;
@@ -288,6 +292,7 @@ export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
   const clip = [outline, poly(sleeveOutline(-1)), poly(sleeveOutline(1))];
   const defs = weaves(uid, t) + lightDefs(uid, t) +
     `<clipPath id="${uid}body"><path d="${outline}"/></clipPath>` +
-    `<clipPath id="${uid}under"><path d="${leftOf(TOP_EDGE)}"/></clipPath>`;
+    `<clipPath id="${uid}under"><path d="${leftOf(TOP_EDGE)}"/></clipPath>` +
+    (ink.marks?.[face]?.defs ?? "");
   return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip };
 }
