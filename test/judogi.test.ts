@@ -5,9 +5,12 @@ import {
   judogiCheck, judogiFrame, judogiHeightCm, renderJudogi,
 } from "../src/judogi.ts";
 import { beltFace, beltPaint } from "../src/judogiBelt.ts";
-import { jacketDesc } from "../src/judogiJacket.ts";
+import { collarCells } from "../src/judogiCollar.ts";
+import { paintOrder, type PaintPiece } from "../src/judogiGl.ts";
+import { collarDesc, jacketDesc } from "../src/judogiJacket.ts";
+import { pieceCells } from "../src/pieceVolume.ts";
 import { strapCells, strapFace, strapWidth } from "../src/judogiStrap.ts";
-import { placeCell, type VolumeDesc } from "../src/volume.ts";
+import { placeCell, sleeveAt, type VolumeDesc } from "../src/volume.ts";
 import { pantsDesc } from "../src/judogiPants.ts";
 import { wellFormed } from "./helpers.ts";
 
@@ -68,9 +71,9 @@ test("a turning frame is the jersey volume pipeline: each piece turns on its own
   assert.ok(edge.includes('data-yaw="90"'));
   assert.notEqual(front, edge);
   assert.notEqual(front, back);
-  // Jacket, belt and trousers are three pieces, each with its description to turn it in place, and both faces of each marked with the box a page paints it in.
-  assert.equal(pieces.match(/data-piece="/g)?.length, 3);
-  assert.equal(pieces.match(/data-face="/g)?.length, 6);
+  // Jacket, collar, belt and trousers are four pieces, each with its description to turn it in place, and both faces of each marked with the box a page paints it in.
+  assert.equal(pieces.match(/data-piece="/g)?.length, 4);
+  assert.equal(pieces.match(/data-face="/g)?.length, 8);
   assert.ok(!flat.includes("data-piece=") && !flat.includes('data-vol="'));
 });
 
@@ -124,8 +127,8 @@ test("a belt is a solid strap: two turns 5 mm thick, a knot that stands off them
   assert.ok(sideOn.length > 0);
   // The worn turns' edges behind the jacket stay hidden from the front.
   assert.ok(strapCells(tied).filter((c) => c.also !== undefined && c.p[2]! < -5).every((c) => !placeCell(c, 0, 8).visible));
-  // The jacket under it carries only the belt's shadow, not a drawing of it.
-  assert.ok(worn.match(/data-piece="/g)?.length === 2);
+  // The jacket under it carries only the belt's shadow, not a drawing of it: jacket, collar and belt are pieces of their own.
+  assert.ok(worn.match(/data-piece="/g)?.length === 3);
 });
 
 test("a kohaku belt's panels run along the strap, on its ends as on its turns", () => {
@@ -144,4 +147,49 @@ test("a kohaku belt's panels run along the strap, on its ends as on its turns", 
   }
   // Laid flat, each hanging end is drawn along its own length and turned into place.
   assert.equal(beltFace(p, "front").body.match(/rotate\(/g)?.length, 2);
+});
+
+test("the collar is a thick band of its own, standing round the back of the neck and lying down the front", () => {
+  const jd = jacketDesc(1, true);
+  const c = collarDesc(jd);
+  // IJF: up to 1 cm thick (2.63 units to the centimetre).
+  assert.ok(c.t / 2.63 >= 0.7 && c.t / 2.63 <= 1);
+  const cells = collarCells(c);
+  assert.ok(cells.length > 200);
+  // Behind the neck it stands up above the jacket's top row, and from behind it shows there.
+  const neck = cells.filter((cl) => cl.p[2]! < -5 && cl.p[1]! < jd.y[0]!);
+  assert.ok(neck.length > 0 && neck.some((cl) => placeCell(cl, 180, 8).visible));
+  // Down the front it stands off the jacket, and from behind the body hides it.
+  const lapel = cells.filter((cl) => cl.also !== undefined && cl.p[1]! > 60);
+  assert.ok(lapel.length > 0 && lapel.every((cl) => !placeCell(cl, 180, 8).visible));
+  // Turned side on, its edges show: it has a thickness, not a drawing of one.
+  assert.ok(cells.some((cl) => Math.abs(cl.n[0]) > 0.8 && cl.p[1]! > 40 && placeCell(cl, 90, 8).visible));
+});
+
+test("a jacket's sleeve is as wide under the arm as at the cuff, its head rounding out from the shoulder", () => {
+  const jd = jacketDesc(1, true);
+  const left = jd.sl[0]!;
+  const width = (f: number): number => {
+    const [o, i] = sleeveAt(left.q, left.c, f);
+    return Math.hypot(i[0] - o[0], i[1] - o[1]);
+  };
+  const [o0] = sleeveAt(left.q, left.c, 0.1);
+  // The head runs out along the shoulder, more out than down, before it turns down the arm.
+  assert.ok(o0[0] < left.q[0]! - 10 && o0[1] - left.q[1]! < left.q[0]! - o0[0]);
+  const cuff = width(1);
+  for (const f of [0.4, 0.6, 0.8]) assert.ok(Math.abs(width(f) - cuff) / cuff < 0.2, `width at ${f}`);
+});
+
+test("the pieces worn on the jacket go between its body and the sleeve nearest the eye", () => {
+  const svg = judogiFrame({ mode: "jacket", belt: "black", yaw: 60 });
+  assert.equal(wellFormed(svg), null);
+  assert.ok(svg.indexOf("data-tail-of=") > svg.lastIndexOf("data-piece="));
+  // The painters keep the same order: the jacket's body, its collar and belt, then its near sleeve.
+  const descs = [...svg.matchAll(/data-piece="([^"]*)"/g)].map((m) => JSON.parse((m[1] as string).replace(/&quot;/g, '"')) as VolumeDesc);
+  const pieces = descs.map((desc) => ({ desc, cells: pieceCells(desc) }) as unknown as PaintPiece);
+  const jobs = paintOrder(pieces, 60);
+  assert.deepEqual(jobs.map((j) => j.n), [0, 1, 2, 0]);
+  const near = jobs[3]!.lists.flat().map((i) => pieces[0]!.cells[i]!.g);
+  assert.ok(near.length > 0 && (near[0] === 1 || near[0] === 2) && near.every((g) => g === near[0]));
+  assert.ok(jobs[0]!.lists.flat().every((i) => pieces[0]!.cells[i]!.g !== near[0]));
 });

@@ -5,6 +5,7 @@
 import { shapeOf, sleeveDraws } from "./jersey.ts";
 import type { Resolved } from "./options.ts";
 import { n2 } from "./path.ts";
+import type { CollarDesc } from "./judogiCollar.ts";
 import type { StrapDesc } from "./judogiStrap.ts";
 
 /** How a shirt is cut into cells, and the size of the garment they are wrapped over. All of it is numbers, so it can ride in the drawing and `applyVolume` can work from it alone. */
@@ -18,7 +19,7 @@ export interface VolumeDesc {
   nf: number;
   nh: number;
   /** Each sleeve: its side (-1 on the picture's left) and `[Sx, Sy, Px, Py, Ax, Ay, Qx, Qy]`, the shoulder and the cuff on the outer edge, then the armpit and the cuff on the inner. */
-  sl: { s: -1 | 1; q: number[] }[];
+  sl: { s: -1 | 1; q: number[]; c?: number[] }[];
   /** The things on the sleeves, each on the sleeve `g` (1 on the picture's left, which is the wearer's right, 2 on the other): where its middle lies (`f` of the way down, `a` degrees round from the front), the room it takes round and down (half an angle in degrees, half a length as a part of the sleeve), its size on its own drawing and which way that drawing reads round the arm (`dir`). */
   sd: { g: 1 | 2; f: number; a: number; da: number; df: number; w: number; h: number; dir: 1 | -1 }[];
   /** How far the camera looks down, in degrees. */
@@ -39,6 +40,10 @@ export interface VolumeDesc {
   lobes?: number[];
   /** A belt as a solid strap (judogiStrap.ts): its cells are the strap's own, drawn nearest last, and the rows above are empty. */
   strap?: StrapDesc;
+  /** A jacket's collar as a band of its own (judogiCollar.ts), drawn nearest last like a strap. */
+  collar?: CollarDesc;
+  /** How many of the pieces after this one are worn on it (a collar, a belt): they are drawn after its body and before its near sleeve. */
+  worn?: number;
 }
 
 /** A matrix's linear part is written to four decimals: it is multiplied by coordinates up to 200, so two would put a cell a unit off its neighbour. */
@@ -89,6 +94,19 @@ function zAt(d: VolumeDesc, j: number, t: number): number {
   // The outer half keeps some of the side wall's depth, which shrinks away as the row becomes two rounds (a leg has no flat side); the inner half goes in to the cleft between the legs.
   const shaped = u >= 0.5 ? Math.max(SIDE * b * (1 - w), lobe) : lobe;
   return round + (shaped - round) * w;
+}
+
+/** Where the point `(x, y)` of the front's drawing lies on the body, in space: as the cells wrap the drawing, the rows' values taken in proportion between rows. */
+export function bodyPoint(d: VolumeDesc, x: number, y: number): [number, number, number] {
+  let j = 0;
+  while (j + 2 < d.y.length && (d.y[j + 1] as number) < y) j++;
+  const y0 = d.y[j] as number;
+  const y1 = d.y[j + 1] as number;
+  const r = Math.max(0, Math.min(1, (y - y0) / (y1 - y0 || 1)));
+  const mix = (u: number, v: number): number => u + (v - u) * r;
+  const s = Math.max(-1, Math.min(1, (x - 100) / mix(texHalf(d, j), texHalf(d, j + 1))));
+  const t = Math.asin(s);
+  return [mix(d.a[j] as number, d.a[j + 1] as number) * s, y, mix(zAt(d, j, t), zAt(d, j + 1, t))];
 }
 
 /** The half width of a polyline of `[u, y]` at `y`. */
@@ -193,6 +211,62 @@ function split(g: Cell["g"], back: boolean, tex: number[], p: number[], n: [numb
 
 const lerp2 = (p: readonly number[], q: readonly number[], t: number): [number, number] => [p[0]! + (q[0]! - p[0]!) * t, p[1]! + (q[1]! - p[1]!) * t];
 
+/**
+ * Where a sleeve's outer and inner edges are, a part `f` of the way down it. Straight lines from the shoulder and the armpit to the cuff;
+ * or, given `c` (two control points), the outer edge a curve from the shoulder point that runs out along the shoulder and rounds down
+ * into the arm (a judogi's broad sleeve head), even in length along it, and the inner edge level with it: it stays at the armpit until
+ * the outer edge has come down to it, so the sleeve is as wide under the arm as at the cuff and does not narrow to a point at the top.
+ */
+export function sleeveAt(q: readonly number[], c: readonly number[] | undefined, f: number): [[number, number], [number, number]] {
+  const S = [q[0]!, q[1]!];
+  const P = [q[2]!, q[3]!];
+  const A = [q[4]!, q[5]!];
+  const Q = [q[6]!, q[7]!];
+  if (c === undefined) return [lerp2(S, P, f), lerp2(A, Q, f)];
+  const o = capAt(S, c, P, f);
+  const g = Math.max(0, Math.min(1, (o[1] + f * (Q[1] - P[1]) - A[1]) / (Q[1] - A[1] || 1)));
+  return [o, lerp2(A, Q, g)];
+}
+
+/**
+ * How deep a sleeve with a curved head (`c`) is, as a part of a round tube's depth, where its cross-section runs `across` of the way level
+ * (the level part of its direction on the drawing). Up in the head the cross-section stands nearly upright along the armhole, and a round
+ * that deep would stand out in front of the body's side and behind it; there it is only as deep as the body's side, and it grows round
+ * as the cross-section turns level down the arm.
+ */
+function capDepth(c: readonly number[] | undefined, across: number): number {
+  return c === undefined ? 1 : 0.45 + 0.55 * Math.abs(across);
+}
+
+const CAP_STEPS = 64;
+const capLengths = new Map<string, number[]>();
+
+/** The point a part `f` of the way along the curve from `S` past the controls `c` to `P`, by length. */
+function capAt(S: readonly number[], c: readonly number[], P: readonly number[], f: number): [number, number] {
+  const at = (t: number): [number, number] => {
+    const u = 1 - t;
+    const w = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
+    return [w[0]! * S[0]! + w[1]! * c[0]! + w[2]! * c[2]! + w[3]! * P[0]!, w[0]! * S[1]! + w[1]! * c[1]! + w[2]! * c[3]! + w[3]! * P[1]!];
+  };
+  const key = [...S, ...c, ...P].join(",");
+  let lengths = capLengths.get(key);
+  if (lengths === undefined) {
+    lengths = [0];
+    let last = at(0);
+    for (let i = 1; i <= CAP_STEPS; i++) {
+      const p = at(i / CAP_STEPS);
+      lengths.push(lengths[i - 1]! + Math.hypot(p[0] - last[0], p[1] - last[1]));
+      last = p;
+    }
+    capLengths.set(key, lengths);
+  }
+  const want = Math.max(0, Math.min(1, f)) * lengths[CAP_STEPS]!;
+  let i = 1;
+  while (i < CAP_STEPS && lengths[i]! < want) i++;
+  const r = (want - lengths[i - 1]!) / (lengths[i]! - lengths[i - 1]! || 1);
+  return at((i - 1 + r) / CAP_STEPS);
+}
+
 /** The way a cell of four corners faces: the cross product of its two sides, turned to point away from `(cx, cy, cz)`, the middle of the ring it lies on. */
 function normalOf(p: readonly number[], cx: number, cy: number, cz: number): [number, number, number] {
   const sub = (i: number, j: number): number[] => [p[3 * i]! - p[3 * j]!, p[3 * i + 1]! - p[3 * j + 1]!, p[3 * i + 2]! - p[3 * j + 2]!];
@@ -280,7 +354,6 @@ export function cellsOf(d: VolumeDesc): Cell[] {
     const q = sleeve.q;
     const S = [q[0], q[1]] as const;
     const P = [q[2], q[3]] as const;
-    const A = [q[4], q[5]] as const;
     const Q = [q[6], q[7]] as const;
     for (const back of [false, true]) {
       const tube = cells.length;
@@ -289,8 +362,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
           const tex: number[] = [];
           const p: number[] = [];
           const at = (f: number, th: number): void => {
-            const o = lerp2(S, P, f);
-            const inn = lerp2(A, Q, f);
+            const [o, inn] = sleeveAt(q, sleeve.c, f);
             const wx = inn[0] - o[0];
             const wy = inn[1] - o[1];
             const w = Math.hypot(wx, wy) || 1;
@@ -301,7 +373,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
             tex.push(back ? 200 - tx : tx, ty);
             const cx = (o[0] + inn[0]) / 2 - 100 + (rr * Math.sin(th) * wx) / w;
             const cy = (o[1] + inn[1]) / 2 + (rr * Math.sin(th) * wy) / w;
-            p.push(cx, cy, (back ? -1 : 1) * SLEEVE_DEPTH * rr * Math.cos(th));
+            p.push(cx, cy, (back ? -1 : 1) * SLEEVE_DEPTH * rr * capDepth(sleeve.c, wx / w) * Math.cos(th));
           };
           const f0 = k / d.nf;
           const f1 = (k + 1) / d.nf;
@@ -312,23 +384,21 @@ export function cellsOf(d: VolumeDesc): Cell[] {
           at(f1, t0);
           at(f1, t1);
           const fc = (f0 + f1) / 2;
-          const o = lerp2(S, P, fc);
-          const inn = lerp2(A, Q, fc);
+          const [o, inn] = sleeveAt(q, sleeve.c, fc);
           const n = normalOf(p, (o[0] + inn[0]) / 2 - 100, (o[1] + inn[1]) / 2, 0);
           cells.push(...split(g, back, tex, p, n));
         }
       }
       // The cuff is closed by a lining: a fan from the middle of the opening, sampling the cloth a little above the hem, so a side view never looks up an open tube.
       const ringAt = (f: number, th: number): { tex: number[]; p: number[] } => {
-        const o = lerp2(S, P, f);
-        const inn = lerp2(A, Q, f);
+        const [o, inn] = sleeveAt(q, sleeve.c, f);
         const wx = inn[0] - o[0];
         const wy = inn[1] - o[1];
         const w = Math.hypot(wx, wy) || 1;
         const u = 0.5 + 0.5 * Math.sin(th);
         const tx = o[0] + u * wx;
         const r = (w / 2) * Math.sin(th);
-        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * SLEEVE_DEPTH * (w / 2) * Math.cos(th)] };
+        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * SLEEVE_DEPTH * (w / 2) * capDepth(sleeve.c, wx / w) * Math.cos(th)] };
       };
       const ref = cells[tube] as Cell;
       const lining = ringAt(CAP_FROM, 0);

@@ -4,8 +4,9 @@
 
 import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint } from "./judogiBelt.ts";
-import type { BeltPaint, Face, GiInk } from "./judogiCloth.ts";
-import { beltRound, jacketDesc, jacketFace } from "./judogiJacket.ts";
+import { toneOf, type BeltPaint, type Face, type GiInk } from "./judogiCloth.ts";
+import { collarPiece } from "./judogiCollar.ts";
+import { beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
 import { wrapSvg } from "./svg.ts";
@@ -209,12 +210,16 @@ function compose(o: Ready): Sheet {
   }
   const tied = o.mode === "pants" ? undefined : paint;
   const ink = { ...inkOf(o, "j", tied), beltApart: true as const };
-  const jacketVolume = jacketDesc(depth, tied !== undefined);
+  const body = jacketDesc(depth, tied !== undefined);
+  // The collar and a tied belt are pieces of their own worn on the jacket: drawn after its body and before the sleeve nearest the eye.
+  const jacketVolume: VolumeDesc = { ...body, worn: tied === undefined ? 1 : 2 };
   const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front"), jacketFace(ink, "back"), yaw);
+  const tone = toneOf(o.cloth);
+  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "" }, LAPEL_BAND, 6), NO_FACE, yaw);
   // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
-  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: STRAP_T, worn: true }, jacketVolume.pitch), strapFace(tied, width), NO_FACE, yaw);
-  const belted = strap?.body ?? "";
-  const beltDefs = strap?.defs ?? "";
+  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: STRAP_T, worn: true }, body.pitch), strapFace(tied, width), NO_FACE, yaw);
+  const belted = `${collar?.body ?? ""}${strap?.body ?? ""}${jacket?.tail ?? ""}`;
+  const beltDefs = `${collar?.defs ?? ""}${strap?.defs ?? ""}`;
   const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth), pantsFace(inkOf(o, "p"), "front"), pantsFace(inkOf(o, "p"), "back"), yaw);
   if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs + beltDefs, jacket.body + belted, JACKET_BOX, yaw);
   if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);
@@ -255,11 +260,11 @@ function flatSheet(o: Ready): Sheet {
 /** The back face of a strap, which draws every cell from its one face. */
 const NO_FACE: Face = { defs: "", body: "", clip: [] };
 
-function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number): { defs: string; body: string } {
+function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number): { defs: string; body: string; tail: string } {
   const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw);
   const clip = (f: Face): string => f.clip.map((d) => `<path d="${d}"/>`).join("");
   const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}</g>${mk.defs}`;
-  return { defs, body: mk.body };
+  return { defs, body: mk.body, tail: mk.tail };
 }
 
 function box(defs: string, body: string, b: readonly [number, number, number, number], yaw: number): Sheet {

@@ -3,8 +3,8 @@
 // frames a second); one draw of a piece's triangles costs about nothing. The cells, the order and the shade are the SVG's
 // (pieceVolume.ts). Each cell's shade multiplies its cloth as it is drawn, not in a layer of its own: a cell is opaque cloth, so where two
 // grown cells overlap the later one simply covers the earlier, and no shade is doubled.
-import { depthOrder, FACE_BOX, halfOrder, layerOf, shadeOf, type Smooth } from "./pieceVolume.ts";
-import { groupOrder, placeCell, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
+import { depthOrder, FACE_BOX, halfOrder, isBand, layerOf, shadeOf, type Smooth } from "./pieceVolume.ts";
+import { groupOrder, nearSleeve, placeCell, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 /** A piece as both painters take it: its cells and their shade, the pictures of its two faces, and where it sits in the drawing. */
 export interface PaintPiece {
@@ -19,7 +19,7 @@ export interface PaintPiece {
 
 /** The cells of a piece that show at a turn, as the SVG draws them: layer by layer from the back, each layer in the cells' own order (a strap's, farthest first). */
 export function drawOrder(p: PaintPiece, yaw: number, placed: readonly Placed[]): number[][] {
-  if (p.desc.strap !== undefined) return [depthOrder(placed).filter((i) => placed[i]!.visible)];
+  if (isBand(p.desc)) return [depthOrder(placed).filter((i) => placed[i]!.visible)];
   const visible = placed.map((q) => q.visible);
   const byLayer = new Map<string, number[]>();
   p.cells.forEach((c, i) => {
@@ -36,6 +36,34 @@ export function drawOrder(p: PaintPiece, yaw: number, placed: readonly Placed[])
       const list = byLayer.get(key);
       if (list !== undefined) out.push(list);
     }
+  }
+  return out;
+}
+
+/**
+ * What is drawn at a turn, in order: each piece's cells, list by list (`drawOrder`). A piece with others worn on it (`VolumeDesc.worn`: a
+ * jacket's collar and belt) is drawn up to its near sleeve, then those pieces, then its near sleeve, so the sleeve hangs over the belt.
+ */
+export function paintOrder(pieces: readonly PaintPiece[], yaw: number): { n: number; placed: Placed[]; lists: number[][] }[] {
+  const plans = pieces.map((p) => {
+    const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch));
+    return { placed, lists: drawOrder(p, yaw, placed) };
+  });
+  const out: { n: number; placed: Placed[]; lists: number[][] }[] = [];
+  for (let n = 0; n < pieces.length; n++) {
+    const p = pieces[n]!;
+    const plan = plans[n]!;
+    const m = p.desc.worn ?? 0;
+    if (m <= 0 || p.desc.hang === true || p.desc.sl.length === 0) {
+      out.push({ n, ...plan });
+      continue;
+    }
+    const near = nearSleeve(yaw) === -1 ? 1 : 2;
+    const isNear = (list: number[]): boolean => p.cells[list[0]!]!.g === near;
+    out.push({ n, placed: plan.placed, lists: plan.lists.filter((l) => !isNear(l)) });
+    for (let k = 1; k <= m && n + k < pieces.length; k++) out.push({ n: n + k, ...plans[n + k]! });
+    out.push({ n, placed: plan.placed, lists: plan.lists.filter(isNear) });
+    n += m;
   }
   return out;
 }
@@ -103,10 +131,12 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       gl.enableVertexAttribArray(at);
       gl.vertexAttribPointer(at, size, gl.FLOAT, false, STRIDE * 4, offset * 4);
     }
-    pieces.forEach((p, n) => {
+    for (const job of paintOrder(pieces, yaw)) {
+      const n = job.n;
+      const p = pieces[n]!;
       const [u, ox, oy] = place(p);
-      const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch));
-      const order = drawOrder(p, yaw, placed).flat();
+      const placed = job.placed;
+      const order = job.lists.flat();
       const need = order.length * 3 * STRIDE;
       if (data.length < need) data = new Float32Array(need);
       // Each quadrilateral's shade at its two side edges, worked out once for its two triangles.
@@ -152,7 +182,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, w), gl.STREAM_DRAW);
       gl.bindTexture(gl.TEXTURE_2D, atlases[n]!);
       gl.drawArrays(gl.TRIANGLES, 0, w / STRIDE);
-    });
+    }
   };
   const dispose = (): void => {
     for (const t of atlases) gl.deleteTexture(t);

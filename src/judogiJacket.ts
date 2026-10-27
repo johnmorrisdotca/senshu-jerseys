@@ -1,5 +1,5 @@
-// The judogi jacket (uwagi): a straight body to mid-thigh with side vents, taken in a little at the waist when a belt is tied, broad
-// square shoulders and long wide sleeves held a little out from the body to a broad cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
+// The judogi jacket (uwagi): a straight body to mid-thigh with side vents, taken in hard at the waist when a belt is tied, broad
+// shoulders whose sleeves are set on low and wide, as wide under the arm as at the cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
 // left side crossing over the right (IJF Judogi Rules, 09 03 2022: left over right, lapel 4-5 cm). Drawn as two faces in the 200-wide box
 // that volume.ts wraps over the body: at 2.63 units to the centimetre for a 170 cm size, the jacket is 78 cm long and the lapel 4.7 cm
 // wide. The upper body carries a fine grain weave and the skirt below the waist seam quilted diamonds, as product photographs of contest
@@ -8,21 +8,25 @@
 import { atY, band, fold, lightDefs, offset, pieceDesc, seam, smooth, stitch, toneOf, weaves, type Face, type GiInk, type Tone } from "./judogiCloth.ts";
 import { beltOnJacket, beltShadow } from "./judogiBelt.ts";
 import { n2, poly, type Pt } from "./path.ts";
-import type { VolumeDesc } from "./volume.ts";
+import type { CollarDesc } from "./judogiCollar.ts";
+import { sleeveAt, type VolumeDesc } from "./volume.ts";
 
 /**
  * The rows of the body: the top of the collar behind the neck, the neck, the round of the shoulder, the shoulder point, the chest, the
- * armpit, above the belt, the waist, below the belt, the waist seam and the hem. The shoulders are broad and nearly level, and the body
- * hangs straight to the hem: the heavy cloth barely gives to a belt, as product photographs on a form show.
+ * armpit, above the belt, the waist, below the belt, the waist seam and the hem. The shoulders are broad, and loose the body hangs
+ * straight to the hem.
  */
 const Y = [6, 12, 18, 26, 58, 86, 106, 114, 124, 140, 205];
 /** The drawing's half width at each row, hanging loose. */
-const LOOSE = [22, 34, 50, 57, 57, 56, 55.5, 55.5, 55.5, 55.5, 56];
-/** Belted: the belt draws the waist in to a 37 cm half round, the cloth blousing over it above and flaring out below. */
-const TIED = [22, 34, 50, 57, 57, 56, 55, 53.5, 54, 55, 55.5];
+const LOOSE = [22, 32.5, 45, 57, 57, 56, 55.5, 55.5, 55.5, 55.5, 56];
+/**
+ * Belted: a belt pulls the thick cloth in hard, to about four fifths of the chest (product photographs of a jacket tied on a form), the
+ * cloth blousing over it above and the skirt flaring out below it to the hem.
+ */
+const TIED = [22, 32.5, 45, 57, 57, 55, 49, 44, 46, 50.5, 54.5];
 /** The half depth of the body at each row: thick cloth on a broad chest, drawn in with the waist by the belt. */
 const LOOSE_D = [12, 16, 20, 23, 25, 25.5, 25, 25, 25, 25, 24.5];
-const TIED_D = [12, 16, 20, 23, 25, 25.5, 24.5, 23, 23.5, 24.5, 24.5];
+const TIED_D = [12, 16, 20, 23, 25, 25, 22.5, 20.5, 21, 23, 24.5];
 const WAIST = 114;
 const HEM = Y[Y.length - 1] as number;
 
@@ -53,16 +57,20 @@ function rowAt(h: readonly number[], y: number): number {
 }
 
 /**
- * A sleeve on the picture's left (the wearer's right): the shoulder point S, the outer cuff P, the armpit A, the inner cuff Q. The other is
- * its mirror. The sleeve is long, its cuff nearly level with the hem (it leaves about 5 cm to the wrist), held out from the body a little
- * as photographs on a form show, and wide to an open cuff; its inner edge stays outside the body's, so on the drawing neither covers the
- * other.
+ * A sleeve on the picture's left (the wearer's right): the shoulder point S, the outer cuff P, the armpit A, the inner cuff Q, and the two
+ * controls of its outer edge (`CAP`). The other is its mirror. A judogi's sleeve is set on low and wide: from the shoulder point its head
+ * runs on out along the line of the shoulder and rounds down into the arm, so the sleeve is about as wide under the arm as at the cuff,
+ * and hangs almost straight, a little out from the body, its cuff some 13 cm above the hem (product photographs on a form).
  */
 const S: Pt = [43, 26];
-const P: Pt = [-8, 183];
-const A: Pt = [45, 64];
-const Q: Pt = [30, 195];
+const CAP = [26, 34.5, 9, 41];
+const P: Pt = [4, 176];
+const A: Pt = [45, 80];
+const Q: Pt = [34, 184];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
+const SLEEVE_Q = [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]];
+/** About how far down the sleeve, by length along its outer edge, its head comes down to the armpit's level. */
+const ARM = 0.35;
 
 /** The lapel on top (the wearer's left, so the picture's right of the neck), by its free edge from the collar to the hem. */
 const TOP_EDGE: Pt[] = [[110, 9], [106, 30], [100, 50], [92, 78], [84, 110], [78, 150], [74, 205]];
@@ -70,13 +78,41 @@ const TOP_EDGE: Pt[] = [[110, 9], [106, 30], [100, 50], [92, 78], [84, 110], [78
 const UNDER_EDGE: Pt[] = [[90, 9], [94, 30], [99, 46], [104, 60], [110, 76]];
 /** The lapel band's width on the drawing: 4.7 cm at this scale, which with its roll and its shadow reads as the 4-5 cm band of the rules. */
 const LAPEL = 14.5;
+/** The collar's band in the turning view, a little inside the drawn lapel so none of the drawing shows past its edges. */
+export const LAPEL_BAND = LAPEL - 1;
 
 export function jacketDesc(depth = 1, tied = false): VolumeDesc {
   const sl: VolumeDesc["sl"] = [
-    { s: -1, q: [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]] },
-    { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)] },
+    { s: -1, q: SLEEVE_Q, c: CAP },
+    { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)], c: [200 - CAP[0]!, CAP[1]!, 200 - CAP[2]!, CAP[3]!] },
   ];
-  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 4, 6), full: FULL };
+  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 12, 6), full: FULL };
+}
+
+/**
+ * The collar as a band of its own over the jacket `jd` (judogiCollar.ts): the middle lines of the two lapels drawn on the front, the top
+ * one from the hem up and the under one down to where it goes under the top one, its width a little inside the drawn lapel's and its
+ * thickness 9 mm at the neck (IJF: up to 1 cm), and its middle at the back a little below the top of the collar there.
+ */
+export function collarDesc(jd: VolumeDesc): CollarDesc {
+  const top = offset(TOP_EDGE, -LAPEL / 2).reverse();
+  const under = offset(UNDER_EDGE, LAPEL / 2);
+  // The under lapel ends where its middle line meets the top one's, under the middle of the top lapel.
+  const topAt = (y: number): number => atY([...top].reverse(), y)[0];
+  let end = under.length - 1;
+  for (let k = 1; k < under.length; k++) {
+    if (under[k]![0] >= topAt(under[k]![1])) {
+      const [x0, y0] = under[k - 1]!;
+      const [x1, y1] = under[k]!;
+      const d0 = topAt(y0) - x0;
+      const d1 = topAt(y1) - x1;
+      const r = d0 / (d0 - d1 || 1);
+      under.splice(k, under.length - k, [x0 + (x1 - x0) * r, y0 + (y1 - y0) * r]);
+      end = k;
+      break;
+    }
+  }
+  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, top: top.flat(), under: under.slice(0, end + 1).flat(), w: LAPEL_BAND, t: 2.4, neck: 10 };
 }
 
 /** The jacket's cross-section: rounder than a jersey's square body, as cloth hangs. */
@@ -90,17 +126,19 @@ function bodyOutline(tied: boolean): Pt[] {
   return [...left, ...right];
 }
 
+/** A sleeve's outline: down its outer edge from the shoulder to the cuff, across the cuff and up its inner edge to the armpit. */
 function sleeveOutline(side: -1 | 1): Pt[] {
-  const pts: Pt[] = [S, P, Q, A];
+  const pts: Pt[] = [];
+  for (let k = 0; k <= 24; k++) pts.push(sleeveAt(SLEEVE_Q, CAP, k / 24)[0]);
+  pts.push(Q, A);
   return side === -1 ? pts : pts.map(mirror);
 }
 
 /** A point `f` of the way down a sleeve, `u` of the way across from its outer edge to its inner. */
 function onSleeve(side: -1 | 1, f: number, u: number): Pt {
-  const [s, p, q, a] = sleeveOutline(side) as [Pt, Pt, Pt, Pt];
-  const o: Pt = [s[0] + (p[0] - s[0]) * f, s[1] + (p[1] - s[1]) * f];
-  const i: Pt = [a[0] + (q[0] - a[0]) * f, a[1] + (q[1] - a[1]) * f];
-  return [o[0] + (i[0] - o[0]) * u, o[1] + (i[1] - o[1]) * u];
+  const [o, i] = sleeveAt(SLEEVE_Q, CAP, f);
+  const p: Pt = [o[0] + (i[0] - o[0]) * u, o[1] + (i[1] - o[1]) * u];
+  return side === -1 ? p : mirror(p);
 }
 
 function sleeveLine(side: -1 | 1, f: number): string {
@@ -110,7 +148,9 @@ function sleeveLine(side: -1 | 1, f: number): string {
 /** A sleeve: its cloth, the soft folds of a heavy sleeve hanging, the armhole seam and the hemmed cuff. */
 function sleeve(uid: string, t: Tone, side: -1 | 1, back: boolean): string {
   const out = poly(sleeveOutline(side));
-  const along = (u: number, f0: number, f1: number): string => smooth([onSleeve(side, f0, u), onSleeve(side, (f0 + f1) / 2, u + 0.04 * side), onSleeve(side, f1, u)]);
+  // The folds run down the arm below the head, where the sleeve is a tube: `f` of the way from the armpit's level to the cuff.
+  const arm = (f: number): number => ARM + (1 - ARM) * f;
+  const along = (u: number, f0: number, f1: number): string => smooth([onSleeve(side, arm(f0), u), onSleeve(side, arm((f0 + f1) / 2), u + 0.04 * side), onSleeve(side, arm(f1), u)]);
   const shadowSide = side === -1 ? 0.12 : 0.88;
   const innerSide = side === -1 ? 0.9 : 0.1;
   return `<path d="${out}" fill="${t.fill}"/><path d="${out}" fill="url(#${uid}S)"/>` +
@@ -120,7 +160,7 @@ function sleeve(uid: string, t: Tone, side: -1 | 1, back: boolean): string {
     fold(along(0.42, 0.14, 0.86), 9, 0.14, true) +
     fold(along(0.7, 0.3, 0.82), 6, t.light ? 0.08 : 0.16) +
     // The soft break above the elbow, where the heavy sleeve folds a little as it hangs.
-    fold(smooth([onSleeve(side, 0.44, 0.5), onSleeve(side, 0.48, 0.78), onSleeve(side, 0.51, 1)]), 6, t.light ? 0.12 : 0.22) +
+    fold(smooth([onSleeve(side, arm(0.44), 0.5), onSleeve(side, arm(0.48), 0.78), onSleeve(side, arm(0.51), 1)]), 6, t.light ? 0.12 : 0.22) +
     seam(smooth([onSleeve(side, 0.015, 0), onSleeve(side, 0.012, 0.5), onSleeve(side, 0.015, 1)]), t, 0.5) +
     (back ? "" : stitch(along(0.985, 0.04, 0.88), t, 0.35, 0.55)) +
     // The cuff: a wide hem, turned and stitched twice.

@@ -3,10 +3,10 @@
 // piece is one draw on the graphics card (judogiGl.ts); without WebGL 2 each cell is the small part of a picture of its face that lies
 // under it, on a 2D canvas. The same cells, maps, shades and order as the SVG (pieceVolume.ts): only the way they reach the screen
 // differs. Part of the turning entry: it needs a document.
-import { drawOrder, glPainter, matrixOf, type PaintPiece } from "./judogiGl.ts";
+import { glPainter, matrixOf, paintOrder, type PaintPiece } from "./judogiGl.ts";
 import { FACE_BOX, greyOf, pieceCells, shadeOf, smoothOf } from "./pieceVolume.ts";
 import { normalYaw } from "./turn.ts";
-import { placeCell, quadPath, type Cell, type VolumeDesc } from "./volume.ts";
+import { quadPath, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -104,7 +104,10 @@ function flatPainter(canvas: HTMLCanvasElement, pieces: readonly Piece[], place:
   const paint = (yaw: number): void => {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const p of pieces) paintPiece(ctx, layer, shade, p, yaw, ...place(p), k);
+    for (const job of paintOrder(pieces, yaw)) {
+      const p = pieces[job.n]!;
+      paintPiece(ctx, layer, shade, p, yaw, job.placed, job.lists, ...place(p), k);
+    }
   };
   return { kind: "2d", paint, dispose: () => undefined };
 }
@@ -186,15 +189,14 @@ async function paintFace(allDefs: string, id: string, k: number): Promise<Canvas
 type Matrix = [number, number, number, number, number, number];
 
 /**
- * One piece at a turn, layer by layer in the SVG's order: each layer's cloth (every cell its face's picture under its map, clipped to its
+ * One piece at a turn (or the part of it `paintOrder` gives), layer by layer in the SVG's order: each layer's cloth (every cell its face's picture under its map, clipped to its
  * grown triangle), then its shades as opaque greys on the same triangles, kept to where the layer has cloth and multiplied onto it.
  */
-function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext2D, shade: CanvasRenderingContext2D, p: Piece, yaw: number, u: number, ox: number, oy: number, k: number): void {
-  const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch));
+function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext2D, shade: CanvasRenderingContext2D, p: Piece, yaw: number, placed: readonly Placed[], lists: readonly number[][], u: number, ox: number, oy: number, k: number): void {
   const [fx, fy, fw, fh] = FACE_BOX;
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
-  for (const list of drawOrder(p, yaw, placed)) {
+  for (const list of lists) {
     const maps = list.map((i): Matrix => {
       const [a, b, c, d, e, f] = matrixOf(placed[i]!.matrix);
       return [u * a, u * b, u * c, u * d, u * e + ox, u * f + oy];

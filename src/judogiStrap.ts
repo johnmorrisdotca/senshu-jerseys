@@ -37,10 +37,10 @@ export const strapWidth = (belt: string): number => (belt === "red-white" || bel
 const ROWS = 10;
 const HANG = 64;
 /** Where the strips lie on the strap's drawing: the face, the edge of the two turns and the edge of one. */
-const FACE_Y = 0;
+export const FACE_Y = 0;
 const EDGE2_Y = 26;
-const EDGE1_Y = 36;
-const EDGE_H = 4;
+export const EDGE1_Y = 36;
+export const EDGE_H = 4;
 /** Along a strip: where it starts on the drawing, and the length after which a kohaku belt's panels repeat. */
 const X0 = -30;
 const PERIOD = 80;
@@ -58,7 +58,7 @@ const unit = (v: Vec): Vec => {
 };
 
 /** A quadrilateral tl, tr, bl, br as two cells, facing the way of `out` (which picks the sign of its normal); `also` must face the viewer too. */
-function quad(corners: [Vec, Vec, Vec, Vec], tex: [number, number][], out: Vec, also?: Vec): Cell[] {
+export function quad(corners: [Vec, Vec, Vec, Vec], tex: [number, number][], out: Vec, also?: Vec): Cell[] {
   const [tl, tr, bl, br] = corners;
   let n = unit(cross(sub(tr, tl), sub(bl, tl)));
   if (n[0] * out[0] + n[1] * out[1] + n[2] * out[2] < 0) n = [-n[0], -n[1], -n[2]];
@@ -178,7 +178,7 @@ function ribbon(c: readonly Vec[], across: readonly Vec[], out: readonly Vec[], 
 }
 
 /** A smooth line through `pts` (Catmull-Rom), `n` middles to each span. */
-function through(pts: readonly Vec[], n: number): Vec[] {
+export function through(pts: readonly Vec[], n: number): Vec[] {
   const out: Vec[] = [];
   for (let i = 0; i + 1 < pts.length; i++) {
     const p0 = pts[Math.max(0, i - 1)] as Vec;
@@ -304,14 +304,14 @@ export function strapDesc(s: StrapDesc, pitch: number): VolumeDesc {
  * turns and of one below it. The knot is the strap itself, so it needs nothing of its own. Each strip runs on past its ends, so a cell
  * that is grown at its edge still finds cloth.
  */
-export function strapFace(p: BeltPaint, w: number): Face {
+export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
   const rows = (y0: number, h: number, n: number): string => {
     let s = "";
     for (let k = 1; k <= n; k++) s += `<path d="M-40 ${n2(y0 + (h * k) / (n + 1))}H240" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
     return s;
   };
   const strip = (y0: number, h: number): string => `<rect x="-40" y="${n2(y0 - 1.5)}" width="280" height="${n2(h + 3)}" fill="${p.fill}"/>`;
-  const faceStrip = strip(FACE_Y, w) + rows(FACE_Y, w, ROWS) +
+  const faceStrip = strip(FACE_Y, w) + rows(FACE_Y, w, n) +
     `<path d="M-40 ${FACE_Y + 0.4}H240M-40 ${n2(FACE_Y + w - 0.4)}H240" stroke="${p.edge}" stroke-width="0.9" stroke-opacity="0.75"/>`;
   // An edge is the stitched rows seen end on: the cloth a little darker, and on the two turns the line where one lies on the other.
   const dark = `fill="${p.edge}" fill-opacity="0.3"`;

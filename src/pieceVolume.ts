@@ -5,14 +5,20 @@
 // nothing doubles and no rim of cloth is left unshaded. A body with lobes (trousers) is not convex, so its left and right halves are
 // layers of their own, the nearer drawn last. Kept apart from volume.ts so that a jersey's bundle does not carry it.
 
+import { collarCells } from "./judogiCollar.ts";
 import { strapCells } from "./judogiStrap.ts";
 import { n2 } from "./path.ts";
 import { cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
 
-/** Every cell of a piece: a belt's strap, or the garment's body and sleeves. */
+/** Every cell of a piece: a belt's strap, a jacket's collar, or the garment's body and sleeves. */
 export function pieceCells(d: VolumeDesc): Cell[] {
-  return d.strap === undefined ? cellsOf(d) : strapCells(d.strap);
+  if (d.strap !== undefined) return strapCells(d.strap);
+  if (d.collar !== undefined) return collarCells(d.collar);
+  return cellsOf(d);
 }
+
+/** A strap or a collar: a band whose cells are drawn farthest first (`depthOrder`), not in a body's fixed groups. */
+export const isBand = (d: VolumeDesc): boolean => d.strap !== undefined || d.collar !== undefined;
 
 /**
  * The order a strap's cells are drawn in at a turn, farthest first. A strap is not convex (the knot stands off the turns, the ends hang in
@@ -139,7 +145,7 @@ export function layerOf(d: VolumeDesc, c: Cell): string {
  * Each cell is a use of the front's drawing (`frontId`) or the back's (`backId`) under its map, clipped to its grown triangle; its
  * shade is a second use of that triangle, in the group's multiplying layer, clipped to the face's outline (`frontClip`, `backClip`).
  */
-export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number): VolumeMarkup {
+export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number): VolumeMarkup & { tail: string } {
   const cells = pieceCells(d);
   const smooth = smoothOf(cells);
   let defs = "";
@@ -149,7 +155,7 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
     m.set(k, (m.get(k) ?? "") + v);
   };
   const graded = new Set<number>();
-  const order = d.strap === undefined ? cells.map((_, i) => i) : depthOrder(cells.map((c) => placeCell(c, yaw, d.pitch)));
+  const order = isBand(d) ? depthOrder(cells.map((c) => placeCell(c, yaw, d.pitch))) : cells.map((_, i) => i);
   order.forEach((i) => {
     const c = cells[i] as Cell;
     const key = layerOf(d, c);
@@ -174,8 +180,23 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
   });
   const layer = (k: string): string => `${cloth.get(k) ?? ""}<g style="mix-blend-mode:multiply">${shades.get(k) ?? ""}</g>`;
   const inner = (g: number): string => (d.lobes !== undefined && (g === 0 || g === 3) ? halfOrder(yaw).map((h) => `<g data-half="${h}">${layer(`${g}${h}`)}</g>`).join("") : layer(`${g}`));
-  const groups = groupOrder(yaw, d.hang === true).map((g) => `<g data-vol="${g}">${inner(g)}</g>`).join("");
-  return { defs, body: `<g data-piece="${JSON.stringify(d).replace(/"/g, "&quot;")}">${groups}</g>` };
+  const groups = groupOrder(yaw, d.hang === true);
+  const group = (g: number): string => `<g data-vol="${g}">${inner(g)}</g>`;
+  const piece = (inside: string, tail = ""): string => `<g data-piece="${JSON.stringify(d).replace(/"/g, "&quot;")}"${tail}>${inside}</g>`;
+  if (!wornOn(d)) return { defs, body: piece(groups.map(group).join("")), tail: "" };
+  // The near sleeve goes in a group of its own, which the caller puts after the pieces worn on this one.
+  const near = groups[groups.length - 1] as number;
+  return { defs, body: piece(groups.slice(0, -1).map(group).join(""), ` data-tail="${uid}T"`), tail: `<g data-tail-of="${uid}T">${group(near)}</g>` };
+}
+
+/** Whether other pieces are worn on this one, between its body and its near sleeve (`VolumeDesc.worn`). */
+const wornOn = (d: VolumeDesc): boolean => (d.worn ?? 0) > 0 && d.hang !== true && d.sl.length > 0;
+
+/** Where a piece's near sleeve is drawn: its own root, or the group after the pieces worn on it. */
+function tailOf(root: Element): Element | undefined {
+  const id = root.getAttribute("data-tail");
+  if (id === null) return undefined;
+  return root.parentElement?.querySelector(`:scope > [data-tail-of="${id}"]`) ?? undefined;
 }
 
 interface Held {
@@ -187,6 +208,8 @@ interface Held {
   /** The two stops of each quadrilateral's smooth shade. */
   stops: Element[][];
   groups: Element[];
+  /** The group after the pieces worn on this one, which takes the near sleeve. */
+  tail: Element | undefined;
 }
 const held = new WeakMap<Element, Held>();
 
@@ -199,20 +222,23 @@ function holdOf(root: Element): Held | undefined {
   } catch {
     return undefined;
   }
+  const tail = tailOf(root);
   const index = (sel: string, attr: string): Element[] => {
     const out: Element[] = [];
-    root.querySelectorAll(sel).forEach((n) => {
-      out[Number(n.getAttribute(attr))] = n;
-    });
+    for (const r of tail === undefined ? [root] : [root, tail]) {
+      r.querySelectorAll(sel).forEach((n) => {
+        out[Number(n.getAttribute(attr))] = n;
+      });
+    }
     return out;
   };
   const stops: Element[][] = [];
   // The gradients are in the drawing's defs, outside the piece's group.
   (root.closest("svg") ?? root.ownerDocument).querySelectorAll("[data-vg]").forEach((n: Element) => {
-    if (root.querySelector(`[fill="url(#${n.id})"]`) !== null) stops[Number(n.getAttribute("data-vg"))] = [...n.querySelectorAll("stop")];
+    if (root.querySelector(`[fill="url(#${n.id})"]`) !== null || tailOf(root)?.querySelector(`[fill="url(#${n.id})"]`)) stops[Number(n.getAttribute("data-vg"))] = [...n.querySelectorAll("stop")];
   });
   const cells = pieceCells(desc);
-  const entry: Held = { desc, cells, smooth: smoothOf(cells), cloth: index("[data-vc]", "data-vc"), shade: index("[data-vh]", "data-vh"), stops, groups: index(":scope > [data-vol]", "data-vol") };
+  const entry: Held = { desc, cells, smooth: smoothOf(cells), cloth: index("[data-vc]", "data-vc"), shade: index("[data-vh]", "data-vh"), stops, groups: index(":scope > [data-vol]", "data-vol"), tail };
   held.set(root, entry);
   return entry;
 }
@@ -239,12 +265,16 @@ export function applyPiece(root: Element, yaw: number): boolean {
       stops[1]?.setAttribute("stop-color", greyOf(shadeOf(sm.n1, yaw, h.desc.pitch)));
     } else h.shade[i]?.firstElementChild?.setAttribute("fill", greyOf(shadeOf(c.n, yaw, h.desc.pitch)));
   });
-  if (h.desc.strap !== undefined) {
+  if (isBand(h.desc)) {
     for (const i of depthOrder(placed)) {
       for (const n of [h.cloth[i], h.shade[i]]) n?.parentNode?.appendChild(n);
     }
   }
-  for (const g of groupOrder(yaw, h.desc.hang === true)) if (h.groups[g] !== undefined) root.appendChild(h.groups[g] as Element);
+  const order = groupOrder(yaw, h.desc.hang === true);
+  order.forEach((g, k) => {
+    const el = h.groups[g];
+    if (el !== undefined) (h.tail !== undefined && k === order.length - 1 ? h.tail : root).appendChild(el);
+  });
   if (h.desc.lobes !== undefined) {
     for (const g of [h.groups[0], h.groups[3]]) {
       if (g === undefined) continue;
