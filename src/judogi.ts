@@ -3,10 +3,11 @@
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
 import { hashOf, type Rgb } from "./colour.ts";
-import { beltDesc, beltFace, beltPaint } from "./judogiBelt.ts";
+import { beltFace, beltPaint } from "./judogiBelt.ts";
 import type { BeltPaint, Face, GiInk } from "./judogiCloth.ts";
-import { jacketDesc, jacketFace } from "./judogiJacket.ts";
+import { beltRound, jacketDesc, jacketFace } from "./judogiJacket.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
+import { STRAP_T, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
 import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup } from "./pieceVolume.ts";
 import type { VolumeDesc } from "./volume.ts";
@@ -186,7 +187,7 @@ function inkOf(o: Ready, part: string, belt?: BeltPaint): GiInk {
 /** Where each layout puts its pieces, at the jacket's scale: the view box, and the trousers' offset from the jacket. */
 const JACKET_BOX = [-14, -2, 228, 216] as const;
 const PANTS_BOX = [16, 0, 168, 284] as const;
-const BELT_BOX = [22, 14, 156, 110] as const;
+const BELT_BOX = [16, 6, 168, 124] as const;
 /** Product pictures show the trousers beside the jacket and a little lower; worn, their waistband sits under the belt. */
 const PIECES_AT = [172, 28] as const;
 const WORN_AT = 102;
@@ -198,23 +199,32 @@ function compose(o: Ready): Sheet {
   const depth = Math.max(0.2, o.thickness / 12);
   const paint = beltPaint(o.uid, o.belt);
   const defs = paint?.defs ?? "";
+  const width = strapWidth(o.belt);
   if (o.mode === "belt") {
     const p = paint ?? (beltPaint(o.uid, "white") as BeltPaint);
-    const belt = volumeOf(`${o.uid}b`, beltDesc(depth), beltFace(p, "front"), beltFace(p, "back"), yaw);
+    // A tied ring seen a little from above: its far half shows its inside, its edges their thickness.
+    const ring: StrapDesc = { y: 28, sag: 3, w: width, t: STRAP_T, a: 66, b: Math.round(30 * Math.max(0.35, Math.min(1.6, depth)) * 10) / 10, full: 2, side: 0, worn: false };
+    const belt = volumeOf(`${o.uid}b`, strapDesc(ring, 14), strapFace(p, width), NO_FACE, yaw);
     return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
   }
   const tied = o.mode === "pants" ? undefined : paint;
-  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketDesc(depth, tied !== undefined), jacketFace(inkOf(o, "j", tied), "front"), jacketFace(inkOf(o, "j", tied), "back"), yaw);
+  const ink = { ...inkOf(o, "j", tied), beltApart: true as const };
+  const jacketVolume = jacketDesc(depth, tied !== undefined);
+  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front"), jacketFace(ink, "back"), yaw);
+  // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
+  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: STRAP_T, worn: true }, jacketVolume.pitch), strapFace(tied, width), NO_FACE, yaw);
+  const belted = strap?.body ?? "";
+  const beltDefs = strap?.defs ?? "";
   const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth), pantsFace(inkOf(o, "p"), "front"), pantsFace(inkOf(o, "p"), "back"), yaw);
-  if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs, jacket.body, JACKET_BOX, yaw);
+  if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs + beltDefs, jacket.body + belted, JACKET_BOX, yaw);
   if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);
   if (jacket === undefined || pants === undefined) return box("", "", JACKET_BOX, yaw);
   if (o.mode === "suit") {
     const [x, y, w] = JACKET_BOX;
-    return box(defs + pants.defs + jacket.defs, `<g transform="translate(0 ${WORN_AT})">${pants.body}</g>${jacket.body}`, [x, y, w, WORN_AT + PANTS_BOX[1] + PANTS_BOX[3] - y], yaw);
+    return box(defs + pants.defs + jacket.defs + beltDefs, `<g transform="translate(0 ${WORN_AT})">${pants.body}</g>${jacket.body}${belted}`, [x, y, w, WORN_AT + PANTS_BOX[1] + PANTS_BOX[3] - y], yaw);
   }
   const [px, py] = PIECES_AT;
-  return box(defs + jacket.defs + pants.defs, `${jacket.body}<g transform="translate(${px} ${py})">${pants.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], py + PANTS_BOX[3] - JACKET_BOX[1]], yaw);
+  return box(defs + jacket.defs + beltDefs + pants.defs, `${jacket.body}${belted}<g transform="translate(${px} ${py})">${pants.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], py + PANTS_BOX[3] - JACKET_BOX[1]], yaw);
 }
 
 /** The pieces drawn flat, as their front faces with no turn: the jacket, the trousers beside it, the belt under the jacket. */
@@ -241,6 +251,9 @@ function flatSheet(o: Ready): Sheet {
   const extra = paint === undefined ? 0 : BELT_BOX[3];
   return box(defs + flat(j) + flat(p), `${j.body}${laid}<g transform="translate(${px} ${py})">${p.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], Math.max(py + PANTS_BOX[3], JACKET_BOX[3] + extra) - JACKET_BOX[1]], 0);
 }
+
+/** The back face of a strap, which draws every cell from its one face. */
+const NO_FACE: Face = { defs: "", body: "", clip: [] };
 
 function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number): { defs: string; body: string } {
   const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw);

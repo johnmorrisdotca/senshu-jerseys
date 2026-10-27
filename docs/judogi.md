@@ -13,7 +13,7 @@ Look at the [designer](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.h
 
 - **Jacket (uwagi):** the collar standing round the back of the neck and running down the front as a band of six stitched rows, the wearer's left crossing over the right; the inside of the neck in shadow; a fine grain weave on the upper body and quilted diamonds on the skirt below the waist seam; side vents; turned and stitched cuffs and hem.
 - **Trousers (zubon):** a deep waistband gathered by a drawstring tied in a bow at the front; the hips going over into two legs; a second layer over each knee, stitched round; a turned hem with a break above the foot.
-- **Belt (obi):** many stitched rows, tied round the waist with a square knot and two ends hanging 20–30 cm; on its own it is drawn as a tied ring. Red-white is the panels of a kohaku belt.
+- **Belt (obi):** a strap 5 mm thick (IJF: 4–5 mm), 4.75 cm wide for black and red-white and 4 cm for the rank colours, stitched in 10 rows, tied in two turns round the waist with a square knot and two ends hanging 20–30 cm. Turned, it is solid: its edges show their thickness, the knot stands off the turns and on its own the inside of the ring shows. Red-white is the panels of a kohaku belt, running along the belt.
 
 No maker, federation or sponsor mark is drawn. Sizes and positions cite the [IJF Judogi Rules (09 03 2022)](https://78884ca60822a34fb0e6-082b8fd5551e97bc65e327988b444396.ssl.cf3.rackcdn.com/up/2022/04/IJF_Judogi_rules_-_09_03_2022_-1649423105.pdf) as facts. That document's pictures and wording are not copied.
 

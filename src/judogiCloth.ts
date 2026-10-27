@@ -19,6 +19,8 @@ export interface GiInk {
   cloth: Rgb;
   /** The belt tied on the jacket, when one is. */
   belt?: BeltPaint;
+  /** The belt is a strap of its own over the jacket (the turning view, judogiStrap.ts): the jacket's faces carry only its shadows. */
+  beltApart?: true;
 }
 
 /**

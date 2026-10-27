@@ -4,9 +4,9 @@
 // under it, on a 2D canvas. The same cells, maps, shades and order as the SVG (pieceVolume.ts): only the way they reach the screen
 // differs. Part of the turning entry: it needs a document.
 import { drawOrder, glPainter, matrixOf, type PaintPiece } from "./judogiGl.ts";
-import { FACE_BOX, greyOf, shadeOf, smoothOf } from "./pieceVolume.ts";
+import { FACE_BOX, greyOf, pieceCells, shadeOf, smoothOf } from "./pieceVolume.ts";
 import { normalYaw } from "./turn.ts";
-import { cellsOf, placeCell, quadPath, type Cell, type VolumeDesc } from "./volume.ts";
+import { placeCell, quadPath, type Cell, type VolumeDesc } from "./volume.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -64,7 +64,7 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   try {
     pieces = await Promise.all(roots.map(async (root) => {
       const desc = JSON.parse(root.getAttribute("data-piece") ?? "") as VolumeDesc;
-      const cells = cellsOf(desc);
+      const cells = pieceCells(desc);
       const ids = faceIds(root, cells);
       const [front, back] = await Promise.all([faceOf(ids.front), faceOf(ids.back)]);
       const [dx, dy] = offsetOf(root, svg);
@@ -194,7 +194,7 @@ function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext
   const [fx, fy, fw, fh] = FACE_BOX;
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
-  for (const list of drawOrder(p, yaw, placed.map((q) => q.visible))) {
+  for (const list of drawOrder(p, yaw, placed)) {
     const maps = list.map((i): Matrix => {
       const [a, b, c, d, e, f] = matrixOf(placed[i]!.matrix);
       return [u * a, u * b, u * c, u * d, u * e + ox, u * f + oy];

@@ -6,7 +6,7 @@
 // judogi show. Original drawing.
 
 import { atY, band, fold, lightDefs, offset, pieceDesc, seam, smooth, stitch, toneOf, weaves, type Face, type GiInk, type Tone } from "./judogiCloth.ts";
-import { beltOnJacket } from "./judogiBelt.ts";
+import { beltOnJacket, beltShadow } from "./judogiBelt.ts";
 import { n2, poly, type Pt } from "./path.ts";
 import type { VolumeDesc } from "./volume.ts";
 
@@ -29,8 +29,21 @@ const HEM = Y[Y.length - 1] as number;
 /** The half widths of the body, tied with a belt or hanging loose. */
 const halves = (tied: boolean): number[] => (tied ? TIED : LOOSE);
 /** The body's half width at `y`, between its rows. */
-function halfAt(tied: boolean, y: number): number {
-  const h = halves(tied);
+const halfAt = (tied: boolean, y: number): number => rowAt(halves(tied), y);
+
+/**
+ * Where a belt tied on the jacket lies: the top of its band at the back, and the round under it, the widest of the rows it covers so no
+ * cloth shows through it (its depth as the volume's: the rows' half depth by `depth`, the cross-section's exponent, the side wall's 0.4).
+ */
+export function beltRound(depth = 1, width = 12): { y: number; a: number; b: number; full: number; side: number } {
+  const k = Math.max(0.35, Math.min(1.6, depth));
+  const top = WAIST - 2.5;
+  const foot = top + 2.5 + width;
+  return { y: top, a: Math.max(halfAt(true, top), halfAt(true, foot)) + 1.2, b: Math.max(rowAt(TIED_D, top), rowAt(TIED_D, foot)) * k, full: FULL, side: 0.4 };
+}
+
+/** A value given at each row, at `y` between them. */
+function rowAt(h: readonly number[], y: number): number {
   for (let j = 1; j < Y.length; j++) {
     const y0 = Y[j - 1] as number;
     const y1 = Y[j] as number;
@@ -207,7 +220,7 @@ function front(uid: string, ink: GiInk, t: Tone): string {
   s += edges(t, tied);
   s += lapelBand(uid, t, TOP_EDGE, 1, t.light ? 0.2 : 0.3);
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
+  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
   return s;
 }
 
@@ -232,7 +245,7 @@ function back(uid: string, ink: GiInk, t: Tone): string {
   s += sleeveShadows(t, tied);
   s += edges(t, tied);
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
+  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
   return s;
 }
 

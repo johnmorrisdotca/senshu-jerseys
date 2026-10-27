@@ -5,6 +5,7 @@
 import { shapeOf, sleeveDraws } from "./jersey.ts";
 import type { Resolved } from "./options.ts";
 import { n2 } from "./path.ts";
+import type { StrapDesc } from "./judogiStrap.ts";
 
 /** How a shirt is cut into cells, and the size of the garment they are wrapped over. All of it is numbers, so it can ride in the drawing and `applyVolume` can work from it alone. */
 export interface VolumeDesc {
@@ -36,6 +37,8 @@ export interface VolumeDesc {
    * the body with no edge.
    */
   lobes?: number[];
+  /** A belt as a solid strap (judogiStrap.ts): its cells are the strap's own, drawn nearest last, and the rows above are empty. */
+  strap?: StrapDesc;
 }
 
 /** A matrix's linear part is written to four decimals: it is multiplied by coordinates up to 200, so two would put a cell a unit off its neighbour. */
@@ -178,6 +181,8 @@ export interface Cell {
   n: [number, number, number];
   /** The drawing of a thing on a sleeve, by its place in `VolumeDesc.sd`; the cell is of that drawing and not of the front or the back. */
   src?: number;
+  /** A second way the cell must face the viewer to be seen: a belt's edge behind the jacket it is tied on faces the viewer, but is hidden. */
+  also?: [number, number, number];
 }
 
 /** The two triangles of a quadrilateral given as the corners tl, tr, bl, br (x, y of the drawing, and x, y, z of the space). */
@@ -399,6 +404,9 @@ export interface Placed {
   depth: number;
 }
 
+/** How far past side on a cell's second way (`Cell.also`) may turn and still be seen: a knot just round the side still stands clear of the body. */
+const ALSO = -0.08;
+
 /** Where one cell goes at one turn. */
 export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   const cy = Math.cos(rad(yaw));
@@ -414,7 +422,7 @@ export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   }
   const nn = turn(c.n[0], c.n[1], c.n[2], cy, sy, cp, sp);
   const facing = nn[2];
-  if (facing <= 0.01) return { visible: false, matrix: "", shade: 0, depth: z / 3 };
+  if (facing <= 0.01 || (c.also !== undefined && turn(c.also[0], c.also[1], c.also[2], cy, sy, cp, sp)[2] < ALSO)) return { visible: false, matrix: "", shade: 0, depth: z / 3 };
   const T = c.tex;
   const t1x = T[2]! - T[0]!;
   const t1y = T[3]! - T[1]!;

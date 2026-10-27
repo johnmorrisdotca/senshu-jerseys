@@ -5,8 +5,23 @@
 // nothing doubles and no rim of cloth is left unshaded. A body with lobes (trousers) is not convex, so its left and right halves are
 // layers of their own, the nearer drawn last. Kept apart from volume.ts so that a jersey's bundle does not carry it.
 
+import { strapCells } from "./judogiStrap.ts";
 import { n2 } from "./path.ts";
-import { cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type Cell, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
+import { cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
+
+/** Every cell of a piece: a belt's strap, or the garment's body and sleeves. */
+export function pieceCells(d: VolumeDesc): Cell[] {
+  return d.strap === undefined ? cellsOf(d) : strapCells(d.strap);
+}
+
+/**
+ * The order a strap's cells are drawn in at a turn, farthest first. A strap is not convex (the knot stands off the turns, the ends hang in
+ * front of them, the far half of the ring shows its inside), so it cannot be drawn in fixed groups as a body can; its cells are small
+ * enough that their middles order them.
+ */
+export function depthOrder(placed: readonly Placed[]): number[] {
+  return placed.map((_, i) => i).sort((i, j) => placed[i]!.depth - placed[j]!.depth);
+}
 
 type Vec = [number, number, number];
 
@@ -125,7 +140,7 @@ export function layerOf(d: VolumeDesc, c: Cell): string {
  * shade is a second use of that triangle, in the group's multiplying layer, clipped to the face's outline (`frontClip`, `backClip`).
  */
 export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number): VolumeMarkup {
-  const cells = cellsOf(d);
+  const cells = pieceCells(d);
   const smooth = smoothOf(cells);
   let defs = "";
   const cloth = new Map<string, string>();
@@ -134,7 +149,9 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
     m.set(k, (m.get(k) ?? "") + v);
   };
   const graded = new Set<number>();
-  cells.forEach((c, i) => {
+  const order = d.strap === undefined ? cells.map((_, i) => i) : depthOrder(cells.map((c) => placeCell(c, yaw, d.pitch)));
+  order.forEach((i) => {
+    const c = cells[i] as Cell;
     const key = layerOf(d, c);
     defs += `<path id="${uid}q${i}" d="${quadPath(c.tex)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
     const pl = placeCell(c, yaw, d.pitch);
@@ -194,7 +211,7 @@ function holdOf(root: Element): Held | undefined {
   (root.closest("svg") ?? root.ownerDocument).querySelectorAll("[data-vg]").forEach((n: Element) => {
     if (root.querySelector(`[fill="url(#${n.id})"]`) !== null) stops[Number(n.getAttribute("data-vg"))] = [...n.querySelectorAll("stop")];
   });
-  const cells = cellsOf(desc);
+  const cells = pieceCells(desc);
   const entry: Held = { desc, cells, smooth: smoothOf(cells), cloth: index("[data-vc]", "data-vc"), shade: index("[data-vh]", "data-vh"), stops, groups: index(":scope > [data-vol]", "data-vol") };
   held.set(root, entry);
   return entry;
@@ -204,8 +221,9 @@ function holdOf(root: Element): Held | undefined {
 export function applyPiece(root: Element, yaw: number): boolean {
   const h = holdOf(root);
   if (h === undefined) return false;
+  const placed = h.cells.map((c) => placeCell(c, yaw, h.desc.pitch));
   h.cells.forEach((c, i) => {
-    const pl = placeCell(c, yaw, h.desc.pitch);
+    const pl = placed[i] as Placed;
     for (const n of [h.cloth[i], h.shade[i]]) {
       if (n === undefined) continue;
       if (pl.visible) {
@@ -221,6 +239,11 @@ export function applyPiece(root: Element, yaw: number): boolean {
       stops[1]?.setAttribute("stop-color", greyOf(shadeOf(sm.n1, yaw, h.desc.pitch)));
     } else h.shade[i]?.firstElementChild?.setAttribute("fill", greyOf(shadeOf(c.n, yaw, h.desc.pitch)));
   });
+  if (h.desc.strap !== undefined) {
+    for (const i of depthOrder(placed)) {
+      for (const n of [h.cloth[i], h.shade[i]]) n?.parentNode?.appendChild(n);
+    }
+  }
   for (const g of groupOrder(yaw, h.desc.hang === true)) if (h.groups[g] !== undefined) root.appendChild(h.groups[g] as Element);
   if (h.desc.lobes !== undefined) {
     for (const g of [h.groups[0], h.groups[3]]) {

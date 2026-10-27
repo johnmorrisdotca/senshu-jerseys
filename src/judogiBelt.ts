@@ -5,7 +5,6 @@
 import { blend, hexOf, shade, type Rgb } from "./colour.ts";
 import { band, fold, smooth, toneOf, type BeltPaint, type Face, type Tone } from "./judogiCloth.ts";
 import { n2, poly, type Pt } from "./path.ts";
-import type { VolumeDesc } from "./volume.ts";
 
 export const BELT_RGB: Record<string, Rgb> = {
   white: [244, 242, 234],
@@ -48,7 +47,7 @@ export function beltPaint(uid: string, belt: string): BeltPaint | undefined {
 }
 
 /** Rows of stitching along a band between two edges. */
-function rows(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 7): string {
+function rows(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 10): string {
   let s = "";
   for (let k = 1; k <= n; k++) {
     const f = k / (n + 1);
@@ -59,7 +58,7 @@ function rows(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 7): str
 }
 
 /** A length of belt between two edges: cloth, rows, a lit top edge and a darker lower one. */
-function length(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 7): string {
+function length(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 10): string {
   const shape = band(top, foot);
   return `<path d="${shape}" fill="${p.fill}"/>` + rows(top, foot, p, n) +
     `<path d="${smooth(top)}" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="0.9"/>` +
@@ -86,12 +85,20 @@ function endSides(from: Pt, to: Pt): [Pt[], Pt[]] {
   return [left, left.map((q) => [q[0] + 2 * nx, q[1] + 2 * ny] as Pt)];
 }
 
-/** A hanging end, with its rows running down it. */
+/**
+ * A hanging end, with its rows running down it. It is drawn in a frame along its own length and turned into place, so a pattern (a
+ * kohaku belt's panels) runs along the end as it does along the turns, not across it.
+ */
 function end(from: Pt, to: Pt, p: BeltPaint): string {
-  const [left, right] = endSides(from, to);
+  const angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const local = (q: readonly Pt[]): Pt[] => q.map((v) => [(v[0] - from[0]) * c + (v[1] - from[1]) * s, -(v[0] - from[0]) * s + (v[1] - from[1]) * c] as Pt);
+  const [left, right] = endSides(from, to).map(local) as [Pt[], Pt[]];
   const a = left[2] as Pt;
   const b = right[2] as Pt;
-  return length(left, right, p, 6) + `<path d="M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}" stroke="${p.edge}" stroke-width="1" stroke-opacity="0.7"/>`;
+  return `<g transform="translate(${n2(from[0])} ${n2(from[1])}) rotate(${n2((angle * 180) / Math.PI)})">` + length(left, right, p) +
+    `<path d="M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}" stroke="${p.edge}" stroke-width="1" stroke-opacity="0.7"/></g>`;
 }
 
 /** Where the belt lies round a body `half` wide: the top and foot of its turns, and at the front the knot's two parts and the ends. */
@@ -107,41 +114,39 @@ function beltShape(face: "front" | "back", waist: number, half: number): { top: 
   return { top, foot, cx, cy, knot, down: [knotDown, knotDown.map((q) => [q[0] + 11, q[1] - 4] as Pt)], ends };
 }
 
+/** Only the shadows a belt throws on the jacket under it, where the belt itself is a strap of its own (judogiStrap.ts). */
+export function beltShadow(t: Tone, face: "front" | "back", waist: number, half = 56): string {
+  const { foot, cx, cy } = beltShape(face, waist, half);
+  const shadow = fold(smooth(foot.map((q) => [q[0], q[1] + 2] as Pt)), 4, t.light ? 0.3 : 0.45);
+  if (face === "back") return shadow;
+  return shadow + fold(smooth([[cx - 6, cy + 14], [cx - 14, cy + 40], [cx - 20, cy + HANG]]), 6, t.light ? 0.16 : 0.26) +
+    fold(smooth([[cx + 8, cy + 14], [cx + 14, cy + 40], [cx + 20, cy + HANG * 0.92]]), 6, t.light ? 0.16 : 0.26);
+}
+
 /** The belt where it lies round a body `half` wide: its turns, and at the front the knot and its ends. Its paint's defs are the caller's to add. */
 export function beltOnJacket(p: BeltPaint, t: Tone, face: "front" | "back", waist: number, half = 56, worn = true): string {
   const { top, foot, cx, cy, knot: k, down, ends: hang } = beltShape(face, waist, half);
-  const shadow = fold(smooth(foot.map((q) => [q[0], q[1] + 2] as Pt)), 4, t.light ? 0.3 : 0.45);
+  const shadow = worn ? beltShadow(t, face, waist, half) : "";
   // Two turns of the belt lie one on the other: a faint line between them.
   const turn = length(top, foot, p) + `<path d="${smooth(top.map((q) => [q[0], q[1] + WIDTH / 2] as Pt))}" fill="none" stroke="${p.edge}" stroke-opacity="0.35" stroke-width="0.6"/>`;
-  if (face === "back") return (worn ? shadow : "") + turn;
+  if (face === "back") return shadow + turn;
   // The square knot, with its shadow.
   const knot = `<path d="${poly(k)}" fill="${p.fill}" stroke="${p.edge}" stroke-width="0.6"/>` +
-    rows([k[0] as Pt, k[1] as Pt], [k[3] as Pt, k[2] as Pt], p, 6) +
+    rows([k[0] as Pt, k[1] as Pt], [k[3] as Pt, k[2] as Pt], p, 8) +
     fold(`M${cx - 12} ${cy + 10}L${cx + 14} ${cy + 8}`, 3, 0.35) +
-    length(down[0], down[1], p, 5);
+    length(down[0], down[1], p, 8);
   const ends = hang.map(([from, to]) => end(from, to, p)).join("");
-  const endShadow = fold(smooth([[cx - 6, cy + 14], [cx - 14, cy + 40], [cx - 20, cy + HANG]]), 6, t.light ? 0.16 : 0.26) +
-    fold(smooth([[cx + 8, cy + 14], [cx + 14, cy + 40], [cx + 20, cy + HANG * 0.92]]), 6, t.light ? 0.16 : 0.26);
   // The shadows fall on the jacket; a belt on its own has nothing under it to take them.
-  return (worn ? shadow + endShadow : "") + turn + ends + knot;
+  return shadow + turn + ends + knot;
 }
 
-/**
- * The belt alone, tied: a ring seen a little from above, wrapped over a short body whose front carries the knot. The body goes on below
- * the ring so the hanging ends have cloth to lie on; nothing is drawn there but the ends, so the rest of it is not seen.
- */
-const RY = [28, 40, 112];
-const RA = [66, 66, 66];
-const RD = [30, 30, 30];
+/** Where the flat drawing of the belt alone puts its turns. */
+const RY0 = 28;
 
-export function beltDesc(depth = 1): VolumeDesc {
-  const k = Math.max(0.35, Math.min(1.6, depth));
-  return { y: RY, a: RA.map((a) => a + 1.2), b: RD.map((v) => Math.round(v * k * 10) / 10), sl: [], sd: [], nt: 14, nf: 1, nh: 1, pitch: 14, piece: true };
-}
-
+/** The belt alone, laid flat (the flat view): its turns, knot and ends as they are seen from the front. */
 export function beltFace(p: BeltPaint, face: "front" | "back"): Face {
   const t = toneOf([244, 242, 234]);
-  const waist = (RY[0] as number) + 3;
+  const waist = RY0 + 3;
   // The shade stays on the belt itself, the very shapes it is drawn with: the turns, the knot and the two ends, not the empty body they
   // lie on (a looser outline leaves a grey halo round a belt on its own).
   const s = beltShape(face, waist, 66);

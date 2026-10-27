@@ -3,8 +3,8 @@
 // frames a second); one draw of a piece's triangles costs about nothing. The cells, the order and the shade are the SVG's
 // (pieceVolume.ts). Each cell's shade multiplies its cloth as it is drawn, not in a layer of its own: a cell is opaque cloth, so where two
 // grown cells overlap the later one simply covers the earlier, and no shade is doubled.
-import { FACE_BOX, halfOrder, layerOf, shadeOf, type Smooth } from "./pieceVolume.ts";
-import { groupOrder, placeCell, type Cell, type VolumeDesc } from "./volume.ts";
+import { depthOrder, FACE_BOX, halfOrder, layerOf, shadeOf, type Smooth } from "./pieceVolume.ts";
+import { groupOrder, placeCell, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 /** A piece as both painters take it: its cells and their shade, the pictures of its two faces, and where it sits in the drawing. */
 export interface PaintPiece {
@@ -17,8 +17,10 @@ export interface PaintPiece {
   dy: number;
 }
 
-/** The cells of a piece that show at a turn, as the SVG draws them: layer by layer from the back, each layer in the cells' own order. */
-export function drawOrder(p: PaintPiece, yaw: number, visible: readonly boolean[]): number[][] {
+/** The cells of a piece that show at a turn, as the SVG draws them: layer by layer from the back, each layer in the cells' own order (a strap's, farthest first). */
+export function drawOrder(p: PaintPiece, yaw: number, placed: readonly Placed[]): number[][] {
+  if (p.desc.strap !== undefined) return [depthOrder(placed).filter((i) => placed[i]!.visible)];
+  const visible = placed.map((q) => q.visible);
   const byLayer = new Map<string, number[]>();
   p.cells.forEach((c, i) => {
     if (!visible[i]) return;
@@ -104,7 +106,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
     pieces.forEach((p, n) => {
       const [u, ox, oy] = place(p);
       const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch));
-      const order = drawOrder(p, yaw, placed.map((q) => q.visible)).flat();
+      const order = drawOrder(p, yaw, placed).flat();
       const need = order.length * 3 * STRIDE;
       if (data.length < need) data = new Float32Array(need);
       // Each quadrilateral's shade at its two side edges, worked out once for its two triangles.
