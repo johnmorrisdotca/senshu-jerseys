@@ -204,7 +204,7 @@ function compose(o: Ready): Sheet {
     return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
   }
   const tied = o.mode === "pants" ? undefined : paint;
-  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketDesc(depth), jacketFace(inkOf(o, "j", tied), "front"), jacketFace(inkOf(o, "j", tied), "back"), yaw);
+  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketDesc(depth, tied !== undefined), jacketFace(inkOf(o, "j", tied), "front"), jacketFace(inkOf(o, "j", tied), "back"), yaw);
   const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth), pantsFace(inkOf(o, "p"), "front"), pantsFace(inkOf(o, "p"), "back"), yaw);
   if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs, jacket.body, JACKET_BOX, yaw);
   if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);

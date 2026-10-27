@@ -1,34 +1,53 @@
-// The judogi jacket (uwagi): a boxy body to mid-thigh with side vents, wide sleeves hanging from a dropped shoulder, and the thick
-// stitched collar that runs round the back of the neck and down the front, the wearer's left side crossing over the right (IJF Judogi
-// Rules, 09 03 2022: left over right, lapel 4-5 cm). Drawn as two faces in the 200-wide box that volume.ts wraps over the body: at
-// 2.63 units to the centimetre for a 170 cm size, the jacket is 78 cm long and the lapel 4.7 cm wide. The upper body carries a fine
-// grain weave and the skirt below the waist seam quilted diamonds, as product photographs of contest judogi show. Original drawing.
+// The judogi jacket (uwagi): a body to mid-thigh with side vents, drawn in at the waist when a belt is tied, wide sleeves slanting from a
+// sloping shoulder to a broad cuff, and the thick stitched collar that runs round the back of the neck and down the front, the wearer's
+// left side crossing over the right (IJF Judogi Rules, 09 03 2022: left over right, lapel 4-5 cm). Drawn as two faces in the 200-wide box
+// that volume.ts wraps over the body: at 2.63 units to the centimetre for a 170 cm size, the jacket is 78 cm long and the lapel 4.7 cm
+// wide. The upper body carries a fine grain weave and the skirt below the waist seam quilted diamonds, as product photographs of contest
+// judogi show. Original drawing.
 
 import { atY, band, fold, lightDefs, offset, pieceDesc, seam, smooth, stitch, toneOf, weaves, type Face, type GiInk, type Tone } from "./judogiCloth.ts";
 import { beltOnJacket } from "./judogiBelt.ts";
 import { n2, poly, type Pt } from "./path.ts";
 import type { VolumeDesc } from "./volume.ts";
 
-/** The rows of the body: the top of the collar behind the neck, the neck, the round of the shoulder, the shoulder point, the chest, the armpit, the waist seam, the hips and the hem. */
-const Y = [6, 14, 22, 33, 58, 86, 140, 205];
-/** The drawing's half width at each row: the shoulder slopes down from the neck and rounds over into the sleeve. */
-const H = [22, 25, 46, 60, 59, 56.6, 55, 57];
-/** The half depth of the body at each row: a judogi is thick cloth on a broad chest, so it stays deep to the hem. */
-const D = [13, 16, 19, 23, 28, 29, 27.5, 27];
+/**
+ * The rows of the body: the top of the collar behind the neck, the neck, the round of the shoulder, the shoulder point, the chest, the
+ * armpit, above the belt, the waist, below the belt, the waist seam and the hem. The shoulder slopes down from the neck, as the cloth
+ * hangs from it in product photographs, and the skirt widens a little to the hem.
+ */
+const Y = [6, 14, 22, 34, 58, 86, 106, 114, 124, 140, 205];
+/** The drawing's half width at each row, hanging loose. */
+const LOOSE = [22, 25, 38, 57, 57, 55.5, 55, 54.8, 55, 55.6, 59];
+/** Belted: the belt draws the waist in to a 37 cm half round, the cloth blousing over it above and flaring out below. */
+const TIED = [22, 25, 38, 57, 57, 55.5, 53, 48.5, 50, 55, 60];
+/** The half depth of the body at each row: thick cloth on a broad chest, drawn in with the waist by the belt. */
+const LOOSE_D = [12, 15, 18, 21, 25, 25.5, 25, 25, 25, 25, 24.5];
+const TIED_D = [12, 15, 18, 21, 25, 25.5, 23, 20.5, 21.5, 24, 24.5];
 const WAIST = 114;
 const HEM = Y[Y.length - 1] as number;
-/** The body's half width at the waist seam. */
-const WAIST_HALF = 55.6;
+
+/** The half widths of the body, tied with a belt or hanging loose. */
+const halves = (tied: boolean): number[] => (tied ? TIED : LOOSE);
+/** The body's half width at `y`, between its rows. */
+function halfAt(tied: boolean, y: number): number {
+  const h = halves(tied);
+  for (let j = 1; j < Y.length; j++) {
+    const y0 = Y[j - 1] as number;
+    const y1 = Y[j] as number;
+    if (y <= y1) return (h[j - 1] as number) + (((h[j] as number) - (h[j - 1] as number)) * (Math.max(y, y0) - y0)) / (y1 - y0);
+  }
+  return h[h.length - 1] as number;
+}
 
 /**
  * A sleeve on the picture's left (the wearer's right): the shoulder point S, the outer cuff P, the armpit A, the inner cuff Q. The other is
- * its mirror. A heavy sleeve hangs close to the body, its cuff at about three quarters of the jacket's length; its inner edge stays just
- * outside the body's, so on the drawing neither covers the other.
+ * its mirror. The sleeve leaves the sloping shoulder at a slant, widens to a broad open cuff and ends about two thirds of the way down the
+ * jacket, as the product photographs show; its inner edge stays outside the body's, so on the drawing neither covers the other.
  */
-const S: Pt = [40, 33];
-const P: Pt = [10, 160];
-const A: Pt = [42.6, 82];
-const Q: Pt = [40, 167];
+const S: Pt = [43, 34];
+const P: Pt = [8, 146];
+const A: Pt = [45, 64];
+const Q: Pt = [42, 156];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 
 /** The lapel on top (the wearer's left, so the picture's right of the neck), by its free edge from the collar to the hem. */
@@ -38,17 +57,21 @@ const UNDER_EDGE: Pt[] = [[90, 9], [94, 30], [99, 46], [104, 60], [110, 76]];
 /** The lapel band's width on the drawing: 4.7 cm at this scale, which with its roll and its shadow reads as the 4-5 cm band of the rules. */
 const LAPEL = 14.5;
 
-export function jacketDesc(depth = 1): VolumeDesc {
+export function jacketDesc(depth = 1, tied = false): VolumeDesc {
   const sl: VolumeDesc["sl"] = [
     { s: -1, q: [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]] },
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)] },
   ];
-  return pieceDesc(Y, H.map((h) => h + 1.2), D, sl, depth, 9, 4, 6);
+  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 4, 6), full: FULL };
 }
 
+/** The jacket's cross-section: rounder than a jersey's square body, as cloth hangs. */
+const FULL = 2.6;
+
 /** The outline of the body (no sleeves), clockwise from the collar's top left. */
-function bodyOutline(): Pt[] {
-  const left: Pt[] = Y.map((y, j) => [100 - (H[j] as number), y]);
+function bodyOutline(tied: boolean): Pt[] {
+  const h = halves(tied);
+  const left: Pt[] = Y.map((y, j) => [100 - (h[j] as number), y]);
   const right: Pt[] = [...left].reverse().map(mirror);
   return [...left, ...right];
 }
@@ -102,38 +125,39 @@ function leftOf(pts: readonly Pt[]): string {
 }
 
 /** The cloth of the body: the grain above the waist seam, the quilting below, and the waist seam itself. */
-function bodyCloth(uid: string, t: Tone, outline: string): string {
+function bodyCloth(uid: string, t: Tone, outline: string, tied: boolean): string {
+  const w = halfAt(tied, WAIST);
   return `<path d="${outline}" fill="${t.fill}"/>` +
     `<g clip-path="url(#${uid}body)"><rect x="0" y="0" width="200" height="${WAIST}" fill="url(#${uid}G)"/>` +
     `<rect x="0" y="${WAIST}" width="200" height="${HEM - WAIST + 4}" fill="url(#${uid}Q)"/></g>` +
-    seam(`M${100 - WAIST_HALF} ${WAIST}Q100 ${WAIST + 2.5} ${100 + WAIST_HALF} ${WAIST}`, t, 0.35) +
-    stitch(`M${100 - WAIST_HALF} ${WAIST + 2}Q100 ${WAIST + 4.5} ${100 + WAIST_HALF} ${WAIST + 2}`, t, 0.36, 0.4);
+    seam(`M${n2(100 - w)} ${WAIST}Q100 ${WAIST + 2.5} ${n2(100 + w)} ${WAIST}`, t, 0.35) +
+    stitch(`M${n2(100 - w)} ${WAIST + 2}Q100 ${WAIST + 4.5} ${n2(100 + w)} ${WAIST + 2}`, t, 0.36, 0.4);
 }
 
 /** The shadow a heavy sleeve throws on the body beside it, under the arm and down the side, where the two hang close. */
-function sleeveShadows(t: Tone): string {
+function sleeveShadows(t: Tone, tied: boolean): string {
   let s = "";
   for (const side of [-1, 1] as const) {
-    const x = (v: number): number => 100 + side * v;
-    s += fold(smooth([[x(55), 84], [x(53.5), 120], [x(53), 168]]), 8, t.light ? 0.2 : 0.32);
+    const x = (y: number): Pt => [100 + side * (halfAt(tied, y) - 1.5), y];
+    s += fold(smooth([x(84), x(100), x(124), x(146)]), 8, t.light ? 0.2 : 0.32);
   }
   return s;
 }
 
 /** The side vents, the hem and the shoulder seams, on either face. */
-function edges(t: Tone): string {
+function edges(t: Tone, tied: boolean): string {
   let s = "";
   for (const side of [-1, 1] as const) {
     // The vent sits a little in from the side seam, so the side wall of the volume shows plain cloth and the slit from the front.
-    const x = (y: number, inset: number): number => 100 + side * (56 + ((y - 172) / 33) - inset);
+    const x = (y: number, inset: number): number => 100 + side * (halfAt(tied, y) - inset);
     s += `<path d="M${n2(x(182, 4.2))} 182L${n2(x(HEM, 4))} ${HEM}" stroke="${t.deep}" stroke-width="1" stroke-opacity="0.7"/>`;
     s += `<rect x="${n2(x(182, 4.2) - 2.2)}" y="180.6" width="4.4" height="1.5" rx="0.6" fill="${t.seam}" fill-opacity="0.75"/>`;
     s += fold(`M${n2(x(184, 5.6))} 184L${n2(x(HEM - 1, 5.4))} ${HEM - 1}`, 2.4, t.light ? 0.2 : 0.3);
     const neck: Pt = [100 + side * 25, 14];
-    const tip: Pt = [100 + side * 60, 33];
+    const tip: Pt = [100 + side * 57.5, 34];
     s += seam(`M${n2(neck[0])} ${neck[1] + 0.8}L${n2(tip[0] - side * 1)} ${tip[1] + 0.6}`, t, 0.45);
   }
-  const hem = H[H.length - 1] as number;
+  const hem = halfAt(tied, HEM);
   s += seam(`M${100 - hem} ${HEM - 7}L${100 + hem} ${HEM - 7}`, t, 0.55);
   s += stitch(`M${100 - hem} ${HEM - 4.6}L${100 + hem} ${HEM - 4.6}`, t);
   s += stitch(`M${100 - hem} ${HEM - 2.2}L${100 + hem} ${HEM - 2.2}`, t);
@@ -156,9 +180,10 @@ function lapelBand(uid: string, t: Tone, edge: readonly Pt[], sign: 1 | -1, shad
 
 /** The front: under panel, the opening at the neck with the inside of the collar behind it, the lapel underneath, then the one on top. */
 function front(uid: string, ink: GiInk, t: Tone): string {
-  const outline = poly(bodyOutline());
+  const tied = ink.belt !== undefined;
+  const outline = poly(bodyOutline(tied));
   const cross = atY(TOP_EDGE, 48);
-  let s = sleeve(uid, t, -1, false) + sleeve(uid, t, 1, false) + bodyCloth(uid, t, outline);
+  let s = sleeve(uid, t, -1, false) + sleeve(uid, t, 1, false) + bodyCloth(uid, t, outline, tied);
   // The opening: the inside of the back and of the collar, seen between the two lapels above where they cross.
   const opening = poly([[UNDER_EDGE[0]![0] - 2, 6], ...UNDER_EDGE.slice(0, 3), cross, ...TOP_EDGE.slice(0, 2).reverse(), [TOP_EDGE[0]![0] + 2, 6]]);
   s += `<path d="${opening}" fill="${t.inside}"/>`;
@@ -178,18 +203,19 @@ function front(uid: string, ink: GiInk, t: Tone): string {
   s += fold(smooth([[52, 88], [62, 100], [74, 112]]), 10, t.light ? 0.07 : 0.14);
   s += fold(smooth([[148, 88], [136, 101], [122, 112]]), 10, t.light ? 0.07 : 0.14);
   s += fold(smooth([[128, 40], [124, 70], [126, 104]]), 9, t.light ? 0.2 : 0.1, true);
-  s += sleeveShadows(t);
-  s += edges(t);
+  s += sleeveShadows(t, tied);
+  s += edges(t, tied);
   s += lapelBand(uid, t, TOP_EDGE, 1, t.light ? 0.2 : 0.3);
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += beltOnJacket(ink.belt, t, "front", WAIST);
+  if (ink.belt !== undefined) s += beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
   return s;
 }
 
 /** The back: the collar standing round the neck, the broad upper back, the waist seam, the skirt and the sleeves. */
 function back(uid: string, ink: GiInk, t: Tone): string {
-  const outline = poly(bodyOutline());
-  let s = sleeve(uid, t, -1, true) + sleeve(uid, t, 1, true) + bodyCloth(uid, t, outline);
+  const tied = ink.belt !== undefined;
+  const outline = poly(bodyOutline(tied));
+  let s = sleeve(uid, t, -1, true) + sleeve(uid, t, 1, true) + bodyCloth(uid, t, outline, tied);
   // The collar from behind: the same stitched band, standing up round the neck and sewn on along a curve across the shoulders.
   const top: Pt[] = [[77, 6], [100, 4], [123, 6]];
   const foot: Pt[] = [[75, 16], [100, 19.5], [125, 16]];
@@ -203,10 +229,10 @@ function back(uid: string, ink: GiInk, t: Tone): string {
   s += fold(smooth([[140, 120], [142, 160], [142, 200]]), 6, t.light ? 0.1 : 0.18);
   s += fold(smooth([[54, 88], [64, 100], [76, 112]]), 10, t.light ? 0.06 : 0.12);
   s += fold(smooth([[146, 88], [136, 100], [124, 112]]), 10, t.light ? 0.06 : 0.12);
-  s += sleeveShadows(t);
-  s += edges(t);
+  s += sleeveShadows(t, tied);
+  s += edges(t, tied);
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += beltOnJacket(ink.belt, t, "back", WAIST);
+  if (ink.belt !== undefined) s += beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
   return s;
 }
 
@@ -214,7 +240,7 @@ function back(uid: string, ink: GiInk, t: Tone): string {
 export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
   const t = toneOf(ink.cloth);
   const uid = `${ink.uid}${face === "front" ? "f" : "b"}`;
-  const outline = poly(bodyOutline());
+  const outline = poly(bodyOutline(ink.belt !== undefined));
   const clip = [outline, poly(sleeveOutline(-1)), poly(sleeveOutline(1))];
   const defs = weaves(uid, t) + lightDefs(uid, t) +
     `<clipPath id="${uid}body"><path d="${outline}"/></clipPath>` +

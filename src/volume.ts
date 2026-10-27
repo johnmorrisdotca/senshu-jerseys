@@ -22,6 +22,8 @@ export interface VolumeDesc {
   sd: { g: 1 | 2; f: number; a: number; da: number; df: number; w: number; h: number; dir: 1 | -1 }[];
   /** How far the camera looks down, in degrees. */
   pitch: number;
+  /** The exponent of the body's cross-section in depth (`FULL` when not given): a judogi's cloth hangs rounder than a jersey's body. */
+  full?: number;
   /** A sleeveless cut: its side wall samples further in from the drawing's edge, past the outline's stroke. */
   tank?: true;
   /** A judogi piece (judogiCloth.ts, drawn by pieceVolume.ts) rather than a shirt: its second row is not sampled further in, since a piece's drawing has no rounded shoulder tip there (its first row is a collar). */
@@ -62,8 +64,8 @@ function texHalf(d: VolumeDesc, j: number): number {
 }
 
 /** Depth of the front (or back) half at parameter `t` (−90° the left, 90° the right): the superellipse, never thinner than the side wall. */
-function depthAt(b: number, t: number): number {
-  const elliptical = b * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(Math.sin(t)), FULL)), 1 / FULL);
+function depthAt(b: number, t: number, full = FULL): number {
+  const elliptical = b * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(Math.sin(t)), full)), 1 / full);
   return Math.max(SIDE * b, elliptical);
 }
 
@@ -75,7 +77,7 @@ function wallOf(d: VolumeDesc, j: number): number {
 /** Depth of row `j` of the body at parameter `t`: its round, or that round going over to two side by side (`VolumeDesc.lobes`). */
 function zAt(d: VolumeDesc, j: number, t: number): number {
   const b = d.b[j] as number;
-  const round = depthAt(b, t);
+  const round = depthAt(b, t, d.full);
   const w = d.lobes?.[j] ?? 0;
   if (w <= 0) return round;
   // Each half of the row is one tube's top: a circle across that half, as deep as a tube of that width (`SLEEVE_DEPTH`).
