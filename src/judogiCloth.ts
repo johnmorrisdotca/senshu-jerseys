@@ -9,6 +9,8 @@ import type { VolumeDesc } from "./volume.ts";
 /** A belt's paint: a colour or a pattern, its darker edge and its stitch rows. */
 export interface BeltPaint {
   fill: string;
+  /** The fill on a strap's strip, where it differs from the flat drawing's (a kohaku belt's sections are put to end in red at the strip's cut ends). */
+  stripFill?: string;
   edge: string;
   stitch: string;
   defs: string;

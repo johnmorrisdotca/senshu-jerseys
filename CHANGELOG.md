@@ -22,6 +22,14 @@ All notable changes to this project are written here. The format follows
 - **Woven labels show a twill** (diagonal ribs, a lit one and a dark one in turn) over their weave, and the Senshu S has a thin outline stitch in a lighter second colour round its satin.
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.20.1] - 2026-10-28
+
+### Changed
+
+- **A kohaku belt's red and white sections are 12 to 18 cm**, longer with the size (12 cm at 150, 18 cm at 200), and the pattern is set so that both cut ends are well inside a red section, on the strap, the worn belt and the flat drawing. A test checks the sections and the ends.
+- The README's belts picture and the animation script use the widths belts are made in (black 4.2, 4.5 or 4.7 cm; red-and-white 4.5).
+- A test checks that text on a belt's two hanging ends reads down the end, top to bottom, on the left end as on the right, in the flat, worn and turning drawings.
+
 ## [0.20.0] - 2026-10-28
 
 ### Added

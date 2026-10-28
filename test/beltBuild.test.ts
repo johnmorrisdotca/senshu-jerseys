@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { judogiFrame, renderJudogi } from "../src/judogi.ts";
 import { wellFormed } from "./helpers.ts";
+import { beltPaint, END_CUTS, STRIP_CUTS } from "../src/judogiBelt.ts";
+import { END_X, strapFace, type StrapDesc } from "../src/judogiStrap.ts";
+import { END_LENGTH } from "../src/judogiStripes.ts";
 import type { VolumeDesc } from "../src/volume.ts";
 
+const RING: StrapDesc = { y: 28, sag: 3, w: 12.5, t: 1.3, a: 66, b: 30, full: 2, side: 0, worn: false };
 const strapOf = (svg: string): NonNullable<VolumeDesc["strap"]> => {
   const d = [...svg.matchAll(/data-piece="([^"]*)"/g)].map((m) => JSON.parse((m[1] as string).replace(/&quot;/g, '"')) as VolumeDesc).find((v) => v.strap !== undefined)?.strap;
   assert.ok(d !== undefined);
@@ -43,4 +47,53 @@ test("a satin or silk cover has a sheen and cotton has none, and every combinati
       assert.equal(wellFormed(renderJudogi({ mode: "pieces", view: "flat", belt: "black", beltCover, beltThickness })), null);
     }
   }
+});
+
+test("a kohaku belt's red and white sections are 12 to 18 cm, longer with the size, and both cut ends are well inside red", () => {
+  const sectionsOf = (size: "150" | "170" | "200"): number => {
+    const svg = renderJudogi({ mode: "belt", belt: "red-white", size, view: "flat" });
+    const width = Number(/<pattern id="[^"]*kohaku" width="([\d.]+)"/.exec(svg)?.[1]);
+    return width / 2 / 2.63;
+  };
+  const [a, b, c] = [sectionsOf("150"), sectionsOf("170"), sectionsOf("200")];
+  assert.ok(Math.abs(a - 12) < 0.05 && Math.abs(c - 18) < 0.05 && b > a && b < c, `${a} ${b} ${c}`);
+  for (const sectionCm of [12, 13.5, 15, 16.5, 18]) {
+    const defs = beltPaint("u", "red-white", sectionCm)?.defs ?? "";
+    const section = sectionCm * 2.63;
+    for (const [id, cuts] of [["kohaku", END_CUTS], ["kohakus", STRIP_CUTS]] as const) {
+      const pattern = new RegExp(`<pattern id="u${id}" width="([\\d.]+)"[^>]*translate\\((-?[\\d.]+) 0\\)`).exec(defs);
+      assert.ok(pattern !== null, id);
+      const phase = -Number(pattern[2]);
+      for (const cut of cuts) {
+        const x = (((cut + phase) % (2 * section)) + 2 * section) % (2 * section);
+        assert.ok(x < section && Math.min(x, section - x) > section * 0.18, `${id} ${sectionCm} cm: a cut end is ${x.toFixed(1)} of a ${section.toFixed(1)} red section`);
+      }
+    }
+  }
+});
+
+test("the cut ends the kohaku pattern is put to end in red are where the strap and the flat belt have them", () => {
+  for (const k of [0, 1] as const) {
+    assert.ok(Math.abs(STRIP_CUTS[k] - (END_X[k] + END_LENGTH[k])) < 0.6, `strip ${k}`);
+    assert.ok(Math.abs(END_CUTS[k] - END_LENGTH[k]) < 0.1, `end ${k}`);
+  }
+});
+
+test("text on a belt's two hanging ends reads down the end, top to bottom, on both ends, in the flat, the worn and the turning drawings", () => {
+  const embroidery = [{ place: "belt-end-left" as const, text: "SENSHU", thread: "gold" }, { place: "belt-end-right" as const, text: "JOHN", thread: "white" }];
+  for (const [mode, view] of [["belt", "flat"], ["jacket", "flat"], ["belt", "front"], ["jacket", "front"], ["pieces", "flat"]] as const) {
+    const svg = renderJudogi({ mode, view, belt: "black", embroidery, label: true, logos: [{ place: "belt-end-left" }], yaw: 0 });
+    // Each hanging end is drawn in a frame that runs down it from the knot (a turn of about 77 to 104 degrees); the marks in it are not turned again.
+    const frames = [...svg.matchAll(/<g transform="translate\([-\d. ]+\) rotate\((-?[\d.]+)\)">/g)].map((m) => Number(m[1]));
+    if (view === "flat") {
+      const down = frames.filter((a) => a > 60 && a < 120);
+      assert.ok(down.length >= 2, `${mode} ${view}: both ends are drawn down their length (${frames.join(",")})`);
+      // Nothing inside a hanging end's frame is turned half a turn.
+      assert.ok(![...svg.matchAll(/rotate\((-?[\d.]+)\)/g)].some((m) => Math.abs(Math.abs(Number(m[1])) - 180) < 1), `${mode} ${view}: a mark is turned upside down`);
+    }
+  }
+  // On the turning strap the marks sit on the strip's own length with no turn at all: the strip runs down the end from the knot.
+  const strip = strapFace({ fill: "#222", edge: "#000", stitch: "#444", defs: "", ends: { left: { defs: "", body: '<text id="L">SENSHU</text>' }, right: { defs: "", body: '<text id="R">JOHN</text>' } } }, RING.w);
+  assert.ok(!/rotate\(/.test(strip.body.slice(strip.body.indexOf('id="L"') - 60, strip.body.indexOf('id="L"'))), "the left end's text is not turned");
+  assert.ok(!/rotate\(/.test(strip.body.slice(strip.body.indexOf('id="R"') - 60, strip.body.indexOf('id="R"'))), "the right end's text is not turned");
 });

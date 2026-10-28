@@ -263,7 +263,9 @@ function pantsMarks(o: Ready): GiInk["marks"] | undefined {
 
 /** A belt's paint with what is sewn on its ends, and the defs those marks need. */
 function paintOf(o: Ready, belt: string): BeltPaint | undefined {
-  const base = beltPaint(o.uid, belt);
+  // A kohaku belt's red and white sections are 12 to 18 cm, longer with the size of the belt (a longer belt for a taller wearer).
+  const section = 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50;
+  const base = beltPaint(o.uid, belt, section);
   if (base === undefined) return undefined;
   const bands = bandsOf(o.style);
   const half = strapWidth(belt, o.beltCm) / 2;

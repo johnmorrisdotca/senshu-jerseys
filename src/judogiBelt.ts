@@ -21,19 +21,47 @@ export const BELT_RGB: Record<string, Rgb> = {
 const WIDTH = 12;
 const HANG = 64;
 
-/** The paint of a belt colour, or of the red and white panels of a kohaku belt. */
-export function beltPaint(uid: string, belt: string): BeltPaint | undefined {
+/** Where the cut ends fall on a strap's strip, and along a hanging end drawn on its own (`end()`): the left and the right. See `judogiStrap.ts` (`END_X`) and `END_LENGTH`. */
+export const STRIP_CUTS = [196, 118.5] as const;
+export const END_CUTS = [65.97, 60.52] as const;
+
+/**
+ * Where a kohaku belt's pattern starts, so that both cut ends fall well inside a red section (the belt is red at both ends, as official kata belts are):
+ * the offset, in drawing units, that keeps the nearer cut farthest from a change of colour. A section is `section` long; red and white take turns.
+ */
+function kohakuPhase(section: number, cuts: readonly number[]): number {
+  let best = 0;
+  let bestGap = -1;
+  const period = 2 * section;
+  for (let phase = 0; phase < period; phase += 0.5) {
+    const gap = Math.min(...cuts.map((c) => {
+      const x = (((c + phase) % period) + period) % period;
+      return x < section ? Math.min(x, section - x) : -1;
+    }));
+    if (gap > bestGap) {
+      bestGap = gap;
+      best = phase;
+    }
+  }
+  return best;
+}
+
+/** The paint of a belt colour, or of the red and white sections of a kohaku belt (each `sectionCm` long, 12 to 18 cm by the size of the belt, red at both ends). */
+export function beltPaint(uid: string, belt: string, sectionCm = 15): BeltPaint | undefined {
   if (belt === "none") return undefined;
   if (belt === "red-white") {
     const id = `${uid}kohaku`;
     const red = BELT_RGB.red as Rgb;
     const white = BELT_RGB.white as Rgb;
+    // The sections, each 12 to 18 cm (2.63 units to the centimetre), then the pattern put where both cut ends are red: one offset for a strap's strip and another for an end drawn flat.
+    const section = Math.max(12, Math.min(18, sectionCm)) * 2.63;
+    const pattern = (pid: string, phase: number): string => `<pattern id="${pid}" width="${n2(2 * section)}" height="80" patternUnits="userSpaceOnUse" patternTransform="translate(${n2(-phase)} 0)"><rect width="${n2(2 * section)}" height="80" fill="${hexOf(white)}"/><rect width="${n2(section)}" height="80" fill="${hexOf(red)}"/></pattern>`;
     return {
       fill: `url(#${id})`,
+      stripFill: `url(#${id}s)`,
       edge: hexOf(shade(red, -0.4)),
       stitch: hexOf(shade(red, -0.25)),
-      // Panels about 15 cm long, red and white in turn along the belt.
-      defs: `<pattern id="${id}" width="80" height="80" patternUnits="userSpaceOnUse"><rect width="80" height="80" fill="${hexOf(white)}"/><rect width="40" height="80" fill="${hexOf(red)}"/></pattern>`,
+      defs: pattern(id, kohakuPhase(section, END_CUTS)) + pattern(`${id}s`, kohakuPhase(section, STRIP_CUTS)),
     };
   }
   const rgb = BELT_RGB[belt] ?? (BELT_RGB.white as Rgb);

@@ -90,10 +90,10 @@ const BELT_ROW = [
   { belt: "green", beltStyle: { along: [{ colour: "black" }] }, rest: 0 },
   { belt: "blue", embroidery: [{ place: "belt-end-right", text: "山田", font: "kaisho", thread: "white" }], rest: 0 },
   { belt: "brown", embroidery: [{ place: "belt-end-right", text: "SMITH", font: "cursive", heightCm: 4, thread: "white" }], rest: 0 },
-  { belt: "black", beltWidthCm: 5, embroidery: [{ place: "belt-end-left", text: "TANAKA", thread: "gold" }, { place: "belt-end-right", text: "SENSHU", thread: "gold" }], rest: 0 },
+  { belt: "black", beltWidthCm: 4.7, embroidery: [{ place: "belt-end-left", text: "TANAKA", thread: "gold" }, { place: "belt-end-right", text: "SENSHU", thread: "gold" }], rest: 0 },
   { belt: "red-white", label: { colour: "navy" }, rest: 0 },
   { belt: "black", embroidery: [{ place: "belt-end-left", text: "講道館", font: "kaisho", thread: "gold" }, { place: "belt-end-right", text: "山下", font: "kaisho", thread: "gold" }], rest: 0 },
-  { belt: "black", beltWidthCm: 4, beltStyle: { bars: [{ colour: "red", count: 3 }] }, rest: 0 },
+  { belt: "black", beltWidthCm: 4.2, beltStyle: { bars: [{ colour: "red", count: 3 }] }, rest: 0 },
 ];
 const beltRow = (S, T, H, yaw, row) => row.map((o) => {
   const { rest, turns, ...opts } = o;
