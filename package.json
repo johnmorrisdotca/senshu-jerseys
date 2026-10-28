@@ -106,7 +106,8 @@
     "screenshots": "pnpm site && node scripts/screenshots.mjs",
     "animations": "pnpm build && node scripts/animations.mjs",
     "sheets": "pnpm build && node scripts/sheets.mjs",
-    "mode-icons": "pnpm build && node scripts/mode-icons.mjs"
+    "mode-icons": "pnpm build && node scripts/mode-icons.mjs",
+    "belt-box-sheet": "pnpm build && node scripts/belt-box-sheet.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

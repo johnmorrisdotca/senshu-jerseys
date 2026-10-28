@@ -126,6 +126,36 @@ Colours are the belt colours (`white` to `red`) or `grey`, `purple`, `gold` or a
 
 Not confirmed: Judo Australia's and Finland's own pages (the Judo Australia policy PDF would not load), and any Kodokan junior belt (the Kodokan's page was not found, and Wikipedia says nothing of one). IBJJF's own graduation PDF would not load either, so the adult rank bars (a red bar on a black belt, coral belts) and karate's and taekwondo's stripes are not claimed here. Wikipedia also reports sub-rank tabs as "a small piece of fabric on the end of the belt" (Austria, Brazil's ends in the next colour, Denmark's half belts); those are what `bars` and `split` draw.
 
+## The folded belt and the gift boxes
+
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/belt-box.webp">
+<img alt="Six drawings on a plain ground. Top row: a red and white belt folded flat into a bundle of seven layers with a white paper band round its middle and its marks on the top end; a long pale wooden box, closed, with two characters engraved in gold-brown down its lid; the same box open, the red and white belt folded inside it and the lid lying beside it. Bottom row: the wooden box empty with its lid off; a silver cardboard box with a white label strip, a small red round seal and two black characters on its lid, and a white end with a sticker; the silver box open, a black belt folded in its white base and the silver lid lying across it." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/belt-box.webp" width="720">
+</picture>
+
+A belt is sold folded flat, and as a gift in a long box. Both turn and tip like the other views (drag, wheel, Angle, Tilt, zoom), lie at an angle to begin with, as in a shop's photograph, and take everything the belt takes: its colour or the red and white sections of a kohaku belt, `beltStyle`, the width, the marks and embroidery on its ends, the label and the branding.
+
+```js
+import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+
+// A belt folded into a bundle, the label end on top; `band: true` is the shop's white paper band round it.
+renderJudogi({ mode: "folded", belt: "red-white", beltSize: 4, band: true, branding: true });
+// The wooden (kiri) box, closed; open with the lid beside it and the belt in it; empty with the lid off.
+renderJudogi({ mode: "box", beltSize: 4, boxState: "closed" });
+renderJudogi({ mode: "box", belt: "black", beltSize: 4, boxState: "open", boxWood: "honey" });
+// The silver cardboard box, with other words on its lid.
+renderJudogi({ mode: "box", boxType: "silver", boxState: "open", boxText: "黒帯" });
+```
+
+- **The folded belt (`mode: "folded"`)** is the belt doubled back on itself seven times (`FOLD_LAYERS`), each layer as thick as the belt (5 mm), the folds showing at both ends and the cut ends of both ends of the belt: the end that carries the marks is the top layer's, the other is the bottom layer's, which sticks out a little. The belt's length is its size's (`beltSize`, 1 to 8 in halves; by default the one that goes with the judogi's `size`): 230 cm at size 2 and 10 cm more for each half size to 350 cm at size 8, as the maker's product pages list them (`beltCmOfSize`). `band: true` puts a white paper band round the middle, with the package's own red S and the size on it (never a maker's mark).
+- **The wooden box (`boxType: "kiri"`)** is kiri (paulownia), 7 cm wide and 7 cm high, its length following the belt size (the maker's gift-box page, read 2026-10-28). The slide-on lid carries `御帯` (o-obi, "belt", honorific) engraved, a shallow cut with a gold-brown burn, down its middle; `boxText` changes the words (up to six letters, centred on the lid's width), `boxWood` the tone of the wood (`light`, `natural`, `honey`).
+- **The silver cardboard box (`boxType: "silver"`)** is a white base with a silver lid (aluminium-faced paper with a fine sparkle and a faint embossed pattern), 5 cm wide. The lid carries a white label strip with a neutral round red seal (a generic stamp, not the maker's mark) at its top end and `御帯` in black below it; the base is white board with a small white product sticker on its end. Open, the lid lies across the base.
+- **States (`boxState`):** `closed`; `open`, with the lid beside the wooden box (across the silver one) and the belt folded inside; `empty`, the lid off and nothing in it.
+- **Which box (`boxSizeFor`):** the box size follows from the belt size by the maker's menu: box 2 holds belts up to size 2.5, box 3 sizes 3 and 3.5, box 4 sizes 4 and 4.5, box 5 size 5, box 6 sizes 5.5, 6 and 6.5. `boxSize` chooses another. **The wooden box holds a belt of size 6 at most and the silver one 6.5** (the maker's product pages, read 2026-10-28): a longer belt does not fit any box, so the box is drawn empty, `judogiCheck` says so (`belt-box-fit`) and the designer shows a line saying why.
+- **The box's length** is not published, so it is derived: the longest belt each box takes, folded in seven, plus 2.5 cm of room at each end. That is 39.3 cm inside for box 2, 42.1 cm for box 3, 45 cm for box 4, 46.4 cm for box 5 and 50.7 cm for box 6, and 1.6 cm more outside for the wooden box (walls 8 mm; `boxDims`). A belt is never drawn wider than the box's room (the inside width less 3 mm), and the tests check that every belt that fits a box lies wholly inside it.
+
+In the designer the two are Display choices ("Folded belt", "Belt box"), with the address keys `mode=folded` and `mode=box`, `bsz` (belt size), `bnd=1` (paper band), `bxt` (`kiri`, `silver`), `bxs` (`closed`, `open`, `empty`), `bxx` (the words), `bxw` (wood), `bxz` (box size). A flat view of either is the same scene standing still.
+
 ## Embroidery, logos and the national emblem
 
 All three are drawn on the cloth's faces, so they turn with the pieces, and only in the places the rules name.
