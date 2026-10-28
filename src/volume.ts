@@ -570,8 +570,11 @@ export interface Placed {
 /** How far past side on a cell's second way (`Cell.also`) may turn and still be seen: a knot just round the side still stands clear of the body. */
 const ALSO = -0.08;
 
-/** Where one cell goes at one turn. */
-export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
+/**
+ * Where one cell goes at one turn. `exact` ignores the cell's second way of facing (`Cell.also`): a painter that judges a cell against the body
+ * behind it pixel by pixel (the graphics card's depth test) needs no whole-cell guess at what the body hides.
+ */
+export function placeCell(c: Cell, yaw: number, pitch: number, exact = false): Placed {
   const cy = Math.cos(rad(yaw));
   const sy = Math.sin(rad(yaw));
   const cp = Math.cos(rad(pitch));
@@ -587,7 +590,7 @@ export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   }
   const nn = turn(c.n[0], c.n[1], c.n[2], cy, sy, cp, sp);
   const facing = nn[2];
-  if (facing <= 0.01 || (c.also !== undefined && turn(c.also[0], c.also[1], c.also[2], cy, sy, cp, sp)[2] < ALSO)) return { visible: false, matrix: "", shade: 0, depth: z / 3, ...(c.layer === undefined ? {} : { layer: c.layer }) };
+  if (facing <= 0.01 || (!exact && c.also !== undefined && turn(c.also[0], c.also[1], c.also[2], cy, sy, cp, sp)[2] < ALSO)) return { visible: false, matrix: "", shade: 0, depth: z / 3, ...(c.layer === undefined ? {} : { layer: c.layer }) };
   const T = c.tex;
   const t1x = T[2]! - T[0]!;
   const t1y = T[3]! - T[1]!;

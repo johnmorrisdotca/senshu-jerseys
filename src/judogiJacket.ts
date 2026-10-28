@@ -239,14 +239,14 @@ function lapelBand(uid: string, t: Tone, edge: readonly Pt[], sign: 1 | -1, shad
  * The V between the two lapels' free edges, from the neck down to where they cross, as the front panel's own cut: the cloth is not there, so the
  * turning view shows what is behind it (the inside of the back, judogiInner.ts). It runs 2 units under each lapel's band so no seam shows.
  */
-function opening(): Pt[] {
+export function jacketOpening(): Pt[] {
   const cross = atY(TOP_EDGE, 48);
   return [[UNDER_EDGE[0]![0] - 2, 6], ...UNDER_EDGE.slice(0, 3), cross, ...TOP_EDGE.slice(0, 2).reverse(), [TOP_EDGE[0]![0] + 2, 6]];
 }
 
 /** The outline of a face's body: the front's has the V cut out of its top edge. */
 function faceOutline(tied: boolean, face: "front" | "back"): Pt[] {
-  return face === "front" ? [...bodyOutline(tied), ...[...opening()].reverse()] : bodyOutline(tied);
+  return face === "front" ? [...bodyOutline(tied), ...[...jacketOpening()].reverse()] : bodyOutline(tied);
 }
 
 /** The front: the under panel with the V cut at the neck, the lapel underneath, then the one on top. */
@@ -307,15 +307,20 @@ function back(uid: string, ink: GiInk, t: Tone): string {
 function inside(uid: string, ink: GiInk, t: Tone, face: "front" | "back"): string {
   const x0 = 14;
   const w = 172;
-  const cloth = `<rect x="${x0}" y="${RIM_TO + 1}" width="${w}" height="96" fill="${t.fill}"/><rect x="${x0}" y="${RIM_TO + 1}" width="${w}" height="96" fill="url(#${uid}G)"/>` +
-    `<rect x="${x0}" y="${RIM_TO + 1}" width="${w}" height="96" fill="${t.shadow}" fill-opacity="0.6"/>`;
-  // The rim: the cut edge of the neck's cloth, a plain strip with its turned hem.
-  const rim = `<rect x="${x0}" y="${RIM_FROM - 1}" width="${w}" height="${RIM_TO - RIM_FROM + 2}" fill="${t.fill}"/><path d="M${x0} ${(RIM_FROM + RIM_TO) / 2}H${x0 + w}" stroke="${t.seam}" stroke-width="0.5" stroke-opacity="0.6"/>`;
+  const flip = (p: Pt): Pt => [200 - p[0], p[1]];
+  // The front's V is cut through the cloth whichever side is seen: the inner faces are cut where the outer are, in the drawing turned over as the inner cells sample it.
+  const cut = face === "front" ? poly(jacketOpening().map(flip)) : "";
+  const cloth = `<path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="${t.fill}"/><path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="url(#${uid}G)"/>` +
+    `<path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="${t.shadow}" fill-opacity="0.6"/>`;
+  // The rim: the cut edge of the neck's cloth, a plain strip with its turned hem (the front's has the V's gap in it).
+  const rimBox = (x: number, wd: number): string => `<rect x="${x}" y="${RIM_FROM - 1}" width="${wd}" height="${RIM_TO - RIM_FROM + 2}" fill="${t.fill}"/><path d="M${x} ${(RIM_FROM + RIM_TO) / 2}h${wd}" stroke="${t.seam}" stroke-width="0.5" stroke-opacity="0.6"/>`;
+  const rim = face === "front" ? rimBox(x0, 100 - 12 - x0) + rimBox(112, x0 + w - 112) : rimBox(x0, w);
   // Under the collar the cloth is in its shadow, and deeper still where the neck goes in.
   const shadow = fold(`M${x0 + 6} 8L${x0 + w - 6} 8`, 16, t.light ? 0.4 : 0.5) + fold(`M${x0 + 20} 14L${x0 + w - 20} 14`, 10, t.light ? 0.25 : 0.35);
   const sewn = face === "back" ? seam(smooth([[75, 16], [100, 19.5], [125, 16]]), t, 0.6) + stitch(smooth([[76, 17.8], [100, 21.3], [124, 17.8]]), t, 0.4, 0.7) : "";
   const marks = face === "back" ? ink.marks?.backInner?.body ?? "" : "";
-  return `<g transform="translate(0 ${INNER_DY})">${cloth}${shadow}${sewn}${marks}${rim}</g>`;
+  const shape = `M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}`;
+  return `<g transform="translate(0 ${INNER_DY})">${cloth}<clipPath id="${uid}I"><path clip-rule="evenodd" d="${shape}"/></clipPath><g clip-path="url(#${uid}I)">${shadow}${sewn}${marks}</g>${rim}</g>`;
 }
 
 /** The jacket's front or back, in the 200-wide box the volume samples. */

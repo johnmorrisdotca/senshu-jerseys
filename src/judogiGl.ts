@@ -44,9 +44,10 @@ export function drawOrder(p: PaintPiece, yaw: number, placed: readonly Placed[])
  * What is drawn at a turn, in order: each piece's cells, list by list (`drawOrder`). A piece with others worn on it (`VolumeDesc.worn`: a
  * jacket's collar and belt) is drawn up to its near sleeve, then those pieces, then its near sleeve, so the sleeve hangs over the belt.
  */
-export function paintOrder(pieces: readonly PaintPiece[], yaw: number, tilt = 0): { n: number; placed: Placed[]; lists: number[][] }[] {
+export function paintOrder(pieces: readonly PaintPiece[], yaw: number, tilt = 0, exact = false): { n: number; placed: Placed[]; lists: number[][] }[] {
   const plans = pieces.map((p) => {
-    const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch + tilt));
+    // A collar is hidden by the jacket's own depth where the painter can (`exact`), not by a guess whole cell by whole cell.
+    const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch + tilt, exact && p.desc.collar !== undefined));
     return { placed, lists: drawOrder(p, yaw, placed) };
   });
   const out: { n: number; placed: Placed[]; lists: number[][] }[] = [];
@@ -104,6 +105,9 @@ void main() {
   colour = vec4(c.rgb * (1.0 - vShade), c.a);
 }`;
 
+/** How far nearer a collar is held than the body it lies on, in drawing units (less than the cloth's thickness). */
+const COLLAR_NEAR = 0.5;
+
 /** How far each cell is grown at its corners, in units of its face (quadPath grows the SVG's by as much). */
 const GROW = 0.9;
 
@@ -139,7 +143,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       gl.enableVertexAttribArray(at);
       gl.vertexAttribPointer(at, size, gl.FLOAT, false, STRIDE * 4, offset * 4);
     }
-    for (const job of paintOrder(pieces, yaw, tilt)) {
+    for (const job of paintOrder(pieces, yaw, tilt, true)) {
       const n = job.n;
       const p = pieces[n]!;
       const [u, ox, oy] = place(p);
@@ -163,7 +167,8 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       const edges = new Map<Smooth, [number, number]>();
       let w = 0;
       for (const i of order) {
-        const bias = 0;
+        // A collar worn on a body stands a little nearer than the cloth it lies on, so the two never fight over a pixel.
+        const bias = scene && p.desc.collar !== undefined ? COLLAR_NEAR : 0;
         const c = p.cells[i]!;
         const [a, b, cc, d, e, f] = matrixOf(placed[i]!.matrix);
         const sm = p.smooth[i];

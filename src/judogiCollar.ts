@@ -28,8 +28,8 @@ export interface CollarDesc {
   neck: number;
 }
 
-/** How far the band stands off the jacket. */
-const GAP = 0.3;
+/** How far the band stands off the jacket's cloth: none, it is sewn on the neck's rim and lies on the body. */
+const GAP = 0;
 /** Between which heights of the drawing the lapels thin, from the full thickness of the collar to the hem's. */
 const THIN_FROM = 60;
 const THIN_TO = 100;
