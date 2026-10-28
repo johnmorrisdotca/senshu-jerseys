@@ -19,6 +19,7 @@ type Option = { name: string; opts: JudogiOptions };
 const TEXTS: Record<string, string> = { "jacket-chest": "SENSHU", "belt-end-left": "SENSHU", "belt-end-right": "JOHN" };
 const CATALOGUE: Option[] = [
   { name: "emblem", opts: { emblem: {} } },
+  { name: "emblem-kodokan", opts: { emblem: { mark: "kodokan" } } },
   { name: "label", opts: { label: true } },
   ...EMBROIDERY_PLACES.map((place): Option => ({ name: `e:${place}`, opts: { embroidery: [{ place, text: TEXTS[place] ?? "SENSHU" }] } })),
   { name: "e:pants-left-down", opts: { embroidery: [{ place: "pants-left", text: "山田太郎", direction: "down" }] } },

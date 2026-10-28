@@ -13,6 +13,8 @@ import { pieceCells } from "../src/pieceVolume.ts";
 import { strapCells, strapFace, strapWidth } from "../src/judogiStrap.ts";
 import { placeCell, sleeveAt, type VolumeDesc } from "../src/volume.ts";
 import { pantsDesc } from "../src/judogiPants.ts";
+import { kodokanEmblemSvg } from "../src/judogiKodokan.ts";
+import { readMarks } from "../src/judogiMarks.ts";
 import { wellFormed } from "./helpers.ts";
 
 test("lists are generic and the Japanese belt names stay short", () => {
@@ -307,6 +309,30 @@ test("embroidery, logos and the emblem are drawn only in the rules' places, one 
   assert.equal(judogiCheck({ rules: "ajjf", embroidery: [{ place: "jacket-chest", text: "X" }] }).ok, true);
   assert.equal(judogiCheck({ logos: [{ place: "jacket-hem", widthCm: 5.5, heightCm: 5 }] }).ok, true);
   assert.equal(judogiCheck({ rules: "ajjf", logos: [{ place: "jacket-hem", widthCm: 5.5, heightCm: 5 }] }).ok, false);
+});
+
+test("the Kodokan emblem (SPX-751) is drawn by the package: a round white flower of sixteen petals round a red disc, sewn without a patch border, in the chest and sleeve places, and within the emblem's area", () => {
+  const svg = kodokanEmblemSvg();
+  assert.equal(wellFormed(svg), null);
+  assert.ok(svg.includes('viewBox="0 0 100 100"') && svg.includes("#df1f2c") && svg.includes("<circle") && !svg.includes("<script"));
+  // Sixteen petals: sixteen arcs in the outline.
+  assert.equal((svg.match(/A[\d.]+ [\d.]+ 0 0 1/g) ?? []).length, 16);
+  for (const place of ["chest", "sleeve-left", "sleeve-right"] as const) {
+    const out = renderJudogi({ mode: "jacket", view: "front", emblem: { mark: "kodokan", place } });
+    assert.equal(wellFormed(out), null);
+    assert.ok(out.includes("data:image/svg+xml"), place);
+    assert.ok(out.includes(encodeURIComponent("#df1f2c")), place);
+  }
+  const spec = readMarks({ emblem: { mark: "kodokan" } })?.emblem;
+  assert.ok(spec !== undefined && spec.image !== undefined);
+  assert.equal(spec.frame, "none");
+  assert.equal(spec.widthCm, spec.heightCm, "round: a square box");
+  assert.ok(spec.widthCm * spec.heightCm <= 100, "inside the IJF's 100 cm2");
+  assert.equal(readMarks({ emblem: { mark: "kodokan", frame: "patch" } })?.emblem?.frame, "patch");
+  // Artwork given by the caller wins over the ready-made mark; an unknown mark is the neutral placeholder.
+  assert.equal(readMarks({ emblem: { mark: "kodokan", svg: '<svg viewBox="0 0 30 20"><rect width="30" height="20"/></svg>' } })?.emblem?.frame, "patch");
+  assert.equal(readMarks({ emblem: { mark: "nope" } })?.emblem?.image, undefined);
+  assert.equal(judogiCheck({ emblem: { mark: "kodokan" } }).ok, true);
 });
 
 test("an artwork is an image, a font's CSS must be data-only, and outlines are paths only", () => {

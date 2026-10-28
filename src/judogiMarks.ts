@@ -5,12 +5,14 @@
 // 100 cm2; advertising spaces on the sleeves, 10 by 10 cm, and the shoulders, 25 by 5 cm) and the All Japan Judo Federation's marking rules as a
 // retailer's chart states them (the left chest 24 by 18 cm and about 180 cm2, the upper arm 10 by 15 cm and about 80 cm2, a name or affiliation on a
 // lapel hem, a belt end or the trousers' top at most about 20 cm long, a maker's mark 20 cm2). The rules' pictures and wording are not copied. The package
-// ships neutral placeholders only: no maker's, federation's or nation's mark. Original drawing.
+// ships neutral placeholders only: no maker's, federation's or nation's mark, with one exception, the Kodokan's emblem (`emblem.mark: "kodokan"`, drawn in
+// judogiKodokan.ts; John's choice, its trademark status unchecked). Original drawing.
 
 import { clean, esc, graphemes, hashOf, lum, type Rgb } from "./colour.ts";
 import type { Mark } from "./judogiCloth.ts";
 import { HEM_X } from "./judogiCollar.ts";
 import { EMBLEM_ROOM, jacketSpots } from "./judogiJacket.ts";
+import { kodokanEmblemSvg } from "./judogiKodokan.ts";
 import { neckLabel, readBranding, sizeTag, sLogo, type ReadBranding } from "./judogiBrand.ts";
 import { LABEL_ASPECT, labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
 import { cloth } from "./judogiPatch.ts";
@@ -85,6 +87,8 @@ export interface JudogiEmblem {
   /** The national emblem on the left chest: SVG text (a flag from Hata, say) or a `data:image/` address; a neutral placeholder without either. */
   svg?: string;
   href?: string;
+  /** A ready-made mark the package draws itself: `"kodokan"`, the Kodokan's emblem (a white flower of sixteen petals round a red disc), when `svg` and `href` are not given. It is sewn on with no patch border unless `frame: "patch"` is asked for. */
+  mark?: "kodokan";
   /** Sewn on as a patch with a stitched border (the default), or the artwork alone. */
   frame?: "patch" | "none";
   thread?: ThreadColour | string;
@@ -307,7 +311,8 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
   let emblem: ReadEmblem | undefined;
   if (options.emblem !== null && typeof options.emblem === "object" && options.emblem !== undefined) {
     const e = options.emblem as JudogiEmblem;
-    const img = readImage(e.svg, e.href);
+    const mark = e.mark === "kodokan" ? "kodokan" : undefined;
+    const img = readImage(e.svg, e.href) ?? (mark === "kodokan" ? readImage(kodokanEmblemSvg(), undefined) : undefined);
     const aspect = img?.aspect ?? 1;
     const area = img === undefined ? EMBLEM_DEFAULT_AREA.placeholder : EMBLEM_DEFAULT_AREA.image;
     const fit = Math.min(1, EMBLEM_MAX.w / (Math.sqrt(area * aspect)), EMBLEM_MAX.h / Math.sqrt(area / aspect));
@@ -318,7 +323,8 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       style: e.style === "square" && caption !== "" ? "square" : caption !== "" ? "named" : "flag",
       place: e.place === "sleeve-left" || e.place === "sleeve-right" ? e.place : "chest",
       image: img?.src,
-      frame: e.frame === "none" ? "none" : "patch",
+      // The Kodokan's emblem is a round badge of its own, so it is sewn on without a patch border unless one is asked for.
+      frame: e.frame === "none" || (mark === "kodokan" && e.frame !== "patch" && e.svg === undefined && e.href === undefined) ? "none" : "patch",
       thread: e.thread === undefined ? undefined : readThread(e.thread, "navy"),
       widthCm: num(e.widthCm, 1, 40, Math.round(h0 * aspect * 10) / 10),
       heightCm: num(e.heightCm, 1, 40, Math.round(h0 * 10) / 10),

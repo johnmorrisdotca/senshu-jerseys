@@ -20,6 +20,10 @@ No picture is taken from Wikimedia Commons or anywhere else: uniform images and 
 
 The facts are a first reading and some rows are marked `unsure` in their source files. A correction with a source is welcome.
 
+## The Kodokan emblem
+
+`emblem: { mark: "kodokan" }` draws the emblem of the Kodokan (the judo institute in Tokyo): a white flower of sixteen petals round a red disc, as vector in `src/judogiKodokan.ts`. It is drawn from how the emblem looks (the Judo BC logo and a photograph of the Kodokan's pin, "Diploma for judo 9th dan" on Wikimedia Commons, public domain); no file of the Kodokan's or Judo BC's is used or shipped. The emblem is the Kodokan's mark and its trademark status has not been checked: it is included at the maintainer's choice, and a user is responsible for any right to wear or show it.
+
 ## Made-up examples
 
 The demo's other teams, players and numbers are made up.

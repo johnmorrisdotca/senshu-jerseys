@@ -69,7 +69,7 @@ const state = {
   logon: params.get("logon") === "1" ? "1" : "0",
   // The maker's logo places, none to many (the rules allow one to a garment): a comma list in the address.
   logo: (params.get("logo") ?? "").split(",").filter((p) => LOGO_PLACES.includes(p)).join(","),
-  emblem: ["placeholder", "flag"].includes(params.get("emblem")) ? params.get("emblem") : "none",
+  emblem: ["placeholder", "flag", "kodokan"].includes(params.get("emblem")) ? params.get("emblem") : "none",
   // How the emblem is made (a flag patch, with the country's name under it, or a white square with a word in script), the words, and where it is sewn.
   ems: ["flag", "named", "square"].includes(params.get("ems")) ? params.get("ems") : "flag",
   emc: (params.get("emc") ?? "").slice(0, 16),
@@ -153,11 +153,12 @@ function options() {
   if (embroidery.length > 0) o.embroidery = embroidery;
   if (logoList().length > 0) o.logos = logoList().map((place) => ({ place, ...(state.logon === "1" ? { tonal: true } : {}) }));
   if (state.emblem === "placeholder") o.emblem = {};
+  else if (state.emblem === "kodokan") o.emblem = { mark: "kodokan" };
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
   if (o.emblem !== undefined) {
     o.emblem.place = state.emp;
     if (state.ems !== "flag") {
-      o.emblem.caption = state.emc || (state.ems === "square" ? "Nippon" : state.flag.toUpperCase().slice(0, 16) || "CANADA");
+      o.emblem.caption = state.emc || (state.ems === "square" ? "Nippon" : state.emblem === "kodokan" ? "KODOKAN" : state.flag.toUpperCase().slice(0, 16) || "CANADA");
       o.emblem.style = state.ems;
     }
   }
@@ -539,11 +540,11 @@ function rows() {
   logoBox.append(toggle({ id: "judo-logon", label: say("judoLogoTonal"), on: state.logon === "1", words: { on: say("judoLogoTonal_on"), off: say("judoLogoTonal_off") }, onChange: (on) => change("logon", on ? "1" : "0") }));
   out.push(field(M, "judo-logos", say("judoLogo"), logoBox));
   if (jacket) {
-    out.push(field(M, "judo-emblem", say("judoEmblem"), tiles({ id: "judo-emblem", label: say("judoEmblem"), values: ["none", "placeholder", "flag"], current: state.emblem, picture: (v) => PICTURES.emblem[v], name: (v) => say(`judoEmblem_${v}`), onPick: set("emblem", true) })));
+    out.push(field(M, "judo-emblem", say("judoEmblem"), tiles({ id: "judo-emblem", label: say("judoEmblem"), values: ["none", "placeholder", "flag", "kodokan"], current: state.emblem, picture: (v) => PICTURES.emblem[v], name: (v) => say(`judoEmblem_${v}`), onPick: set("emblem", true) })));
     if (state.emblem === "flag") out.push(field(M, "judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")));
     if (state.emblem !== "none") {
       out.push(field(M, "judo-ems", say("judoEmStyle"), tiles({ id: "judo-ems", label: say("judoEmStyle"), values: ["flag", "named", "square"], current: state.ems, picture: (v) => PICTURES.emStyle[v], name: (v) => say(`judoEmStyle_${v}`), onPick: set("ems", true) })));
-      if (state.ems !== "flag") out.push(field(M, "judo-emc", say("judoEmCaption"), text("judo-emc", 16, state.ems === "square" ? "Nippon" : "CANADA")));
+      if (state.ems !== "flag") out.push(field(M, "judo-emc", say("judoEmCaption"), text("judo-emc", 16, state.ems === "square" ? "Nippon" : state.emblem === "kodokan" ? "KODOKAN" : "CANADA")));
       out.push(field(M, "judo-emp", say("judoEmPlace"), tiles({ id: "judo-emp", label: say("judoEmPlace"), values: ["chest", "sleeve-left", "sleeve-right"], current: state.emp, picture: (v) => PICTURES.emPlace[v], name: (v) => say(`judoEmPlace_${v}`), onPick: set("emp") })));
     }
   }

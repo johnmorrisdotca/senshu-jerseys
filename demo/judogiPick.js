@@ -149,6 +149,7 @@ export const PICTURES = {
     none: svg(FRONT),
     placeholder: svg(`${FRONT}<circle cx="42" cy="17" r="5.5" fill="#fff" fill-opacity=".9"/><path d="m42 13.4 1 2.3 2.5.2-1.9 1.6.6 2.4-2.2-1.3-2.2 1.3.6-2.4-1.9-1.6 2.5-.2Z" fill="currentColor" stroke="none"/>`),
     flag: svg(`${FRONT}<rect x="36" y="13" width="12" height="8" fill="#fff"/><path d="M36 13h3v8h-3zM45 13h3v8h-3z" fill="#c8102e" stroke="none"/><path d="M42 15.2l1 1.4-.6 1.8h-.8l-.6-1.8Z" fill="#c8102e" stroke="none"/>`),
+    kodokan: svg(`${FRONT}<circle cx="42" cy="17" r="6.4" fill="#fff" stroke-width="1"/><circle cx="42" cy="17" r="2.5" fill="#df1f2c" stroke="none"/>`),
   },
   emStyle: {
     flag: svg(`${FRONT}<rect x="36" y="13" width="12" height="8" fill="#fff"/><path d="M36 13h3v8h-3zM45 13h3v8h-3z" fill="#c8102e" stroke="none"/>`),

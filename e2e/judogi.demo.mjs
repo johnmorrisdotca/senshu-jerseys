@@ -108,6 +108,24 @@ test("embroidery, the logo and the emblem are chosen in the page and kept in the
   expect(errors).toEqual([]);
 });
 
+test("the Kodokan emblem is a tile of the emblem picker, kept in the address, drawn on the chest and sleeve with no error (SPX-751)", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await pick(page, "judo-emblem", "kodokan");
+  await expect(page).toHaveURL(/emblem=kodokan/);
+  await expect(page.locator('[data-testid="judo-emblem"] [data-value="kodokan"]')).toHaveAttribute("aria-pressed", "true");
+  // It is not a flag: no flag code asked for.
+  await expect(page.locator('[data-testid="judo-flag"]')).toHaveCount(0);
+  await pick(page, "judo-emp", "sleeve-left");
+  await expect(page).toHaveURL(/emp=sleeve-left/);
+  await page.goto("/judogi.html?mode=jacket&view=flat&emblem=kodokan");
+  await expect(page.locator("#judo-stage svg, #judo-stage canvas").first()).toBeVisible();
+  await expect(page.locator('[data-testid="judo-emblem"] [data-value="kodokan"]')).toHaveAttribute("aria-pressed", "true");
+  expect(errors).toEqual([]);
+});
+
 test("the branding is one switch with its mark, words and colour, kept in the address", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));

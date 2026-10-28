@@ -65,7 +65,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 </picture>
 </p>
 
-- **Judogi, with the marks a competitor wears** ([judogi](./docs/judogi.md)): the IJF-style back number and the zekken, a national emblem, embroidery, the Approved label and the maker's brand, on a tatami mat.
+- **Judogi, with the marks a competitor wears** ([judogi](./docs/judogi.md)): the IJF-style back number and the zekken, a national emblem (or the Kodokan's: `emblem: { mark: "kodokan" }`), embroidery, the Approved label and the maker's brand, on a tatami mat.
 
 <p align="center">
 <picture>
