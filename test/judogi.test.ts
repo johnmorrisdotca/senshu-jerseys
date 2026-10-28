@@ -158,7 +158,7 @@ test("a kohaku belt's panels run along the strap, on its ends as on its turns", 
   assert.ok(p !== undefined);
   // The strap's face is one straight length of belt, its panels a pattern along it.
   const face = strapFace(p, 12.5);
-  assert.ok(face.body.includes(`fill="${p.fill}"`));
+  assert.ok(face.body.includes(`fill="${p.stripFill}"`), "the strap strip carries the pattern put to end in red at its cut ends");
   // Down a hanging end, the strip's length runs with the end: a front cell's drawing goes along x as the end goes down.
   const ends = strapCells({ y: 28, sag: 3, w: 12.5, t: 1.3, a: 66, b: 30, full: 2, side: 0, worn: false }).filter((c) => c.p[1]! > 60 && c.n[2] > 0.9 && c.tex[1] === 0 && c.tex[3] === 0);
   assert.ok(ends.length > 0);
