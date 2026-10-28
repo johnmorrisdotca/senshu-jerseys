@@ -70,6 +70,10 @@ const state = {
   // The maker's logo places, none to many (the rules allow one to a garment): a comma list in the address.
   logo: (params.get("logo") ?? "").split(",").filter((p) => LOGO_PLACES.includes(p)).join(","),
   emblem: ["placeholder", "flag"].includes(params.get("emblem")) ? params.get("emblem") : "none",
+  // How the emblem is made (a flag patch, with the country's name under it, or a white square with a word in script), the words, and where it is sewn.
+  ems: ["flag", "named", "square"].includes(params.get("ems")) ? params.get("ems") : "flag",
+  emc: (params.get("emc") ?? "").slice(0, 16),
+  emp: ["chest", "sleeve-left", "sleeve-right"].includes(params.get("emp")) ? params.get("emp") : "chest",
   flag: (params.get("flag") ?? "ca").toLowerCase().replace(/[^a-z-]/g, "").slice(0, 6),
   rules: MARK_RULES.includes(params.get("rules")) ? params.get("rules") : "ijf",
   // The "Approved Judogi" label, on the jacket, the trousers and the belt at once.
@@ -146,6 +150,13 @@ function options() {
   if (logoList().length > 0) o.logos = logoList().map((place) => ({ place, ...(state.logon === "1" ? { tonal: true } : {}) }));
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
+  if (o.emblem !== undefined) {
+    o.emblem.place = state.emp;
+    if (state.ems !== "flag") {
+      o.emblem.caption = state.emc || (state.ems === "square" ? "Nippon" : state.flag.toUpperCase().slice(0, 16) || "CANADA");
+      o.emblem.style = state.ems;
+    }
+  }
   if (state.bw !== "auto" && widthsFor(state.belt).includes(state.bw)) o.beltWidthCm = Number(state.bw);
   if (state.sl !== "auto" && rowsFor(state.belt).includes(state.sl)) o.beltStitchLines = Number(state.sl);
   if (state.th !== "auto" && thicknessFor(state.belt).includes(state.th)) o.beltThickness = state.th;
@@ -172,7 +183,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -527,6 +538,11 @@ function rows() {
   if (jacket) {
     out.push(field(M, "judo-emblem", say("judoEmblem"), tiles({ id: "judo-emblem", label: say("judoEmblem"), values: ["none", "placeholder", "flag"], current: state.emblem, picture: (v) => PICTURES.emblem[v], name: (v) => say(`judoEmblem_${v}`), onPick: set("emblem", true) })));
     if (state.emblem === "flag") out.push(field(M, "judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")));
+    if (state.emblem !== "none") {
+      out.push(field(M, "judo-ems", say("judoEmStyle"), tiles({ id: "judo-ems", label: say("judoEmStyle"), values: ["flag", "named", "square"], current: state.ems, picture: (v) => PICTURES.emStyle[v], name: (v) => say(`judoEmStyle_${v}`), onPick: set("ems", true) })));
+      if (state.ems !== "flag") out.push(field(M, "judo-emc", say("judoEmCaption"), text("judo-emc", 16, state.ems === "square" ? "Nippon" : "CANADA")));
+      out.push(field(M, "judo-emp", say("judoEmPlace"), tiles({ id: "judo-emp", label: say("judoEmPlace"), values: ["chest", "sleeve-left", "sleeve-right"], current: state.emp, picture: (v) => PICTURES.emPlace[v], name: (v) => say(`judoEmPlace_${v}`), onPick: set("emp") })));
+    }
   }
   out.push(field(M, "judo-label", say("judoLabel"), swatches({ id: "judo-label", label: say("judoLabel"), values: ["none", ...LABEL_COLOURS], current: state.label, css: (v) => LABEL_CSS[v], name: (v) => (v === "none" ? say("judoLabel_none") : pair(LABEL_COLOUR_LABELS)(v)), onPick: set("label") })));
 

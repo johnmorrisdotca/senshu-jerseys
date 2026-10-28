@@ -592,3 +592,23 @@ test("zoomed in, a plain drag moves the view; the toggle gives the drag back to 
   expect(fitted[0]).toBeGreaterThanOrEqual(-1);
   expect(fitted[2]).toBeLessThanOrEqual(canvas[0] + 1);
 });
+
+test("the emblem's style, words and place are chosen in the page and kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&view=flat&emblem=placeholder");
+  await expect(page.locator("#judo-stage svg, #judo-stage canvas").first()).toBeVisible();
+  await expect(page.locator('[data-testid="judo-emc"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-ems"] [data-value="named"]').click();
+  await expect(page).toHaveURL(/ems=named/);
+  await page.locator('[data-testid="judo-emc"]').fill("CANADA");
+  await expect(page).toHaveURL(/emc=CANADA/);
+  await page.locator('[data-testid="judo-emp"] [data-value="sleeve-left"]').click();
+  await expect(page).toHaveURL(/emp=sleeve-left/);
+  await page.locator('[data-testid="judo-ems"] [data-value="square"]').click();
+  await expect(page).toHaveURL(/ems=square/);
+  // The thigh places say they are not the IJF's.
+  await page.goto("/judogi.html?mode=pants");
+  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "not an IJF place" })).toHaveCount(2);
+  expect(errors).toEqual([]);
+});

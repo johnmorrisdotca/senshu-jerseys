@@ -150,6 +150,16 @@ export const PICTURES = {
     placeholder: svg(`${FRONT}<circle cx="42" cy="17" r="5.5" fill="#fff" fill-opacity=".9"/><path d="m42 13.4 1 2.3 2.5.2-1.9 1.6.6 2.4-2.2-1.3-2.2 1.3.6-2.4-1.9-1.6 2.5-.2Z" fill="currentColor" stroke="none"/>`),
     flag: svg(`${FRONT}<rect x="36" y="13" width="12" height="8" fill="#fff"/><path d="M36 13h3v8h-3zM45 13h3v8h-3z" fill="#c8102e" stroke="none"/><path d="M42 15.2l1 1.4-.6 1.8h-.8l-.6-1.8Z" fill="#c8102e" stroke="none"/>`),
   },
+  emStyle: {
+    flag: svg(`${FRONT}<rect x="36" y="13" width="12" height="8" fill="#fff"/><path d="M36 13h3v8h-3zM45 13h3v8h-3z" fill="#c8102e" stroke="none"/>`),
+    named: svg(`${FRONT}<rect x="36" y="11" width="12" height="8" fill="#fff"/><path d="M36 11h3v8h-3zM45 11h3v8h-3z" fill="#c8102e" stroke="none"/><path d="M37 23h10" stroke-width="2"/>`),
+    square: svg(`${FRONT}<rect x="35" y="10" width="14" height="14" fill="#fff"/><circle cx="42" cy="15.5" r="3" fill="#c8102e" stroke="none"/><path d="M37.5 21q2-2 4 0t4-1" stroke-width="1.2"/>`),
+  },
+  emPlace: {
+    chest: svg(`${FRONT}<rect x="36" y="13" width="10" height="7" fill="#fff"/>`),
+    "sleeve-left": svg(`${FRONT}<rect x="47" y="16" width="7" height="5" fill="#fff" transform="rotate(-20 50 18)"/>`),
+    "sleeve-right": svg(`${FRONT}<rect x="10" y="16" width="7" height="5" fill="#fff" transform="rotate(20 14 18)"/>`),
+  },
   sewing: {
     x: svg('<rect x="10" y="8" width="44" height="40" fill="#fff" fill-opacity=".9"/><path d="M14 12l36 32M50 12 14 44" stroke-dasharray="3 2.4"/>'),
     lines: svg('<rect x="10" y="8" width="44" height="40" fill="#fff" fill-opacity=".9"/><path d="M21 12v32M32 12v32M43 12v32" stroke-dasharray="3 2.4"/>'),
