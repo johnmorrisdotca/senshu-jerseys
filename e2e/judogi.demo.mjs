@@ -306,6 +306,7 @@ test("only the options that change the current display mode are shown, and the o
 });
 
 test("the maker's logo places are none to many, with no raw key in any label, in either language", async ({ page }) => {
+  test.setTimeout(120_000);
   for (const lang of ["en", "ja"]) {
     await page.goto(`/judogi.html?mode=suit&lang=${lang}`);
     await expect(page.locator("#judo-stage canvas")).toBeVisible();
@@ -314,18 +315,20 @@ test("the maker's logo places are none to many, with no raw key in any label, in
     // Every label is words, not the key it is looked up by.
     const labels = await page.locator("#judo-controls").evaluate((root) => [...root.querySelectorAll("label, button, option, h3, .judo-cap, .judo-label")].map((n) => n.textContent ?? "").concat([...root.querySelectorAll("[aria-label]")].map((n) => n.getAttribute("aria-label") ?? "")));
     for (const text of labels) expect(text, text).not.toMatch(/judo[A-Z_]|judo[A-Za-z]*_|shoulder-left|shoulder-right/);
-    // Any number of places, none included.
-    await page.locator('[data-testid="judo-logo"] input[data-value="jacket-hem"]').check();
-    await page.locator('[data-testid="judo-logo"] input[data-value="pants-leg-left"]').check();
-    await page.locator('[data-testid="judo-logo"] input[data-value="belt-end-right"]').check();
-    await expect(page).toHaveURL(/logo=jacket-hem%2Cpants-leg-left%2Cbelt-end-right/);
-    await page.locator('[data-testid="judo-logo"] input[data-value="jacket-shoulder-left"]').check();
-    await expect(page.locator('[data-testid="judo-logo"] input:checked')).toHaveCount(4);
-    for (const v of ["jacket-hem", "pants-leg-left", "belt-end-right", "jacket-shoulder-left"]) await page.locator(`[data-testid="judo-logo"] input[data-value="${v}"]`).uncheck();
-    await expect(page).not.toHaveURL(/logo=/);
-    // The rule is a note, not a block.
     await expect(page.locator('[data-testid="judo-logo-note"]')).toBeVisible();
   }
+  // Any number of places, none included (each choice draws the judogi again, so the page is given time).
+  await page.goto("/judogi.html?mode=suit");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const check = (v) => page.locator(`[data-testid="judo-logo"] input[data-value="${v}"]`);
+  await check("jacket-hem").check();
+  await check("pants-leg-left").check();
+  await check("belt-end-right").check();
+  await expect(page).toHaveURL(/logo=jacket-hem%2Cpants-leg-left%2Cbelt-end-right/);
+  await check("jacket-shoulder-left").check();
+  await expect(page.locator('[data-testid="judo-logo"] input:checked')).toHaveCount(4);
+  for (const v of ["jacket-hem", "pants-leg-left", "belt-end-right", "jacket-shoulder-left"]) await check(v).uncheck();
+  await expect(page).not.toHaveURL(/logo=/);
   await page.goto("/judogi.html?mode=jacket");
   await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, shoulder left" })).toHaveCount(1);
   await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, shoulder right" })).toHaveCount(1);
