@@ -13,32 +13,26 @@ import type { VolumeDesc } from "./volume.ts";
  * cloth runs on into them with no edge.
  */
 const Y = [6, 19, 50, 80, 104];
-/**
- * The half widths of the hip block, laid flat. Judogi trousers are cut wide and loose: each leg at the thigh is nearly half the hip width and
- * the two legs together are about as wide as the jacket's skirt (the hips 47 cm across, 124 units, against the skirt's 131 at 2.63 units to
- * the centimetre; the earlier trousers were 104, narrower than the jacket's skirt and than the sleeves' spread). The last row is as wide as the
- * legs' tops once the volume's padding is added, so the block has no ledge over them.
- */
-const H = [58, 59, 61, 59, 57];
+/** The last rows are as wide as the legs' tops once the volume's padding is added, so the block has no ledge over them. */
+const H = [50, 51, 53, 51, 50.2];
 /**
  * Worn under the jacket, the drawstring gathers the waist to the body and the hips sit inside the jacket's skirt, as on a person: laid
  * out flat, the trousers keep their full width.
  */
-const H_WORN = [45, 46.5, 52, 56, 57];
+const H_WORN = [39, 40.5, 45, 49, 50.2];
 export const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
-/** Half depths: a person's hips with the loose cloth, some 26 cm deep, going over to the two legs (round, as deep as they are wide). */
-const D = [31, 32, 35, 33, 28];
+/** Half depths: a person's hips, some 24 cm deep with the cloth, going over to the two legs. */
+const D = [26, 28, 30, 28, 24];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.1, 0.3, 0.6, 1];
 const HEM = 262;
 
 /** A leg on the picture's left: the outer top S, the outer hem P, the inner top at the crotch A, the inner hem Q. The other is its mirror. */
 /** The legs start a little above the crotch, under the hip block, so the two never meet edge to edge and leave a hairline. */
-/** Each leg is 58 units (22 cm) across at the thigh and 46 (17.5 cm) at the hem: a loose, straight leg that tapers only a little. */
-const S: Pt = [41.8, 92];
-const P: Pt = [42, HEM];
+const S: Pt = [48.6, 92];
+const P: Pt = [45, HEM];
 const A: Pt = [100, 92];
-const Q: Pt = [88, HEM];
+const Q: Pt = [92.5, HEM];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 
 export function pantsDesc(depth = 1, worn = false): VolumeDesc {
@@ -131,7 +125,7 @@ function waistband(h: readonly number[], t: Tone): string {
   // Gathers under the band: soft, uneven, longer at the sides where the drawstring pulls the most cloth in.
   for (const [x, len] of [[58, 17], [68, 12], [78, 9], [87, 6], [113, 6], [122, 9], [132, 13], [142, 16]] as const) {
     // Placed for the full width, drawn in with a gathered waist.
-    const gx = 100 + ((x - 100) * (h[1] as number)) / 51;
+    const gx = 100 + ((x - 100) * (h[1] as number)) / (H[1] as number);
     const lean = (gx - 100) * 0.05;
     s += fold(smooth([[gx, y1 + 1], [gx + lean, y1 + len / 2], [gx + lean * 1.6, y1 + len]]), 4, t.light ? 0.08 : 0.16);
     s += fold(smooth([[gx + 4, y1 + 1], [gx + 4 + lean, y1 + len * 0.6]]), 3, 0.12, true);

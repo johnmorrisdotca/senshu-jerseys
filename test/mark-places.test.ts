@@ -9,7 +9,7 @@ import { hipsOf, legOutline } from "../src/judogiPants.ts";
 import { readStyle, type JudogiBeltStyle } from "../src/judogiStripes.ts";
 import { strapWidth } from "../src/judogiStrap.ts";
 import { insideWithMargin } from "../src/judogiPlaces.ts";
-import { LAPEL_BAND, VENT_HALF } from "../src/judogiJacket.ts";
+import { LAPEL_BAND } from "../src/judogiJacket.ts";
 import { wellFormed } from "./helpers.ts";
 
 const WIDTHS = [4.2, 4.5, 4.7, 5, 6];
@@ -203,9 +203,9 @@ test("the areas are inside the cloth they name, a margin from its seams", () => 
     for (const p of l.areas[`thigh-${side}`]!.poly) assert.ok(p[1] < 135, `${side} thigh zone ends above the knee panel`);
     for (const p of l.areas[`leg-${side}`]!.poly) assert.ok(p[1] > 150, `${side} leg zone starts below the knee panel's top`);
   }
-  // The hem corner is right of a belt end (its far edge is about 128) and left of the side vent (its slit's half width is VENT_HALF).
+  // The hem corner is right of a belt end (its far edge is about 128) and left of the side vent (about 146).
   const xs = l.areas["hem-left"]!.poly.map((p) => p[0]);
-  assert.ok(Math.min(...xs) >= 128 && Math.max(...xs) <= 100 + VENT_HALF - EDGE_MARGIN + 1e-6);
+  assert.ok(Math.min(...xs) >= 128 && Math.max(...xs) <= 146 - EDGE_MARGIN + 1e-6);
   assert.ok(Math.max(...l.areas["hem-left"]!.poly.map((p) => p[1])) <= 198 - EDGE_MARGIN + 1e-6, "above the hem's stitching");
 });
 

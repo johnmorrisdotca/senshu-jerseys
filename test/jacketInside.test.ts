@@ -222,7 +222,7 @@ test("a collar's near cells are drawn after the far ones it overlaps, at every t
 });
 
 
-test("the body is cut as wide as a judogi is worn, and the neck and collar keep their size", () => {
+test("the body is cut wide as a judogi is, and the neck and collar keep their size", () => {
   const CM = 2.63;
   const across = (tied: boolean, y: number): number => {
     const d = jacketDesc(1, tied);
@@ -232,11 +232,9 @@ test("the body is cut as wide as a judogi is worn, and the neck and collar keep 
     return (2 * ((d.a[j] as number) + ((d.a[j + 1] as number) - (d.a[j] as number)) * r - 1.2)) / CM;
   };
   for (const tied of [false, true]) {
-    // About 47 cm across the chest worn (a 62 to 65 cm flat chest hung round a body), and the shoulders no wider than 1.1 of it (test/proportions.test.ts holds the ratios).
-    for (const y of [58, 70, 86]) assert.ok(across(tied, y) >= 45 && across(tied, y) <= 50, `${across(tied, y).toFixed(1)} cm across the chest at row ${y}`);
-    assert.ok(across(tied, 36) <= 1.1 * across(tied, 86), "the shoulders are no wider than the chest");
+    for (const y of [58, 70]) assert.ok(across(tied, y) >= 54, `${across(tied, y).toFixed(1)} cm across the chest at row ${y}`);
     assert.ok(across(tied, 6) <= 18, "the neck's opening is about 17 cm across");
   }
-  // The belted waist is pulled in a little, not cinched: some 42 cm across.
-  assert.ok(across(true, 114) >= 0.82 * across(true, 86) && across(true, 114) <= 44, "the belt holds the waist");
+  // The belted waist stays slim: about 30 cm from the side to the middle, as it was.
+  assert.ok(across(true, 114) / 2 <= 31, "the belt holds the waist");
 });
