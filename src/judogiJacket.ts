@@ -312,7 +312,8 @@ function inside(uid: string, ink: GiInk, t: Tone, face: "front" | "back"): strin
   const w = 172;
   const flip = (p: Pt): Pt => [200 - p[0], p[1]];
   // The front's V is cut through the cloth whichever side is seen: the inner faces are cut where the outer are, in the drawing turned over as the inner cells sample it.
-  const cut = face === "front" ? poly(jacketOpening().map(flip)) : "";
+  // (The V runs up past the top of the cloth, so a cell grown a little over its edge finds nothing there.)
+  const cut = face === "front" ? poly(jacketOpening().map((p): Pt => flip(p[1] <= 6 ? [p[0], -4] : p))) : "";
   const cloth = `<path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="${t.fill}"/><path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="url(#${uid}G)"/>` +
     `<path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="${t.shadow}" fill-opacity="0.6"/>`;
   // The rim: the cut edge of the neck's cloth, a plain strip with its turned hem (the front's has the V's gap in it).
