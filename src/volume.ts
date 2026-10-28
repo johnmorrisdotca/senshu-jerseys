@@ -7,6 +7,7 @@ import type { Resolved } from "./options.ts";
 import { n2 } from "./path.ts";
 import type { CollarDesc } from "./judogiCollar.ts";
 import type { StrapDesc } from "./judogiStrap.ts";
+import type { SolidDesc } from "./beltBox.ts";
 
 /** How a shirt is cut into cells, and the size of the garment they are wrapped over. All of it is numbers, so it can ride in the drawing and `applyVolume` can work from it alone. */
 export interface VolumeDesc {
@@ -47,6 +48,8 @@ export interface VolumeDesc {
   tube?: number;
   /** A belt as a solid strap (judogiStrap.ts): its cells are the strap's own, drawn nearest last, and the rows above are empty. */
   strap?: StrapDesc;
+  /** A folded belt and/or a gift box (beltBox.ts): a scene of cells drawn nearest last like a strap. */
+  solid?: SolidDesc;
   /** A jacket's collar as a band of its own (judogiCollar.ts), drawn nearest last like a strap. */
   collar?: CollarDesc;
   /** How many of the pieces after this one are worn on it (a collar, a belt): they are drawn after its body and before its near sleeve. */

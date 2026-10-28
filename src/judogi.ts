@@ -2,7 +2,9 @@
 // colours, named IJF sizes, product pieces or a worn suit. No maker, federation or sponsor marks. Sizes and
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
-import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltWidthIsReal, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
+import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltWidthIsReal, beltDefaultWidthCm, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
+import { BOX_STATES, BOX_TEXT_DEFAULT, BOX_TYPES, KIRI_WOODS, boxSizeFor, sceneOf, sceneReach, type BoxSize, type BoxState, type BoxType, type KiriWood } from "./beltBox.ts";
+import { solidFace } from "./beltBoxFace.ts";
 import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint } from "./judogiBelt.ts";
 import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
@@ -12,7 +14,7 @@ import type { JudogiBranding } from "./judogiBrand.ts";
 import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
-import { STRAP_T, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
+import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
 import { bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup } from "./pieceVolume.ts";
@@ -24,7 +26,7 @@ export type JudogiColour = (typeof JUDOGI_COLOURS)[number];
 export const JUDOGI_BELTS = ["none", "white", "yellow", "orange", "green", "blue", "brown", "black", "red-white", "red"] as const;
 export type JudogiBelt = (typeof JUDOGI_BELTS)[number];
 
-export const JUDOGI_MODES = ["pieces", "suit", "jacket", "pants", "belt"] as const;
+export const JUDOGI_MODES = ["pieces", "suit", "jacket", "pants", "belt", "folded", "box"] as const;
 export type JudogiMode = (typeof JUDOGI_MODES)[number];
 
 export const JUDOGI_VIEWS = ["front", "back", "flat", "flat-back"] as const;
@@ -87,7 +89,26 @@ export interface JudogiOptions {
   branding?: boolean | JudogiBranding;
   /** Whose limits the check holds marks to: the IJF's (default) or the All Japan Judo Federation's. */
   rules?: MarkRules;
+  /** The belt's size number as the maker lists it (1 to 8, halves too), which sets the folded belt's length and the box that holds it. By default the one that goes with the judogi's size. */
+  beltSize?: number;
+  /** The gift box of mode `box`: `kiri` (wood, the default) or `silver` (cardboard); its state (`closed`, `open` with the lid beside it and the belt in it, `empty`); the words on the lid (御帯 by default); the wood's tone; a box size to use instead of the one the belt needs. */
+  boxType?: BoxType;
+  boxState?: BoxState;
+  boxText?: string;
+  boxWood?: KiriWood;
+  boxSize?: BoxSize;
+  /** The shop's paper band round the middle of a folded belt (mode `folded`). Off by default. */
+  band?: boolean;
 }
+
+/** A belt size number for each judogi size, near enough for a default (a size 4 judogi takes about a size 4 belt; the height sizes go by the usual waist). */
+const BELT_SIZE_FOR: Record<JudogiSize, number> = {
+  "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7,
+  "150": 2, "155": 2.5, "160": 3, "165": 3, "170": 3.5, "175": 4, "180": 4.5, "185": 5, "190": 5.5, "195": 6, "200": 6.5,
+};
+
+/** The belt size number a judogi size defaults to. */
+export const beltSizeForJudogi = (size: JudogiSize): number => BELT_SIZE_FOR[size];
 
 /** The belt width asked for, in centimetres, or undefined for the grade's own. */
 const readBeltCm = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
@@ -137,11 +158,22 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
     { id: "belt-width", met: beltCm === undefined || options?.belt === undefined || options.belt === "none" || beltWidthIsReal(options.belt, beltCm), fact: "A belt is made in the width of its grade: 4.2 cm for white and the rank colours (4.5 cm for an IJF-style white), 4.2, 4.5 or 4.7 cm for black, 4.5 cm for red-white and red (KuSakura belt guide and catalogue, read 2026-10-27); the IJF Judogi Rules (09 03 2022) give a belt's thickness and the hang of its ends, and no width." },
     { id: "belt-ends", met: beltHang >= 20 && beltHang <= 30, fact: "Belt hanging ends are 20–30 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "contest-colour", met: true, fact: "Contest judogi is white or blue (IJF Judogi Rules, 09 03 2022)." },
+    ...(options?.mode === "box" ? [boxFitNote(options)] : []),
     ...(patch === undefined ? [] : patchNotes(patch)),
     ...(marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped)),
   ];
   return { ok: notes.every((n) => n.met), size, heightCm: h, notes };
 }
+
+/** Whether the belt of this size goes in the box asked for: the maker's wooden box fits a belt of size 6 at most and the silver one 6.5. */
+function boxFitNote(o: JudogiOptions): { id: string; met: boolean; fact: string } {
+  const type = pick(BOX_TYPES, o.boxType, "kiri");
+  const size = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[pick(JUDOGI_SIZES, o.size, "170")];
+  return { id: "belt-box-fit", met: boxSizeFor(size, type) !== undefined, fact: `A ${type === "kiri" ? "wooden (kiri)" : "silver cardboard"} gift box holds a belt of size ${type === "kiri" ? 6 : 6.5} at most (KuSakura gift-box pages, read 2026-10-28); a longer belt does not go in a box.` };
+}
+
+/** The belt size asked for, or undefined: 1 to 8 in halves. */
+const readBeltSize = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? Math.max(1, Math.min(8, Math.round(v * 2) / 2)) : undefined);
 
 /** A judogi as SVG. Front and back are a garment with volume; flat is the cloth laid out. The library does not read the clock. */
 export function renderJudogi(options?: JudogiOptions): string {
@@ -182,6 +214,13 @@ interface Ready {
   uid: string;
   patch: PatchSpec | undefined;
   marks: MarkSet | undefined;
+  beltSize: number;
+  boxType: BoxType;
+  boxState: BoxState;
+  boxText: string;
+  boxWood: KiriWood;
+  boxSize: BoxSize | undefined;
+  band: boolean;
 }
 
 interface Sheet {
@@ -214,11 +253,19 @@ function read(options?: JudogiOptions): Ready {
   const beltCover = pick(BELT_COVERS, o.beltCover, "cotton");
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec]))}`;
+  const beltSize = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[size];
+  const boxType = pick(BOX_TYPES, o.boxType, "kiri");
+  const boxState = pick(BOX_STATES, o.boxState, "closed");
+  const boxWood = pick(KIRI_WOODS, o.boxWood, "natural");
+  const boxText = typeof o.boxText === "string" ? [...o.boxText.trim()].slice(0, 6).join("") : BOX_TEXT_DEFAULT;
+  const boxSize = ([2, 3, 4, 5, 6] as const).find((s) => s === o.boxSize);
+  const band = o.band === true;
+  const solid = mode === "folded" || mode === "box" ? [beltSize, boxType, boxState, boxText, boxWood, boxSize, band] : undefined;
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, cloth, uid, patch, marks,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band,
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
       : "A judogi: jacket, trousers and belt. No maker or federation marks.",
@@ -228,12 +275,12 @@ function read(options?: JudogiOptions): Ready {
 function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiMode, view: JudogiView): string {
   if (language === "ja") {
     const c = colour === "blue" ? "青" : "白";
-    const m = { pieces: "上衣とズボン", suit: "着用", jacket: "上衣", pants: "ズボン", belt: "帯" }[mode];
+    const m = { pieces: "上衣とズボン", suit: "着用", jacket: "上衣", pants: "ズボン", belt: "帯", folded: "畳んだ帯", box: "帯の箱" }[mode];
     const v = { front: "前", back: "後ろ", flat: "平置き", "flat-back": "平置き（後ろ）" }[view];
     return `${c}の柔道着、${m}、${v}`;
   }
   const c = colour === "blue" ? "Blue" : "White";
-  const m = { pieces: "jacket and trousers", suit: "suit", jacket: "jacket", pants: "trousers", belt: "belt" }[mode];
+  const m = { pieces: "jacket and trousers", suit: "suit", jacket: "jacket", pants: "trousers", belt: "belt", folded: "belt folded flat", box: "belt gift box" }[mode];
   return `${c} judogi, ${m}, ${view}`;
 }
 
@@ -294,6 +341,7 @@ const WORN_AT = 102;
 function compose(o: Ready): Sheet {
   if (isFlat(o.view)) return flatSheet(o);
   const yaw = normalYaw(o.yaw + (o.view === "back" ? 180 : 0));
+  if (o.mode === "folded" || o.mode === "box") return solidSheet(o, yaw);
   const depth = Math.max(0.2, o.thickness / 12);
   const paint = paintOf(o, o.belt);
   const defs = paint?.defs ?? "";
@@ -331,12 +379,39 @@ function compose(o: Ready): Sheet {
   return box(defs + jacket.defs + beltDefs + pants.defs, `${jacket.body}${belted}<g transform="translate(${px} ${py})">${pants.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], py + PANTS_BOX[3] - JACKET_BOX[1]], yaw);
 }
 
+/** The folded belt, or the belt's gift box (with the belt folded in it): one piece of cells, see beltBox.ts. */
+function solidSheet(o: Ready, yaw: number): Sheet {
+  const box = o.mode === "box";
+  const paint = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
+  const widthCm = o.beltCm ?? beltDefaultWidthCm(o.belt === "none" ? "white" : o.belt);
+  const { fits, boxSize, ...desc } = sceneOf({
+    beltSize: o.beltSize, widthCm, thickCm: STRAP_T / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band,
+    ...(box ? { box: { type: o.boxType, state: o.boxState, ...(o.boxSize === undefined ? {} : { size: o.boxSize }) } } : {}),
+  });
+  void fits;
+  void boxSize;
+  const look = { wood: o.boxWood, text: o.boxText, sizeLabel: String(o.beltSize) };
+  const face = solidFace(desc, paint, look, o.uid);
+  const reach = sceneReach(desc);
+  const vol: VolumeDesc = { y: [], a: [], b: [], nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: SOLID_PITCH, piece: true, solid: desc };
+  const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw);
+  // The view box holds the scene turned any way and tipped by the designer's whole range (a tilt of 30 degrees beyond the camera's own).
+  const w = Math.ceil(2 * reach.radius + 16);
+  const h = Math.ceil(2 * (reach.radius * 0.88 + reach.half) + 16);
+  return box_(`${paint?.defs ?? ""}${v.defs}`, v.body, [100 - w / 2, -h / 2, w, h], yaw);
+}
+
+/** How far the camera looks down on a folded belt or a box, in degrees. */
+const SOLID_PITCH = 28;
+
 /** Whether a view is the cloth laid out with no turn: its front, or its back. */
 export const isFlat = (view: JudogiView): boolean => view === "flat" || view === "flat-back";
 
 /** The pieces drawn flat, as their front faces (or their back faces) with no turn: the jacket, the trousers beside it, the belt under the jacket. */
 function flatSheet(o: Ready): Sheet {
   const side = o.view === "flat-back" ? "back" : "front";
+  // A folded belt and a box are objects, not cloth: their flat views are the same scene, standing still (from the front or the back).
+  if (o.mode === "folded" || o.mode === "box") return solidSheet(o, side === "back" ? 180 : 0);
   const paint = paintOf(o, o.belt);
   const defs = paint?.defs ?? "";
   const flat = (f: Face): string => `${f.defs}`;
@@ -369,6 +444,8 @@ function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: n
   const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}</g>${mk.defs}`;
   return { defs, body: mk.body, tail: mk.tail };
 }
+
+const box_ = (defs: string, body: string, b: readonly [number, number, number, number], yaw: number): Sheet => box(defs, body, b, yaw);
 
 function box(defs: string, body: string, b: readonly [number, number, number, number], yaw: number): Sheet {
   return { defs, body, x: b[0], y: b[1], w: b[2], h: b[3], yaw };

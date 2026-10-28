@@ -146,7 +146,8 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       const order = job.lists.flat();
       // A strap or a collar is judged by how near each part of it is at each point, not by the order of its cells alone (a knot's cells cross
       // one another); the order still breaks ties. Nothing else in the picture is tested against it.
-      const deep = isBand(p.desc);
+      // A folded belt or a box (solid) is drawn in its settled order alone: its cells are large and flat, and a depth test between thin cloth and the wall beside it only flickers.
+      const deep = isBand(p.desc) && p.desc.solid === undefined;
       gl.uniform1f(loc.deep, deep ? 1 : 0);
       if (deep) {
         gl.clear(gl.DEPTH_BUFFER_BIT);
@@ -158,6 +159,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       const edges = new Map<Smooth, [number, number]>();
       let w = 0;
       for (const i of order) {
+        const bias = 0;
         const c = p.cells[i]!;
         const [a, b, cc, d, e, f] = matrixOf(placed[i]!.matrix);
         const sm = p.smooth[i];
@@ -181,6 +183,11 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
         // coincide, and a hairline between two cells would show the page through the cloth.
         const mx = (c.tex[0]! + c.tex[2]! + c.tex[4]!) / 3;
         const my = (c.tex[1]! + c.tex[3]! + c.tex[5]!) / 3;
+        // How near each corner is, and the plane of the three: a grown corner is as near as the cell's own plane puts it there, so a large flat cell
+        // (a box's wall) does not tilt at its fringe and fight the thin cloth just behind it for the depth.
+        const tri = placed[i]!.tri;
+        const t = c.tex;
+        const det = (t[2]! - t[0]!) * (t[5]! - t[1]!) - (t[4]! - t[0]!) * (t[3]! - t[1]!);
         for (let q = 0; q < 3; q++) {
           const gx = c.tex[2 * q]! - mx;
           const gy = c.tex[2 * q + 1]! - my;
@@ -192,7 +199,13 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
           data[w++] = ((tx - fx) / fw) * 0.5 + half;
           data[w++] = (ty - fy) / fh;
           data[w++] = s[q]!;
-          data[w++] = placed[i]!.tri?.[3 * q + 2] ?? 0;
+          let near = tri?.[3 * q + 2] ?? 0;
+          if (tri !== undefined && Math.abs(det) > 1e-9) {
+            const l1 = ((tx - t[0]!) * (t[5]! - t[1]!) - (t[4]! - t[0]!) * (ty - t[1]!)) / det;
+            const l2 = ((t[2]! - t[0]!) * (ty - t[1]!) - (tx - t[0]!) * (t[3]! - t[1]!)) / det;
+            near = tri[2]! + l1 * (tri[5]! - tri[2]!) + l2 * (tri[8]! - tri[2]!);
+          }
+          data[w++] = near + bias;
         }
       }
       gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, w), gl.STREAM_DRAW);

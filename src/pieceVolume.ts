@@ -5,6 +5,7 @@
 // nothing doubles and no rim of cloth is left unshaded. A body with lobes (trousers) is not convex, so its left and right halves are
 // layers of their own, the nearer drawn last. Kept apart from volume.ts so that a jersey's bundle does not carry it.
 
+import { solidCells } from "./beltBox.ts";
 import { collarCells } from "./judogiCollar.ts";
 import { strapCells } from "./judogiStrap.ts";
 import { n2 } from "./path.ts";
@@ -13,12 +14,13 @@ import { cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type
 /** Every cell of a piece: a belt's strap, a jacket's collar, or the garment's body and sleeves. */
 export function pieceCells(d: VolumeDesc): Cell[] {
   if (d.strap !== undefined) return strapCells(d.strap);
+  if (d.solid !== undefined) return solidCells(d.solid);
   if (d.collar !== undefined) return collarCells(d.collar);
   return cellsOf(d);
 }
 
 /** A strap or a collar: a band whose cells are drawn farthest first (`depthOrder`), not in a body's fixed groups. */
-export const isBand = (d: VolumeDesc): boolean => d.strap !== undefined || d.collar !== undefined;
+export const isBand = (d: VolumeDesc): boolean => d.strap !== undefined || d.collar !== undefined || d.solid !== undefined;
 
 /**
  * The order a strap's cells are drawn in at a turn, farthest first. A strap is not convex (the knot stands off the turns, the ends hang in
