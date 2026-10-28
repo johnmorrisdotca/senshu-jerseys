@@ -385,7 +385,7 @@ function solidSheet(o: Ready, yaw: number): Sheet {
   const paint = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
   const widthCm = o.beltCm ?? beltDefaultWidthCm(o.belt === "none" ? "white" : o.belt);
   const { fits, boxSize, ...desc } = sceneOf({
-    beltSize: o.beltSize, widthCm, thickCm: STRAP_T / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band,
+    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band,
     ...(box ? { box: { type: o.boxType, state: o.boxState, ...(o.boxSize === undefined ? {} : { size: o.boxSize }) } } : {}),
   });
   void fits;

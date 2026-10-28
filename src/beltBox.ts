@@ -579,7 +579,10 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
     fits,
     boxSize,
   };
-  if (o.belt && open && fits) scene.belt = { ...belt, w: wid, x: 0, y: d.h / 2 - d.wall * (type === "kiri" ? 1 : 0.6), z, band: 0 };
+  // A thick belt is no thicker folded in a box than the box has room for.
+  const floor = d.wall * (type === "kiri" ? 1 : 0.6);
+  const t = Math.min(o.thickCm, (d.baseH - floor - 0.15) / FOLD_LAYERS - 0.03);
+  if (o.belt && open && fits) scene.belt = { ...belt, w: wid, t, x: 0, y: d.h / 2 - d.wall * (type === "kiri" ? 1 : 0.6), z, band: 0 };
   return scene;
 }
 

@@ -467,6 +467,7 @@ test("a belt's rows of stitching, thickness and cover are offered as its colour 
   await page.goto("/judogi.html?mode=pants&belt=black&sl=16");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   await expect(shown("judo-belt-rows")).toHaveCount(0);
+});
 
 test("the folded belt and the belt's gift box are Display choices with their own controls, keep them in the address, and turn", async ({ page }) => {
   const errors = [];
