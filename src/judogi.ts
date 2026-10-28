@@ -2,7 +2,7 @@
 // colours, named IJF sizes, product pieces or a worn suit. No maker, federation or sponsor marks. Sizes and
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
-import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltWidthIsReal, beltDefaultWidthCm, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
+import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltThicknessesFor, beltWidthIsReal, beltDefaultWidthCm, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
 import { BOX_STATES, BOX_TEXT_DEFAULT, BOX_TYPES, KIRI_WOODS, boxSizeFor, sceneOf, solidBounds, type BoxSize, type BoxState, type BoxType, type KiriWood } from "./beltBox.ts";
 import { solidFace } from "./beltBoxFace.ts";
 import { hashOf, type Rgb } from "./colour.ts";
@@ -256,12 +256,17 @@ function read(options?: JudogiOptions): Ready {
   const beltCm = beltAsked === undefined ? undefined : Math.max(3, Math.min(6, beltAsked));
   const style = readStyle(o.beltStyle);
   const beltRows = (BELT_STITCH_LINES as readonly unknown[]).includes(o.beltStitchLines) ? o.beltStitchLines : undefined;
-  const beltThickness = pick(BELT_THICKNESSES, o.beltThickness, "standard");
+  // A folded belt or a boxed one lies as it is made: a belt that comes in a thick grade (the kohaku, the black) is shown thick unless a grade is asked for.
+  const stiff = (o.mode === "folded" || o.mode === "box") && o.belt !== undefined && beltThicknessesFor(o.belt).includes("thick");
+  const beltThickness = pick(BELT_THICKNESSES, o.beltThickness, stiff ? "thick" : "standard");
   const beltCover = pick(BELT_COVERS, o.beltCover, "cotton");
-  const endTags = readEndTags(o.beltTags, size);
+  // Folded, a belt shows its tags on the top layer's tip, as a shop does.
+  const beltSize = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[size];
+  const folded = mode === "folded" || mode === "box";
+  const tags = readEndTags(o.beltTags, folded ? String(beltSize) : size);
+  const endTags = tags !== undefined && folded ? { ...tags, end: 0 as const } : tags;
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
-  const beltSize = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[size];
   const boxType = pick(BOX_TYPES, o.boxType, "kiri");
   const boxState = pick(BOX_STATES, o.boxState, "closed");
   const boxWood = pick(KIRI_WOODS, o.boxWood, "natural");
@@ -326,8 +331,9 @@ function paintOf(o: Ready, belt: string): BeltPaint | undefined {
   if (base === undefined) return undefined;
   const bands = bandsOf(o.style);
   const half = strapWidth(belt, o.beltCm) / 2;
-  const tagL = endTagsMark(o.endTags, 0, half, o.uid);
-  const tagR = endTagsMark(o.endTags, 1, half, o.uid);
+  const margin = o.mode === "folded" || o.mode === "box" ? 0.9 : undefined;
+  const tagL = endTagsMark(o.endTags, 0, half, o.uid, margin);
+  const tagR = endTagsMark(o.endTags, 1, half, o.uid, margin);
   const stripes = { left: endMark(o.style, 0, half) + tagL.body, right: endMark(o.style, 1, half) + tagR.body, half };
   const p: BeltPaint = {
     ...base,
@@ -402,7 +408,7 @@ function solidSheet(o: Ready, yaw: number): Sheet {
     if (m === undefined) return m;
     const placed = (o.marks?.layout.placed ?? []).filter((q) => q.item.target === (end === 0 ? "belt-left" : "belt-right"));
     const reach = Math.max(0, ...placed.map((q) => q.box.x + (Math.abs(Math.cos((q.box.rot * Math.PI) / 180)) * q.box.w + Math.abs(Math.sin((q.box.rot * Math.PI) / 180)) * q.box.h) / 2));
-    const shift = Math.max(0, (END_LENGTH[end] as number) - 4.5 * UNITS_PER_CM - reach);
+    const shift = Math.max(0, (END_LENGTH[end] as number) - 2 * UNITS_PER_CM - reach);
     return shift === 0 ? m : { ...m, body: `<g transform="translate(${n2(shift)} 0)">${m.body}</g>` };
   };
   const fine = plain === undefined ? undefined : { ...plain, rows: plain.rows ?? 15, fine: { thread: o.belt === "red-white" ? "#ffffff" : plain.stitch } };
@@ -419,7 +425,7 @@ function solidSheet(o: Ready, yaw: number): Sheet {
   const face = solidFace(desc, paint, look, o.uid);
   // The view box holds the scene turned any way and tipped by the whole range the designer allows, so nothing is ever cut off.
   const bound = solidBounds(desc);
-  const vol: VolumeDesc = { y: [], a: [], b: [], nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: SOLID_PITCH, piece: true, solid: desc };
+  const vol: VolumeDesc = { y: [], a: [], b: [], nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: o.mode === "folded" ? FOLDED_PITCH : SOLID_PITCH, piece: true, solid: desc };
   const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw);
   const w = Math.ceil(2 * bound.radius + 12);
   const top = Math.floor(bound.top - 6);
@@ -429,6 +435,8 @@ function solidSheet(o: Ready, yaw: number): Sheet {
 
 /** How far the camera looks down on a folded belt or a box, in degrees. */
 const SOLID_PITCH = 28;
+/** A folded belt is looked at from higher up, as a shop photographs it. */
+const FOLDED_PITCH = 44;
 
 /** Whether a view is the cloth laid out with no turn: its front, or its back. */
 export const isFlat = (view: JudogiView): boolean => view === "flat" || view === "flat-back";

@@ -55,7 +55,7 @@ export { BELT_MODELS, BELT_SIZES, BELT_SPEC_SOURCES, BELT_COVERS, BELT_END_TAGS,
 export type { BeltColourName, BeltCover, BeltEndTag, BeltModel, BeltSize, BeltStitchLines, BeltThickness, EmbroideryStitching } from "./beltSpecs.ts";
 export { BELT_SOURCES, BELT_SYSTEMS, beltSystem, beltSystemSources } from "./beltSystems.ts";
 export type { BeltColour, BeltEnds, BeltGrade, BeltSource, BeltSystem, BeltTags, BeltTextCustom, BeltTip } from "./beltSystems.ts";
-export { BOX_SIZES, BOX_STATES, BOX_TAKES, BOX_TEXT_DEFAULT, BOX_TYPES, BOX_MAX_BELT, FOLD_LAYERS, KIRI_WOODS, beltCmOfSize, boxDims, boxInnerCm, boxSizeFor } from "./beltBox.ts";
-export type { BoxDims, BoxSize, BoxState, BoxType, KiriWood } from "./beltBox.ts";
+export { BOX_SIZES, BOX_STATES, BOX_TAKES, BOX_TEXT_DEFAULT, BOX_TYPES, BOX_MAX_BELT, FOLD_LAYERS, KIRI_WOODS, beltCmOfSize, boxDims, bundleHeight, foldedLayersFor, boxInnerCm, boxSizeFor } from "./beltBox.ts";
+export type { BoxDims, BoxFit, BoxSize, BoxState, BoxType, KiriWood } from "./beltBox.ts";
 export { lidTextLayout } from "./beltBoxFace.ts";
 export { beltSizeForJudogi } from "./judogi.ts";

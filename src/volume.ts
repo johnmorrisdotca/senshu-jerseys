@@ -627,8 +627,11 @@ export function groupOrder(yaw: number, hang = false): number[] {
   return hang ? [...tubes, ...torso] : [tubes[0] as number, ...torso, tubes[1] as number];
 }
 
+/** How far the cells of a folded belt or a box are grown at their corners (units of the picture): less than cloth's, which sticks out as spikes round a fold. */
+export const SOLID_GROW = 0.25;
+
 /** The triangle of a cell, grown a little on every side so neighbouring cells overlap and no hairline shows between them. */
-export function quadPath(tex: readonly number[]): string {
+export function quadPath(tex: readonly number[], g = 0.9): string {
   const cx = (tex[0]! + tex[2]! + tex[4]!) / 3;
   const cy = (tex[1]! + tex[3]! + tex[5]!) / 3;
   let d = "";
@@ -638,7 +641,6 @@ export function quadPath(tex: readonly number[]): string {
     const dx = x - cx;
     const dy = y - cy;
     const len = Math.hypot(dx, dy) || 1;
-    const g = 0.9;
     d += `${k === 0 ? "M" : "L"}${n2(x + (dx / len) * g)} ${n2(y + (dy / len) * g)}`;
   }
   return `${d}Z`;
@@ -658,7 +660,7 @@ export function volumeMarkup(d: VolumeDesc, uid: string, frontId: string, backId
   let defs = details.map((svg, k) => `<g id="${uid}D${k}">${svg}</g>`).join("");
   const groups: [string, string, string, string] = ["", "", "", ""];
   cells.forEach((c, i) => {
-    defs += `<path id="${uid}q${i}" d="${quadPath(c.tex)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
+    defs += `<path id="${uid}q${i}" d="${quadPath(c.tex, d.solid === undefined ? undefined : SOLID_GROW)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
     const pl = placeCell(c, yaw, d.pitch);
     const shadeEl = shaded && c.src === undefined ? `<use href="#${uid}q${i}" fill="#000" fill-opacity="${pl.shade}" clip-path="url(#${c.back ? backClip : frontClip})" data-vs=""/>` : "";
     groups[c.g] += `<g data-vc="${i}"${pl.visible ? ` transform="${pl.matrix}"` : ' display="none"'} clip-path="url(#${uid}k${i})"><use href="#${c.src !== undefined ? `${uid}D${c.src}` : c.back ? backId : frontId}"/>${shadeEl}</g>`;

@@ -4,7 +4,7 @@
 // (pieceVolume.ts). Each cell's shade multiplies its cloth as it is drawn, not in a layer of its own: a cell is opaque cloth, so where two
 // grown cells overlap the later one simply covers the earlier, and no shade is doubled.
 import { depthOrder, FACE_BOX, halfOrder, isBand, layerOf, shadeOf, type Smooth } from "./pieceVolume.ts";
-import { groupOrder, nearSleeve, placeCell, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
+import { groupOrder, nearSleeve, placeCell, SOLID_GROW, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 /** A piece as both painters take it: its cells and their shade, the pictures of its two faces, and where it sits in the drawing. */
 export interface PaintPiece {
@@ -110,6 +110,8 @@ const COLLAR_NEAR = 0.5;
 
 /** How far each cell is grown at its corners, in units of its face (quadPath grows the SVG's by as much). */
 const GROW = 0.9;
+/** A folded belt's or a box's cells meet at the cloth's folds and rounded edges, where a grown corner would stick out of the outline as a spike: they are grown less. */
+const GROW_SOLID = SOLID_GROW;
 
 /** Floats a corner takes: where it is on the canvas, where on the faces' picture, and its shade. */
 const STRIDE = 6;
@@ -154,7 +156,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       // A folded belt or a box (solid) is drawn in its settled order alone: its cells are large and flat, and a depth test between thin cloth and the wall beside it only flickers.
       // A garment with things worn on it (a jacket with its collar and belt) is one scene: every piece is judged by nearness against all the others, so the belt, the sleeve and the body
       // cover each other as they stand and not as their groups are ordered (the pieces' depths are made comparable with the offset each lies at in the drawing).
-      const deep = p.desc.solid === undefined && (scene || isBand(p.desc));
+      const deep = p.desc.solid === undefined ? scene || isBand(p.desc) : p.desc.solid.box === undefined;
       gl.uniform1f(loc.deep, deep ? 1 : 0);
       if (deep) {
         if (!scene) gl.clear(gl.DEPTH_BUFFER_BIT);
@@ -200,7 +202,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
         for (let q = 0; q < 3; q++) {
           const gx = c.tex[2 * q]! - mx;
           const gy = c.tex[2 * q + 1]! - my;
-          const grow = GROW / (Math.hypot(gx, gy) || 1);
+          const grow = (p.desc.solid === undefined ? GROW : GROW_SOLID) / (Math.hypot(gx, gy) || 1);
           const tx = c.tex[2 * q]! + gx * grow;
           const ty = c.tex[2 * q + 1]! + gy * grow;
           data[w++] = u * (a * tx + cc * ty + e) + ox;

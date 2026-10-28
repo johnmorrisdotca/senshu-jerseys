@@ -17,7 +17,7 @@ if (spawnSync("cwebp", ["-version"], { stdio: "ignore" }).status === null) throw
 /** Each cell: what to draw, how far in to look, and the angle. The belt is red-white with the package's own branding, so the marks on its ends show. */
 const belt = { belt: "red-white", branding: true, label: true, beltSize: 4 };
 const CELLS = [
-  { o: { mode: "folded", ...belt, band: true }, zoom: 2.3 },
+  { o: { mode: "folded", ...belt, band: true }, zoom: 1.5 },
   { o: { mode: "box", boxState: "closed", beltSize: 4 }, zoom: 1.55 },
   { o: { mode: "box", boxState: "open", ...belt }, zoom: 1.75 },
   { o: { mode: "box", boxState: "empty", beltSize: 4 }, zoom: 1.95 },

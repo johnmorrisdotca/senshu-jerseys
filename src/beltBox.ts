@@ -25,8 +25,11 @@ export const BOX_SIZES = [2, 3, 4, 5, 6] as const;
 export type BoxSize = (typeof BOX_SIZES)[number];
 
 /** How many layers a belt is doubled into in a box: fixed, so a box's length follows from the longest belt it holds. On its own a belt is folded in six, so that both its free ends lie at the same end of the bundle, the label end on top. */
-export const FOLD_LAYERS = 7;
-export const FOLDED_LAYERS = 6;
+export const FOLD_LAYERS = 8;
+/** How many layers a belt on its own is doubled into: an even number, so that both free ends lie at the same end of the bundle, the label end on top. A shop folds a belt in half three times (8); a short one in six, a long one in ten. */
+export const FOLDED_LAYERS = 8;
+/** The layers of a belt `cm` long and `w` wide, folded flat: the bundle stays about seven belt widths long (six to ten layers, always even). */
+export const foldedLayersFor = (cm: number, w: number): number => Math.max(6, Math.min(10, 2 * Math.round(cm / (15 * w))));
 /** Room left at each end of the box, in centimetres. */
 export const BOX_SLACK_CM = 2.5;
 
@@ -76,12 +79,41 @@ export interface BoxDims {
   baseH: number;
 }
 
-/** The figures of a box of `size` and `type`. Kiri: 7 cm wide and 7 cm high (the maker's page). Silver: 5 cm wide (the maker's page), about 4.6 cm high (read from the photograph). */
-export function boxDims(size: BoxSize, type: BoxType): BoxDims {
+/** The belt a box is made to hold: its width and the thickness of one turn of it folded, both in centimetres. The default is a standard 4.5 cm belt. */
+export interface BoxFit {
+  w: number;
+  t: number;
+}
+/** The room each side of the belt across the box, in total (centimetres), and how much a box is taller than the stack it holds (a hair, so the lid closes on it). */
+export const BOX_PLAY = 0.7;
+export const BOX_HEADROOM = 0.08;
+/** How much a boxed belt's layers spring apart (0 to 1) toward the bundle's ends: a stiff band does not lie flat even packed in a box. */
+export const BOX_SPRING = 0.7;
+/** The default fit: a 4.5 cm belt of the standard thickness (0.49 cm), a little puffier folded. */
+export const BOX_FIT: BoxFit = { w: 4.5, t: 0.49 * 1.3 };
+
+/** How tall the folded belt a box holds stands: its layers and the gaps they spring open to (centimetres). The box's inside is this high and no more. */
+export const bundleHeight = (fit: BoxFit = BOX_FIT): number => stackHeight(FOLD_LAYERS, fit.t, BOX_SPRING);
+
+/**
+ * The figures of a box of `size` and `type` for the belt it holds (`fit`). Its length is the size's; its inside is as tall and as wide as the folded belt in it:
+ * the height of the stack of layers (the layers and the gaps a stiff band springs open to) and a hair, the width of the belt and a little play. Kiri: walls 6 mm, a
+ * 1 cm lid slab sliding on the tray, so a 4.5 cm belt of the standard thickness gives a box about 6.5 cm wide and 7 cm high (the maker's page says 7 x 7 for its box).
+ * Silver (read from the photograph): board 2 mm thick, a cap over the base.
+ */
+export function boxDims(size: BoxSize, type: BoxType, fit: BoxFit = BOX_FIT): BoxDims {
   const inner = boxInnerCm(size);
-  // Kiri: 7 x 7 cm closed (the lid a touch proud of the tray, which is 6.6 wide), walls 6 mm. Silver: board 2 mm thick, the lid a cap a little larger than the base.
-  if (type === "kiri") return { type, w: 7, h: 7, inner, length: inner + 1.2, wall: 0.6, lid: 1, baseW: 6.6, baseH: 6 };
-  return { type, w: 5.5, h: 4.6, inner, length: inner + 0.4, wall: 0.2, lid: 0.2, baseW: 5.2, baseH: 4.4 };
+  const room = bundleHeight(fit) + BOX_HEADROOM;
+  if (type === "kiri") {
+    const wall = 0.6;
+    const baseW = fit.w + BOX_PLAY + 2 * wall;
+    const baseH = wall + room;
+    return { type, w: baseW + 0.4, h: baseH + 1, inner, length: inner + 1.2, wall, lid: 1, baseW, baseH };
+  }
+  const wall = 0.2;
+  const baseW = fit.w + BOX_PLAY + 2 * wall;
+  const baseH = wall * 0.6 + room;
+  return { type, w: baseW + 0.3, h: baseH + 0.2, inner, length: inner + 0.4, wall, lid: 0.2, baseW, baseH };
 }
 
 /** The widest belt a box holds, in centimetres (the inside width less a little play). */
@@ -102,6 +134,8 @@ export interface FoldDesc {
   band: number;
   /** Where the folds' small imperfections come from (a number made from the belt's options): the same belt is always folded the same way. */
   seed: number;
+  /** How far the layers spring apart toward the ends of the bundle, 0 to 1 (the looseness's by default). */
+  spring?: number;
   /** How loosely it lies, 0 to 1: 1 a coil with its layers fanned and its folds open, near 0 packed snug in a box (the wobbles scale with it). */
   loose: number;
   /** The length, in drawing units, after which a kohaku belt's red and white sections repeat (two sections), so the plain stretch of the strip wraps without a seam. */
@@ -446,10 +480,10 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
   const bulge = 1.2 * pitch;
   const even = n % 2 === 0;
   // Which end of each layer is at the near end: the top layer's tip when the number is even, the bottom one's tip when it is odd.
-  const stepBack = even ? -0.3 * f.loose : 0;
+  const stepBack = even ? -0.55 * f.loose : 0;
   const level = (i: number): number => Math.ceil((n - 1 - i) / 2);
-  const nearJit = Array.from({ length: n }, () => wob(0.22));
-  const farJit = Array.from({ length: n }, () => wob(0.28));
+  const nearJit = Array.from({ length: n }, () => wob(0.3));
+  const farJit = Array.from({ length: n }, () => wob(0.7));
   const arcLen = Math.PI * Math.sqrt((pitch * pitch / 4 + bulge * bulge) / 2);
   // Where each layer starts and ends along the bundle for a bundle `L` long.
   const ends = (L: number): { xs: number[]; xe: number[] } => {
@@ -483,20 +517,20 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
   const { xs, xe } = ends(L);
   const all = [...xs, ...xe];
   const shift = f.x - (Math.min(...all) + Math.max(...all)) / 2;
-  // Loose coil: the lower layers lie lower and lower toward the near end, so the loops there are open and step down, while the far end is stacked close.
-  const sink = even ? 0.55 * f.loose : 0;
+  // A stiff band springs: the layers lie close in the middle of the bundle and open out toward both ends, where the folds are (the bottom layer stays where it is).
   const tOf = (x: number): number => Math.max(0, Math.min(1, (x - shift + L / 2) / L));
-  const yAt = (i: number, x: number): number => f.y - (i + 0.5) * pitch + (n - 1 - i) * sink * Math.pow(tOf(x), 1.6);
+  const yAt = (i: number, x: number): number => f.y - f.t / 2 - i * (f.t + gapAt(f, tOf(x)));
   // The top layer's face looks up; with an odd number of layers the face is on the right of the way the belt runs, with an even number on its left.
   const side = even ? -1 : 1;
   // Plan: lower layers lie further toward the viewer, more so toward the near end; each bows a little and sits a touch skewed.
-  const fan = Array.from({ length: n }, (_, i) => even ? (n - 1 - i) * 0.45 * f.loose : 0);
+  const fan = Array.from({ length: n }, (_, i) => even ? (n - 1 - i) * 0.2 * f.loose : 0);
   const bow = Array.from({ length: n }, () => wob(0.3));
   const off = Array.from({ length: n }, () => wob(0.14));
   const skew = Array.from({ length: n }, () => wob(0.012));
   const zOf = (i: number, x: number): number => {
     const t = Math.max(0, Math.min(1, (x - shift + L / 2) / L));
-    return f.z + (off[i] as number) + (fan[i] as number) * t * t + (bow[i] as number) * Math.sin(Math.PI * t) + (skew[i] as number) * (x - f.x);
+    // The whole bundle bows a little in plan, the more so the higher a layer lies.
+    return f.z + (off[i] as number) + (fan[i] as number) * t * t + (bow[i] as number) * Math.sin(Math.PI * t) + (0.25 + 0.06 * i) * f.loose * Math.sin(Math.PI * t) + (skew[i] as number) * (x - f.x);
   };
   const pts: Along[] = [];
   let u = 0;
@@ -525,7 +559,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
       const yB = yAt(i + 1, b);
       const yc = (yA + yB) / 2;
       const ry = Math.max(0.01, (yA - yB) / 2);
-      const rx = Math.max(bulge, ry * 1.25 + 0.15);
+      const rx = Math.max(1.4 * pitch, ry * 1.7 + 0.2);
       const m = f.loose >= 0.5 ? 8 : 6;
       const anchor = { u0: u, wx0: b };
       const z0 = zOf(i, b);
@@ -732,10 +766,19 @@ export interface SceneOptions {
 }
 
 /** How much thicker a belt looks folded than stitched, and the gap between two layers, in centimetres. */
-const PUFF = 1.4;
+const PUFF = 1.3;
 const LAYER_GAP = 0.04;
+
+/** The gap between two layers of the bundle at a place `t` (0 to 1) along it: a stiff band lies close in the middle and springs open toward the ends, the more so the looser it is packed. */
+export const gapAt = (f: Pick<FoldDesc, "t" | "loose" | "spring">, t: number): number => {
+  const e = Math.pow(Math.abs(2 * t - 1), 2.2);
+  return LAYER_GAP + (f.spring ?? f.loose) * f.t * (0.05 + 0.3 * e);
+};
+
+/** How tall a bundle of `n` layers of thickness `t` stands (centimetres): the layers, and the most the gaps open to (at the ends of the bundle). */
+export const stackHeight = (n: number, t: number, spring: number): number => n * t + (n - 1) * gapAt({ t, loose: spring }, 1);
 /** The folded belt on its own lies the other way round (its free ends at the near end), turned by this many degrees. */
-export const FOLDED_TURN = -118;
+export const FOLDED_TURN = -126;
 
 /** Degrees the folded belt and the boxes are turned by before the viewer's own turn: they lie at an angle, as in a shop's photograph. */
 export const BASE_TURN = 62;
@@ -751,15 +794,17 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
   const period = o.period ?? 78.9;
   if (o.box === undefined || boxSize === undefined) {
     // On its own: six layers, so that both free ends lie at the same end of the bundle, the label end on top, and that end toward the viewer.
-    const belt: FoldDesc = { cm, w: o.widthCm, t: t0, n: FOLDED_LAYERS, band: o.band ? 4 : 0, period, seed: o.seed ?? 1, loose: 1, x: 0, y: 0, z: 0 };
-    belt.y = (belt.n * (belt.t + LAYER_GAP)) / 2;
+    const belt: FoldDesc = { cm, w: o.widthCm, t: t0, n: foldedLayersFor(cm, o.widthCm), band: o.band ? 4 : 0, period, seed: o.seed ?? 1, loose: 1, x: 0, y: 0, z: 0 };
+    belt.y = stackHeight(belt.n, belt.t, 1) / 2;
     return { rot: o.rot ?? FOLDED_TURN, belt, fits, boxSize };
   }
   const rot = o.rot ?? BASE_TURN;
-  const belt: Omit<FoldDesc, "x" | "y" | "z"> = { cm, w: o.widthCm, t: t0, n: FOLD_LAYERS, band: 0, period, seed: o.seed ?? 1, loose: 0.15 };
-  const d = boxDims(boxSize, type);
+  // A box fits the belt it holds: a belt is drawn no wider than the widest the designer allows.
+  const wid = Math.min(o.widthCm, 6);
+  const fit: BoxFit = { w: wid, t: t0 };
+  const belt: Omit<FoldDesc, "x" | "y" | "z"> = { cm, w: wid, t: t0, n: FOLD_LAYERS, band: 0, period, seed: o.seed ?? 1, loose: 0.15, spring: BOX_SPRING };
+  const d = boxDims(boxSize, type, fit);
   const open = o.box.state === "open";
-  const wid = Math.min(o.widthCm, boxBeltRoom(d));
   const lidBeside = o.box.state === "open";
   const gap = 3;
   const z = lidBeside ? -(d.w + gap) / 2 : 0;
@@ -769,10 +814,9 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
     fits,
     boxSize,
   };
-  // A thick belt is no thicker folded in a box than the box has room for.
+  void open;
   const floor = d.wall * (type === "kiri" ? 1 : 0.6);
-  const t = Math.min(t0, (d.baseH - floor - 0.15) / FOLD_LAYERS - LAYER_GAP);
-  if (o.belt && open && fits) scene.belt = { ...belt, w: wid, t, x: 0, y: d.h / 2 - d.wall * (type === "kiri" ? 1 : 0.6), z };
+  if (o.belt && o.box.state === "open" && fits) scene.belt = { ...belt, x: 0, y: d.h / 2 - floor, z };
   return scene;
 }
 

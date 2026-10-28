@@ -6,7 +6,7 @@
 import { glPainter, matrixOf, paintOrder, type PaintPiece } from "./judogiGl.ts";
 import { FACE_BOX, greyOf, pieceCells, shadeOf, smoothOf } from "./pieceVolume.ts";
 import { normalYaw } from "./turn.ts";
-import { quadPath, turn as rotate, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
+import { quadPath, SOLID_GROW, turn as rotate, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -87,7 +87,7 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
       const ids = faceIds(root, cells);
       const [front, back] = await Promise.all([faceOf(ids.front), faceOf(ids.back)]);
       const [dx, dy] = offsetOf(root, svg);
-      return { desc, cells, smooth: smoothOf(cells), paths: cells.map((c) => new Path2D(quadPath(c.tex))), boxes: cells.map((c) => boxOf(c.tex)), front, back, dx, dy };
+      return { desc, cells, smooth: smoothOf(cells), paths: cells.map((c) => new Path2D(quadPath(c.tex, desc.solid === undefined ? undefined : SOLID_GROW))), boxes: cells.map((c) => boxOf(c.tex)), front, back, dx, dy };
     }));
   } catch {
     return undefined;

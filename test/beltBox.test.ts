@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  BASE_TURN, BOX_MAX_BELT, FOLDED_LAYERS, BOX_SIZES, BOX_TAKES, FOLD_LAYERS, beltCmOfSize, boxBeltRoom, boxDims, boxInnerCm, boxSizeFor, foldPath, lidLength, regionsOf, sceneOf, solidBounds, solidCells,
+  BASE_TURN, BOX_HEADROOM, BOX_MAX_BELT, FOLDED_LAYERS, BOX_SIZES, BOX_TAKES, FOLD_LAYERS, beltCmOfSize, boxBeltRoom, boxDims, boxInnerCm, boxSizeFor, foldPath, foldedLayersFor, gapAt, lidLength, regionsOf, sceneOf, solidBounds, solidCells, stackHeight,
   type BoxState, type BoxType, type SolidDesc,
 } from "../src/beltBox.ts";
 import { BELT_SIZES } from "../src/beltSpecs.ts";
@@ -47,13 +47,14 @@ test("the wooden box fits a belt of size 6 at most; a longer belt does not fit a
   }
 });
 
-test("box dimensions: kiri 7 x 7 cm, silver 5 cm wide, and the length grows with the size", () => {
+test("box dimensions: about 7 cm wide for a 4.5 cm belt (kiri) and 5.5 cm (silver), and the length grows with the size", () => {
   for (const size of BOX_SIZES) {
     const k = boxDims(size, "kiri");
-    assert.equal(k.w, 7);
-    assert.equal(k.h, 7);
+    assert.ok(Math.abs(k.w - 7) <= 0.5, `kiri width ${k.w}`);
     const s = boxDims(size, "silver");
-    assert.ok(Math.abs(s.baseW - 5) <= 0.3 && Math.abs(s.w - 5) <= 0.6, `silver width ${s.baseW}/${s.w}`);
+    assert.ok(Math.abs(s.baseW - 5) <= 0.8 && Math.abs(s.w - 5) <= 1, `silver width ${s.baseW}/${s.w}`);
+    // The height is the folded belt's, not a fixed figure: the same box of a thicker belt is taller.
+    assert.ok(boxDims(size, "kiri", { w: 4.5, t: 0.9 }).h > k.h + 1);
   }
   const inner = BOX_SIZES.map((s) => boxInnerCm(s));
   assert.deepEqual([...inner].sort((a, b) => a - b), inner);
@@ -89,8 +90,10 @@ test("the belt in a box is not wider than the box's room, and the largest belt o
       const d = boxDims(box, type);
       const takes = Math.min(BOX_TAKES[box], BOX_MAX_BELT[type]);
       const s = scene(takes, type, "open", { widthCm: 9 });
-      assert.ok((s.belt?.w ?? 0) <= boxBeltRoom(d) + 1e-9);
-      const { points } = foldPath({ ...(s.belt as NonNullable<typeof s.belt>), w: 4.5 });
+      const room = boxBeltRoom(s.box!.d);
+      assert.ok((s.belt?.w ?? 0) <= room + 1e-9, "a belt is never wider than its box's room");
+      assert.ok(s.belt!.w <= 6 && room >= s.belt!.w, "the box is made for the belt, up to the widest belt drawn");
+      const { points } = foldPath(s.belt as NonNullable<typeof s.belt>);
       const xs = points.map((p) => p.p[0]);
       const span = Math.max(...xs) - Math.min(...xs);
       assert.ok(span <= d.inner + 1e-6 && span > d.inner - 8, `${type} box ${box}: bundle ${span.toFixed(1)} in ${d.inner}`);
@@ -98,20 +101,26 @@ test("the belt in a box is not wider than the box's room, and the largest belt o
   }
 });
 
-test("the folded belt keeps the belt's own length, doubled back six times, both ends at the near end", () => {
+test("the folded belt keeps the belt's own length, doubled back an even number of times (6 to 10 layers), both ends at the near end", () => {
+  assert.equal(FOLDED_LAYERS, 8);
   for (const size of [2, 4, 6, 8]) {
     const f = sceneOf({ beltSize: size, widthCm: 4.5, thickCm: 0.49, belt: true, band: false }).belt!;
     const path = foldPath(f);
     assert.ok(Math.abs(path.length - beltCmOfSize(size)) / beltCmOfSize(size) < 0.02, `${size}: ${path.length}`);
-    assert.equal(f.n, FOLDED_LAYERS);
+    assert.equal(f.n, foldedLayersFor(beltCmOfSize(size), 4.5));
+    assert.ok(f.n % 2 === 0 && f.n >= 6 && f.n <= 10);
     const ys = new Set(path.points.map((p) => Math.round(p.p[1] * 1000)));
-    assert.ok(ys.size >= FOLDED_LAYERS, "six layers at six heights");
+    assert.ok(ys.size >= f.n, "every layer at its own height");
+    // The bundle stays about seven belt widths long, as a shop's folded belt does (not thirty).
+    const xs = path.points.map((p) => p.p[0]);
+    const ratio = (Math.max(...xs) - Math.min(...xs)) / 4.5;
+    assert.ok(ratio > 5 && ratio < 10, `${size}: the bundle is ${ratio.toFixed(1)} belt widths long`);
     // Both free ends lie at the near end of the bundle, the top layer's the one furthest out there.
     const first = path.points[0]!.p[0];
     const lastX = path.points[path.points.length - 1]!.p[0];
     assert.ok(first > 0 && lastX > 0, "both free ends at the same end of the bundle");
     const nearMost = Math.max(...path.points.filter((p) => p.fold === undefined).map((p) => p.p[0]));
-    assert.ok(nearMost - lastX < 1.5, `${size}: the top layer's tip is at the near end (${lastX.toFixed(2)} of ${nearMost.toFixed(2)})`);
+    assert.ok(nearMost - lastX < 0.7 * (f.n / 2) + 1, `${size}: the top layer's tip is at the near end (${lastX.toFixed(2)} of ${nearMost.toFixed(2)})`);
   }
 });
 
@@ -280,6 +289,63 @@ test("the view box holds every state of every box and the folded belt at every t
             const z1 = -c.p[3 * k]! * sy + c.p[3 * k + 2]! * cy;
             const y = c.p[3 * k + 1]! * cp + z1 * sp;
             assert.ok(Math.abs(x) <= b.radius + 1e-6 && y >= b.top - 1e-6 && y <= b.bottom + 1e-6, `a corner out of the view box at turn ${yaw}, tip ${pitch}`);
+          }
+        }
+      }
+    }
+  }
+});
+
+test("a stiff band springs: layers lie close in the middle of the bundle and open out toward its ends, never pressed flat", () => {
+  const f = sceneOf({ beltSize: 4, widthCm: 4.5, thickCm: 0.61, belt: true, band: false }).belt!;
+  assert.ok(gapAt(f, 0) > gapAt(f, 0.5) + 0.05 && gapAt(f, 1) > gapAt(f, 0.5) + 0.05, "gaps widest at the ends");
+  assert.ok(gapAt(f, 0.5) > 0, "a gap even in the middle");
+  const { points } = foldPath(f);
+  const ys = points.map((p) => p.p[1]);
+  const height = Math.max(...ys) - Math.min(...ys) + f.t;
+  assert.ok(height > f.n * f.t + 0.5, `the stack is taller than its layers (${height.toFixed(2)} cm of ${(f.n * f.t).toFixed(2)})`);
+  assert.ok(height <= stackHeight(f.n, f.t, f.loose) + 1e-6);
+  // A thicker belt gives a taller, thicker bundle: its own thickness drives it.
+  const thick = sceneOf({ beltSize: 4, widthCm: 4.5, thickCm: 0.7, belt: true, band: false }).belt!;
+  assert.ok(thick.t > f.t && stackHeight(thick.n, thick.t, 1) > stackHeight(f.n, f.t, 1));
+});
+
+test("a box is as tall as the folded belt in it, for every belt width, thickness and size: the lid closes over it and nothing pokes through", () => {
+  const widths = [3.5, 4.2, 4.5, 4.7, 5, 6];
+  const thicks = [0.49, 0.61, 0.7];
+  for (const type of ["kiri", "silver"] as const) {
+    for (const size of [2, 3.5, 4, 5, 6]) {
+      for (const widthCm of widths) {
+        for (const thickCm of thicks) {
+          const s = sceneOf({ beltSize: size, widthCm, thickCm, belt: true, band: false, box: { type, state: "open" }, rot: 0 });
+          if (!s.fits) continue;
+          const belt = s.belt!;
+          const d = s.box!.d;
+          const { points } = foldPath(belt);
+          const top = Math.min(...points.map((p) => p.p[1] - belt.t / 2));
+          const bottom = Math.max(...points.map((p) => p.p[1] + belt.t / 2));
+          const floor = s.box!.y - d.wall * (type === "kiri" ? 1 : 0.6);
+          const rim = s.box!.y - d.baseH;
+          const tag = `${type} size ${size} width ${widthCm} thick ${thickCm}`;
+          // The inside height is the bundle's height, to a millimetre.
+          const inner = floor - rim;
+          assert.ok(Math.abs(inner - (bottom - top)) <= 0.1 + 1e-6, `${tag}: inside ${inner.toFixed(3)} cm, bundle ${(bottom - top).toFixed(3)} cm`);
+          assert.ok(Math.abs(inner - (stackHeight(belt.n, belt.t, belt.spring ?? belt.loose) + BOX_HEADROOM)) < 1e-6, `${tag}: inside height is the stack's`);
+          // The lid closes over it: the bundle's top is under the rim the lid rests on, and its bottom on the floor.
+          assert.ok(top >= rim - 1e-6 && bottom <= floor + 1e-6, `${tag}: bundle outside the tray`);
+          // Every cell of the belt lies inside the tray: along, across and in height.
+          const cells = solidCells({ ...s, belt });
+          const U = UNITS_PER_CM;
+          for (const c of cells) {
+            if (c.layer !== 1) continue;
+            for (let k = 0; k < 3; k++) {
+              const x = c.p[3 * k]! / U;
+              const y = c.p[3 * k + 1]! / U;
+              const z = c.p[3 * k + 2]! / U;
+              assert.ok(Math.abs(x) <= d.inner / 2 + 1e-6, `${tag}: pokes out along (${x.toFixed(2)})`);
+              assert.ok(y >= rim - 1e-6 && y <= floor + 1e-6, `${tag}: pokes out above or below (${y.toFixed(2)} of ${rim.toFixed(2)}..${floor.toFixed(2)})`);
+              assert.ok(Math.abs(z - s.box!.z) <= d.baseW / 2 - d.wall + 1e-6, `${tag}: pokes out across (${z.toFixed(2)})`);
+            }
           }
         }
       }

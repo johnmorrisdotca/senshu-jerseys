@@ -63,13 +63,13 @@ const CREAM = (): ReadLabel => readLabel({ colour: "cream" }) as ReadLabel;
  * The tags and grade lines of one end, in that end's frame. `half` is half the belt's width here. Returns its defs and its body (empty when this end carries none).
  * From the tip upward: a margin, the white tag, the size tag, the maker's label (each a little narrower than the belt), and above the lot the grade lines.
  */
-export function endTagsMark(t: ReadEndTags | undefined, end: 0 | 1, half: number, uid: string): { defs: string; body: string } {
+export function endTagsMark(t: ReadEndTags | undefined, end: 0 | 1, half: number, uid: string, margin = 2.2): { defs: string; body: string } {
   if (t === undefined || t.end !== end) return { defs: "", body: "" };
   const l = END_LENGTH[end];
   const room = Math.max(4, 2 * half - 2.2);
   let defs = "";
   let body = "";
-  let x = l - 2.2 * CM;
+  let x = l - margin * CM;
   // A tag is `along` long down the end and `across` the belt, its lettering running down the end as embroidery does; kept inside the belt's width.
   const put = (along: number, across: number, draw: (id: string, along: number, across: number) => { defs: string; body: string }, id: string): void => {
     const k = Math.min(1, room / across);
