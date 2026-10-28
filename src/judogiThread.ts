@@ -5,7 +5,7 @@
 
 import { blend, esc, hexOf, readColour, type Rgb } from "./colour.ts";
 import { n2 } from "./path.ts";
-import type { Run } from "./text.ts";
+import { langAttr, type Run } from "./text.ts";
 
 export const THREAD_COLOURS = [
   "red", "gold-brown", "green", "black", "gold", "fluo-pink", "pink", "blue", "yellow-green", "white", "silver", "fluo-orange",
@@ -115,13 +115,14 @@ export function satinStroke(d: string, sw: number, rgb: Rgb): string {
     `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.sheen}" stroke-opacity="0.34" stroke-width="${n2(sw * 0.3)}" transform="translate(${n2(-sw * 0.12)} ${n2(-sw * 0.16)})"/>`;
 }
 
-/** A run of text as thread: the stroke glyphs as satin strokes, or system text with the satin pattern over it. `id` names the pattern the caller defined. */
-export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: string): string {
+/** A run of text as thread (`wholeText`: the full text it is a part of, when the language is told by the rest of it, as in a column set one character at a time): the stroke glyphs as satin strokes, or system text with the satin pattern over it. `id` names the pattern the caller defined. */
+export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: string, wholeText?: string): string {
   if (run.kind === "glyph") return run.d === "" ? "" : satinStroke(run.d, run.sw, rgb);
   const t = threadOf(rgb);
   let out = "";
+  const lang = langAttr(wholeText ?? run.chars.map((ch) => ch.c).join(""));
   for (const ch of run.chars) {
-    const at = (dx = 0, dy = 0): string => `transform="translate(${n2(ch.x + dx)} ${n2(ch.y + dy)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="700" font-family="${esc(family)}"`;
+    const at = (dx = 0, dy = 0): string => `transform="translate(${n2(ch.x + dx)} ${n2(ch.y + dy)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="700" font-family="${esc(family)}"${lang}`;
     out += `<text ${at(0.35, 0.5)} fill="${t.shadow}" fill-opacity="0.3" stroke="${t.shadow}" stroke-opacity="0.3" stroke-width="0.7">${esc(ch.c)}</text>`;
     out += `<text ${at()} fill="${t.fill}" stroke="${edge ?? t.gap}" stroke-opacity="0.55" stroke-width="0.25" stroke-linejoin="round">${esc(ch.c)}</text>`;
     out += `<text ${at()} fill="url(#${id})">${esc(ch.c)}</text>`;

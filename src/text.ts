@@ -1,6 +1,6 @@
 // Text on a jersey: drawn from the glyphs (strokes) where every character has one, else set as system text, one character at a time, so that both can be arched.
-import { esc } from "./colour.ts";
-import { WEIGHTS, drawable, glyphOf, type Weight } from "./glyphs.ts";
+import { esc, graphemes, settable } from "./colour.ts";
+import { WEIGHTS, glyphOf, type Weight } from "./glyphs.ts";
 import { mapPath, n2, placed } from "./path.ts";
 
 export interface RunOptions {
@@ -31,8 +31,14 @@ export interface Run {
   chars: { c: string; x: number; y: number; r: number; size: number }[];
 }
 
-const FONT = "system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP','Yu Gothic',sans-serif";
-const wide = (c: string): boolean => /[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(c);
+const FONT = "system-ui,-apple-system,'Segoe UI','Hiragino Sans','Noto Sans JP','Yu Gothic','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
+/** The language a run of text is in when its script says so (Hangul: Korean; kana: Japanese), as the attributes that choose the font's regional glyphs for the Han characters beside it; empty for Latin. */
+export function langAttr(text: string): string {
+  const lang = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(text) && !/[\u3040-\u30ff]/.test(text) ? "ko" : /[\u3040-\u30ff]/.test(text) ? "ja" : "";
+  return lang === "" ? "" : ` lang="${lang}" xml:lang="${lang}"`;
+}
+
+const wide = (c: string): boolean => /^[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(c);
 
 /**
  * Lay a run out about the point `(cx, cy)`: the middle of its letters, left to right, on a straight line or a rainbow arch. `d` is one path of centre lines for
@@ -40,8 +46,8 @@ const wide = (c: string): boolean => /[ᄀ-ᇿ⺀-鿿가-힯＀-￯]/.test(c);
  */
 export function layout(text: string, cx: number, cy: number, o: RunOptions): Run {
   const weight = WEIGHTS[o.weight ?? "bold"];
-  const chars = [...text];
-  const glyphMode = o.asText !== true && drawable(text);
+  const chars = graphemes(settable(text));
+  const glyphMode = o.asText !== true && chars.every((c) => glyphOf(c) !== undefined);
   const track = (o.tracking ?? 0.55) * weight;
   // The natural size: height 90 + the stroke. Widths in glyph units.
   const adv = chars.map((c) => (glyphMode ? (glyphOf(c)?.w ?? 0) + weight : wide(c) ? 100 : 62));
@@ -103,8 +109,9 @@ export function drawRun(run: Run, fill: string, edge: { colour: string; width: n
     return out;
   }
   let out = "";
+  const lang = langAttr(run.chars.map((ch) => ch.c).join(""));
   for (const ch of run.chars) {
-    const attrs = `transform="translate(${n2(ch.x)} ${n2(ch.y)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="800" font-family="${FONT}"`;
+    const attrs = `transform="translate(${n2(ch.x)} ${n2(ch.y)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="800" font-family="${FONT}"${lang}`;
     const halo = edge !== undefined && edge.width > 0 ? ` stroke="${edge.colour}" stroke-width="${n2(edge.width * 2)}" stroke-linejoin="round" paint-order="stroke"` : "";
     out += `<text ${attrs} fill="${fill}"${halo}>${esc(ch.c)}</text>`;
   }

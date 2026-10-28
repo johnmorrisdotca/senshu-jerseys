@@ -5,7 +5,7 @@
 // A maker's logo is one to a garment, so the S is not added to a garment that has a logo of the person's own. Never a real maker's or federation's mark.
 // Original drawing.
 
-import type { Rgb } from "./colour.ts";
+import { clean, type Rgb } from "./colour.ts";
 import { woven, type ReadLabel } from "./judogiLabel.ts";
 import { satinDefs, satinRun, satinShape } from "./judogiThread.ts";
 import { n2, type Pt } from "./path.ts";
@@ -147,8 +147,7 @@ export interface ReadBranding {
 
 const word = (v: unknown, max: number, fallback: string): string => {
   if (typeof v !== "string") return fallback;
-  const t = v.replace(/\s+/g, " ").trim().slice(0, max);
-  return t;
+  return clean(v, max) ?? "";
 };
 
 /** The branding from outside: `true` for the default Senshu brand; `undefined` for none. */

@@ -6,7 +6,7 @@
 // judogi in a ring, no red rectangular border, no serif lettering, no federation name): the colours, the lettering, the proportions and the drawing are
 // this package's own. Woven look: a fine weave under satin thread, a woven border, a sheen and a slight curl of one corner. Original drawing.
 
-import { blend, hexOf, lum, readColour, type Rgb } from "./colour.ts";
+import { blend, graphemes, hexOf, lum, readColour, type Rgb } from "./colour.ts";
 import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
 import { readThread, satinDefs, satinRun, satinStroke, type ThreadColour } from "./judogiThread.ts";
@@ -136,7 +136,7 @@ export function labelMark(id: string, l: ReadLabel, w: number): { defs: string; 
   const rText = R * 0.81;
   const hh = R * 0.15;
   const arc = (text: string, top: boolean): string => {
-    const chars = [...text];
+    const chars = graphemes(text);
     const step = (hh / rText) * (180 / Math.PI);
     const span = (chars.length - 1) * step;
     let out = "";

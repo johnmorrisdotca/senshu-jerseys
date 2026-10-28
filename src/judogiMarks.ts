@@ -7,7 +7,7 @@
 // lapel hem, a belt end or the trousers' top at most about 20 cm long, a maker's mark 20 cm2). The rules' pictures and wording are not copied. The package
 // ships neutral placeholders only: no maker's, federation's or nation's mark. Original drawing.
 
-import { esc, hashOf, lum, type Rgb } from "./colour.ts";
+import { clean, esc, graphemes, hashOf, lum, type Rgb } from "./colour.ts";
 import type { Mark } from "./judogiCloth.ts";
 import { HEM_X } from "./judogiCollar.ts";
 import { EMBLEM_ROOM, jacketSpots } from "./judogiJacket.ts";
@@ -84,9 +84,9 @@ export interface JudogiEmblem {
 
 /** The system-font stacks. Open fonts named first are suggestions the page may load; the rest are what a computer has. */
 export const FONT_STACKS: Record<Exclude<EmbroideryFontName, "block">, string> = {
-  gothic: "'Hiragino Sans','Noto Sans JP','Yu Gothic','Meiryo',system-ui,sans-serif",
-  kaisho: "'Yuji Syuku','Klee One','Klee','UD Digi Kyokasho NK-R','HGKyokashotai','Kaiti SC','Hiragino Mincho ProN','Yu Mincho',serif",
-  gyosho: "'Yuji Mai','Yuji Boku','Zen Kurenaido','Hiragino Mincho ProN','Yu Mincho',serif",
+  gothic: "'Hiragino Sans','Noto Sans JP','Yu Gothic','Meiryo','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Nanum Gothic',system-ui,sans-serif",
+  kaisho: "'Yuji Syuku','Klee One','Klee','UD Digi Kyokasho NK-R','HGKyokashotai','Kaiti SC','Hiragino Mincho ProN','Yu Mincho','Apple SD Gothic Neo','Nanum Myeongjo','Noto Serif KR','Batang',serif",
+  gyosho: "'Yuji Mai','Yuji Boku','Zen Kurenaido','Hiragino Mincho ProN','Yu Mincho','Apple SD Gothic Neo','Nanum Myeongjo','Noto Serif KR','Batang',serif",
   cursive: "'Snell Roundhand','Apple Chancery','Segoe Script','Brush Script MT',cursive",
 };
 
@@ -212,7 +212,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       if (raw === null || typeof raw !== "object") continue;
       const e = raw as JudogiEmbroidery;
       if (!(EMBROIDERY_PLACES as readonly string[]).includes(e.place) || seen.has(e.place)) continue;
-      const text = typeof e.text === "string" ? e.text.replace(/\s+/g, " ").trim().slice(0, 24) : "";
+      const text = clean(e.text, 24) ?? "";
       const p = e.path;
       const path = text === "" && p !== undefined && p !== null && typeof p.d === "string" && /^[MLHVCSQTAZmlhvcsqtaz0-9eE.,\s+-]+$/.test(p.d) && p.d.length < 60_000 && p.width > 0 && p.height > 0 ? { d: p.d, width: p.width, height: p.height } : undefined;
       if (text === "" && path === undefined) continue;
@@ -360,13 +360,13 @@ function textOf(m: MarkSpec, e: ReadEmbroidery, id: string): Out {
   const weight = e.weight;
   if (e.direction === "down") {
     // A column: every character upright, one under the next, as a vertical Japanese line stands.
-    const chars = [...e.text].filter((c) => c !== " ");
+    const chars = graphemes(e.text).filter((c) => c !== " ");
     const step = Math.min(hU * 1.12, lU / Math.max(1, chars.length));
     const size = Math.min(hU, step / 1.05);
     let body = "";
     chars.forEach((c, i) => {
       const run = layout(c, 0, (i - (chars.length - 1) / 2) * step, { height: size, maxWidth: size * 1.3, weight, asText });
-      body += satinRun(run, rgb, `${id}S`, family);
+      body += satinRun(run, rgb, `${id}S`, family, undefined, e.text);
     });
     return { defs, body };
   }

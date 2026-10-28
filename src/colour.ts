@@ -72,13 +72,34 @@ export const esc = (text: unknown): string => String(text).replace(/&/g, "&amp;"
 // Control characters and the marks that reorder text, kept out of anything that is drawn.
 // eslint-disable-next-line no-control-regex
 const CONTROL = new RegExp("[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069]", "g");
+// What thread and type cannot set: invisible format characters (joiners, direction marks, the byte order mark, the soft hyphen), non-characters and
+// lone surrogates, colour pictures (emoji, flags, keycaps) and the scripts written right to left, which need shaping this package does not do.
+// (Copyright, registered and trade mark signs are kept.)
+const UNSETTABLE = new RegExp(
+  "[\\p{Cf}\\p{Cs}\\p{Cn}\\p{Co}\\p{Regional_Indicator}\\u20e3\\ufe0e\\ufe0f" +
+    "\\p{Script=Hebrew}\\p{Script=Arabic}\\p{Script=Syriac}\\p{Script=Thaana}\\p{Script=Nko}\\p{Script=Samaritan}\\p{Script=Mandaic}]" +
+    "|(?![\\u00a9\\u00ae\\u2122])[\\p{Extended_Pictographic}\\p{Emoji_Presentation}]",
+  "gu",
+);
 
-/** Free text from outside: control characters out, runs of space folded, cut to `max` characters, or `undefined` when nothing is left. */
+/** The user-perceived characters of a text (a letter with its accents, a Hangul syllable, a family emoji are one each). */
+export function graphemes(text: string): string[] {
+  const Seg = (Intl as { Segmenter?: new (l?: string, o?: { granularity: string }) => { segment(s: string): Iterable<{ segment: string }> } }).Segmenter;
+  if (Seg === undefined) return [...text];
+  return [...new Seg(undefined, { granularity: "grapheme" }).segment(text)].map((x) => x.segment);
+}
+
+/** Text from outside made settable: composed (NFC, so a Hangul syllable sent as its parts is one character), with what cannot be drawn taken out (see UNSETTABLE). */
+export function settable(text: string): string {
+  return text.normalize("NFC").replace(CONTROL, "").replace(UNSETTABLE, "");
+}
+
+/** Free text from outside: made settable, runs of space folded, cut to `max` characters (never in the middle of one), or `undefined` when nothing is left. */
 export function clean(text: unknown, max = 40): string | undefined {
   if (typeof text !== "string" && typeof text !== "number") return undefined;
 
-  const out = String(text).replace(CONTROL, "").replace(/\s+/g, " ").trim();
-  return out === "" ? undefined : [...out].slice(0, max).join("");
+  const out = settable(String(text)).replace(/\s+/g, " ").trim();
+  return out === "" ? undefined : graphemes(out).slice(0, max).join("");
 }
 
 /** A short hash of a string, for ids that are the same for the same drawing and (almost always) differ between drawings. */
