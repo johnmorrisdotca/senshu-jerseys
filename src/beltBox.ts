@@ -4,6 +4,7 @@
 // the boxes' faces on regions of the same picture (beltBoxFace.ts). The numbers here are centimetres until the very end, where a centimetre becomes `UNITS_PER_CM` units.
 // Box sizes, the 7 x 7 cm kiri and the 5 cm silver widths are from KuSakura's gift-box pages (read 2026-10-28; see docs/judogi.md); the box length per size is derived here.
 
+import { END_LENGTH } from "./judogiStripes.ts";
 import { BACK_Y, EDGE1_Y, EDGE_H, END_X, FACE_Y, quad, UNITS_PER_CM } from "./judogiStrap.ts";
 import type { Cell } from "./volume.ts";
 
@@ -370,8 +371,6 @@ export interface Along {
   k?: number;
 }
 
-/** How long the hanging end's marks are laid out along, in drawing units (the same end the tied belt hangs). */
-const END_LEN = 64;
 /** Where the belt's plain stretch is laid on its strip, and after what length it repeats (a kohaku belt's panels). */
 const X0 = -30;
 const PERIOD = 80;
@@ -388,7 +387,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
   const total = f.cm - (n - 1) * arc;
   const base = total / n;
   const ext = Math.min(2.2, base / 6);
-  const jit = [0, 0.35, -0.25, 0.4, -0.3, 0.2, -0.15, 0.3];
+  const jit = [0, 0.12, -0.08, 0.14, -0.1, 0.07, -0.05, 0.1];
   const len = Array.from({ length: n }, (_, i) => (i === 0 ? base + ext : base - ext / (n - 1)) + (jit[i % jit.length] ?? 0));
   len[n - 1] = (len[n - 1] as number) - (len.reduce((a, c) => a + c, 0) - total);
   const xs: number[] = [];
@@ -441,9 +440,11 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
 function stripX(u: number, total: number): { x: number; dir: 1 | -1 } {
   const uu = u * U;
   const tot = total * U;
-  if (uu < END_LEN) return { x: (END_X[1] as number) + END_LEN - uu, dir: -1 };
-  if (tot - uu < END_LEN) return { x: (END_X[0] as number) + (uu - (tot - END_LEN)), dir: 1 };
-  if (u < total / 2) return { x: (END_X[1] as number) - ((uu - END_LEN) % PERIOD), dir: -1 };
+  // Each free end lies on its own stretch of the strip, as long as the tied belt's hanging end (what is sewn on an end is laid out for that length).
+  const [endA, endB] = END_LENGTH;
+  if (uu < endB) return { x: (END_X[1] as number) + endB - uu, dir: -1 };
+  if (tot - uu < endA) return { x: (END_X[0] as number) + (uu - (tot - endA)), dir: 1 };
+  if (u < total / 2) return { x: (END_X[1] as number) - ((uu - endB) % PERIOD), dir: -1 };
   return { x: X0 + (uu % PERIOD), dir: 1 };
 }
 
@@ -451,7 +452,7 @@ function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
   const { points, length } = foldPath(f);
   const hw = f.w / 2;
   // The strip's places where its look changes (where a free end's marks end, and the middle) fall between cells: a step is cut there.
-  const cuts = [END_LEN / U, length - END_LEN / U, length / 2];
+  const cuts = [END_LENGTH[1] / U, length - END_LENGTH[0] / U, length / 2];
   for (let i = 0; i + 1 < points.length; i++) {
     let a = points[i] as Along;
     const b = points[i + 1] as Along;

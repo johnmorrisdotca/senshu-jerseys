@@ -18,9 +18,9 @@ export interface BoxLook {
 
 /** The wood's colours: the ground, its grain lines and the engraving's burn (gold-brown, as on the photographed box). */
 const WOODS: Record<KiriWood, { ground: string; grain: string; deep: string }> = {
-  light: { ground: "#efdbb8", grain: "#dcc08f", deep: "#c9a46f" },
-  natural: { ground: "#e8c99b", grain: "#d4aa72", deep: "#bd8d52" },
-  honey: { ground: "#dcb27a", grain: "#c3925a", deep: "#a8743f" },
+  light: { ground: "#f2e2c4", grain: "#e2c999", deep: "#d1b07c" },
+  natural: { ground: "#ecd3a8", grain: "#dcbb88", deep: "#c99d63" },
+  honey: { ground: "#e0b983", grain: "#cb9d68", deep: "#b3834d" },
 };
 const BURN = { fill: "#b8782c", edge: "#7a4716", lip: "#f3dcae" };
 
@@ -57,33 +57,35 @@ export function lidTextLayout(length: number, width: number, text: string, near 
 const group = (r: Rect, body: string, id?: string): string => `<g${id === undefined ? "" : ` id="${id}"`}><svg x="${n2(r.x)}" y="${n2(r.y)}" width="${n2(r.w)}" height="${n2(r.h)}" viewBox="0 0 ${n2(r.w)} ${n2(r.h)}" overflow="hidden">${body}</svg></g>`;
 
 /** Wood in a region `w` by `h` units: the ground, long wavy grain lines and the odd darker streak. */
-function wood(w: number, h: number, tone: KiriWood, seed: number, darker = 0): string {
+function wood(w: number, h: number, tone: KiriWood, seed: number, darker = 0, lift = 0): string {
   const c = WOODS[tone];
   const rand = rng(seed);
   let s = `<rect width="${n2(w)}" height="${n2(h)}" fill="${c.ground}"/>`;
   if (darker > 0) s += `<rect width="${n2(w)}" height="${n2(h)}" fill="#6a4318" fill-opacity="${darker}"/>`;
-  const lines = Math.max(6, Math.round(h * 1.6));
+  const lines = Math.max(5, Math.round(h * 0.9));
   for (let i = 0; i < lines; i++) {
     const y = ((i + rand() * 0.8) / lines) * h;
     const a = (rand() - 0.5) * 0.9;
-    const bold = rand() < 0.2;
-    s += `<path d="M0 ${n2(y)}C${n2(w * 0.3)} ${n2(y + a)} ${n2(w * 0.65)} ${n2(y - a)} ${n2(w)} ${n2(y + a * 0.4)}" fill="none" stroke="${bold ? c.deep : c.grain}" stroke-opacity="${n2(bold ? 0.5 : 0.38 + rand() * 0.3)}" stroke-width="${n2(bold ? 0.34 : 0.16 + rand() * 0.14)}"/>`;
+    const bold = rand() < 0.12;
+    s += `<path d="M0 ${n2(y)}C${n2(w * 0.3)} ${n2(y + a)} ${n2(w * 0.65)} ${n2(y - a)} ${n2(w)} ${n2(y + a * 0.4)}" fill="none" stroke="${bold ? c.deep : c.grain}" stroke-opacity="${n2(bold ? 0.3 : 0.2 + rand() * 0.25)}" stroke-width="${n2(bold ? 0.26 : 0.12 + rand() * 0.1)}"/>`;
   }
   for (let i = 0; i < 5; i++) {
     const y = rand() * h;
     const x = rand() * w * 0.8;
-    s += `<path d="M${n2(x)} ${n2(y)}h${n2(w * (0.08 + rand() * 0.14))}" stroke="${c.deep}" stroke-opacity="0.22" stroke-width="${n2(0.4 + rand() * 0.5)}" stroke-linecap="round"/>`;
+    s += `<path d="M${n2(x)} ${n2(y)}h${n2(w * (0.08 + rand() * 0.14))}" stroke="${c.deep}" stroke-opacity="0.1" stroke-width="${n2(0.4 + rand() * 0.5)}" stroke-linecap="round"/>`;
   }
+  // The sides stand turned from the light and darken more than a top does: they are painted a little paler to read as the same wood.
+  if (lift > 0) s += `<rect width="${n2(w)}" height="${n2(h)}" fill="#fff" fill-opacity="${lift}"/>`;
   return s;
 }
 
 /** End grain: the ring pattern, off-centre, on wood. */
 function endGrain(w: number, h: number, tone: KiriWood): string {
   const c = WOODS[tone];
-  let s = `<rect width="${n2(w)}" height="${n2(h)}" fill="${c.ground}"/><rect width="${n2(w)}" height="${n2(h)}" fill="#7a4d1c" fill-opacity="0.1"/>`;
+  let s = `<rect width="${n2(w)}" height="${n2(h)}" fill="${c.ground}"/><rect width="${n2(w)}" height="${n2(h)}" fill="#fff" fill-opacity="0.12"/>`;
   const cx = w * 0.7;
   const cy = h * 1.3;
-  for (let r = 3; r < w * 2; r += 2.2) s += `<ellipse cx="${n2(cx)}" cy="${n2(cy)}" rx="${n2(r * 1.6)}" ry="${n2(r)}" fill="none" stroke="${c.deep}" stroke-opacity="${n2(0.22 + (r % 4.4) / 12)}" stroke-width="0.25"/>`;
+  for (let r = 3; r < w * 2; r += 2.2) s += `<ellipse cx="${n2(cx)}" cy="${n2(cy)}" rx="${n2(r * 1.6)}" ry="${n2(r)}" fill="none" stroke="${c.deep}" stroke-opacity="${n2(0.14 + (r % 4.4) / 20)}" stroke-width="0.22"/>`;
   return s;
 }
 
@@ -92,7 +94,7 @@ function engraving(length: number, width: number, text: string): string {
   const lay = lidTextLayout(length, width, text);
   let s = "";
   for (const ch of lay.chars) {
-    const at = (dx: number, dy: number): string => `transform="translate(${n2(ch.x + dx)} ${n2(lay.y + dy)}) rotate(90)" font-size="${n2(lay.size)}" text-anchor="middle" dominant-baseline="central" font-family="${BRUSH}" font-weight="700"`;
+    const at = (dx: number, dy: number): string => `transform="translate(${n2(ch.x + dx)} ${n2(lay.y + dy)}) rotate(90)" font-size="${n2(lay.size)}" text-anchor="middle" dominant-baseline="central" font-family="${BRUSH}" font-weight="400"`;
     s += `<text ${at(0.18, -0.18)} fill="${BURN.lip}" fill-opacity="0.55" stroke="${BURN.lip}" stroke-opacity="0.5" stroke-width="0.35">${esc(ch.c)}</text>`;
     s += `<text ${at(-0.12, 0.15)} fill="${BURN.edge}" fill-opacity="0.75" stroke="${BURN.edge}" stroke-opacity="0.6" stroke-width="0.3">${esc(ch.c)}</text>`;
     s += `<text ${at(0, 0)} fill="${BURN.fill}" stroke="${BURN.fill}" stroke-width="0.18">${esc(ch.c)}</text>`;
@@ -104,7 +106,7 @@ function engraving(length: number, width: number, text: string): string {
 function silver(w: number, h: number, id: string): string {
   const rand = rng(7);
   let s = `<defs><pattern id="${id}" width="3.2" height="2.4" patternUnits="userSpaceOnUse"><path d="M0 2.4Q0.8 0.4 1.6 1.4Q2.4 0.4 3.2 2.4" fill="none" stroke="#9aa0a8" stroke-opacity="0.22" stroke-width="0.22"/></pattern>` +
-    `<linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e3e6ea"/><stop offset="0.5" stop-color="#cdd1d6"/><stop offset="1" stop-color="#dfe2e6"/></linearGradient></defs>`;
+    `<linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset="0.5" stop-color="#e2e6ea"/><stop offset="1" stop-color="#f0f2f5"/></linearGradient></defs>`;
   s += `<rect width="${n2(w)}" height="${n2(h)}" fill="url(#${id}g)"/><rect width="${n2(w)}" height="${n2(h)}" fill="url(#${id})"/>`;
   // A small tile of specks, repeated: thousands of separate rectangles are slow to draw.
   let tile = "";
@@ -141,7 +143,7 @@ function silverLid(length: number, width: number, text: string, id: string): str
   const size = Math.min(lw * 0.8, (x1 - x0 - lw * 1.1) / Math.max(1, chars.length) / 1.1);
   chars.forEach((c, i) => {
     const x = x1 - lw * 1.15 - size * 1.1 * (i + 0.5);
-    s += `<text transform="translate(${n2(x)} ${n2(width / 2)}) rotate(90)" font-size="${n2(size)}" text-anchor="middle" dominant-baseline="central" font-family="${BRUSH}" font-weight="700" fill="#262626" stroke="#262626" stroke-width="0.15">${esc(c)}</text>`;
+    s += `<text transform="translate(${n2(x)} ${n2(width / 2)}) rotate(90)" font-size="${n2(size)}" text-anchor="middle" dominant-baseline="central" font-family="${BRUSH}" font-weight="400" fill="#2b2b2b" stroke="#2b2b2b" stroke-width="0.22">${esc(c)}</text>`;
   });
   return s;
 }
@@ -185,9 +187,9 @@ export function solidFace(desc: SolidDesc, paint: BeltPaint | undefined, look: B
   if (b !== undefined) {
     if (b.type === "kiri") {
       put(r.lidTop, wood(r.lidTop.w, r.lidTop.h, look.wood, 11) + engraving(r.lidTop.w, r.lidTop.h, look.text));
-      put(r.lidLong, wood(r.lidLong.w, r.lidLong.h, look.wood, 14) + `<rect y="${n2(r.lidLong.h - 0.5)}" width="${n2(r.lidLong.w)}" height="0.5" fill="#6a4318" fill-opacity="0.35"/>`);
+      put(r.lidLong, wood(r.lidLong.w, r.lidLong.h, look.wood, 14, 0, 0.2));
       put(r.lidEnd, endGrain(r.lidEnd.w, r.lidEnd.h, look.wood));
-      put(r.baseLong, wood(r.baseLong.w, r.baseLong.h, look.wood, 12));
+      put(r.baseLong, wood(r.baseLong.w, r.baseLong.h, look.wood, 12, 0, 0.22));
       put(r.baseEnd, endGrain(r.baseEnd.w, r.baseEnd.h, look.wood));
       put(r.baseEnd2, endGrain(r.baseEnd2.w, r.baseEnd2.h, look.wood));
       put(r.rimLong, wood(r.rimLong.w, r.rimLong.h, look.wood, 15, 0.04));
