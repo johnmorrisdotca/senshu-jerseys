@@ -199,6 +199,9 @@ function detailsOf(r: Resolved, sl: VolumeDesc["sl"]): { at: VolumeDesc["sd"][nu
   return out;
 }
 
+/** The `Cell.layer` of a thing that lies apart from the rest of a scene (a box's lid beside it): drawn first when it is behind the rest, last when it is in front. */
+export const APART = 9;
+
 /** One cell: a triangle, where it is on its drawing, where its corners lie in space and the way the cloth faces there. Two make a quadrilateral of the grid, and a triangle's map is exact at its corners, so its neighbours meet it with no gap. */
 export interface Cell {
   /** 0 the torso's front half, 3 its back half, 1 and 2 the sleeve on the picture's left and right. */

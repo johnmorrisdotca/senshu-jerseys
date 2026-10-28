@@ -7,7 +7,7 @@
 import { BELT_SIZES } from "./beltSpecs.ts";
 import { END_LENGTH } from "./judogiStripes.ts";
 import { BACK_Y, EDGE1_Y, EDGE_H, END_X, FACE_Y, quad, UNITS_PER_CM } from "./judogiStrap.ts";
-import type { Cell } from "./volume.ts";
+import { APART, type Cell } from "./volume.ts";
 
 type Vec = [number, number, number];
 
@@ -366,6 +366,7 @@ function lidCells(k: Sink, b: BoxScene, r: Regions): void {
   const L = lidLength(d);
   const yTop = b.y - d.baseH;
   const zc = closed ? b.z : b.lidZ;
+  k.layer = closed ? 2 : APART;
   if (d.type === "kiri") {
     // The slab slides in the walls' grooves, sitting on the tray's rim a touch proud of it each way (so there is a step and a seam to see), or lies on the table beside the tray; the engraving shows on its top either way.
     const yb = closed ? yTop : b.y;

@@ -9,7 +9,7 @@ import { solidCells } from "./beltBox.ts";
 import { collarCells } from "./judogiCollar.ts";
 import { strapCells } from "./judogiStrap.ts";
 import { n2 } from "./path.ts";
-import { cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
+import { APART, cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
 
 /** Every cell of a piece: a belt's strap, a jacket's collar, or the garment's body and sleeves. */
 export function pieceCells(d: VolumeDesc): Cell[] {
@@ -32,7 +32,14 @@ export function depthOrder(placed: readonly Placed[]): number[] {
   const layers = [...new Set(placed.map((q) => q.layer ?? 0))].sort((a, b) => a - b);
   if (layers.length < 2) return settle(placed, byDepth(placed.map((_, i) => i)));
   // Things made of layers (a box, the belt in it, the box's walls) are drawn layer by layer, each in its own settled order: a wall then always covers what it holds.
-  return layers.flatMap((l) => settle(placed, byDepth(placed.flatMap((q, i) => ((q.layer ?? 0) === l ? [i] : [])))));
+  const ofLayer = (l: number): number[] => placed.flatMap((q, i) => ((q.layer ?? 0) === l ? [i] : []));
+  const order = (l: number): number[] => settle(placed, byDepth(ofLayer(l)));
+  // A lid lying apart (layer `APART`) is a thing of its own: behind the rest it is drawn first, in front of it last.
+  const apart = ofLayer(APART);
+  const rest = layers.filter((l) => l !== APART).flatMap(order);
+  if (apart.length === 0 || rest.length === 0) return [...rest, ...order(APART)];
+  const mean = (idx: readonly number[]): number => idx.reduce((a, i) => a + placed[i]!.depth, 0) / idx.length;
+  return mean(apart) < mean(rest) ? [...order(APART), ...rest] : [...rest, ...order(APART)];
 }
 
 /** The corners of a placed cell as three `[x, y, nearness]`, or undefined when the cell is not seen. */
