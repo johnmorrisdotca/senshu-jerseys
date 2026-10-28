@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-10-27
+
+### Added
+
+- **Two new pictures in the README's "The best of it"**: a row of six judogi jackets (back numbers, a national emblem, branding, embroidery, red-and-white, brown, black and white belts, one without) and a row of ten belts in every grade colour with embroidery, labels and logos, each on a tatami mat under floodlights, one piece turning in each. `pnpm animations` makes them (`ONLY=judogi-turn,belts-turn`), and each caption links to the designer with that piece's choices in the address.
+
 ## [0.17.0] - 2026-10-27
 
 ### Added

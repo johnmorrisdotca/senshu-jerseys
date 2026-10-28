@@ -65,6 +65,28 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 </picture>
 </p>
 
+- **Judogi, with the marks a competitor wears** ([judogi](./docs/judogi.md)): the IJF-style back number and the zekken, a national emblem, embroidery, the Approved label and the maker's brand, on a tatami mat.
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/judogi-turn-dark.webp">
+<img alt="Six judogi jackets under floodlights on a tatami mat with a red border. From the left: a white jacket from behind with a blue back number (K. TANAKA, JPN, SENSHU JUDO CLUB) and a brown belt; a white jacket with a red-and-white belt and a small Japanese flag on the chest; a blue jacket with a black belt, a woven neck label and the S logo, which turns in 3D; a white jacket with a white belt and SENSHU embroidered down a sleeve; a blue jacket from behind with a gold back number (M. LEBLANC, CAN, KESTREL JUDO) and a black belt; and a white jacket from behind with a zekken (a Japanese surname over the dojo's name) and no belt. Only the blue one in the middle turns." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/judogi-turn-light.webp" width="760">
+</picture>
+</p>
+
+Open one in the designer, with its choices in the address: [brown belt, back number](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=jacket&view=back&belt=brown&patch=ijf&pname=K.%20TANAKA&pcode=JPN&pline=SENSHU%20JUDO%20CLUB&pcolour=blue) · [red-and-white belt, Japan emblem](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=jacket&belt=red-white&emblem=flag&flag=jp) · [blue, label, branding, embroidery](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?colour=blue&mode=jacket&belt=black&label=navy&brand=1&e1p=jacket-hem&e1t=LEBLANC&e1c=gold) · [white belt, branding, sleeve embroidery](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=jacket&belt=white&brand=1&e1p=sleeve-left&e1t=SENSHU&e1c=navy) · [blue, gold back number](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?colour=blue&mode=jacket&view=back&belt=black&patch=ijf&pname=M.%20LEBLANC&pcode=CAN&pline=KESTREL%20JUDO&pcolour=gold) · [zekken, no belt](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=jacket&view=back&belt=none&patch=zekken&pname=%E5%B1%B1%E7%94%B0&pline=%E5%8D%83%E7%A7%8B%E9%A4%A8&pink=black).
+
+- **Belts: every grade colour, with embroidery and labels** ([belts](./docs/judogi.md#what-is-drawn)): white, yellow, orange, green, blue, brown, black, red-and-white and red, with a name or kanji at an end, the Approved label or a maker's logo.
+
+<p align="center">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/belts-turn-dark.webp">
+<img alt="Ten belts on a tatami mat under floodlights, in two rows of five: white, yellow, orange, green and blue above; brown, black, red-and-white, red and a second black below. Several carry a mark at an end: SENSHU on the white and the blue, JUDO on the green, Japanese characters on the brown, TANAKA on the black, 10 DAN on the red, a woven label on the orange and a maker's logo on the yellow, the red-and-white and the last black. Only the orange belt in the top row turns." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/belts-turn-light.webp" width="760">
+</picture>
+</p>
+
+Open one as a belt: [white](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=white&e1p=belt-end-left&e1t=SENSHU&e1c=navy) · [yellow](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=yellow&logo=belt-end-right) · [orange](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=orange&label=navy) · [green](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=green&e1p=belt-end-left&e1t=JUDO&e1c=white) · [blue](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=blue&e1p=belt-end-left&e1t=SENSHU&e1c=white) · [brown](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=brown&e1p=belt-end-right&e1t=%E6%9F%94%E9%81%93&e1c=gold&e1f=kaisho) · [black](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=black&e1p=belt-end-left&e1t=TANAKA&e1c=gold&label=black) · [red-and-white](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=red-white&logo=belt-end-left) · [red](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?mode=belt&belt=red&e1p=belt-end-right&e1t=10%20DAN&e1c=gold).
+
 - **Retired-number banners**, and championship pennants and garden flags ([banners](#caps-helmets-and-retired-banners)).
 
 <p align="center">
