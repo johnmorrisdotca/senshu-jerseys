@@ -283,7 +283,7 @@ export function layerOf(d: VolumeDesc, c: Cell): string {
  * Each cell is a use of the front's drawing (`frontId`) or the back's (`backId`) under its map, clipped to its grown triangle; its
  * shade is a second use of that triangle, in the group's multiplying layer, clipped to the face's outline (`frontClip`, `backClip`).
  */
-export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number): VolumeMarkup & { tail: string } {
+export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number, still = false): VolumeMarkup & { tail: string } {
   const cells = pieceCells(d);
   const smooth = smoothOf(cells);
   let defs = "";
@@ -293,12 +293,16 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
     m.set(k, (m.get(k) ?? "") + v);
   };
   const graded = new Set<number>();
-  const order = isBand(d) ? depthOrder(cells.map((c) => placeCell(c, yaw, d.pitch))) : cells.map((_, i) => i);
+  const placed = cells.map((c) => placeCell(c, yaw, d.pitch));
+  const order = isBand(d) ? depthOrder(placed) : cells.map((_, i) => i);
+  // A drawing that never turns is not given the cells nobody sees (they would only be hidden): a folded belt's, seen from above, are mostly that.
+  const shown = still ? seenCells(placed, order) : undefined;
   order.forEach((i) => {
+    if (shown !== undefined && !shown[i]) return;
     const c = cells[i] as Cell;
     const key = layerOf(d, c);
     defs += `<path id="${uid}q${i}" d="${quadPath(c.tex, d.solid === undefined ? undefined : SOLID_GROW)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
-    const pl = placeCell(c, yaw, d.pitch);
+    const pl = placed[i] as Placed;
     const at = pl.visible ? ` transform="${pl.matrix}"` : ' display="none"';
     let fill = `fill="${greyOf(shadeOf(c.n, yaw, d.pitch, c.inside === true))}"`;
     const sm = smooth[i];
@@ -325,6 +329,78 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
   // The near sleeve goes in a group of its own, which the caller puts after the pieces worn on this one.
   const near = groups[groups.length - 1] as number;
   return { defs, body: piece(groups.slice(0, -1).map(group).join(""), ` data-tail="${uid}T"`), tail: `<g data-tail-of="${uid}T">${group(near)}</g>` };
+}
+
+/** How fine the grid is that `seenCells` looks at the drawing through, in drawing units (a fifth of a pixel at the size the designer draws). */
+const SEEN_STEP = 0.12;
+
+/**
+ * Which cells show in a drawing that stands still: those that face the viewer and own at least one point of the picture once the cells drawn after them have covered theirs
+ * (the cells are opaque cloth). `order` is the order they are drawn in. A cell all of whose points are covered is left out of the markup, and the picture is the same.
+ */
+export function seenCells(placed: readonly Placed[], order: readonly number[]): boolean[] {
+  const out = placed.map(() => false);
+  let x0 = Infinity;
+  let y0 = Infinity;
+  let x1 = -Infinity;
+  let y1 = -Infinity;
+  for (const q of placed) {
+    if (!q.visible || q.tri === undefined) continue;
+    for (let k = 0; k < 3; k++) {
+      x0 = Math.min(x0, q.tri[3 * k]!);
+      x1 = Math.max(x1, q.tri[3 * k]!);
+      y0 = Math.min(y0, q.tri[3 * k + 1]!);
+      y1 = Math.max(y1, q.tri[3 * k + 1]!);
+    }
+  }
+  if (!Number.isFinite(x0)) return out;
+  const w = Math.ceil((x1 - x0) / SEEN_STEP) + 2;
+  const h = Math.ceil((y1 - y0) / SEEN_STEP) + 2;
+  const owner = new Int32Array(w * h).fill(-1);
+  for (const i of order) {
+    const q = placed[i]!;
+    if (!q.visible || q.tri === undefined) continue;
+    const t = q.tri;
+    const ax = t[0]!;
+    const ay = t[1]!;
+    const bx = t[3]!;
+    const by = t[4]!;
+    const cx = t[6]!;
+    const cy = t[7]!;
+    const area = (bx - ax) * (cy - ay) - (cx - ax) * (by - ay);
+    if (Math.abs(area) < 1e-9) {
+      // A cell edge on to the viewer shows nothing of its own.
+      continue;
+    }
+    const gx0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - x0) / SEEN_STEP));
+    const gx1 = Math.min(w - 1, Math.ceil((Math.max(ax, bx, cx) - x0) / SEEN_STEP));
+    const gy0 = Math.max(0, Math.floor((Math.min(ay, by, cy) - y0) / SEEN_STEP));
+    const gy1 = Math.min(h - 1, Math.ceil((Math.max(ay, by, cy) - y0) / SEEN_STEP));
+    for (let gy = gy0; gy <= gy1; gy++) {
+      const py = y0 + gy * SEEN_STEP;
+      for (let gx = gx0; gx <= gx1; gx++) {
+        const px = x0 + gx * SEEN_STEP;
+        const e0 = ((bx - ax) * (py - ay) - (by - ay) * (px - ax)) / area;
+        const e1 = ((cx - bx) * (py - by) - (cy - by) * (px - bx)) / area;
+        const e2 = ((ax - cx) * (py - cy) - (ay - cy) * (px - cx)) / area;
+        if (e0 >= 0 && e1 >= 0 && e2 >= 0) owner[gy * w + gx] = i;
+      }
+    }
+  }
+  for (let k = 0; k < owner.length; k++) {
+    const i = owner[k]!;
+    if (i >= 0) out[i] = true;
+  }
+  // A cell too small for the grid to catch is kept (it may show), so is one edge on that the grid missed.
+  for (const i of order) {
+    const q = placed[i]!;
+    if (!q.visible || out[i] || q.tri === undefined) continue;
+    const t = q.tri;
+    const span = Math.max(Math.max(t[0]!, t[3]!, t[6]!) - Math.min(t[0]!, t[3]!, t[6]!), Math.max(t[1]!, t[4]!, t[7]!) - Math.min(t[1]!, t[4]!, t[7]!));
+    const area = Math.abs((t[3]! - t[0]!) * (t[7]! - t[1]!) - (t[6]! - t[0]!) * (t[4]! - t[1]!));
+    if (area < SEEN_STEP * SEEN_STEP || span < SEEN_STEP) out[i] = true;
+  }
+  return out;
 }
 
 /** Whether other pieces are worn on this one, between its body and its near sleeve (`VolumeDesc.worn`). */

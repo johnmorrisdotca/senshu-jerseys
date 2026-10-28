@@ -399,7 +399,7 @@ function compose(o: Ready): Sheet {
 }
 
 /** The folded belt, or the belt's gift box (with the belt folded in it): one piece of cells, see beltBox.ts. */
-function solidSheet(o: Ready, yaw: number): Sheet {
+function solidSheet(o: Ready, yaw: number, still = false): Sheet {
   const box = o.mode === "box";
   // A folded belt's red and white sections are laid by its real length: an odd number of them, so that it is red at both ends.
   // (About 16 cm, as in the maker's photographs of a size 4: red for the first stretch of the top layer from the tip, and white to its fold.)
@@ -430,7 +430,7 @@ function solidSheet(o: Ready, yaw: number): Sheet {
   // The view box holds the scene turned any way and tipped by the whole range the designer allows, so nothing is ever cut off.
   const bound = solidBounds(desc);
   const vol: VolumeDesc = { y: [], a: [], b: [], nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: o.mode === "folded" ? FOLDED_PITCH : SOLID_PITCH, piece: true, solid: desc };
-  const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw);
+  const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw, still);
   const w = Math.ceil(2 * bound.radius + 12);
   const top = Math.floor(bound.top - 6);
   const h = Math.ceil(bound.bottom + 6 - top);
@@ -449,7 +449,7 @@ export const isFlat = (view: JudogiView): boolean => view === "flat" || view ===
 function flatSheet(o: Ready): Sheet {
   const side = o.view === "flat-back" ? "back" : "front";
   // A folded belt and a box are objects, not cloth: their flat views are the same scene, standing still (from the front or the back).
-  if (o.mode === "folded" || o.mode === "box") return solidSheet(o, side === "back" ? 180 : 0);
+  if (o.mode === "folded" || o.mode === "box") return solidSheet(o, side === "back" ? 180 : 0, true);
   const paint = paintOf(o, o.belt);
   const defs = paint?.defs ?? "";
   const flat = (f: Face): string => `${f.defs}`;
@@ -476,10 +476,13 @@ function flatSheet(o: Ready): Sheet {
 /** The back face of a strap, which draws every cell from its one face. */
 const NO_FACE: Face = { defs: "", body: "", clip: [] };
 
-function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number): { defs: string; body: string; tail: string } {
-  const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw);
+/** What opens the group of a piece's per-cell defs (each cell's triangle, its clip and the shades' gradients): the pictures of the faces do not need them, and a canvas leaves them out (`judogiCanvas`). */
+const CELLS_OPEN = '<g data-cells="">';
+
+function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number, still = false): { defs: string; body: string; tail: string } {
+  const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw, still);
   const clip = (f: Face): string => f.clip.map((d) => `<path d="${d}"/>`).join("");
-  const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}${front.extra ?? ""}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}${back.extra ?? ""}</g>${mk.defs}`;
+  const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}${front.extra ?? ""}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}${back.extra ?? ""}</g>${CELLS_OPEN}${mk.defs}</g>`;
   return { defs, body: mk.body, tail: mk.tail };
 }
 

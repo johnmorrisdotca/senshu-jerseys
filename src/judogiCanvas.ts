@@ -71,11 +71,13 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   const natH = Number(svg.getAttribute("height")) || (natW * vh) / vw;
   const cssW = Math.max(natW, options.box?.width ?? 0);
   const cssH = Math.max(natH, options.box?.height ?? 0);
+  // A face is painted from its own defs: the cells\' triangles and clips (a good part of the markup) are for the SVG, not for a picture of a face.
+  const faceDefs = defs.innerHTML.replace(/<g data-cells[^>]*>[\s\S]*?<\/g>/g, "");
   const faces = new Map<string, Promise<CanvasImageSource>>();
   const faceOf = (id: string): Promise<CanvasImageSource> => {
     const known = faces.get(id);
     if (known !== undefined) return known;
-    const made = paintFace(defs.innerHTML, id, k);
+    const made = paintFace(faceDefs, id, k);
     faces.set(id, made);
     return made;
   };

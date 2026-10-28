@@ -204,6 +204,11 @@ function syncUrl() {
 /** The tip the package is given: the designer's Tilt is positive when the FRONT of the piece goes up (a drag up, the wheel up, Arrow Up, the slider toward its top), the package's is positive when the piece is seen more from above. */
 const pitchOf = () => (state.tilt === 0 ? 0 : -state.tilt);
 const flat = () => state.view === "flat" || state.view === "flat-back";
+/** A folded belt or a box laid flat is the same scene standing still: drawn like the turning views (on the canvas, at the front or the back), not as an SVG of every cell, which a browser takes seconds to paint. */
+const stillSolid = () => flat() && solid();
+/** The angle and the tip the canvas is painted at. */
+const shownYaw = () => (stillSolid() ? (state.view === "flat-back" ? 180 : 0) : state.yaw + (state.view === "back" ? 180 : 0));
+const shownTilt = () => (stillSolid() ? 0 : pitchOf());
 const wrap = wrapYaw;
 /** Where the zoomed stage is moved to, in pixels from its middle (not in the address). */
 const pan = { x: 0, y: 0 };
@@ -222,12 +227,13 @@ let painted;
 async function draw() {
   if (state.emblem === "flag") await loadFlag(state.flag);
   const o = options();
+  if (stillSolid()) Object.assign(o, { view: state.view === "flat-back" ? "back" : "front", yaw: 0 });
   const mine = ++drawing;
   const holder = document.createElement("div");
   holder.innerHTML = judogiFrame(o);
   const svg = holder.firstElementChild;
   const q = quality();
-  const canvas = svg === null || flat() ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
+  const canvas = svg === null || (flat() && !stillSolid()) ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
   if (mine !== drawing) {
     canvas?.dispose();
     return;
@@ -235,7 +241,7 @@ async function draw() {
   painted?.dispose();
   painted = canvas;
   madeAt = q;
-  canvas?.turn(state.yaw + (state.view === "back" ? 180 : 0), pitchOf(), camera());
+  canvas?.turn(shownYaw(), shownTilt(), camera());
   if (canvas === undefined) $("judo-stage").replaceChildren(...holder.childNodes);
   else $("judo-stage").replaceChildren(canvas.canvas);
   $("judo-check").textContent = checkText(judogiCheck(o));
@@ -276,7 +282,7 @@ function placeStage() {
   // A canvas zooms inside itself (sharp, and the same cost at any zoom); a flat drawing is an SVG, scaled by a transform.
   if (painted !== undefined) {
     $("judo-stage").style.transform = "";
-    painted.turn(state.yaw + (state.view === "back" ? 180 : 0), pitchOf(), camera());
+    painted.turn(shownYaw(), shownTilt(), camera());
   } else $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
   $("judo-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
   // Zoomed in the page does not scroll under a finger, so a one-finger drag can turn the piece and two fingers move the view.
@@ -303,7 +309,7 @@ function settleQuality() {
   globalThis.clearTimeout(crisp);
   crisp = globalThis.setTimeout(() => {
     const q = quality();
-    if (!flat() && (q.ratio !== madeAt.ratio || q.scale !== madeAt.scale)) draw();
+    if ((!flat() || stillSolid()) && (q.ratio !== madeAt.ratio || q.scale !== madeAt.scale)) draw();
   }, 350);
 }
 
@@ -723,7 +729,7 @@ let resizing = 0;
 window.addEventListener("resize", () => {
   placeStage();
   globalThis.clearTimeout(resizing);
-  resizing = globalThis.setTimeout(() => { if (!flat() && Math.abs(boxWidth() - (painted?.canvas.clientWidth ?? 0)) > 8) draw(); }, 300);
+  resizing = globalThis.setTimeout(() => { if ((!flat() || stillSolid()) && Math.abs(boxWidth() - (painted?.canvas.clientWidth ?? 0)) > 8) draw(); }, 300);
 });
 $("judo-svg").addEventListener("click", exportSvg);
 $("judo-png").addEventListener("click", exportPng);

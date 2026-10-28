@@ -507,6 +507,44 @@ export interface Along {
   fold?: { u0: number; wx0: number };
 }
 
+/** How far apart a layer's samples are taken, in centimetres, before the ones on a straight line are left out. */
+const RUN_CM = 1.5;
+/** How far, in centimetres, a layer may leave the straight line between the samples kept (a fifth of a pixel at the size the designer draws it). */
+const RUN_TOLERANCE = 0.05;
+/** The most a run of a layer may be left uncut, in centimetres, so that its light and its picture follow its bends. */
+const RUN_LONGEST = 6;
+
+/** Which of a run of points to keep: the ends, and the points a straight line through the kept ones would miss by more than `tol` (Ramer, Douglas and Peucker), none further apart than `RUN_LONGEST`. */
+function straightRun(pts: readonly Vec[], tol: number): boolean[] {
+  const keep = pts.map((_, i) => i === 0 || i === pts.length - 1);
+  const dist = (p: Vec, a: Vec, b: Vec): number => {
+    const ab = sub(b, a);
+    const ap = sub(p, a);
+    const t = Math.max(0, Math.min(1, (ap[0] * ab[0] + ap[1] * ab[1] + ap[2] * ab[2]) / (ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2] || 1)));
+    return Math.hypot(ap[0] - ab[0] * t, ap[1] - ab[1] * t, ap[2] - ab[2] * t);
+  };
+  const walk = (lo: number, hi: number): void => {
+    let worst = -1;
+    let at = -1;
+    for (let i = lo + 1; i < hi; i++) {
+      const d = dist(pts[i]!, pts[lo]!, pts[hi]!);
+      if (d > worst) {
+        worst = d;
+        at = i;
+      }
+    }
+    const span = Math.hypot(...sub(pts[hi]!, pts[lo]!));
+    if (at < 0 || (worst <= tol && span <= RUN_LONGEST)) return;
+    keep[at] = true;
+    walk(lo, at);
+    walk(at, hi);
+  };
+  walk(0, pts.length - 1);
+  return keep;
+}
+/** The steps round a fold's half circle: a fold is about a centimetre across, so ten steps (eighteen degrees each) already look round on any screen. */
+const FOLD_STEPS = 8;
+
 /** Where the belt's plain stretch is laid on its strip. */
 const X0 = -30;
 
@@ -603,10 +641,17 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
       const dir = dirOf(i);
       const a = (xs[i] as number) + shift;
       const b = (xe[i] as number) + shift;
-      const nn = Math.max(3, Math.ceil(Math.abs(b - a) / 3));
-      for (let j = 0; j <= nn; j++) {
+      // The layer is sampled finely, and the samples that lie on the line between their neighbours (to `RUN_TOLERANCE`) are left out: a long gentle run is a few cells, a bend keeps its own.
+      const nn = Math.max(3, Math.ceil(Math.abs(b - a) / RUN_CM));
+      const fine = Array.from({ length: nn + 1 }, (_, j): Vec => {
         const x = lerp(a, b, j / nn);
-        const y = yAt(i, x);
+        return [x, yAt(i, x), zOf(i, x)];
+      });
+      const keep = straightRun(fine, RUN_TOLERANCE);
+      for (let j = 0; j <= nn; j++) {
+        if (!keep[j]) continue;
+        const x = lerp(a, b, j / nn);
+        const y = fine[j]![1];
         // The layer's own line bends in plan and in height, so its direction is not quite along x.
         const x2 = lerp(a, b, Math.min(1, (j + 0.01) / nn));
         const dz = ((zOf(i, x2) - zOf(i, x)) / (x2 - x || 1e-6)) * dir;
@@ -615,7 +660,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
         const d: Vec = [dir / dl, dy / dl, dz / dl];
         // The face looks up or down, square to the way the belt runs.
         const o = unit([-d[1] * d[0], 1 - d[1] * d[1], -d[1] * d[2]]);
-        push([x, y, zOf(i, x)], d, scale(o, side * dir));
+        push([x, y, fine[j]![2]], d, scale(o, side * dir));
       }
       if (i < n - 1) {
         const left = i % 2 === 0;
@@ -625,7 +670,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
         const ry = Math.max(0.01, (yA - yB) / 2);
         // A round loop, as tight as the cloth lets it be: about as far out as it is across.
         const rx = ry * 1.08 + 0.12;
-        const m = f.loose >= 0.5 ? 16 : 6;
+        const m = f.loose >= 0.5 ? FOLD_STEPS : 6;
         const anchor = { u0: u, wx0: b };
         const z0 = zOf(i, b);
         const z1 = zOf(i + 1, b);
@@ -719,7 +764,9 @@ function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
 /** How round the cloth is where it wraps round the belt's edge, in centimetres (a belt is a sheet folded on itself lengthwise: its edges are rounded). */
 const ROUND_EDGE = 0.34;
 /** Cells round each rounded edge. */
-const ARC_DEFAULT = 3;
+const ARC_DEFAULT = 2;
+/** The strips a belt's broad face is cut into across its width, to show its crown (it stands only about a millimetre up at the middle). */
+const CROWN_STRIPS = 2;
 
 /** The corner of the belt at a sample: `side` -1 to 1 across it (an offset in centimetres), `face` through it (an offset in centimetres, scaled where the belt is thinned at a fold). */
 const corner = (p: Along, across: Vec, side: number, face: number): Vec => add(p.p, add(scale(across, side), scale(p.out, face * (p.k ?? 1))));
@@ -755,7 +802,7 @@ function step(k: Sink, a: Along, b: Along, hw: number, T: number, lay: Laying): 
   // The broad faces, to where the cloth starts to round the edge. A stiff band is a little crowned across its width (its middle stands up from its edges), which gives the cloth its soft light.
   const hi = hw - r;
   const crown = lay.arc >= 2 ? Math.min(0.1, T * 0.14) : 0;
-  const strips = crown > 0 ? 4 : 1;
+  const strips = crown > 0 ? CROWN_STRIPS : 1;
   const hump = (s: number): number => crown * (1 - (s / hi) * (s / hi));
   for (let j = 0; j < strips; j++) {
     const s0 = -hi + (2 * hi * j) / strips;
@@ -816,7 +863,18 @@ function bandCells(k: Sink, f: FoldDesc, r: Regions): void {
   const xc = path.extent[1] - 9;
   const x0 = xc - f.band / 2;
   const x1 = xc + f.band / 2;
-  const near = path.points.filter((p) => p.fold === undefined && p.p[0] >= x0 - 0.5 && p.p[0] <= x1 + 0.5);
+  // The layers' own points are few where a run is straight, so every run is read at every half centimetre (as the line between its points lies) for where the bundle stands.
+  const near: { p: Vec }[] = [];
+  path.points.forEach((a, i) => {
+    const b = path.points[i + 1];
+    if (a.fold === undefined && a.p[0] >= x0 - 0.5 && a.p[0] <= x1 + 0.5) near.push(a);
+    if (b === undefined || a.fold !== undefined || b.fold !== undefined) return;
+    const steps = Math.floor(Math.hypot(b.p[0] - a.p[0], b.p[1] - a.p[1], b.p[2] - a.p[2]) / 0.5);
+    for (let j = 1; j < steps; j++) {
+      const p: Vec = [lerp(a.p[0], b.p[0], j / steps), lerp(a.p[1], b.p[1], j / steps), lerp(a.p[2], b.p[2], j / steps)];
+      if (p[0] >= x0 - 0.5 && p[0] <= x1 + 0.5) near.push({ p });
+    }
+  });
   const m = 0.3;
   const hw = f.w / 2;
   const yTop = Math.min(...near.map((p) => p.p[1])) - f.t / 2 - m * 0.4;
