@@ -14,25 +14,42 @@ import { sleeveAt, type VolumeDesc } from "./volume.ts";
 
 /**
  * The rows of the body: the top of the collar behind the neck, the neck, the slope of the shoulder, the shoulder point, the armhole, the
- * armpit, above the belt, the waist, below the belt, the waist seam, the skirt and the hem. The shoulders slope to the point where the sleeves
- * are set on, the body is boxy from there (a judogi is cut wide: some 57 cm across the chest at 2.63 units to the centimetre, 148 units, for a
- * size 170, where a resale listing of a KuSakura size 4, made for 168 to 177 cm, gives 65 cm across the chest flat, 84 cm long, and one of a 160 cm
- * gi 58 cm and 82 cm: not a maker's chart, and washed; the drawing stops short of 62 to 65 because the sleeves hang outside the body, so a wider body
- * means moving them and the layouts further out), it narrows to the waist under the belt and flares to the skirt and the hem. The neck and the lapels
- * keep their own widths (the first three rows), so the collar, 4 to 5 cm a side, is no larger than it was.
+ * armpit, above the belt, the waist, below the belt, the waist seam, the skirt and the hem.
+ *
+ * **The proportions are measured from John's reference photographs**, not chosen (L is the jacket's height, the top of the collar to the
+ * hem, 199 units here; the 2.63 units to the centimetre of a size 170 make that 76 cm). Landmarks were marked on each photograph, in pixels, and
+ * divided by that photograph's own L, so the picture's size and distance drop out; the render is then laid over each photograph at the same
+ * height and its outline compared with the photograph's (IoU 0.93 on the white form turned a little, 0.87 on the standing man, 0.79 to 0.83
+ * on the flat jackets whose sleeves are posed).
+ *
+ *   photograph       06    02    04    01    30    31 |  median  this drawing
+ *   shoulder/L      .647  .657  .703  .588  .562  .554 |  .617    .638 (the sleeve points, 127 units)
+ *   shoulder drop/L .166  .176  .150  .101  .131  .136 |  .143    .151 (collar top to the shoulder point)
+ *   chest/L         .416  .446   -    .438   -     -   |  .438    .432 (armpit to armpit, 86 units)
+ *   waist/L, belted .385  .441  .476  .490   -     -   |  .459    .447 (89 units at the belt)
+ *   hem/L           .555  .545  .542  .523  .474  .444 |  .533    .548 (belted, 109 units; 108 loose)
+ *   belt/L, centre  .568  .718  .736  .752 (.625 .626: 05, 07) |  .672    .625 (the form's belts sit high, a man's at the hip)
+ *   sleeve angle from the body, degrees: 15.4 (30), 8.5 (31), 16.9 (05), 12.6 (07) | 14.0    14.0
+ *   jacket / whole suit height, collar top to trouser hem: .533 (06), .609 (02), .552 (01), .503 (05), .504 (07) | .533    .556
+ *
+ * Where the photographs disagree: the two flat product pictures (30, 31) are narrower in the hem and shoulders than the worn ones, and a
+ * photograph of a man has the belt 20 per cent lower on the jacket than one of a form (the belt height is between the two); trousers are
+ * 1.10 to 1.14 of the jacket's height flat (30, 31; 1.29 here) and about 1.3 from the belt down on a form (06, 05, 07; 1.17 here). No photograph shows the body's depth (the
+ * three-quarter views fit the same outline from 0.8 to 1.3 times the depth), so the depths below are the ones the drawing already had.
+ * The neck and the lapels keep their own widths (the first three rows).
  */
-const Y = [6, 12, 18, 26, 36, 58, 86, 104, 114, 124, 140, 170, 205];
+const Y = [6, 12, 18, 26, 36, 58, 86, 110, 127, 139, 149, 172, 205];
 /** The drawing's half width at each row, hanging loose. */
-const LOOSE = [22, 30, 40, 62, 76.5, 74, 68, 60, 56, 56, 58, 60, 64];
-/** Belted: the belt holds the waist to a 30 cm half round, the skirt flaring out below it. */
-const TIED = [22, 30, 40, 62, 76.5, 74, 68, 52, 39.5, 40.5, 46, 52, 60];
+const LOOSE = [22, 30, 40, 54, 63.5, 61.5, 53, 47, 45, 45.5, 47, 50, 54];
+/** Belted: the belt holds the waist to some 34 cm across (the man's 01, 02, 04 are .44 to .49 of L, the form's 06 .385), the skirt flaring out below it. */
+const TIED = [22, 30, 40, 54, 63.5, 61.5, 53, 47, 44.5, 45, 46.5, 50.5, 54.5];
 /**
  * The half depth of the body at each row, as a person's: some 24 cm deep at the chest with the thick cloth over it, against 34 cm
  * across, about 21 cm at a belted waist, and the skirt as deep as the hips under it.
  */
-const LOOSE_D = [14, 18, 22, 26, 30, 33, 34, 34, 33, 33, 33, 33, 33];
-const TIED_D = [14, 18, 22, 26, 30, 33, 34, 31, 27.5, 28, 30, 32, 33];
-const WAIST = 114;
+const LOOSE_D = [14, 18, 22, 26, 29, 31, 32, 32, 31, 31, 31, 31.5, 32];
+const TIED_D = [14, 18, 22, 26, 29, 31, 32, 30, 27.5, 28, 29.5, 31, 32];
+const WAIST = 127;
 /** The top edge of a tied belt at the back, in the jacket's units: a back patch is kept above it. */
 export const BELT_TOP = WAIST - 2.5;
 /** Where the collar's foot crosses the middle of the back: a back patch is measured from here. */
@@ -72,11 +89,11 @@ function rowAt(h: readonly number[], y: number): number {
  * as a straight curve (`CAP`), so the volume keeps its inner edge level with the outer: the sleeve's head is a band down the armhole,
  * not a tube that narrows to a point at the shoulder.
  */
-const SPREAD = 16;
-const S: Pt = [39.5 - SPREAD, 36];
+const SPREAD = 0;
+const S: Pt = [36.5 - SPREAD, 36];
 const P: Pt = [5 - SPREAD, 162];
 const A: Pt = [57 - SPREAD, 104];
-const Q: Pt = [40 - SPREAD, 174];
+const Q: Pt = [38.5 - SPREAD, 174];
 /** The outer edge as a straight curve, then where the armhole starts, a little in over the shoulder from its point. */
 const CAP = [S[0] + (P[0] - S[0]) / 3, S[1] + (P[1] - S[1]) / 3, S[0] + (2 * (P[0] - S[0])) / 3, S[1] + (2 * (P[1] - S[1])) / 3, S[0] + 8, S[1] - 5];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];

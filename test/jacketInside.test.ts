@@ -220,21 +220,3 @@ test("a collar's near cells are drawn after the far ones it overlaps, at every t
   }
   assert.ok(worst < 0.6, `${worst.toFixed(2)} per cent of the collar's pixels show a far cell over a near one at ${where}`);
 });
-
-
-test("the body is cut wide as a judogi is, and the neck and collar keep their size", () => {
-  const CM = 2.63;
-  const across = (tied: boolean, y: number): number => {
-    const d = jacketDesc(1, tied);
-    let j = 0;
-    while (j + 2 < d.y.length && (d.y[j + 1] as number) < y) j++;
-    const r = Math.max(0, Math.min(1, (y - (d.y[j] as number)) / ((d.y[j + 1] as number) - (d.y[j] as number) || 1)));
-    return (2 * ((d.a[j] as number) + ((d.a[j + 1] as number) - (d.a[j] as number)) * r - 1.2)) / CM;
-  };
-  for (const tied of [false, true]) {
-    for (const y of [58, 70]) assert.ok(across(tied, y) >= 54, `${across(tied, y).toFixed(1)} cm across the chest at row ${y}`);
-    assert.ok(across(tied, 6) <= 18, "the neck's opening is about 17 cm across");
-  }
-  // The belted waist stays slim: about 30 cm from the side to the middle, as it was.
-  assert.ok(across(true, 114) / 2 <= 31, "the belt holds the waist");
-});

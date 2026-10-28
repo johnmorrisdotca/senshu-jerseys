@@ -13,16 +13,21 @@ import type { VolumeDesc } from "./volume.ts";
  * cloth runs on into them with no edge.
  */
 const Y = [6, 19, 50, 80, 104];
-/** The last rows are as wide as the legs' tops once the volume's padding is added, so the block has no ledge over them. */
-const H = [50, 51, 53, 51, 50.2];
+/**
+ * The last rows are as wide as the legs' tops once the volume's padding is added, so the block has no ledge over them. The first rows are
+ * measured from the two flat product photographs of trousers (30, 31; the same method as judogiJacket.ts): across the waistband .332 and .349
+ * of the trousers' length (median .34, this drawing .345), across both legs at the hem .404 and .405 (this drawing .418), the crotch at .464
+ * and .350 of the length down (median .407, this drawing .383), each leg .17 across at the knee.
+ */
+const H = [43, 44.5, 47, 49.5, 50.2];
 /**
  * Worn under the jacket, the drawstring gathers the waist to the body and the hips sit inside the jacket's skirt, as on a person: laid
  * out flat, the trousers keep their full width.
  */
-const H_WORN = [39, 40.5, 45, 49, 50.2];
+const H_WORN = [37, 38.5, 43.5, 47.5, 50.2];
 export const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
 /** Half depths: a person's hips, some 24 cm deep with the cloth, going over to the two legs. */
-const D = [26, 28, 30, 28, 24];
+const D = [24, 26, 28.5, 27.5, 24];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.1, 0.3, 0.6, 1];
 const HEM = 262;
@@ -30,7 +35,7 @@ const HEM = 262;
 /** A leg on the picture's left: the outer top S, the outer hem P, the inner top at the crotch A, the inner hem Q. The other is its mirror. */
 /** The legs start a little above the crotch, under the hip block, so the two never meet edge to edge and leave a hairline. */
 const S: Pt = [48.6, 92];
-const P: Pt = [45, HEM];
+const P: Pt = [46.5, HEM];
 const A: Pt = [100, 92];
 const Q: Pt = [92.5, HEM];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
