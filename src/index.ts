@@ -48,5 +48,7 @@ export { LABEL_COLOURS, LABEL_COLOUR_LABELS } from "./judogiLabel.ts";
 export type { JudogiLabel, LabelColour } from "./judogiLabel.ts";
 export { BRAND_KANJI, BRAND_KANJI_LABELS } from "./judogiBrand.ts";
 export type { BrandKanji, JudogiBranding } from "./judogiBrand.ts";
+export { BELT_MODELS, BELT_SIZES, BELT_SPEC_SOURCES, BELT_END_TAGS, BELT_STITCH_LINES, BELT_TAG_NEEDS, BELT_THICKNESSES, EMBROIDERY_STITCHINGS, KOHAKU, MAKER_EMBROIDERY, beltDefaultWidthCm, beltLengthFor, beltStitchLinesFor, beltThicknessOf, beltThicknessesFor, beltWidthIsReal, beltWidthsFor } from "./beltSpecs.ts";
+export type { BeltColourName, BeltEndTag, BeltModel, BeltSize, BeltStitchLines, BeltThickness, EmbroideryStitching } from "./beltSpecs.ts";
 export { BELT_SOURCES, BELT_SYSTEMS, beltSystem, beltSystemSources } from "./beltSystems.ts";
 export type { BeltColour, BeltEnds, BeltGrade, BeltSource, BeltSystem, BeltTags, BeltTextCustom, BeltTip } from "./beltSystems.ts";

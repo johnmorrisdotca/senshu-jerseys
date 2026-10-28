@@ -3,7 +3,7 @@
 import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
-  judogiCheck, judogiFrame,
+  beltWidthsFor, judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -12,8 +12,9 @@ import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-/** The belt's width: its grade's own, or 4, 4.5 or 5 centimetres (the IJF allows 4 to 5). */
-const BELT_WIDTHS = ["auto", "4", "4.5", "5"];
+/** The belt's width: its grade's own, or one of the widths that grade is made in (4.2, 4.5 or 4.7 cm; a maker's catalogue, see docs/judogi.md). */
+const BELT_WIDTHS = ["auto", "4.2", "4.5", "4.7"];
+const widthsFor = (belt) => ["auto", ...beltWidthsFor(belt).map(String)];
 const lang = () => window.senshuLanguage?.lang ?? "en";
 const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 /** Degrees a second when it turns on its own: slow enough to look at the cloth. */
@@ -96,7 +97,7 @@ function options() {
   if (logoList().length > 0) o.logos = logoList().map((place) => ({ place }));
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
-  if (state.bw !== "auto") o.beltWidthCm = Number(state.bw);
+  if (state.bw !== "auto" && widthsFor(state.belt).includes(state.bw)) o.beltWidthCm = Number(state.bw);
   if (state.label !== "none") o.label = { colour: state.label };
   if (state.brand === "1") {
     o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
@@ -312,8 +313,8 @@ function rows() {
   out.push(field(G, "judo-mode", say("judoMode"), tiles({ id: "judo-mode", label: say("judoMode"), values: JUDOGI_MODES, current: state.mode, picture: (v) => PICTURES.mode[v], name: (v) => say(`judoMode_${v}`), onPick: set("mode", true), wide: true })));
   out.push(field(G, "judo-view", say("judoView"), segmented({ id: "judo-view", label: say("judoView"), values: JUDOGI_VIEWS, current: state.view, name: (v) => say(`judoView_${v}`), onPick: set("view") })));
   if (has("jacket") || has("pants")) out.push(field(G, "judo-colour", say("judoColour"), swatches({ id: "judo-colour", label: say("judoColour"), values: JUDOGI_COLOURS, current: state.colour, css: (v) => CLOTH_CSS[v], name: (v) => say(v === "blue" ? "judoBlue" : "judoWhite"), onPick: set("colour") })));
-  if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: set("belt") })));
-  if (has("belt")) out.push(field(G, "judo-belt-width", say("judoBeltWidth"), segmented({ id: "judo-belt-width", label: say("judoBeltWidth"), values: BELT_WIDTHS, current: state.bw, name: (v) => (v === "auto" ? say("judoBeltWidth_auto") : `${v} cm`), onPick: set("bw") })));
+  if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: (v) => { if (!widthsFor(v).includes(state.bw)) state.bw = "auto"; set("belt", true)(v); } })));
+  if (has("belt")) out.push(field(G, "judo-belt-width", say("judoBeltWidth"), segmented({ id: "judo-belt-width", label: say("judoBeltWidth"), values: widthsFor(state.belt), current: state.bw, name: (v) => (v === "auto" ? say("judoBeltWidth_auto") : `${v} cm`), onPick: set("bw") })));
   out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
 
   if (jacket) {

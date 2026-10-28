@@ -4,6 +4,7 @@ import {
   JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS,
   judogiCheck, judogiFrame, judogiHeightCm, renderJudogi,
 } from "../src/judogi.ts";
+import type { JudogiBelt } from "../src/judogi.ts";
 import { beltFace, beltPaint } from "../src/judogiBelt.ts";
 import { collarCells } from "../src/judogiCollar.ts";
 import { paintOrder, type PaintPiece } from "../src/judogiGl.ts";
@@ -116,7 +117,7 @@ test("a belt is a solid strap: two turns 5 mm thick, a knot that stands off them
   // IJF: 4-5 mm; a black belt 4.5-5 cm wide, a rank belt 4 cm (2.63 units to the centimetre).
   assert.ok(ring.t / 2.63 >= 0.4 && ring.t / 2.63 <= 0.5);
   assert.ok(ring.w / 2.63 >= 4.5 && ring.w / 2.63 <= 5);
-  assert.ok(strapWidth("green") / 2.63 >= 3.9 && strapWidth("green") / 2.63 <= 4.1);
+  assert.ok(strapWidth("green") / 2.63 >= 4.1 && strapWidth("green") / 2.63 <= 4.3);
   const cells = strapCells(ring);
   // Seen from the front, the far half of a ring on its own shows its inside; worn, the jacket fills it and there is no inside.
   const inside = cells.filter((c) => c.n[2] > 0.5 && c.p[2]! < 0 && c.p[5]! < 0 && c.p[8]! < 0);
@@ -141,13 +142,15 @@ test("a belt's width is its grade's own unless asked for: 4 cm for a rank belt, 
   const rank = widthOf({ belt: "green" });
   const black = widthOf({ belt: "black" });
   const kohaku = widthOf({ belt: "red-white" });
-  assert.ok(Math.abs(rank - 4) < 0.05 && black > 4.5 && black < 5 && kohaku > 4.95 && kohaku <= 5.05);
-  assert.ok(rank < black && black < kohaku);
+  assert.ok(Math.abs(rank - 4.2) < 0.05 && Math.abs(black - 4.5) < 0.05 && Math.abs(kohaku - 4.5) < 0.05, "the widths the maker's catalogue gives");
+  assert.ok(rank < black);
   assert.ok(Math.abs(widthOf({ belt: "green", beltWidthCm: 5 }) - 5) < 0.01);
   assert.ok(Math.abs(widthOf({ belt: "black", beltWidthCm: 4 }) - 4) < 0.01);
   assert.ok(Math.abs(widthOf({ belt: "black", beltWidthCm: 20 }) - 6) < 0.01, "kept to what can be drawn");
-  const note = (cm: number | undefined) => judogiCheck(cm === undefined ? {} : { beltWidthCm: cm }).notes.find((n) => n.id === "belt-width")?.met;
-  assert.deepEqual([note(undefined), note(4), note(5), note(3.5), note(5.5)], [true, true, true, false, false]);
+  const note = (belt: JudogiBelt, cm: number | undefined) => judogiCheck(cm === undefined ? { belt } : { belt, beltWidthCm: cm }).notes.find((n) => n.id === "belt-width")?.met;
+  // A width is real for the belt that is made in it: red-white only 4.5 cm, a rank colour only 4.2, black 4.2, 4.5 or 4.7.
+  assert.deepEqual([note("black", undefined), note("black", 4.5), note("black", 4.7), note("black", 5), note("black", 3.5)], [true, true, true, false, false]);
+  assert.deepEqual([note("red-white", 4), note("red-white", 4.5), note("red-white", 5), note("green", 4.2), note("green", 4.5), note("white", 4.5)], [false, true, false, true, false, true]);
 });
 
 test("a kohaku belt's panels run along the strap, on its ends as on its turns", () => {

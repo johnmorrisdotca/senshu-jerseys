@@ -6,6 +6,15 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Belt specifications as data** (`beltWidthsFor`, `BELT_MODELS`, `BELT_SIZES`, `KOHAKU`, `MAKER_EMBROIDERY`, `BELT_THICKNESSES`, `BELT_END_TAGS`, `EMBROIDERY_STITCHINGS` and the helpers): the widths, stitch lines, thicknesses and lengths by size number that a maker's catalogue gives, the kohaku belt's sections, and the embroidery a maker offers, with sources and the day read (docs/judogi.md, "Belt specifications").
+- **`stitching: "integrated"`** on an embroidery: worked into the belt as it is made, flatter than the default `applied`, on every garment.
+
+### Changed
+
+- **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
+
 ## [0.18.4] - 2026-10-28
 
 ### Changed

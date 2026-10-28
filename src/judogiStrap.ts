@@ -6,6 +6,7 @@
 // Kept apart from judogiBelt.ts so that the flat drawings do not carry it.
 
 import type { BeltPaint, Face } from "./judogiCloth.ts";
+import { beltDefaultWidthCm } from "./beltSpecs.ts";
 import { n2 } from "./path.ts";
 import type { Cell, VolumeDesc } from "./volume.ts";
 
@@ -35,8 +36,8 @@ export interface StrapDesc {
 export const STRAP_T = 1.3;
 /** Drawing units to the centimetre (the belt is 4 cm wide at 10.5 units). */
 export const UNITS_PER_CM = 2.63;
-/** A belt's width in drawing units: its grade's own (a rank belt 4 cm, black 4.75, red-white and red 5: the IJF allows 4 to 5) or, when given, `cm` centimetres. */
-export const strapWidth = (belt: string, cm?: number): number => (cm !== undefined ? cm * UNITS_PER_CM : belt === "red-white" || belt === "red" ? 13.2 : belt === "black" ? 12.5 : 10.5);
+/** A belt's width in drawing units: the width its grade is made in (4.2 cm for white and the rank colours, 4.5 for black, red-white and red: see beltSpecs.ts) or, when given, `cm` centimetres. */
+export const strapWidth = (belt: string, cm?: number): number => (cm !== undefined ? cm * UNITS_PER_CM : beltDefaultWidthCm(belt) * UNITS_PER_CM);
 const ROWS = 10;
 const HANG = 64;
 /** Where the strips lie on the strap's drawing: the face, the edge of the two turns and the edge of one. */

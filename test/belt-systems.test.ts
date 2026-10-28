@@ -56,3 +56,44 @@ test("docs/martial-arts.md is the page the data makes", () => {
   const doc = readFileSync("docs/martial-arts.md", "utf8");
   for (const s of BELT_SYSTEMS) for (const src of beltSystemSources(s)) assert.ok(doc.includes(src.url), src.url);
 });
+
+test("belt widths are the ones makers make, per grade colour", async () => {
+  const { beltWidthsFor, beltDefaultWidthCm, beltWidthIsReal, beltStitchLinesFor, BELT_MODELS, BELT_SIZES, KOHAKU, MAKER_EMBROIDERY } = await import("../src/index.ts");
+  assert.deepEqual(beltWidthsFor("red-white"), [4.5]);
+  assert.deepEqual(beltWidthsFor("red"), [4.5]);
+  assert.deepEqual(beltWidthsFor("green"), [4.2]);
+  assert.deepEqual(beltWidthsFor("white"), [4.2, 4.5]);
+  assert.deepEqual(beltWidthsFor("black"), [4.2, 4.5, 4.7]);
+  assert.deepEqual(beltWidthsFor("none"), []);
+  for (const belt of ["white", "yellow", "orange", "green", "blue", "brown", "black", "red-white", "red"]) assert.ok(beltWidthIsReal(belt, beltDefaultWidthCm(belt)), belt);
+  assert.ok(!beltWidthIsReal("red-white", 4) && !beltWidthIsReal("red-white", 5) && !beltWidthIsReal("black", 5));
+  // Kohaku: 13 lines (cotton) or 16 (silk), never other; the silk and cotton belts both 4.5 cm.
+  assert.deepEqual(beltStitchLinesFor("red-white"), [13, 16]);
+  assert.deepEqual(beltStitchLinesFor("green"), [10]);
+  assert.ok(BELT_MODELS.every((m) => m.widthCm >= 4 && m.widthCm <= 5 && [8, 10, 13, 14, 15, 16].includes(m.stitchLines)));
+  // Sizes step 10 cm from 235 (size 2) to 355, with size 1 at 215; women's are 5 cm shorter.
+  assert.equal(BELT_SIZES.length, 14);
+  assert.ok(BELT_SIZES.every((s, i) => s.cm === (i === 0 ? 215 : 235 + (i - 1) * 10) && s.womenCm === s.cm - 5 && s.waistCm[0] < s.waistCm[1]));
+  assert.deepEqual([KOHAKU.sectionCm.min, KOHAKU.sectionCm.max, KOHAKU.bothEndsRed], [12, 18, true]);
+  assert.equal(MAKER_EMBROIDERY.maxLengthCm, 20);
+});
+
+test("integrated embroidery is flatter than applied, on any garment, and the default is applied", async () => {
+  const { renderJudogi } = await import("../src/index.ts");
+  const draw = (stitching?: "applied" | "integrated", font?: "block" | "gothic") => renderJudogi({ mode: "belt", belt: "red-white", embroidery: [{ place: "belt-end-left", text: "KAI", thread: "gold", font, ...(stitching ? { stitching } : {}) }] });
+  const norm = (s: string): string => s.replace(/jg[0-9a-z]+/g, "jg");
+  for (const font of ["block", "gothic"] as const) {
+    assert.equal(norm(draw("applied", font)), norm(draw(undefined, font)));
+    assert.notEqual(norm(draw("integrated", font)), norm(draw("applied", font)));
+    assert.ok(draw("integrated", font).length < draw("applied", font).length, "no side wall, no light line");
+  }
+  for (const belt of ["white", "black", "red-white"] as const) assert.match(renderJudogi({ mode: "belt", belt, embroidery: [{ place: "belt-end-right", text: "X", stitching: "integrated" }] }), /<svg /);
+});
+
+test("thickness grades and the tags near a belt's end", async () => {
+  const { beltThicknessesFor, BELT_TAG_NEEDS } = await import("../src/index.ts");
+  assert.deepEqual(beltThicknessesFor("red-white"), ["standard", "thick"]);
+  assert.deepEqual(beltThicknessesFor("green"), ["standard"]);
+  assert.deepEqual(beltThicknessesFor("black"), ["standard", "thick", "extra-thick"]);
+  assert.equal(BELT_TAG_NEEDS["white-tag"], "size-tag");
+});

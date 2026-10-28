@@ -15,6 +15,7 @@ import { neckLabel, readBranding, sizeTag, sLogo, type ReadBranding } from "./ju
 import { labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
 import { CM, cloth } from "./judogiPatch.ts";
 import { pantsSpots } from "./judogiPants.ts";
+import type { EmbroideryStitching } from "./beltSpecs.ts";
 import { readThread, satinDefs, satinRun, satinShape, satinStroke, type ThreadColour } from "./judogiThread.ts";
 import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
@@ -57,6 +58,8 @@ export interface JudogiEmbroidery {
   /** Letter height and the most the text may run to, in centimetres; each has the place's own value when not given. */
   heightCm?: number;
   lengthCm?: number;
+  /** `applied` (the default) is sewn on afterwards: raised, and reversed on the other face; `integrated` is worked in as the belt or cloth is made: flatter, with nothing on the other face. Both work on every garment; a maker may offer one only on some. */
+  stitching?: EmbroideryStitching;
 }
 
 export interface JudogiLogo {
@@ -142,6 +145,7 @@ export interface ReadEmbroidery {
   direction: EmbroideryDirection;
   heightCm: number;
   lengthCm: number;
+  stitching: EmbroideryStitching;
 }
 
 export interface ReadLogo {
@@ -228,6 +232,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
         direction: e.direction === "across" || e.direction === "down" || e.direction === "along" ? e.direction : f.dir,
         heightCm: num(e.heightCm, 0.5, 30, f.h),
         lengthCm: num(e.lengthCm, 1, 40, f.len),
+        stitching: e.stitching === "integrated" ? "integrated" : "applied",
       });
     }
   }
@@ -366,12 +371,12 @@ function textOf(m: MarkSpec, e: ReadEmbroidery, id: string): Out {
     let body = "";
     chars.forEach((c, i) => {
       const run = layout(c, 0, (i - (chars.length - 1) / 2) * step, { height: size, maxWidth: size * 1.3, weight, asText });
-      body += satinRun(run, rgb, `${id}S`, family, undefined, e.text);
+      body += satinRun(run, rgb, `${id}S`, family, undefined, e.text, e.stitching === "integrated");
     });
     return { defs, body };
   }
   const run = layout(e.text, 0, 0, { height: hU, maxWidth: lU, weight, asText });
-  return { defs, body: satinRun(run, rgb, `${id}S`, family) };
+  return { defs, body: satinRun(run, rgb, `${id}S`, family, undefined, undefined, e.stitching === "integrated") };
 }
 
 /** A neutral placeholder logo: a diamond with a smaller one inside it, in thread. Nobody's mark. */

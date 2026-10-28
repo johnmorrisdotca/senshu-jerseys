@@ -2,6 +2,7 @@
 // colours, named IJF sizes, product pieces or a worn suit. No maker, federation or sponsor marks. Sizes and
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
+import { beltWidthIsReal } from "./beltSpecs.ts";
 import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint } from "./judogiBelt.ts";
 import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
@@ -124,7 +125,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
     { id: "lapel", met: true, fact: "Lapel width is 4–5 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "wrap", met: true, fact: "Jacket wraps left over right (IJF Judogi Rules, 09 03 2022)." },
     { id: "trouser-ankle", met: trouser >= h * 0.52 && trouser <= h * 0.64, fact: "Trousers cover the shin and leave about 5 cm to the ankle (IJF Judogi Rules, 09 03 2022)." },
-    { id: "belt-width", met: beltCm === undefined || (beltCm >= 4 && beltCm <= 5), fact: "Belt width is 4–5 cm (IJF Judogi Rules, 09 03 2022)." },
+    { id: "belt-width", met: beltCm === undefined || options?.belt === undefined || options.belt === "none" || beltWidthIsReal(options.belt, beltCm), fact: "A belt is made in the width of its grade: 4.2 cm for white and the rank colours (4.5 cm for an IJF-style white), 4.2, 4.5 or 4.7 cm for black, 4.5 cm for red-white and red (KuSakura belt guide and catalogue, read 2026-10-27); the IJF Judogi Rules (09 03 2022) give a belt's thickness and the hang of its ends, and no width." },
     { id: "belt-ends", met: beltHang >= 20 && beltHang <= 30, fact: "Belt hanging ends are 20–30 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "contest-colour", met: true, fact: "Contest judogi is white or blue (IJF Judogi Rules, 09 03 2022)." },
     ...(patch === undefined ? [] : patchNotes(patch)),

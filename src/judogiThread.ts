@@ -106,10 +106,16 @@ export function satinDefs(id: string, rgb: Rgb): string {
  * Stitched strokes along `d`: a shadow under, the thread, the fine gaps between its stitches (dashes laid across the line) and a sheen down its
  * middle. `sw` is the width of the stroke.
  */
-export function satinStroke(d: string, sw: number, rgb: Rgb): string {
+export function satinStroke(d: string, sw: number, rgb: Rgb, flat = false): string {
   const t = threadOf(rgb);
   const cap = 'fill="none" stroke-linejoin="round"';
   const unit = Math.max(0.5, Math.min(1.1, sw * 0.4));
+  // Worked into the belt as it was made (integrated): lying in the cloth, not on it, so no side wall, no light line and a fainter shadow.
+  if (flat) {
+    return `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.shadow}" stroke-opacity="0.16" stroke-width="${n2(sw + 0.3)}"/>` +
+      `<path d="${d}" ${cap} stroke-linecap="round" stroke="${hexOf(blend(rgb, [0, 0, 0], 0.12))}" stroke-width="${n2(sw)}"/>` +
+      `<path d="${d}" ${cap} stroke="${t.gap}" stroke-opacity="0.4" stroke-width="${n2(sw * 0.98)}" stroke-dasharray="${n2(unit * 0.22)} ${n2(unit * 0.5)}"/>`;
+  }
   // Raised a hair off the cloth: the thread's side wall (a darker rim round the stroke, a little low and to the right), a thin shadow beyond it, the stroke, and a fine
   // light line just inside its lit (upper left) edge.
   return `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.gap}" stroke-opacity="0.8" stroke-width="${n2(sw + 0.34)}" transform="translate(${n2(Math.min(0.14, sw * 0.08))} ${n2(Math.min(0.2, sw * 0.12))})"/>` +
@@ -121,13 +127,19 @@ export function satinStroke(d: string, sw: number, rgb: Rgb): string {
 }
 
 /** A run of text as thread (`wholeText`: the full text it is a part of, when the language is told by the rest of it, as in a column set one character at a time): the stroke glyphs as satin strokes, or system text with the satin pattern over it. `id` names the pattern the caller defined. */
-export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: string, wholeText?: string): string {
-  if (run.kind === "glyph") return run.d === "" ? "" : satinStroke(run.d, run.sw, rgb);
+export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: string, wholeText?: string, flat = false): string {
+  if (run.kind === "glyph") return run.d === "" ? "" : satinStroke(run.d, run.sw, rgb, flat);
   const t = threadOf(rgb);
   let out = "";
   const lang = langAttr(wholeText ?? run.chars.map((ch) => ch.c).join(""));
   for (const ch of run.chars) {
     const at = (dx = 0, dy = 0): string => `transform="translate(${n2(ch.x + dx)} ${n2(ch.y + dy)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="700" font-family="${esc(family)}"${lang}`;
+    if (flat) {
+      out += `<text ${at(0.15, 0.2)} fill="${t.shadow}" fill-opacity="0.14" stroke="${t.shadow}" stroke-opacity="0.14" stroke-width="0.4">${esc(ch.c)}</text>`;
+      out += `<text ${at()} fill="${hexOf(blend(rgb, [0, 0, 0], 0.12))}" stroke="${edge ?? t.gap}" stroke-opacity="0.4" stroke-width="0.2" stroke-linejoin="round">${esc(ch.c)}</text>`;
+      out += `<text ${at()} fill="url(#${id})">${esc(ch.c)}</text>`;
+      continue;
+    }
     out += `<text ${at(0.35, 0.5)} fill="${t.shadow}" fill-opacity="0.3" stroke="${t.shadow}" stroke-opacity="0.3" stroke-width="0.7">${esc(ch.c)}</text>`;
     // The thread's side wall, then the thread, its rows, a thin dark edge, and a fine light line inside the lit (upper left) edges: slightly raised.
     out += `<text ${at(0.16, 0.22)} fill="${t.gap}" fill-opacity="0.7" stroke="${t.gap}" stroke-opacity="0.7" stroke-width="0.3" stroke-linejoin="round">${esc(ch.c)}</text>`;
