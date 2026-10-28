@@ -70,7 +70,7 @@ test("the flat view stays a drawing, with nothing to turn", async ({ page }) => 
   await page.goto("/judogi.html?view=flat");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
   await expect(page.locator("#judo-stage canvas")).toHaveCount(0);
-  await expect(page.locator('[data-testid="judo-play"]')).toBeDisabled();
+  await expect(page.locator('[data-testid="judo-play"]')).toBeHidden();
 });
 
 test("the back patch's choices are in the address, show only when they apply, and the flat back is a drawing", async ({ page }) => {
@@ -86,7 +86,7 @@ test("the back patch's choices are in the address, show only when they apply, an
   await expect(page).toHaveURL(/pname=SATO/);
   await page.goto("/judogi.html?view=flat-back&patch=zekken");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
-  await expect(page.locator('[data-testid="judo-play"]')).toBeDisabled();
+  await expect(page.locator('[data-testid="judo-play"]')).toBeHidden();
 });
 
 test("embroidery, the logo and the emblem are chosen in the page and kept in the address", async ({ page }) => {
@@ -126,7 +126,7 @@ test("the branding is one switch with its mark, words and colour, kept in the ad
 });
 
 // The hands on the view: a drag turns and tips it and stops the automatic turn, the wheel and a trackpad turn it, a pinch (Ctrl and the wheel), the buttons and a
-// double press zoom it from 1x to 3x, and the arrow keys step it.
+// double press zoom it from 1x to 5x, and the arrow keys step it.
 const attr = (page, name) => page.locator("#judo-stage canvas").getAttribute(name).then(Number);
 const middle = async (page) => {
   const box = await page.locator('[data-testid="judo-turntable"]').boundingBox();
@@ -196,16 +196,21 @@ test("a sideways swipe turns the view, an up and down wheel is the page's unless
   await expect(page.locator('[data-testid="judo-zoom-reset"]')).not.toHaveText("1×");
 });
 
-test("zoom runs from 1x to 3x by the buttons and a double press, and the address keeps it", async ({ page }) => {
+test("zoom runs from 1x to 5x by the buttons and a double press, and the address keeps it", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const reset = page.locator('[data-testid="judo-zoom-reset"]');
   await expect(reset).toHaveText("1×");
   await expect(page.locator('[data-testid="judo-zoom-out"]')).toBeDisabled();
-  for (let i = 0; i < 4; i++) await page.locator('[data-testid="judo-zoom-in"]').click();
-  await expect(reset).toHaveText("3×");
+  for (let i = 0; i < 10 && (await page.locator('[data-testid="judo-zoom-in"]').isEnabled()); i++) await page.locator('[data-testid="judo-zoom-in"]').click();
+  await expect(reset).toHaveText("5×");
   await expect(page.locator('[data-testid="judo-zoom-in"]')).toBeDisabled();
-  await expect(page).toHaveURL(/zoom=3/);
+  await expect(page).toHaveURL(/zoom=5/);
+  // Past the limit in the address is the limit.
+  await page.goto("/judogi.html?mode=jacket&zoom=9");
+  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("5×");
+  await page.goto("/judogi.html?mode=jacket&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
   await reset.click();
   await expect(reset).toHaveText("1×");
   await expect(page).not.toHaveURL(/zoom=/);
@@ -239,7 +244,9 @@ test("the arrow keys turn and tip the view and plus and minus zoom it", async ({
 test("a flat view zooms as a drawing and has nothing to turn or tip", async ({ page }) => {
   await page.goto("/judogi.html?view=flat");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
-  await expect(page.locator('[data-testid="judo-tilt"]')).toBeDisabled();
+  // Nothing greyed that does nothing: the turn and tilt controls are not there, with a line to say why; the zoom stays.
+  for (const id of ["judo-turnbar", "judo-tiltbar", "judo-yaw", "judo-tilt", "judo-play", "judo-front"]) await expect(page.locator(`[data-testid="${id}"], #${id}`).first()).toBeHidden();
+  await expect(page.locator('[data-testid="judo-flat-note"]')).toBeVisible();
   await page.locator('[data-testid="judo-zoom-in"]').click();
   await expect(page.locator("#judo-stage")).toHaveAttribute("style", /scale\(/);
 });
@@ -346,4 +353,33 @@ test("two logos on one garment are both kept and only the first is drawn, with n
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   await expect(page.locator('[data-testid="judo-logo"] input:checked')).toHaveCount(2);
   expect(errors).toEqual([]);
+});
+
+test("every display mode in every view: the turn controls are there only where the piece turns, and the zoom always works", async ({ page }) => {
+  for (const mode of ["pieces", "suit", "jacket", "pants", "belt"]) {
+    for (const view of ["front", "back", "flat", "flat-back"]) {
+      await page.goto(`/judogi.html?mode=${mode}&view=${view}`);
+      const flat = view.startsWith("flat");
+      await expect(page.locator(flat ? "#judo-stage svg" : "#judo-stage canvas")).toBeVisible();
+      const where = `${mode} ${view}`;
+      for (const id of ["judo-turnbar", "judo-tiltbar", "judo-yaw", "judo-tilt", "judo-play", "judo-front"]) {
+        const shown = page.locator(`#${id}`);
+        if (flat) await expect(shown, `${where}: ${id} is hidden`).toBeHidden();
+        else {
+          await expect(shown, `${where}: ${id} is shown`).toBeVisible();
+          await expect(shown, `${where}: ${id} works`).toBeEnabled();
+        }
+      }
+      await expect(page.locator('[data-testid="judo-flat-note"]'), where).toHaveCount(1);
+      if (flat) await expect(page.locator('[data-testid="judo-flat-note"]'), where).toBeVisible();
+      else {
+        await expect(page.locator('[data-testid="judo-flat-note"]'), where).toBeHidden();
+        // A turn control that does something: the angle slider moves the drawing.
+        await page.locator('[data-testid="judo-yaw"]').fill("40");
+        expect(await attr(page, "data-yaw"), where).toBe(40 + (view === "back" ? 180 : 0) > 180 ? 40 + 180 - 360 : 40 + (view === "back" ? 180 : 0));
+      }
+      await page.locator('[data-testid="judo-zoom-in"]').click();
+      await expect(page.locator('[data-testid="judo-zoom-reset"]'), where).not.toHaveText("1×");
+    }
+  }
 });

@@ -1,10 +1,10 @@
 // The judogi view's own hands: a drag turns it (across the view is a half turn) and tips it (up and down), the wheel and a trackpad turn it, a pinch, Ctrl or
-// Command with the wheel, the buttons, and a double press zoom it from 1x to 3x, and two fingers or Shift with a drag move a zoomed view. Grabbing it stops the
+// Command with the wheel, the buttons, and a double press zoom it from 1x to 5x, and two fingers or Shift with a drag move a zoomed view. Grabbing it stops the
 // automatic turn. The same pattern as the kyogijo-stadiums 3D view: a plain wheel over the view leaves the page to scroll unless the view has focus, and Ctrl with the wheel
 // (what a trackpad's pinch sends) is the zoom. The view only reports changes; the page draws.
 export const TILT_MAX = 30;
 export const ZOOM_MIN = 1;
-export const ZOOM_MAX = 3;
+export const ZOOM_MAX = 5;
 /** Degrees of turn across the view's whole width (a half turn), and of tilt across its height. */
 const TURN_ACROSS = 180;
 const TILT_ACROSS = 60;

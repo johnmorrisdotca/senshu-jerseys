@@ -60,7 +60,7 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   const view = (svg.getAttribute("viewBox") ?? "").split(/[\s,]+/).map(Number);
   if (roots.length === 0 || defs === null || view.length !== 4 || view.some((v) => !Number.isFinite(v))) return undefined;
   const [vx, vy, vw, vh] = view as [number, number, number, number];
-  const k = clamp(options.scale ?? 4, 1, 6, 4);
+  const k = clamp(options.scale ?? 4, 1, 8, 4);
   const ratio = clamp(options.pixelRatio ?? (globalThis.devicePixelRatio || 1), 1, 4, 1);
   const natW = Number(svg.getAttribute("width")) || vw;
   const natH = Number(svg.getAttribute("height")) || (natW * vh) / vw;

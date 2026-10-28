@@ -27,7 +27,7 @@ const state = {
   view: JUDOGI_VIEWS.includes(params.get("view")) ? params.get("view") : "front",
   size: JUDOGI_SIZES.includes(params.get("size")) ? params.get("size") : "170",
   yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
-  // How far the camera is tipped (degrees, up is positive) and zoomed (1 to 3): in the address, like the angle.
+  // How far the camera is tipped (degrees, up is positive) and zoomed (1 to 5): in the address, like the angle.
   tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
   zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
   // The back patch: its style, the words on it and its colours. Every one is in the address.
@@ -125,7 +125,7 @@ const wrap = wrapYaw;
 const pan = { x: 0, y: 0 };
 /** The picture quality the canvas was last made at: it is made again when a zoom settles somewhere that wants another. */
 let madeAt = { ratio: 0, scale: 0 };
-const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), scale: state.zoom > 1.8 ? 6 : state.zoom > 1.2 ? 5 : 4 });
+const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), scale: state.zoom > 3.5 ? 8 : state.zoom > 1.8 ? 6 : state.zoom > 1.2 ? 5 : 4 });
 /** The zoom and pan the canvas paints with: it is made as wide as its view, so a zoomed drawing has the room, and the camera moves inside it. */
 const camera = () => ({ zoom: state.zoom, panX: pan.x, panY: pan.y });
 const boxWidth = () => Math.max(0, $("judo-stage").clientWidth - 20);
@@ -155,7 +155,10 @@ async function draw() {
   if (canvas === undefined) $("judo-stage").replaceChildren(...holder.childNodes);
   else $("judo-stage").replaceChildren(canvas.canvas);
   $("judo-check").textContent = checkText(judogiCheck(o));
-  for (const id of ["judo-yaw", "judo-play", "judo-front", "judo-tilt"]) $(id).disabled = flat();
+  // A flat layout is a drawing: its turn and tilt controls are taken away, with a line to say why, rather than greyed.
+  $("judo-turnbar").hidden = flat();
+  $("judo-tiltbar").hidden = flat();
+  $("judo-flat-note").hidden = !flat();
   if (flat()) stop();
   showAngle();
   placeStage();

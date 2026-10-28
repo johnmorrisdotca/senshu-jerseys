@@ -6,6 +6,13 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.18.4] - 2026-10-28
+
+### Changed
+
+- **A flat layout shows no turn controls.** In the Flat and Flat, back views the Angle and Tilt sliders, Auto-turn and Front are taken away instead of greyed, with a line saying why (a flat layout is a drawing on the table; choose Front or Back to turn it). The zoom stays. A test goes through every display mode in every view for a control that does nothing.
+- **The designer zooms from 1x to 5x** (it was 3x), with the pinch, Ctrl or Command and the wheel, the buttons and the keys as before; a double press still goes to 2x and back. The picture is drawn again sharper past 3.5x (`judogiCanvas` takes a `scale` up to 8 where it took 6; at 8 a face is 2240 by 2560 pixels, so the designer asks for it only at that zoom). The same suit turned at about 40 frames a second at 1x and 32 at 5x in a headless browser on software graphics.
+
 ## [0.18.3] - 2026-10-28
 
 ### Fixed

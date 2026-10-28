@@ -20,7 +20,7 @@
           <div class="judo-view" id="judo-turntable" data-testid="judo-turntable" tabindex="0" role="group" aria-roledescription="turntable" data-say-label="judoViewLabel">
             <div class="stage" id="judo-stage" data-testid="judo-stage"></div>
           </div>
-          <div class="turnbar">
+          <div class="turnbar" id="judo-turnbar" data-testid="judo-turnbar">
             <label class="fam-label" for="judo-yaw" data-say="angle"></label>
             <input class="range" type="range" id="judo-yaw" min="-180" max="180" step="1" value="0" data-testid="judo-yaw" />
             <output id="judo-yaw-out" for="judo-yaw">0°</output>
@@ -28,9 +28,11 @@
             <button type="button" class="fam-button" id="judo-front" data-say="front"></button>
           </div>
           <div class="turnbar">
-            <label class="fam-label" for="judo-tilt" data-say="judoTilt"></label>
-            <input class="range" type="range" id="judo-tilt" min="-30" max="30" step="1" value="0" data-testid="judo-tilt" />
-            <output id="judo-tilt-out" for="judo-tilt">0°</output>
+            <span class="judo-tiltbar" id="judo-tiltbar" data-testid="judo-tiltbar">
+              <label class="fam-label" for="judo-tilt" data-say="judoTilt"></label>
+              <input class="range" type="range" id="judo-tilt" min="-30" max="30" step="1" value="0" data-testid="judo-tilt" />
+              <output id="judo-tilt-out" for="judo-tilt">0°</output>
+            </span>
             <span class="judo-zoom" role="group" data-say-label="judoZoom">
               <button type="button" class="fam-button" id="judo-zoom-out" data-testid="judo-zoom-out" data-say-label="judoZoomOut">−</button>
               <button type="button" class="fam-button" id="judo-zoom-reset" data-testid="judo-zoom-reset" data-say-label="judoZoomReset">1×</button>
@@ -38,6 +40,7 @@
             </span>
           </div>
         </div>
+        <p class="fam-fine" id="judo-flat-note" data-testid="judo-flat-note" data-say="judoFlatNote" hidden></p>
         <div class="fam-actions">
           <button type="button" class="fam-button" id="judo-svg" data-testid="judo-svg" data-say="judoExportSvg"></button>
           <button type="button" class="fam-button" id="judo-png" data-testid="judo-png" data-say="judoExportPng"></button>

@@ -73,3 +73,7 @@
   .stagepin .turnbar .range { min-width: 4rem; }
   .stagepin .turnbar .fam-button { padding-inline: 10px; }
 }
+
+/* A flat layout is a drawing and does not turn: the turn and tilt controls are not shown, not greyed. */
+.turnbar[hidden], .judo-tiltbar[hidden] { display: none; }
+.judo-tiltbar { display: contents; }
