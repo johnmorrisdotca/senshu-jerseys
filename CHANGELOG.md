@@ -6,7 +6,11 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-28
+
 ### Added
+
+- **`BELT_SYSTEMS`**: the belt systems of the martial arts as data, each read from a governing body's own pages where one could be read (the day and the page are in the data): judo (the IJF's belts and ends, Judo Canada's half grades, the British Judo Association's 18 mon grades with their tags), Brazilian jiu-jitsu (the IBJJF's kids' belts with white or black stripes, the adult belts, the black bar with degrees, the coral and red belts), ITF taekwon-do tips, and WKF karate competition belts; karate's kyu and dan bars and the other arts are leads, marked so. Each grade is a body of one or two colours, a stripe, a tip block with bars, or tags; each system has its width, the hang of the ends, where it is worn and the text customary on it. `docs/martial-arts.md` is written from the data (`node scripts/make-martial-arts-doc.mjs`).
 
 - **Hangul embroidery and lettering.** Korean text is set as one square per syllable, in a font stack that names Korean faces after the Japanese ones (Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, Nanum), and tagged `lang="ko"` so Han characters beside it take Korean forms (`ja` beside kana). A column (`direction: "down"`) works the same.
 
