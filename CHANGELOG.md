@@ -6,6 +6,16 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-10-27
+
+### Added
+
+- **`beltWidthCm`**: a belt's width in centimetres (3 to 6 drawn; `judogiCheck` reports one outside the IJF's 4 to 5). By default a belt keeps its grade's own width, 4 cm for the rank colours, 4.75 for black, 5 for red-white and red. The designer has a "Belt width" choice (`bw=4`, `4.5` or `5` in the address).
+
+### Changed
+
+- **The belts picture** in the README shows ten belts, no two dressed alike: plain, a maker's logo, the Senshu brand, a club name, a surname in kanji, handwriting script (`font: "cursive"`), a name at each end, the Approved label, the Kodokan name beside a surname, and a narrow and a wide black belt. Red is left out of it.
+
 ## [0.17.1] - 2026-10-27
 
 ### Added

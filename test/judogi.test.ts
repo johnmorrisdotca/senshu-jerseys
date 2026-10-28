@@ -131,6 +131,25 @@ test("a belt is a solid strap: two turns 5 mm thick, a knot that stands off them
   assert.ok(worn.match(/data-piece="/g)?.length === 3);
 });
 
+test("a belt's width is its grade's own unless asked for: 4 cm for a rank belt, wider for the dan belts, and the check holds it to 4 to 5 cm", () => {
+  const widthOf = (opts: Parameters<typeof judogiFrame>[0]): number => {
+    const svg = judogiFrame({ mode: "belt", ...opts });
+    const d = [...svg.matchAll(/data-piece="([^"]*)"/g)].map((m) => JSON.parse((m[1] as string).replace(/&quot;/g, '"')) as VolumeDesc)[0]?.strap;
+    assert.ok(d !== undefined);
+    return d.w / 2.63;
+  };
+  const rank = widthOf({ belt: "green" });
+  const black = widthOf({ belt: "black" });
+  const kohaku = widthOf({ belt: "red-white" });
+  assert.ok(Math.abs(rank - 4) < 0.05 && black > 4.5 && black < 5 && kohaku > 4.95 && kohaku <= 5.05);
+  assert.ok(rank < black && black < kohaku);
+  assert.ok(Math.abs(widthOf({ belt: "green", beltWidthCm: 5 }) - 5) < 0.01);
+  assert.ok(Math.abs(widthOf({ belt: "black", beltWidthCm: 4 }) - 4) < 0.01);
+  assert.ok(Math.abs(widthOf({ belt: "black", beltWidthCm: 20 }) - 6) < 0.01, "kept to what can be drawn");
+  const note = (cm: number | undefined) => judogiCheck(cm === undefined ? {} : { beltWidthCm: cm }).notes.find((n) => n.id === "belt-width")?.met;
+  assert.deepEqual([note(undefined), note(4), note(5), note(3.5), note(5.5)], [true, true, true, false, false]);
+});
+
 test("a kohaku belt's panels run along the strap, on its ends as on its turns", () => {
   const p = beltPaint("u", "red-white");
   assert.ok(p !== undefined);

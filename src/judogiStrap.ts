@@ -33,7 +33,10 @@ export interface StrapDesc {
  * thick (IJF: 4-5 mm), stitched in 10 rows (quality belts carry 8 to 15), the ends hanging 25 cm from the knot.
  */
 export const STRAP_T = 1.3;
-export const strapWidth = (belt: string): number => (belt === "red-white" || belt === "red" ? 13.2 : belt === "black" ? 12.5 : 10.5);
+/** Drawing units to the centimetre (the belt is 4 cm wide at 10.5 units). */
+export const UNITS_PER_CM = 2.63;
+/** A belt's width in drawing units: its grade's own (a rank belt 4 cm, black 4.75, red-white and red 5: the IJF allows 4 to 5) or, when given, `cm` centimetres. */
+export const strapWidth = (belt: string, cm?: number): number => (cm !== undefined ? cm * UNITS_PER_CM : belt === "red-white" || belt === "red" ? 13.2 : belt === "black" ? 12.5 : 10.5);
 const ROWS = 10;
 const HANG = 64;
 /** Where the strips lie on the strap's drawing: the face, the edge of the two turns and the edge of one. */

@@ -69,6 +69,8 @@ export interface JudogiOptions {
   logos?: JudogiLogo[];
   /** The national emblem on the left chest: a flag (SVG text from Hata, say), your own artwork, or a neutral placeholder. */
   emblem?: JudogiEmblem;
+  /** The belt's width in centimetres, 3 to 6 drawn (the IJF allows 4 to 5, and `judogiCheck` says when it is outside). By default the grade's own: 4 for the rank colours, 4.75 for black, 5 for red-white and red. */
+  beltWidthCm?: number;
   /** The package's own woven "Approved Judogi" label on the jacket, the trousers and the belt: `true`, or a colour variant and thread. */
   label?: boolean | JudogiLabel;
   /** The Senshu branding: a woven neck label with a size tag, the brush kanji mark, and the S as the maker's logo, every part swappable. `true` for the defaults. */
@@ -76,6 +78,9 @@ export interface JudogiOptions {
   /** Whose limits the check holds marks to: the IJF's (default) or the All Japan Judo Federation's. */
   rules?: MarkRules;
 }
+
+/** The belt width asked for, in centimetres, or undefined for the grade's own. */
+const readBeltCm = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
 export interface JudogiCheck {
   ok: boolean;
@@ -111,6 +116,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const trouser = Math.round(h * 0.58);
   const beltHang = 25;
   const patch = readPatch(options?.backPatch);
+  const beltCm = readBeltCm(options?.beltWidthCm);
   const marked = options === undefined ? undefined : readMarks(options);
   const notes = [
     { id: "jacket-cover", met: jacket >= h * 0.38 && jacket <= h * 0.48, fact: "Jacket reaches mid-thigh and covers the buttocks (IJF Judogi Rules, 09 03 2022)." },
@@ -118,7 +124,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
     { id: "lapel", met: true, fact: "Lapel width is 4–5 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "wrap", met: true, fact: "Jacket wraps left over right (IJF Judogi Rules, 09 03 2022)." },
     { id: "trouser-ankle", met: trouser >= h * 0.52 && trouser <= h * 0.64, fact: "Trousers cover the shin and leave about 5 cm to the ankle (IJF Judogi Rules, 09 03 2022)." },
-    { id: "belt-width", met: true, fact: "Belt width is 4–5 cm (IJF Judogi Rules, 09 03 2022)." },
+    { id: "belt-width", met: beltCm === undefined || (beltCm >= 4 && beltCm <= 5), fact: "Belt width is 4–5 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "belt-ends", met: beltHang >= 20 && beltHang <= 30, fact: "Belt hanging ends are 20–30 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "contest-colour", met: true, fact: "Contest judogi is white or blue (IJF Judogi Rules, 09 03 2022)." },
     ...(patch === undefined ? [] : patchNotes(patch)),
@@ -154,6 +160,8 @@ interface Ready {
   width: number;
   yaw: number;
   thickness: number;
+  /** The belt width asked for in centimetres, kept to what can be drawn. */
+  beltCm: number | undefined;
   cloth: Rgb;
   uid: string;
   patch: PatchSpec | undefined;
@@ -182,13 +190,15 @@ function read(options?: JudogiOptions): Ready {
   const width = typeof o.width === "number" && Number.isFinite(o.width) ? Math.max(48, Math.min(2400, o.width)) : 320;
   const yaw = typeof o.yaw === "number" && Number.isFinite(o.yaw) ? o.yaw : 0;
   const thickness = typeof o.thickness === "number" && Number.isFinite(o.thickness) ? Math.max(0, Math.min(28, o.thickness)) : 12;
+  const beltAsked = readBeltCm(o.beltWidthCm);
+  const beltCm = beltAsked === undefined ? undefined : Math.max(3, Math.min(6, beltAsked));
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, patch, spec]))}`;
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, patch, spec]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, BELT_END);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, cloth, uid, patch, marks,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, cloth, uid, patch, marks,
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
       : "A judogi: jacket, trousers and belt. No maker or federation marks.",
@@ -254,7 +264,7 @@ function compose(o: Ready): Sheet {
   const depth = Math.max(0.2, o.thickness / 12);
   const paint = paintOf(o, o.belt);
   const defs = paint?.defs ?? "";
-  const width = strapWidth(o.belt);
+  const width = strapWidth(o.belt, o.beltCm);
   if (o.mode === "belt") {
     const p = paint ?? (paintOf(o, "white") as BeltPaint);
     // A tied ring seen a little from above: its far half shows its inside, its edges their thickness.

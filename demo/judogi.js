@@ -12,6 +12,8 @@ import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
+/** The belt's width: its grade's own, or 4, 4.5 or 5 centimetres (the IJF allows 4 to 5). */
+const BELT_WIDTHS = ["auto", "4", "4.5", "5"];
 const lang = () => window.senshuLanguage?.lang ?? "en";
 const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 /** Degrees a second when it turns on its own: slow enough to look at the cloth. */
@@ -57,6 +59,7 @@ const state = {
   bl: (params.get("bl") ?? "").slice(0, 20),
   bt: (params.get("bt") ?? "").slice(0, 5),
   bc: LABEL_COLOURS.includes(params.get("bc")) ? params.get("bc") : "navy",
+  bw: BELT_WIDTHS.includes(params.get("bw")) ? params.get("bw") : "auto",
 };
 
 /** The flag's SVG, loaded from Hata (the package is not a dependency of this one: the demo asks for one flag when it is chosen). */
@@ -93,6 +96,7 @@ function options() {
   if (logoList().length > 0) o.logos = logoList().map((place) => ({ place }));
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
+  if (state.bw !== "auto") o.beltWidthCm = Number(state.bw);
   if (state.label !== "none") o.label = { colour: state.label };
   if (state.brand === "1") {
     o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
@@ -101,7 +105,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -304,6 +308,7 @@ function rows() {
   out.push(field(G, "judo-view", say("judoView"), segmented({ id: "judo-view", label: say("judoView"), values: JUDOGI_VIEWS, current: state.view, name: (v) => say(`judoView_${v}`), onPick: set("view") })));
   if (has("jacket") || has("pants")) out.push(field(G, "judo-colour", say("judoColour"), swatches({ id: "judo-colour", label: say("judoColour"), values: JUDOGI_COLOURS, current: state.colour, css: (v) => CLOTH_CSS[v], name: (v) => say(v === "blue" ? "judoBlue" : "judoWhite"), onPick: set("colour") })));
   if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: set("belt") })));
+  if (has("belt")) out.push(field(G, "judo-belt-width", say("judoBeltWidth"), segmented({ id: "judo-belt-width", label: say("judoBeltWidth"), values: BELT_WIDTHS, current: state.bw, name: (v) => (v === "auto" ? say("judoBeltWidth_auto") : `${v} cm`), onPick: set("bw") })));
   out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
 
   if (jacket) {
