@@ -19,7 +19,7 @@ import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "
 import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
-import { FACE_BOX, pieceMarkup } from "./pieceVolume.ts";
+import { FACE_BOX, pieceMarkup, type Draw } from "./pieceVolume.ts";
 import type { VolumeDesc } from "./volume.ts";
 
 export const JUDOGI_COLOURS = ["white", "blue"] as const;
@@ -103,6 +103,11 @@ export interface JudogiOptions {
   boxSize?: BoxSize;
   /** The shop's paper band round the middle of a folded belt (mode `folded`). Off by default. */
   band?: boolean;
+  /**
+   * Draw only what `judogiCanvas` reads: each piece's description and the pictures of its faces, with no cell (a turning view's markup is tens of thousands of elements, which a canvas
+   * never looks at). Not a drawing to show or to save: put it through `judogiCanvas`, and use the markup without this option where the canvas cannot be made. Off by default.
+   */
+  bare?: boolean;
 }
 
 /** A belt size number for each judogi size, near enough for a default (a size 4 judogi takes about a size 4 belt; the height sizes go by the usual waist). */
@@ -226,6 +231,7 @@ interface Ready {
   boxWood: KiriWood;
   boxSize: BoxSize | undefined;
   band: boolean;
+  bare: boolean;
   /** Whether each end of the belt carries an embroidery of its own (the label and logo then keep the places they have). */
   beltEmb: { left: boolean; right: boolean };
 }
@@ -273,12 +279,13 @@ function read(options?: JudogiOptions): Ready {
   const boxText = typeof o.boxText === "string" ? [...o.boxText.trim()].slice(0, 6).join("") : BOX_TEXT_DEFAULT;
   const boxSize = ([2, 3, 4, 5, 6] as const).find((s) => s === o.boxSize);
   const band = o.band === true;
+  const bare = o.bare === true;
   const solid = mode === "folded" || mode === "box" ? [beltSize, boxType, boxState, boxText, boxWood, boxSize, band] : undefined;
   const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band, bare,
     beltEmb: { left: (o.embroidery ?? []).some((e) => e?.place === "belt-end-left"), right: (o.embroidery ?? []).some((e) => e?.place === "belt-end-right") },
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
@@ -369,7 +376,7 @@ function compose(o: Ready): Sheet {
     const p = paint ?? (paintOf(o, "white") as BeltPaint);
     // A tied ring seen a little from above: its far half shows its inside, its edges their thickness.
     const ring: StrapDesc = { y: 28, sag: 3, w: width, t: o.beltT, a: 66, b: Math.round(30 * Math.max(0.35, Math.min(1.6, depth)) * 10) / 10, full: 2, side: 0, worn: false };
-    const belt = volumeOf(`${o.uid}b`, strapDesc(ring, 14), strapFace(p, width), NO_FACE, yaw);
+    const belt = volumeOf(`${o.uid}b`, strapDesc(ring, 14), strapFace(p, width), NO_FACE, yaw, drawOf(o));
     return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
   }
   const tied = o.mode === "pants" ? undefined : paint;
@@ -377,16 +384,16 @@ function compose(o: Ready): Sheet {
   const body = jacketDesc(depth, tied !== undefined);
   // The collar and a tied belt are pieces of their own worn on the jacket: drawn after its body and before the sleeve nearest the eye.
   const jacketVolume: VolumeDesc = { ...body, worn: tied === undefined ? 1 : 2 };
-  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front"), jacketFace(ink, "back"), yaw);
+  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front"), jacketFace(ink, "back"), yaw, drawOf(o));
   const tone = toneOf(o.cloth);
-  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw);
+  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw, drawOf(o));
   // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
-  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true }, body.pitch), strapFace(tied, width), NO_FACE, yaw);
+  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true }, body.pitch), strapFace(tied, width), NO_FACE, yaw, drawOf(o));
   const belted = `${collar?.body ?? ""}${strap?.body ?? ""}${jacket?.tail ?? ""}`;
   const beltDefs = `${collar?.defs ?? ""}${strap?.defs ?? ""}`;
   // Worn, the trousers are gathered at the waist and sit inside the jacket; laid out, they keep their full width.
   const worn = o.mode === "suit";
-  const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth, worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "front", worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "back", worn), yaw);
+  const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth, worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "front", worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "back", worn), yaw, drawOf(o));
   if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs + beltDefs, jacket.body + belted, JACKET_BOX, yaw);
   if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);
   if (jacket === undefined || pants === undefined) return box("", "", JACKET_BOX, yaw);
@@ -400,6 +407,7 @@ function compose(o: Ready): Sheet {
 
 /** The folded belt, or the belt's gift box (with the belt folded in it): one piece of cells, see beltBox.ts. */
 function solidSheet(o: Ready, yaw: number, still = false): Sheet {
+  const draw: Draw = o.bare ? "bare" : still ? "still" : "all";
   const box = o.mode === "box";
   // A folded belt's red and white sections are laid by its real length: an odd number of them, so that it is red at both ends.
   // (About 16 cm, as in the maker's photographs of a size 4: red for the first stretch of the top layer from the tip, and white to its fold.)
@@ -430,7 +438,7 @@ function solidSheet(o: Ready, yaw: number, still = false): Sheet {
   // The view box holds the scene turned any way and tipped by the whole range the designer allows, so nothing is ever cut off.
   const bound = solidBounds(desc);
   const vol: VolumeDesc = { y: [], a: [], b: [], nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: o.mode === "folded" ? FOLDED_PITCH : SOLID_PITCH, piece: true, solid: desc };
-  const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw, still);
+  const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw, draw);
   const w = Math.ceil(2 * bound.radius + 12);
   const top = Math.floor(bound.top - 6);
   const h = Math.ceil(bound.bottom + 6 - top);
@@ -476,11 +484,14 @@ function flatSheet(o: Ready): Sheet {
 /** The back face of a strap, which draws every cell from its one face. */
 const NO_FACE: Face = { defs: "", body: "", clip: [] };
 
+/** What a drawing carries of its cells: all (it turns in the page), or none but what a canvas reads (`bare`). */
+const drawOf = (o: Ready): Draw => (o.bare ? "bare" : "all");
+
 /** What opens the group of a piece's per-cell defs (each cell's triangle, its clip and the shades' gradients): the pictures of the faces do not need them, and a canvas leaves them out (`judogiCanvas`). */
 const CELLS_OPEN = '<g data-cells="">';
 
-function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number, still = false): { defs: string; body: string; tail: string } {
-  const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw, still);
+function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number, draw: Draw = "all"): { defs: string; body: string; tail: string } {
+  const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw, draw);
   const clip = (f: Face): string => f.clip.map((d) => `<path d="${d}"/>`).join("");
   const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}${front.extra ?? ""}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}${back.extra ?? ""}</g>${CELLS_OPEN}${mk.defs}</g>`;
   return { defs, body: mk.body, tail: mk.tail };

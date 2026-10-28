@@ -279,11 +279,25 @@ export function layerOf(d: VolumeDesc, c: Cell): string {
 }
 
 /**
+ * What of a piece's cells a drawing carries: all of them (the default: a drawing that turns in the page moves every one), only those that show (`still`: a drawing that
+ * stands still), or none (`bare`: the piece's description and one cell for each face's picture, for a canvas, which paints the cells itself).
+ */
+export type Draw = "all" | "still" | "bare";
+
+/** A piece with no cells but its description and one cell showing each face's picture, which is what a canvas reads (`judogiCanvas`: which picture is the front and which the back). */
+function bareMarkup(d: VolumeDesc, cells: readonly Cell[], frontId: string, backId: string): string {
+  const stub = (i: number, id: string): string => `<g data-vc="${i}"><use href="#${id}"/></g>`;
+  const front = cells.findIndex((c) => !c.back);
+  const back = cells.findIndex((c) => c.back);
+  return `<g data-piece="${JSON.stringify(d).replace(/"/g, "&quot;")}">${front < 0 ? "" : stub(front, frontId)}${back < 0 ? "" : stub(back, backId)}</g>`;
+}
+
+/**
  * The markup of a piece at one turn, wrapped in a group that carries its description (`data-piece`), so `applyPiece` can move it later.
  * Each cell is a use of the front's drawing (`frontId`) or the back's (`backId`) under its map, clipped to its grown triangle; its
  * shade is a second use of that triangle, in the group's multiplying layer, clipped to the face's outline (`frontClip`, `backClip`).
  */
-export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number, still = false): VolumeMarkup & { tail: string } {
+export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId: string, frontClip: string, backClip: string, yaw: number, draw: Draw = "all"): VolumeMarkup & { tail: string } {
   const cells = pieceCells(d);
   const smooth = smoothOf(cells);
   let defs = "";
@@ -293,10 +307,11 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
     m.set(k, (m.get(k) ?? "") + v);
   };
   const graded = new Set<number>();
+  if (draw === "bare") return { defs: "", body: bareMarkup(d, cells, frontId, backId), tail: "" };
   const placed = cells.map((c) => placeCell(c, yaw, d.pitch));
   const order = isBand(d) ? depthOrder(placed) : cells.map((_, i) => i);
   // A drawing that never turns is not given the cells nobody sees (they would only be hidden): a folded belt's, seen from above, are mostly that.
-  const shown = still ? seenCells(placed, order) : undefined;
+  const shown = draw === "still" ? seenCells(placed, order) : undefined;
   order.forEach((i) => {
     if (shown !== undefined && !shown[i]) return;
     const c = cells[i] as Cell;

@@ -72,3 +72,26 @@ test("seenCells agrees with placeCell: every cell it keeps faces the viewer", ()
   const shown = seenCells(placed, cells.map((_, i) => i));
   shown.forEach((s, i) => assert.ok(!s || placed[i]!.visible));
 });
+
+test("bare: a drawing for a canvas has each piece's description and one cell for each face's picture, and none of the thousands of cells", () => {
+  for (const o of [{ mode: "folded" as const }, { mode: "box" as const, boxState: "open" as const }, { mode: "suit" as const, belt: "black" as const }, { mode: "pieces" as const }]) {
+    const full = renderJudogi({ ...o, view: "front" });
+    const bare = renderJudogi({ ...o, view: "front", bare: true });
+    assert.equal(count(bare, "data-piece"), count(full, "data-piece"), `${o.mode}: every piece is there`);
+    assert.ok(count(bare, "data-vc") >= count(bare, "data-piece") && count(bare, "data-vc") <= 2 * count(bare, "data-piece"), `${o.mode}: one cell a face for each piece`);
+    assert.ok(bare.length < full.length / 4, `${o.mode}: ${bare.length} of ${full.length} bytes`);
+    assert.ok(bare.includes("data-face"), `${o.mode}: the pictures of the faces are in the defs`);
+    assert.equal(count(bare, "data-vh"), 0, `${o.mode}: no shades`);
+  }
+});
+
+test("bare changes nothing else: the same pieces, the same faces, the same title", () => {
+  const full = renderJudogi({ mode: "suit", belt: "red-white", view: "back", yaw: 20 });
+  const bare = renderJudogi({ mode: "suit", belt: "red-white", view: "back", yaw: 20, bare: true });
+  const pieces = (svg: string): string[] => [...svg.matchAll(/data-piece="([^"]*)"/g)].map((m) => m[1] as string);
+  assert.deepEqual(pieces(bare), pieces(full));
+  // Everything in the defs but the cells' own group is the same: the faces' pictures and the paint.
+  const faces = (svg: string): string => (/<defs>([\s\S]*?)<\/defs>/.exec(svg)?.[1] ?? "").replace(/<g data-cells[^>]*>[\s\S]*?<\/g>/g, "");
+  assert.equal(faces(bare), faces(full));
+  assert.equal(/<title[^>]*>([^<]*)</.exec(bare)?.[1], /<title[^>]*>([^<]*)</.exec(full)?.[1]);
+});

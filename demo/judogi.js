@@ -230,10 +230,16 @@ async function draw() {
   if (stillSolid()) Object.assign(o, { view: state.view === "flat-back" ? "back" : "front", yaw: 0 });
   const mine = ++drawing;
   const holder = document.createElement("div");
-  holder.innerHTML = judogiFrame(o);
-  const svg = holder.firstElementChild;
+  // A canvas reads only each piece's description and the pictures of its faces, so it is given the drawing without its cells (tens of thousands of elements to make and parse); where it cannot be made the whole drawing is shown instead.
+  const onCanvas = !flat() || stillSolid();
+  holder.innerHTML = judogiFrame(onCanvas ? { ...o, bare: true } : o);
+  let svg = holder.firstElementChild;
   const q = quality();
-  const canvas = svg === null || (flat() && !stillSolid()) ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
+  let canvas = svg === null || !onCanvas ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
+  if (canvas === undefined && onCanvas) {
+    holder.innerHTML = judogiFrame(o);
+    svg = holder.firstElementChild;
+  }
   if (mine !== drawing) {
     canvas?.dispose();
     return;
