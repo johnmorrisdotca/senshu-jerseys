@@ -443,3 +443,28 @@ test("the trousers' thigh and hip places, a tonal mark, and a note when marks ca
   await expect(page.locator("#judo-stage canvas, #judo-stage svg").first()).toBeVisible();
   await expect(page.locator("#judo-check")).toContainText(/is not drawn/);
 });
+
+test("a belt's rows of stitching, thickness and cover are offered as its colour is made, and kept in the address", async ({ page }) => {
+  const shown = (id) => page.locator(`[data-testid="${id}"]`);
+  await page.goto("/judogi.html?mode=belt&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  // A black belt is made in several rows, thicknesses and covers.
+  for (const id of ["judo-belt-rows", "judo-belt-thickness", "judo-belt-cover"]) await expect(shown(id)).toHaveCount(1);
+  await pick(page, "judo-belt-rows", "16");
+  await expect(page).toHaveURL(/sl=16/);
+  await pick(page, "judo-belt-thickness", "thick");
+  await expect(page).toHaveURL(/th=thick/);
+  await pick(page, "judo-belt-cover", "shusu");
+  await expect(page).toHaveURL(/cv=shusu/);
+  // A white belt is made with 8 or 10 rows only, in one thickness and one cover: what does not fit is dropped, and what has no choice is not shown.
+  await pick(page, "judo-belt", "white");
+  await expect(page).not.toHaveURL(/sl=16/);
+  await expect(page).not.toHaveURL(/th=thick/);
+  await expect(shown("judo-belt-thickness")).toHaveCount(0);
+  await expect(shown("judo-belt-cover")).toHaveCount(0);
+  await expect(shown("judo-belt-rows")).toHaveCount(1);
+  // A belt on show only: not on the trousers.
+  await page.goto("/judogi.html?mode=pants&belt=black&sl=16");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(shown("judo-belt-rows")).toHaveCount(0);
+});

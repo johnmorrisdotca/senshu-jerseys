@@ -58,12 +58,14 @@ function rows(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 10): st
 }
 
 /** A length of belt between two edges: cloth, rows, a lit top edge and a darker lower one. */
-function length(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 10): string {
+function length(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = p.rows ?? 10): string {
   const shape = band(top, foot);
   // Colours along the belt (a half grade's second colour, a centre stripe): the part of the width between two lines, drawn over the cloth.
   const at = (f: number): Pt[] => top.map((q, i) => [q[0] + (foot[i]![0] - q[0]) * f, q[1] + (foot[i]![1] - q[1]) * f] as Pt);
   const bands = (p.bands ?? []).map((b) => `<path d="${band(at(b.from), at(b.to))}" fill="${b.fill}"/>`).join("");
-  return `<path d="${shape}" fill="${p.fill}"/>` + bands + rows(top, foot, p, n) +
+  // A satin or silk cover catches the light in a soft band along each lit side of the belt.
+  const sheen = p.cover === undefined || p.cover === "cotton" ? "" : `<path d="${band(at(0.06), at(0.38))}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.3 : 0.2}"/><path d="${band(at(0.7), at(0.86))}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.14 : 0.08}"/>`;
+  return `<path d="${shape}" fill="${p.fill}"/>` + bands + rows(top, foot, p, n) + sheen +
     `<path d="${smooth(top)}" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="0.9"/>` +
     `<path d="${smooth(foot)}" fill="none" stroke="${p.edge}" stroke-opacity="0.8" stroke-width="0.9"/>` +
     `<path d="${shape}" fill="none" stroke="${p.edge}" stroke-opacity="0.55" stroke-width="0.5"/>`;
@@ -135,7 +137,7 @@ export function beltOnJacket(p: BeltPaint, t: Tone, face: "front" | "back", wais
   if (face === "back") return shadow + turn;
   // The square knot, with its shadow.
   const knot = `<path d="${poly(k)}" fill="${p.fill}" stroke="${p.edge}" stroke-width="0.6"/>` +
-    rows([k[0] as Pt, k[1] as Pt], [k[3] as Pt, k[2] as Pt], p, 8) +
+    rows([k[0] as Pt, k[1] as Pt], [k[3] as Pt, k[2] as Pt], p, Math.max(6, Math.round((p.rows ?? 10) * 0.8))) +
     fold(`M${cx - 12} ${cy + 10}L${cx + 14} ${cy + 8}`, 3, 0.35) +
     length(down[0], down[1], p, 8);
   const ends = hang.map(([from, to], i) => end(from, to, p, (i === 0 ? p.ends?.left : p.ends?.right)?.body ?? "", i === 0 ? p.stripeEnds?.left : p.stripeEnds?.right, p.stripeEnds?.half)).join("");

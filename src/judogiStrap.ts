@@ -314,7 +314,7 @@ export function strapDesc(s: StrapDesc, pitch: number): VolumeDesc {
  * turns and of one below it. The knot is the strap itself, so it needs nothing of its own. Each strip runs on past its ends, so a cell
  * that is grown at its edge still finds cloth.
  */
-export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
+export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
   const rows = (y0: number, h: number, n: number): string => {
     let s = "";
     for (let k = 1; k <= n; k++) s += `<path d="M-40 ${n2(y0 + (h * k) / (n + 1))}H240" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
@@ -322,7 +322,9 @@ export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
   };
   const strip = (y0: number, h: number): string => `<rect x="-40" y="${n2(y0 - 1.5)}" width="280" height="${n2(h + 3)}" fill="${p.fill}"/>`;
   const bands = (p.bands ?? []).map((b) => `<rect x="-40" y="${n2(b.from * w)}" width="280" height="${n2((b.to - b.from) * w)}" fill="${b.fill}"/>`).join("");
-  const cloth = (y0: number, plain = false): string => strip(y0, w) + (plain ? "" : bands.replace(/y="([\d.-]+)"/g, (_, y: string) => `y="${n2(Number(y) + y0)}"`)) + rows(y0, w, n) +
+  // A satin or silk cover: a soft light along the strip's lit side and a fainter one near its other, over the rows.
+  const sheen = (y0: number): string => p.cover === undefined || p.cover === "cotton" ? "" : `<rect x="-40" y="${n2(y0 + w * 0.06)}" width="280" height="${n2(w * 0.32)}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.3 : 0.2}"/><rect x="-40" y="${n2(y0 + w * 0.7)}" width="280" height="${n2(w * 0.16)}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.14 : 0.08}"/>`;
+  const cloth = (y0: number, plain = false): string => strip(y0, w) + (plain ? "" : bands.replace(/y="([\d.-]+)"/g, (_, y: string) => `y="${n2(Number(y) + y0)}"`)) + rows(y0, w, n) + sheen(y0) +
     `<path d="M-40 ${n2(y0 + 0.4)}H240M-40 ${n2(y0 + w - 0.4)}H240" stroke="${p.edge}" stroke-width="0.9" stroke-opacity="0.75"/>`;
   const faceStrip = cloth(FACE_Y);
   const backStrip = cloth(BACK_Y, false);

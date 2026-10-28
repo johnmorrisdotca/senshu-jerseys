@@ -3,7 +3,7 @@
 import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
-  beltWidthsFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
+  beltWidthsFor, beltStitchLinesFor, beltThicknessesFor, beltCoversFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -14,6 +14,10 @@ const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 /** The belt's width: its grade's own, or one of the widths that grade is made in (4.2, 4.5 or 4.7 cm; a maker's catalogue, see docs/judogi.md). */
 const BELT_WIDTHS = ["auto", "4.2", "4.5", "4.7"];
+/** The rows of stitching, thicknesses and covers a belt of this colour is made with, each with "auto" (the package's own) first. */
+const rowsFor = (belt) => ["auto", ...beltStitchLinesFor(belt).map(String)];
+const thicknessFor = (belt) => ["auto", ...beltThicknessesFor(belt)];
+const coverFor = (belt) => ["auto", ...beltCoversFor(belt)];
 const widthsFor = (belt) => ["auto", ...beltWidthsFor(belt).map(String)];
 /** A stripe colour from the address, or none. */
 function stripeColour(v) {
@@ -77,6 +81,10 @@ const state = {
   bt: (params.get("bt") ?? "").slice(0, 5),
   bc: LABEL_COLOURS.includes(params.get("bc")) ? params.get("bc") : "navy",
   bw: BELT_WIDTHS.includes(params.get("bw")) ? params.get("bw") : "auto",
+  // The belt's rows of stitching, thickness and cover, as a belt of its colour is made (checked against the colour where they are used).
+  sl: params.get("sl") ?? "auto",
+  th: params.get("th") ?? "auto",
+  cv: params.get("cv") ?? "auto",
   // The belt's stripes: a second colour (split), a stripe along it (centre), a tip block with degree bars, bars across, and which ends carry the tip and bars.
   ss: stripeColour(params.get("ss")),
   sc: stripeColour(params.get("sc")),
@@ -130,6 +138,9 @@ function options() {
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
   if (state.bw !== "auto" && widthsFor(state.belt).includes(state.bw)) o.beltWidthCm = Number(state.bw);
+  if (state.sl !== "auto" && rowsFor(state.belt).includes(state.sl)) o.beltStitchLines = Number(state.sl);
+  if (state.th !== "auto" && thicknessFor(state.belt).includes(state.th)) o.beltThickness = state.th;
+  if (state.cv !== "auto" && coverFor(state.belt).includes(state.cv)) o.beltCover = state.cv;
   const style = {};
   if (state.ss !== "none") style.split = state.ss;
   if (state.sc !== "none") style.along = [{ colour: state.sc }];
@@ -144,7 +155,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -385,7 +396,14 @@ function rows() {
   out.push(field(G, "judo-mode", say("judoMode"), tiles({ id: "judo-mode", label: say("judoMode"), values: JUDOGI_MODES, current: state.mode, picture: (v) => PICTURES.mode[v], name: (v) => say(`judoMode_${v}`), onPick: set("mode", true), wide: true })));
   out.push(field(G, "judo-view", say("judoView"), segmented({ id: "judo-view", label: say("judoView"), values: JUDOGI_VIEWS, current: state.view, name: (v) => say(`judoView_${v}`), onPick: set("view") })));
   if (has("jacket") || has("pants")) out.push(field(G, "judo-colour", say("judoColour"), swatches({ id: "judo-colour", label: say("judoColour"), values: JUDOGI_COLOURS, current: state.colour, css: (v) => CLOTH_CSS[v], name: (v) => say(v === "blue" ? "judoBlue" : "judoWhite"), onPick: set("colour") })));
-  if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: (v) => { if (!widthsFor(v).includes(state.bw)) state.bw = "auto"; set("belt", true)(v); } })));
+  if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: (v) => { if (!widthsFor(v).includes(state.bw)) state.bw = "auto"; if (!rowsFor(v).includes(state.sl)) state.sl = "auto"; if (!thicknessFor(v).includes(state.th)) state.th = "auto"; if (!coverFor(v).includes(state.cv)) state.cv = "auto"; set("belt", true)(v); } })));
+  if (has("belt") && state.belt !== "none") {
+    const auto = (key) => say(`judoBelt_${key}_auto`);
+    const more = (id, key, values, name) => out.push(field(G, `judo-${id}`, say(`judoBelt_${key}`), segmented({ id: `judo-${id}`, label: say(`judoBelt_${key}`), values, current: state[id === "belt-rows" ? "sl" : id === "belt-thickness" ? "th" : "cv"], name: (v) => (v === "auto" ? auto(key) : name(v)), onPick: set(id === "belt-rows" ? "sl" : id === "belt-thickness" ? "th" : "cv") })));
+    if (rowsFor(state.belt).length > 2) more("belt-rows", "rows", rowsFor(state.belt), (v) => v);
+    if (thicknessFor(state.belt).length > 2) more("belt-thickness", "thickness", thicknessFor(state.belt), (v) => say(`judoBelt_thickness_${v}`));
+    if (coverFor(state.belt).length > 2) more("belt-cover", "cover", coverFor(state.belt), (v) => say(`judoBelt_cover_${v}`));
+  }
   if (has("belt")) out.push(field(G, "judo-belt-width", say("judoBeltWidth"), segmented({ id: "judo-belt-width", label: say("judoBeltWidth"), values: widthsFor(state.belt), current: state.bw, name: (v) => (v === "auto" ? say("judoBeltWidth_auto") : `${v} cm`), onPick: set("bw") })));
   if (has("belt")) {
     const S = "judoG_stripes";

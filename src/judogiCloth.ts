@@ -16,6 +16,9 @@ export interface BeltPaint {
   ends?: { left?: Mark; right?: Mark };
   /** Tip blocks, bars and tags across each hanging end, drawn in the end's own frame for a belt `half` wide either side of its middle (the flat drawing squeezes them to its own width). */
   stripeEnds?: { left: string; right: string; half: number };
+  /** How many rows of stitching the belt has (8, 10, 13, 14, 15 or 16), and what covers it: plain cotton, satin-woven shusu or silk, the last two with a sheen. */
+  rows?: number;
+  cover?: "cotton" | "shusu" | "silk";
   /** Colours laid along the whole belt, as parts of its width from the top edge (a half grade's second colour, a centre stripe). */
   bands?: { from: number; to: number; fill: string }[];
   /** Marks laid straight on a strap's face strip, in the strip's own units (the collar's lapel hem). */

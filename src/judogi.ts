@@ -2,7 +2,7 @@
 // colours, named IJF sizes, product pieces or a worn suit. No maker, federation or sponsor marks. Sizes and
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
-import { beltWidthIsReal } from "./beltSpecs.ts";
+import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltWidthIsReal, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
 import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint } from "./judogiBelt.ts";
 import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
@@ -73,6 +73,12 @@ export interface JudogiOptions {
   emblem?: JudogiEmblem;
   /** The belt's width in centimetres, 3 to 6 drawn (the IJF allows 4 to 5, and `judogiCheck` says when it is outside). By default the grade's own: 4 for the rank colours, 4.75 for black, 5 for red-white and red. */
   beltWidthCm?: number;
+  /** The rows of stitching along the belt: 8, 10, 13, 14, 15 or 16 (the counts belts are made with; 10 by default). */
+  beltStitchLines?: BeltStitchLines;
+  /** How thick the belt is: `standard` (about 5 mm, the IJF's figure), `thick` or `extra-thick` (the cores of the heavier black and kohaku belts), seen at its edges and folds. */
+  beltThickness?: BeltThickness;
+  /** What covers the belt: plain `cotton` (the default), satin-woven `shusu` or `silk`, the last two with a sheen. */
+  beltCover?: BeltCover;
   /** Stripes, a second colour, a tip block, bars or tags on the belt, any number in any arrangement (`BELT_PRESETS` has the common real ones). Nothing by default. */
   beltStyle?: JudogiBeltStyle;
   /** The package's own woven "Approved Judogi" label on the jacket, the trousers and the belt: `true`, or a colour variant and thread. */
@@ -168,6 +174,10 @@ interface Ready {
   beltCm: number | undefined;
   /** What is laid on the belt besides its colour, checked. */
   style: ReadStyle | undefined;
+  /** The belt's rows of stitching, its thickness in drawing units and its cover. */
+  beltRows: BeltStitchLines | undefined;
+  beltT: number;
+  beltCover: BeltCover;
   cloth: Rgb;
   uid: string;
   patch: PatchSpec | undefined;
@@ -199,13 +209,16 @@ function read(options?: JudogiOptions): Ready {
   const beltAsked = readBeltCm(o.beltWidthCm);
   const beltCm = beltAsked === undefined ? undefined : Math.max(3, Math.min(6, beltAsked));
   const style = readStyle(o.beltStyle);
+  const beltRows = (BELT_STITCH_LINES as readonly unknown[]).includes(o.beltStitchLines) ? o.beltStitchLines : undefined;
+  const beltThickness = pick(BELT_THICKNESSES, o.beltThickness, "standard");
+  const beltCover = pick(BELT_COVERS, o.beltCover, "cotton");
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, patch, spec]))}`;
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, cloth, uid, patch, marks,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, cloth, uid, patch, marks,
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
       : "A judogi: jacket, trousers and belt. No maker or federation marks.",
@@ -227,6 +240,9 @@ function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiM
 function inkOf(o: Ready, part: string, belt?: BeltPaint, marks?: GiInk["marks"]): GiInk {
   return { uid: `${o.uid}${part}`, cloth: o.cloth, ...(belt === undefined ? {} : { belt }), ...(marks === undefined ? {} : { marks }) };
 }
+
+/** The strap's thickness for each grade, in drawing units (2.63 to the centimetre): about 5, 6 and 7 mm. */
+const BELT_T: Record<BeltThickness, number> = { standard: STRAP_T, thick: 1.6, "extra-thick": 1.85 };
 
 const join = (a: Mark | undefined, b: Mark | undefined): Mark | undefined => (a === undefined ? b : b === undefined ? a : { defs: a.defs + b.defs, body: a.body + b.body });
 
@@ -255,6 +271,8 @@ function paintOf(o: Ready, belt: string): BeltPaint | undefined {
   const p: BeltPaint = {
     ...base,
     ...(bands.length === 0 ? {} : { bands }),
+    ...(o.beltRows === undefined ? {} : { rows: o.beltRows }),
+    ...(o.beltCover === "cotton" ? {} : { cover: o.beltCover }),
     ...(stripes.left === "" && stripes.right === "" ? {} : { stripeEnds: stripes }),
   };
   const { left, right } = o.marks?.belt ?? {};
@@ -281,7 +299,7 @@ function compose(o: Ready): Sheet {
   if (o.mode === "belt") {
     const p = paint ?? (paintOf(o, "white") as BeltPaint);
     // A tied ring seen a little from above: its far half shows its inside, its edges their thickness.
-    const ring: StrapDesc = { y: 28, sag: 3, w: width, t: STRAP_T, a: 66, b: Math.round(30 * Math.max(0.35, Math.min(1.6, depth)) * 10) / 10, full: 2, side: 0, worn: false };
+    const ring: StrapDesc = { y: 28, sag: 3, w: width, t: o.beltT, a: 66, b: Math.round(30 * Math.max(0.35, Math.min(1.6, depth)) * 10) / 10, full: 2, side: 0, worn: false };
     const belt = volumeOf(`${o.uid}b`, strapDesc(ring, 14), strapFace(p, width), NO_FACE, yaw);
     return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
   }
@@ -294,7 +312,7 @@ function compose(o: Ready): Sheet {
   const tone = toneOf(o.cloth);
   const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw);
   // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
-  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: STRAP_T, worn: true }, body.pitch), strapFace(tied, width), NO_FACE, yaw);
+  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true }, body.pitch), strapFace(tied, width), NO_FACE, yaw);
   const belted = `${collar?.body ?? ""}${strap?.body ?? ""}${jacket?.tail ?? ""}`;
   const beltDefs = `${collar?.defs ?? ""}${strap?.defs ?? ""}`;
   // Worn, the trousers are gathered at the waist and sit inside the jacket; laid out, they keep their full width.
