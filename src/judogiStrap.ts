@@ -43,6 +43,8 @@ const HANG = 64;
 export const FACE_Y = 0;
 const EDGE2_Y = 26;
 export const EDGE1_Y = 36;
+/** The strip a strap's inner and reverse faces sample: the same cloth with nothing sewn on it (marks are sewn on the outer face only). */
+export const BACK_Y = 46;
 export const EDGE_H = 4;
 /** Along a strip: where it starts on the drawing, and the length after which a kohaku belt's panels repeat. */
 const X0 = -30;
@@ -144,7 +146,7 @@ export function strapCells(s: StrapDesc): Cell[] {
     const hidden = s.worn ? unit(out) : undefined;
     cells.push(...quad([o(outer[i]!, y0), o(outer[k]!, y1), o(inner[i]!, y0), o(inner[k]!, y1)], edge, [0, -1, 0], hidden));
     cells.push(...quad([o(outer[i]!, y0 + s.w), o(outer[k]!, y1 + s.w), o(inner[i]!, y0 + s.w), o(inner[k]!, y1 + s.w)], edge, [0, 1, 0], hidden));
-    if (!s.worn) cells.push(...quad([o(inner[k]!, y1), o(inner[i]!, y0), o(inner[k]!, y1 + s.w), o(inner[i]!, y0 + s.w)], [[x1, FACE_Y], [x0, FACE_Y], [x1, FACE_Y + s.w], [x0, FACE_Y + s.w]], inward));
+    if (!s.worn) cells.push(...quad([o(inner[k]!, y1), o(inner[i]!, y0), o(inner[k]!, y1 + s.w), o(inner[i]!, y0 + s.w)], [[x1, BACK_Y], [x0, BACK_Y], [x1, BACK_Y + s.w], [x0, BACK_Y + s.w]], inward));
   }
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
@@ -174,7 +176,8 @@ function ribbon(c: readonly Vec[], across: readonly Vec[], out: readonly Vec[], 
     const face: [number, number][] = [[x, FACE_Y], [x1, FACE_Y], [x, FACE_Y + s.w], [x1, FACE_Y + s.w]];
     const edge: [number, number][] = [[x, EDGE1_Y], [x1, EDGE1_Y], [x, EDGE1_Y + EDGE_H], [x1, EDGE1_Y + EDGE_H]];
     cells.push(...quad([at(k, -1, 1), at(k + 1, -1, 1), at(k, 1, 1), at(k + 1, 1, 1)], face, o, also));
-    cells.push(...quad([at(k, -1, -1), at(k + 1, -1, -1), at(k, 1, -1), at(k + 1, 1, -1)], face, [-o[0], -o[1], -o[2]], also));
+    const reverse: [number, number][] = [[x, BACK_Y], [x1, BACK_Y], [x, BACK_Y + s.w], [x1, BACK_Y + s.w]];
+    cells.push(...quad([at(k, -1, -1), at(k + 1, -1, -1), at(k, 1, -1), at(k + 1, 1, -1)], reverse, [-o[0], -o[1], -o[2]], also));
     cells.push(...quad([at(k, -1, 1), at(k + 1, -1, 1), at(k, -1, -1), at(k + 1, -1, -1)], edge, [-a[0], -a[1], -a[2]], also));
     cells.push(...quad([at(k, 1, 1), at(k + 1, 1, 1), at(k, 1, -1), at(k + 1, 1, -1)], edge, a, also));
     x = x1;
@@ -289,7 +292,8 @@ function endCells(from: [number, number], to: [number, number], z: number, s: St
     const edge: [number, number][] = [[x0, EDGE1_Y], [x1, EDGE1_Y], [x0, EDGE1_Y + EDGE_H], [x1, EDGE1_Y + EDGE_H]];
     const outL = sub(la, ra);
     cells.push(...quad([la, lb, ra, rb], face, [0, 0, 1], also));
-    cells.push(...quad([back(la), back(lb), back(ra), back(rb)], face, [0, 0, -1], also));
+    const reverse: [number, number][] = [[x0, BACK_Y], [x1, BACK_Y], [x0, BACK_Y + s.w], [x1, BACK_Y + s.w]];
+    cells.push(...quad([back(la), back(lb), back(ra), back(rb)], reverse, [0, 0, -1], also));
     cells.push(...quad([la, lb, back(la), back(lb)], edge, outL, also));
     cells.push(...quad([ra, rb, back(ra), back(rb)], edge, [-outL[0], -outL[1], -outL[2]], also));
   }
@@ -316,8 +320,10 @@ export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
     return s;
   };
   const strip = (y0: number, h: number): string => `<rect x="-40" y="${n2(y0 - 1.5)}" width="280" height="${n2(h + 3)}" fill="${p.fill}"/>`;
-  const faceStrip = strip(FACE_Y, w) + rows(FACE_Y, w, n) +
-    `<path d="M-40 ${FACE_Y + 0.4}H240M-40 ${n2(FACE_Y + w - 0.4)}H240" stroke="${p.edge}" stroke-width="0.9" stroke-opacity="0.75"/>`;
+  const cloth = (y0: number): string => strip(y0, w) + rows(y0, w, n) +
+    `<path d="M-40 ${n2(y0 + 0.4)}H240M-40 ${n2(y0 + w - 0.4)}H240" stroke="${p.edge}" stroke-width="0.9" stroke-opacity="0.75"/>`;
+  const faceStrip = cloth(FACE_Y);
+  const backStrip = cloth(BACK_Y);
   // An edge is the stitched rows seen end on: the cloth a little darker, and on the two turns the line where one lies on the other.
   const dark = `fill="${p.edge}" fill-opacity="0.3"`;
   const edges = strip(EDGE2_Y, EDGE_H) + `<rect x="-40" y="${EDGE2_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>` +
@@ -327,9 +333,10 @@ export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
     `M-40 ${FACE_Y - 1.5}H240V${n2(FACE_Y + w + 1.5)}H-40Z`,
     `M-40 ${EDGE2_Y - 1.5}H240V${EDGE2_Y + EDGE_H + 1.5}H-40Z`,
     `M-40 ${EDGE1_Y - 1.5}H240V${EDGE1_Y + EDGE_H + 1.5}H-40Z`,
+    `M-40 ${BACK_Y - 1.5}H240V${n2(BACK_Y + w + 1.5)}H-40Z`,
   ];
   // What is sewn on each hanging end lies on that end's own stretch of the strip, its frame's origin at the knot's end and its middle on the strip's.
   const sewn = (m: { body: string } | undefined, x: number): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(w / 2)})">${m.body}</g>`);
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
-  return { defs: p.strip?.defs ?? "", body: faceStrip + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
+  return { defs: p.strip?.defs ?? "", body: faceStrip + backStrip + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

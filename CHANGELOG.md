@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-10-28
+
+### Fixed
+
+- **What is sewn on a belt's end no longer shows on the other side.** Embroidery, labels and logos on a hanging end showed through the strap mirrored when it turned away, because the reverse face used the same drawing as the outer one. The reverse (and the inside of the turns) now has a plain strip of the same cloth. Tests check at 0, 90, 180 and 270 degrees that a belt's marks show on its outer face only, and that a jacket's front marks and back patch each lie on their own face.
+
 ## [0.18.1] - 2026-10-28
 
 ### Fixed

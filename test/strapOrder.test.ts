@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { renderJudogi } from "../src/judogi.ts";
 import { depthOrder } from "../src/pieceVolume.ts";
-import { strapCells, type StrapDesc } from "../src/judogiStrap.ts";
+import { BACK_Y, FACE_Y, strapCells, strapFace, type StrapDesc } from "../src/judogiStrap.ts";
 import { placeCell, turn } from "../src/volume.ts";
 
 // A belt alone, as the designer draws it. Its knot is two lengths of strap that cross one another and the turns, so the cells' middles
@@ -60,4 +61,50 @@ test("the knot's cells are drawn nearer last wherever they lie over one another,
   assert.ok(before > 20, `the middles alone were expected to fail here (${before})`);
   assert.ok(after * 3 < before, `overlap ordering is not much better: ${after} wrong against ${before}`);
   assert.ok(worstAfter <= 6, `a view has ${worstAfter} pairs in the wrong order`);
+});
+
+test("what is sewn on a belt's hanging end shows on its outer face only, at 0, 90, 180 and 270 degrees", () => {
+  const cells = strapCells(RING);
+  // The two hanging ends are the cells whose drawing runs along the strip from where the marks start (END_X, 58 and up); the turns and the knot use less.
+  const ends = cells.map((c, i) => ({ c, i })).filter(({ c }) => Math.min(...c.tex.filter((_, k) => k % 2 === 0)) >= 57);
+  assert.ok(ends.length > 0);
+  const rowsOf = (yaw: number): { face: number; reverse: number } => {
+    let face = 0;
+    let reverse = 0;
+    for (const { c } of ends) {
+      if (!placeCell(c, yaw, 14).visible) continue;
+      const y = Math.min(...c.tex.filter((_, k) => k % 2 === 1));
+      if (y >= BACK_Y - 1) reverse++;
+      else if (y < FACE_Y + RING.w + 2) face++;
+    }
+    return { face, reverse };
+  };
+  // Seen from the front, the ends show their outer face, which carries the marks; from behind, the reverse, which is plain cloth.
+  assert.ok(rowsOf(0).face > 0 && rowsOf(0).reverse === 0, "front: marks side only");
+  assert.ok(rowsOf(180).reverse > 0 && rowsOf(180).face === 0, "back: plain side only");
+  // Side on, an end shows only its edges (and a sliver of whichever face is a little toward the viewer): never the reverse and the marks together.
+  for (const yaw of [90, 270]) {
+    const r = rowsOf(yaw);
+    assert.ok(r.face === 0 || r.reverse === 0, `${yaw}: ${JSON.stringify(r)}`);
+  }
+  // The strip the reverse faces sample has the cloth and the rows but none of the marks.
+  const marked = strapFace({ fill: "#123456", edge: "#000", stitch: "#222", defs: "", ends: { left: { defs: "", body: '<text id="mark">M</text>' } } }, RING.w);
+  assert.equal(marked.body.match(/id="mark"/g)?.length, 1);
+  assert.ok(marked.body.indexOf(`y="${BACK_Y - 1.5}"`) >= 0, "a plain strip for the reverse");
+});
+
+test("a jacket's front marks are drawn on its front face only and its back patch on its back face only", () => {
+  const svg = renderJudogi({
+    mode: "jacket", belt: "none",
+    embroidery: [{ place: "jacket-chest", text: "CHEST", thread: "#ff00aa" }],
+    backPatch: { style: "ijf", name: "A. NAME", code: "CAN", line: "CLUB", colour: "#00aaff" },
+  });
+  const f = svg.search(/<g id="[^"]*F" data-face/);
+  const b = svg.search(/<g id="[^"]*B" data-face/);
+  assert.ok(f >= 0 && b > f, "both faces are there");
+  const group = (side: "F" | "B"): string => (side === "F" ? svg.slice(f, b) : svg.slice(b, svg.indexOf("</defs>", b)));
+  const front = group("F");
+  const back = group("B");
+  assert.ok(/ff00aa/i.test(front) && !/00aaff/i.test(front), "front: the chest embroidery, no back patch");
+  assert.ok(/00aaff/i.test(back) && !/ff00aa/i.test(back), "back: the patch, no chest embroidery");
 });
