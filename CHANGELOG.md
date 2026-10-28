@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **The designer's mouse is back as John had it** (SPX-750). A press and drag turns the piece at every zoom, as before (the last release made a drag pan once zoomed in). To move a zoomed view: Shift and drag, the middle or right button, or two fingers. The Drag: move / Drag: turn button is gone. **The wheel tips the piece the way it first did** (wheel down shows it more from below, as before the drag fix flipped it, which was only meant for the drag); Arrow Up and Arrow Down go back with it. A drag up still lifts the front, and the Tilt slider is as it was. In a flat layout, which cannot turn, a drag still moves a zoomed view.
+
 ### Added
 
 - **Marks no longer collide.** Every mark (embroidery, maker's logo, national emblem, Approved label, the branding's S) now belongs to an area of one face of a garment, held 1 cm in from seams, the side vent, the hem's stitching, the belt's band, the drawstring, the neck label, the knee panel and a belt end's tip and bars (`src/judogiPlaces.ts`). Marks are laid out in a fixed order; one that would touch another or leave its area is made smaller (down to 60 per cent) and moved to the nearest free spot in its area, with 1 cm between marks. One that cannot fit is not drawn, and `judogiCheck` reports it (`skipped-<mark>`, `met: false`); the designer shows the note. `test/mark-places.test.ts` checks every mark alone, every pair and every triple that can meet, at every belt width, for boxes inside their area and clear of everything else.

@@ -186,7 +186,11 @@ test("a sideways swipe turns the view, an up and down wheel is the page's unless
   await page.locator('[data-testid="judo-turntable"]').focus();
   await page.mouse.move(m.x, m.y);
   await page.mouse.wheel(0, 100);
-  // Down on the wheel lowers the front, as a drag down does.
+  // SPX-750: the wheel's direction is the original one (John 2026-10-28: "you changed the wheel behaviour... fix that back"): a wheel DOWN gives the package a
+  // negative tilt (seen from below), the Tilt slider's value a positive one. Only the drag was meant to change sign (a drag up lifts the front).
+  await expect.poll(() => attr(page, "data-tilt")).toBeLessThan(0);
+  expect(await page.locator('[data-testid="judo-tilt"]').inputValue()).toBe("15");
+  await page.mouse.wheel(0, -200);
   await expect.poll(() => attr(page, "data-tilt")).toBeGreaterThan(0);
   // Ctrl and the wheel is a pinch on a trackpad: zoom.
   await page.keyboard.down("Control");
@@ -230,9 +234,10 @@ test("the arrow keys turn and tip the view and plus and minus zoom it", async ({
   await page.locator('[data-testid="judo-turntable"]').focus();
   await page.keyboard.press("ArrowRight");
   expect(await attr(page, "data-yaw")).toBe(15);
+  // SPX-750: Arrow Up goes with the wheel up, as it did before the drag fix: the package's tilt is positive.
   await page.keyboard.press("ArrowUp");
-  expect(await attr(page, "data-tilt")).toBe(-5);
-  await expect(page.locator('[data-testid="judo-tilt"]')).toHaveValue("5");
+  expect(await attr(page, "data-tilt")).toBe(5);
+  await expect(page.locator('[data-testid="judo-tilt"]')).toHaveValue("-5");
   await page.keyboard.press("+");
   await expect(page.locator('[data-testid="judo-zoom-reset"]')).not.toHaveText("1×");
   await page.keyboard.press("0");
@@ -558,35 +563,58 @@ test("at 1x every piece fits the view with a margin at every angle and tilt, ext
   }
 });
 
-test("zoomed in, a plain drag moves the view; the toggle gives the drag back to turning; Fit puts it all back", async ({ page }) => {
-  await page.goto("/judogi.html?mode=jacket&belt=black&zoom=2");
+// SPX-750: a plain press and drag turns the piece at every zoom; Shift, the middle or right button and two fingers move a zoomed view.
+for (const zoom of [1, 3]) {
+  test(`a plain drag turns the piece at ${zoom}x`, async ({ page }) => {
+    await page.goto(`/judogi.html?mode=jacket&belt=black&zoom=${zoom}`);
+    await expect(page.locator("#judo-stage canvas")).toBeVisible();
+    const m = await middle(page);
+    await page.mouse.move(m.x, m.y);
+    await page.mouse.down();
+    // The press stops the automatic turn the pointer's arrival started: the angle is read after it.
+    const yaw0 = await attr(page, "data-yaw");
+    await page.mouse.move(m.x + m.width / 4, m.y, { steps: 6 });
+    await page.mouse.up();
+    // Across the view's width is a half turn, so a quarter of it is about 45 degrees.
+    expect(Math.abs((await attr(page, "data-yaw")) - yaw0)).toBeGreaterThan(30);
+    // The move/turn toggle is gone.
+    await expect(page.locator('[data-testid="judo-hand"]')).toHaveCount(0);
+  });
+}
+
+test("zoomed in, Shift and a drag, the right button and the middle button move the view without turning it; Fit puts it all back", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black&zoom=3");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const bounds = () => page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-bounds") ?? "").split(" ").map(Number));
   const m = await middle(page);
-  const start = await bounds();
-  const yaw0 = await attr(page, "data-yaw");
   await page.mouse.move(m.x, m.y);
+  await page.keyboard.down("Shift");
   await page.mouse.down();
+  // The press stops the automatic turn the pointer's arrival started: the angle and the place are read after it.
+  const yaw0 = await attr(page, "data-yaw");
+  let before = await bounds();
   await page.mouse.move(m.x + 60, m.y + 30, { steps: 5 });
   await page.mouse.up();
-  const moved = await bounds();
-  expect(Math.round(moved[0] - start[0])).toBeGreaterThan(20);
+  await page.keyboard.up("Shift");
+  // The picture is made again when a gesture settles, so the next reading waits for that.
+  await page.waitForTimeout(600);
+  let after = await bounds();
+  expect(Math.round(after[0] - before[0])).toBeGreaterThan(20);
   expect(await attr(page, "data-yaw")).toBe(yaw0);
-  // The toggle appears when zoomed, and turns the drag back into turning.
-  const hand = page.locator('[data-testid="judo-hand"]');
-  await expect(hand).toBeVisible();
-  await hand.click();
-  await expect(hand).toHaveAttribute("aria-pressed", "true");
-  const m2 = await middle(page);
-  await page.mouse.move(m2.x, m2.y);
-  await page.mouse.down();
-  await page.mouse.move(m2.x + 60, m2.y, { steps: 5 });
-  await page.mouse.up();
-  expect(await attr(page, "data-yaw")).not.toBe(yaw0);
-  // Fit: zoom and pan back, and the toggle goes away with the zoom.
+  for (const button of ["right", "middle"]) {
+    await page.mouse.move(m.x, m.y);
+    await page.mouse.down({ button });
+    before = await bounds();
+    await page.mouse.move(m.x - 40, m.y, { steps: 5 });
+    await page.mouse.up({ button });
+    await page.waitForTimeout(600);
+    after = await bounds();
+    expect(Math.round(before[0] - after[0]), button).toBeGreaterThan(10);
+    expect(await attr(page, "data-yaw")).toBe(yaw0);
+  }
+  // Fit: zoom and pan back.
   await page.locator('[data-testid="judo-fit"]').click();
   await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("1×");
-  await expect(hand).toBeHidden();
   const fitted = await bounds();
   const canvas = await page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-size") ?? "").split(" ").map(Number));
   expect(fitted[0]).toBeGreaterThanOrEqual(-1);

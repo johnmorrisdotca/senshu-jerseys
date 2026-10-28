@@ -4,6 +4,8 @@ The jacket, the trousers and the belt as original SVG: contest white or blue, th
 
 Look at the [designer](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html) (`?colour=white&mode=pieces&belt=black&size=170`).
 
+**Hands in the designer.** A press and drag turns the piece at every zoom (across the view is a half turn; a drag up lifts the front) and the Tilt slider tips it; the wheel (when the view has focus), the arrow keys and a sideways swipe turn it too. To move a zoomed view, Shift and drag, drag with the middle or right button, or use two fingers (a pinch zooms about the fingers). Fit puts zoom and position back.
+
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/judogi-desk-dark.webp">
 <img alt="Four judogi drawings: a white jacket with a black belt tied at the front, turned a little; its white trousers with the drawstring and the reinforced knees; a blue suit worn with a black belt, turned the other way; and the white jacket from the back with a brown belt." src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/judogi-desk-light.webp" width="720">
