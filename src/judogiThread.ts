@@ -97,8 +97,9 @@ function threadOf(rgb: Rgb): Thread {
 /** The fine diagonal pattern of satin on a shape with no centre line: threads side by side at an angle, a dark gap between each pair. */
 export function satinDefs(id: string, rgb: Rgb): string {
   const t = threadOf(rgb);
-  return `<pattern id="${id}" width="0.7" height="0.7" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">` +
-    `<rect width="0.7" height="0.2" fill="${t.gap}" fill-opacity="0.5"/><rect y="0.3" width="0.7" height="0.12" fill="${t.sheen}" fill-opacity="0.45"/></pattern>`;
+  // Threads side by side at an angle, each a fine lit ridge with a dark gap beside it (finer than before, so a closer look shows rows and not a flat tint).
+  return `<pattern id="${id}" width="0.5" height="0.5" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">` +
+    `<rect width="0.5" height="0.14" fill="${t.gap}" fill-opacity="0.55"/><rect y="0.2" width="0.5" height="0.1" fill="${t.sheen}" fill-opacity="0.5"/></pattern>`;
 }
 
 /**
@@ -109,10 +110,14 @@ export function satinStroke(d: string, sw: number, rgb: Rgb): string {
   const t = threadOf(rgb);
   const cap = 'fill="none" stroke-linejoin="round"';
   const unit = Math.max(0.5, Math.min(1.1, sw * 0.4));
-  return `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.shadow}" stroke-opacity="0.34" stroke-width="${n2(sw + Math.min(0.9, sw * 0.45))}" transform="translate(${n2(Math.min(0.35, sw * 0.2))} ${n2(Math.min(0.5, sw * 0.28))})"/>` +
+  // Raised a hair off the cloth: the thread's side wall (a darker rim round the stroke, a little low and to the right), a thin shadow beyond it, the stroke, and a fine
+  // light line just inside its lit (upper left) edge.
+  return `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.gap}" stroke-opacity="0.8" stroke-width="${n2(sw + 0.34)}" transform="translate(${n2(Math.min(0.14, sw * 0.08))} ${n2(Math.min(0.2, sw * 0.12))})"/>` +
+    `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.shadow}" stroke-opacity="0.34" stroke-width="${n2(sw + Math.min(0.9, sw * 0.45))}" transform="translate(${n2(Math.min(0.35, sw * 0.2))} ${n2(Math.min(0.5, sw * 0.28))})"/>` +
     `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.fill}" stroke-width="${n2(sw)}"/>` +
     `<path d="${d}" ${cap} stroke="${t.gap}" stroke-opacity="0.55" stroke-width="${n2(sw * 0.98)}" stroke-dasharray="${n2(unit * 0.22)} ${n2(unit * 0.5)}"/>` +
-    `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.sheen}" stroke-opacity="0.34" stroke-width="${n2(sw * 0.3)}" transform="translate(${n2(-sw * 0.12)} ${n2(-sw * 0.16)})"/>`;
+    `<path d="${d}" ${cap} stroke-linecap="round" stroke="${t.sheen}" stroke-opacity="0.34" stroke-width="${n2(sw * 0.3)}" transform="translate(${n2(-sw * 0.12)} ${n2(-sw * 0.16)})"/>` +
+    `<path d="${d}" ${cap} stroke-linecap="round" stroke="#fff" stroke-opacity="0.22" stroke-width="${n2(Math.max(0.16, sw * 0.07))}" transform="translate(${n2(-sw * 0.36)} ${n2(-sw * 0.4)})"/>`;
 }
 
 /** A run of text as thread (`wholeText`: the full text it is a part of, when the language is told by the rest of it, as in a column set one character at a time): the stroke glyphs as satin strokes, or system text with the satin pattern over it. `id` names the pattern the caller defined. */
@@ -124,8 +129,11 @@ export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: 
   for (const ch of run.chars) {
     const at = (dx = 0, dy = 0): string => `transform="translate(${n2(ch.x + dx)} ${n2(ch.y + dy)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="700" font-family="${esc(family)}"${lang}`;
     out += `<text ${at(0.35, 0.5)} fill="${t.shadow}" fill-opacity="0.3" stroke="${t.shadow}" stroke-opacity="0.3" stroke-width="0.7">${esc(ch.c)}</text>`;
+    // The thread's side wall, then the thread, its rows, a thin dark edge, and a fine light line inside the lit (upper left) edges: slightly raised.
+    out += `<text ${at(0.16, 0.22)} fill="${t.gap}" fill-opacity="0.7" stroke="${t.gap}" stroke-opacity="0.7" stroke-width="0.3" stroke-linejoin="round">${esc(ch.c)}</text>`;
     out += `<text ${at()} fill="${t.fill}" stroke="${edge ?? t.gap}" stroke-opacity="0.55" stroke-width="0.25" stroke-linejoin="round">${esc(ch.c)}</text>`;
     out += `<text ${at()} fill="url(#${id})">${esc(ch.c)}</text>`;
+    out += `<text ${at(0.12, 0.16)} fill="none" stroke="#fff" stroke-opacity="0.32" stroke-width="0.16" stroke-linejoin="round">${esc(ch.c)}</text>`;
   }
   return out;
 }
@@ -133,5 +141,5 @@ export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: 
 /** A shape given as an outline path (an outline a person made from a font) filled with thread. */
 export function satinShape(d: string, rgb: Rgb, id: string, transform: string): string {
   const t = threadOf(rgb);
-  return `<g transform="${transform}"><path d="${d}" fill="${t.shadow}" fill-opacity="0.3" transform="translate(0.35 0.5)"/><path d="${d}" fill="${t.fill}" stroke="${t.gap}" stroke-opacity="0.5" stroke-width="0.25" stroke-linejoin="round"/><path d="${d}" fill="url(#${id})"/></g>`;
+  return `<g transform="${transform}"><path d="${d}" fill="${t.shadow}" fill-opacity="0.3" transform="translate(0.35 0.5)"/><path d="${d}" fill="${t.fill}" stroke="${t.gap}" stroke-opacity="0.5" stroke-width="0.25" stroke-linejoin="round"/><path d="${d}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.16" stroke-linejoin="round" transform="translate(0.12 0.16)"/></g>`;
 }

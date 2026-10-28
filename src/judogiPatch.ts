@@ -155,7 +155,10 @@ export function cloth(id: string, x: number, y: number, w: number, h: number, ba
   const tc = hexOf(thread);
   const stitched = (d: string, wd = 0.6): string =>
     `<path d="${d}" fill="none" stroke="${hexOf(blend(thread, [0, 0, 0], 0.5))}" stroke-width="${n2(wd + 0.6)}" stroke-dasharray="1.7 1.1" stroke-opacity="0.4" transform="translate(0.3 0.4)" stroke-linecap="round"/>` +
-    `<path d="${d}" fill="none" stroke="${tc}" stroke-width="${n2(wd)}" stroke-dasharray="1.7 1.1" stroke-linecap="round"/>`;
+    `<path d="${d}" fill="none" stroke="${tc}" stroke-width="${n2(wd)}" stroke-dasharray="1.7 1.1" stroke-linecap="round"/>` +
+    // Each stitch is a short length of thread with a lit upper edge, and the hole it goes into is a dot of shadow between two stitches.
+    `<path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="${n2(wd * 0.28)}" stroke-dasharray="1.7 1.1" stroke-linecap="round" transform="translate(-0.1 -0.14)"/>` +
+    `<path d="${d}" fill="none" stroke="${hexOf(blend(thread, [0, 0, 0], 0.6))}" stroke-opacity="0.55" stroke-width="${n2(wd * 0.5)}" stroke-dasharray="0.01 2.79" stroke-dashoffset="-1.7" stroke-linecap="round"/>`;
   const m = 3.1;
   let under = "";
   // A patch is 1 to 2 mm of cloth (0.4 of a unit): a hair of contact shadow under it, then its cut edge as a thin darker wall on the side away from the light

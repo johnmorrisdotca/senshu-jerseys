@@ -26,6 +26,10 @@ All notable changes to this project are written here. The format follows
 
 ## [0.18.0] - 2026-10-28
 
+### Changed
+
+- **Embroidery is raised and shows its stitching.** Thread (letters, kanji, patches' text) has a side wall and a thin shadow on the lower right, a fine light line inside its lit upper-left edge, and finer rows of satin stitches that read as rows when zoomed (to 5x); a patch's border stitch has a lit upper edge and a shadow in each needle hole. It is the same drawing at any zoom, so it costs the painters nothing: a suit with embroidery weighs 5 kB more and draws in the same 31 ms.
+
 ### Added
 
 - **`BELT_SYSTEMS`**: the belt systems of the martial arts as data, each read from a governing body's own pages where one could be read (the day and the page are in the data): judo (the IJF's belts and ends, Judo Canada's half grades, the British Judo Association's 18 mon grades with their tags), Brazilian jiu-jitsu (the IBJJF's kids' belts with white or black stripes, the adult belts, the black bar with degrees, the coral and red belts), ITF taekwon-do tips, and WKF karate competition belts; karate's kyu and dan bars and the other arts are leads, marked so. Each grade is a body of one or two colours, a stripe, a tip block with bars, or tags; each system has its width, the hang of the ends, where it is worn and the text customary on it. `docs/martial-arts.md` is written from the data (`node scripts/make-martial-arts-doc.mjs`).
