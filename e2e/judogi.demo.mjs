@@ -612,3 +612,31 @@ test("the emblem's style, words and place are chosen in the page and kept in the
   await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "not an IJF place" })).toHaveCount(2);
   expect(errors).toEqual([]);
 });
+
+test("a sleeve hangs in front of the belt and the body: nothing behind it shows through, and the belt passes behind it", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=orange&yaw=90&tilt=-20");
+  const canvas = page.locator("#judo-stage canvas");
+  await expect(canvas).toBeVisible();
+  test.skip((await canvas.getAttribute("data-painter")) !== "webgl", "this check needs the graphics card painter");
+  const png = (await canvas.screenshot()).toString("base64");
+  const counts = await page.evaluate(async (data) => {
+    const img = new Image();
+    img.src = `data:image/png;base64,${data}`;
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = img.width;
+    c.height = img.height;
+    const g = c.getContext("2d");
+    g.drawImage(img, 0, 0);
+    const orange = (x0, x1) => {
+      const d = g.getImageData(Math.round(x0 * c.width), 0, Math.max(1, Math.round((x1 - x0) * c.width)), c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 170 && d[i + 1] > 70 && d[i + 1] < 150 && d[i + 2] < 70) n++;
+      return n;
+    };
+    return { middle: orange(0.48, 0.52), all: orange(0, 1) };
+  }, png);
+  // The belt is there (round the body beside the sleeve), and none of it shows through the sleeve's middle.
+  expect(counts.all).toBeGreaterThan(200);
+  expect(counts.middle).toBe(0);
+});

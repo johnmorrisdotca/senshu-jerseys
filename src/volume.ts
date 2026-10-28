@@ -256,7 +256,7 @@ export function sleeveAt(q: readonly number[], c: readonly number[] | undefined,
 }
 
 /** How far from the armpit's level down the arm a sleeve's head goes over to the round of the arm. */
-const HEAD_FADE = 25;
+const HEAD_FADE = 45;
 
 /**
  * The least half depth of a sleeve set on along an armhole (`c`), at the height `y` of a cross-section: its head goes over the shoulder,
@@ -273,6 +273,9 @@ function headDepth(d: VolumeDesc, sleeve: VolumeDesc["sl"][number], y: number): 
   const r = Math.max(0, Math.min(1, (y - d.y[j]!) / (d.y[j + 1]! - d.y[j]! || 1)));
   return HEAD * (d.b[j]! + (d.b[j + 1]! - d.b[j]!) * r) * fade;
 }
+
+/** The larger of two depths with the corner between them rounded off (a power mean), so that a sleeve's head goes over to the round of the arm without a crease. */
+const softMax = (a: number, b: number): number => (a ** 3 + b ** 3) ** (1 / 3);
 
 /** A sleeve's head as a part of the body's half depth at the armhole. */
 const HEAD = 0.55;
@@ -426,7 +429,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
             tex.push(back ? 200 - tx : tx, ty);
             const cx = (o[0] + inn[0]) / 2 - 100 + (rr * Math.sin(th) * wx) / w;
             const cy = (o[1] + inn[1]) / 2 + (rr * Math.sin(th) * wy) / w;
-            p.push(cx, cy, (back ? -1 : 1) * Math.max((d.tube ?? SLEEVE_DEPTH) * rr, headDepth(d, sleeve, (o[1] + inn[1]) / 2)) * Math.cos(th));
+            p.push(cx, cy, (back ? -1 : 1) * softMax((d.tube ?? SLEEVE_DEPTH) * rr, headDepth(d, sleeve, (o[1] + inn[1]) / 2)) * Math.cos(th));
           };
           const f0 = k / d.nf;
           const f1 = (k + 1) / d.nf;

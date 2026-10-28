@@ -122,6 +122,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
   if (atlases.some((t) => t === null)) return undefined;
   const loc = { at: gl.getAttribLocation(program, "at"), uv: gl.getAttribLocation(program, "uv"), shade: gl.getAttribLocation(program, "shade"), nearz: gl.getAttribLocation(program, "nearz"), size: gl.getUniformLocation(program, "size"), deep: gl.getUniformLocation(program, "deep") };
   const [fx, fy, fw, fh] = FACE_BOX;
+  const scene = pieces.some((q) => (q.desc.worn ?? 0) > 0);
   let data = new Float32Array(0);
   const paint = (yaw: number, tilt = 0): void => {
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -147,12 +148,15 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       // A strap or a collar is judged by how near each part of it is at each point, not by the order of its cells alone (a knot's cells cross
       // one another); the order still breaks ties. Nothing else in the picture is tested against it.
       // A folded belt or a box (solid) is drawn in its settled order alone: its cells are large and flat, and a depth test between thin cloth and the wall beside it only flickers.
-      const deep = isBand(p.desc) && p.desc.solid === undefined;
+      // A garment with things worn on it (a jacket with its collar and belt) is one scene: every piece is judged by nearness against all the others, so the belt, the sleeve and the body
+      // cover each other as they stand and not as their groups are ordered (the pieces' depths are made comparable with the offset each lies at in the drawing).
+      const deep = p.desc.solid === undefined && (scene || isBand(p.desc));
       gl.uniform1f(loc.deep, deep ? 1 : 0);
       if (deep) {
-        gl.clear(gl.DEPTH_BUFFER_BIT);
+        if (!scene) gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.enable(gl.DEPTH_TEST);
       } else gl.disable(gl.DEPTH_TEST);
+      const sinP = Math.sin(((p.desc.pitch + tilt) * Math.PI) / 180);
       const need = order.length * 3 * STRIDE;
       if (data.length < need) data = new Float32Array(need);
       // Each quadrilateral's shade at its two side edges, worked out once for its two triangles.
@@ -205,7 +209,8 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
             const l2 = ((t[2]! - t[0]!) * (ty - t[1]!) - (tx - t[0]!) * (t[3]! - t[1]!)) / det;
             near = tri[2]! + l1 * (tri[5]! - tri[2]!) + l2 * (tri[8]! - tri[2]!);
           }
-          data[w++] = near + bias;
+          // The depth turns with the pitch about each piece's own origin, so a piece lying lower in the drawing is brought to the same footing as the others.
+          data[w++] = near + bias - (scene ? p.dy * sinP : 0);
         }
       }
       gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, w), gl.STREAM_DRAW);

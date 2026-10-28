@@ -26,6 +26,13 @@ All notable changes to this project are written here. The format follows
 - **Woven labels show a twill** (diagonal ribs, a lit one and a dark one in turn) over their weave, and the Senshu S has a thin outline stitch in a lighter second colour round its satin.
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.21.3] - 2026-10-28
+
+### Fixed
+
+- **The worn belt, the sleeves and the body cover one another as they stand.** On the graphics card the jacket with its collar and belt is one scene judged by nearness at each point (each piece's depth is brought to the same footing by where it lies in the drawing), where the belt, the sleeve and the body used to be drawn in groups: the belt no longer ends in mid-air at the body's side walls, the sleeve in front of it hides it whole, and the knot's cells no longer show as slabs. The 2D and SVG painters keep their order.
+- A sleeve's head goes over to the round of the arm over a longer way and with its corner rounded, so the shoulder reads less as one tube set on another.
+
 ## [0.21.2] - 2026-10-28
 
 ### Fixed
