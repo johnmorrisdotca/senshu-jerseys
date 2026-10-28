@@ -26,6 +26,11 @@ export interface VolumeDesc {
   pitch: number;
   /** The exponent of the body's cross-section in depth (`FULL` when not given): a judogi's cloth hangs rounder than a jersey's body. */
   full?: number;
+  /**
+   * How deep the side wall is, as a part of `b` (`SIDE` when not given). Cloth that is flat down its sides is wider turned a little than face on (its corners
+   * swing out), so a judogi's body keeps this small: the width then only narrows from the front to the side.
+   */
+  side?: number;
   /** A sleeveless cut: its side wall samples further in from the drawing's edge, past the outline's stroke. */
   tank?: true;
   /** A judogi piece (judogiCloth.ts, drawn by pieceVolume.ts) rather than a shirt: its second row is not sampled further in, since a piece's drawing has no rounded shoulder tip there (its first row is a collar). */
@@ -74,9 +79,9 @@ function texHalf(d: VolumeDesc, j: number): number {
 }
 
 /** Depth of the front (or back) half at parameter `t` (−90° the left, 90° the right): the superellipse, never thinner than the side wall. */
-function depthAt(b: number, t: number, full = FULL): number {
+function depthAt(b: number, t: number, full = FULL, side = SIDE): number {
   const elliptical = b * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(Math.sin(t)), full)), 1 / full);
-  return Math.max(SIDE * b, elliptical);
+  return Math.max(side * b, elliptical);
 }
 
 /** How deep the side wall of row `j` is on each half: as deep as the half's own edge, so the two always meet; none where the row has become two rounds. */
@@ -87,14 +92,14 @@ function wallOf(d: VolumeDesc, j: number): number {
 /** Depth of row `j` of the body at parameter `t`: its round, or that round going over to two side by side (`VolumeDesc.lobes`). */
 function zAt(d: VolumeDesc, j: number, t: number): number {
   const b = d.b[j] as number;
-  const round = depthAt(b, t, d.full);
+  const round = depthAt(b, t, d.full, d.side);
   const w = d.lobes?.[j] ?? 0;
   if (w <= 0) return round;
   // Each half of the row is one tube's top: a circle across that half, as deep as a tube of that width (`SLEEVE_DEPTH`).
   const u = Math.abs(Math.sin(t));
   const lobe = (d.tube ?? SLEEVE_DEPTH) * ((d.a[j] as number) / 2) * Math.sqrt(Math.max(0, 1 - ((u - 0.5) / 0.5) ** 2));
   // The outer half keeps some of the side wall's depth, which shrinks away as the row becomes two rounds (a leg has no flat side); the inner half goes in to the cleft between the legs.
-  const shaped = u >= 0.5 ? Math.max(SIDE * b * (1 - w), lobe) : lobe;
+  const shaped = u >= 0.5 ? Math.max((d.side ?? SIDE) * b * (1 - w), lobe) : lobe;
   return round + (shaped - round) * w;
 }
 

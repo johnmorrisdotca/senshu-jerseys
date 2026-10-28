@@ -16,6 +16,8 @@ export interface CollarDesc {
   a: number[];
   b: number[];
   full: number;
+  /** The body's side wall, as a part of its half depth. */
+  side: number;
   /** The middle line of the top lapel on the front's drawing from its foot up to the neck, and of the under lapel from the neck down to where it goes under the other, as x, y pairs. */
   top: number[];
   under: number[];
@@ -84,7 +86,7 @@ const pairs = (v: readonly number[]): [number, number][] => {
 
 /** Every cell of the collar: the top lapel from its foot up, round the back of the neck, and the under lapel down. */
 export function collarCells(d: CollarDesc): Cell[] {
-  const body = { y: d.y, a: d.a, b: d.b, full: d.full, nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: 0, piece: true } as VolumeDesc;
+  const body = { y: d.y, a: d.a, b: d.b, full: d.full, side: d.side, nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: 0, piece: true } as VolumeDesc;
   const rowOf = (v: readonly number[], y: number): number => {
     let j = 0;
     while (j + 2 < d.y.length && d.y[j + 1]! < y) j++;
@@ -147,11 +149,11 @@ function neckRing(d: CollarDesc, rowOf: (v: readonly number[], y: number) => num
   const n = d.full;
   // The cross-section at the neck, all the way round from the front middle toward the picture's right, with its side walls.
   const sec: [number, number][] = [];
-  const depth = (s: number): number => Math.max(0.4 * b0, b0 * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(s), n)), 1 / n));
+  const depth = (s: number): number => Math.max(d.side * b0, b0 * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(s), n)), 1 / n));
   for (let i = 0; i <= 60; i++) sec.push([a0 * (i / 60), depth(i / 60)]);
-  for (let i = 1; i <= 8; i++) sec.push([a0, 0.4 * b0 * (1 - (2 * i) / 8)]);
+  for (let i = 1; i <= 8; i++) sec.push([a0, d.side * b0 * (1 - (2 * i) / 8)]);
   for (let i = 59; i >= -60; i--) sec.push([a0 * (i / 60), -depth(i / 60)]);
-  for (let i = 1; i <= 8; i++) sec.push([-a0, -0.4 * b0 * (1 - (2 * i) / 8)]);
+  for (let i = 1; i <= 8; i++) sec.push([-a0, -d.side * b0 * (1 - (2 * i) / 8)]);
   for (let i = -59; i <= 0; i++) sec.push([a0 * (i / 60), depth(i / 60)]);
   const len: number[] = [0];
   for (let i = 1; i < sec.length; i++) len.push(len[i - 1]! + Math.hypot(sec[i]![0] - sec[i - 1]![0], sec[i]![1] - sec[i - 1]![1]));

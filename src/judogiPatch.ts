@@ -154,8 +154,10 @@ export function cloth(id: string, x: number, y: number, w: number, h: number, ba
     `<path d="${d}" fill="none" stroke="${tc}" stroke-width="${n2(wd)}" stroke-dasharray="1.7 1.1" stroke-linecap="round"/>`;
   const m = 3.1;
   let under = "";
-  // The soft shadow the patch's thickness throws on the garment, deepest below and to the right.
-  for (const [k, o] of [[2.6, 0.04], [1.8, 0.06], [1.2, 0.08], [0.6, 0.1]] as const) under += `<rect ${rect(0.9, 1.3, k)} fill="#1a2230" fill-opacity="${o}"/>`;
+  // A patch is 1 to 2 mm of cloth (0.4 of a unit): a hair of contact shadow under it, then its cut edge as a thin darker wall on the side away from the light
+  // (it shows as the face turns and the cloth is seen slantwise), and a lift of a fraction of a unit, not a soft cushion.
+  for (const [k, o] of [[0.9, 0.06], [0.5, 0.1]] as const) under += `<rect ${rect(0.35, 0.5, k)} fill="#1a2230" fill-opacity="${o}"/>`;
+  under += `<rect ${rect(0.42, 0.5)} fill="${hexOf(blend(base, [40, 46, 60], light ? 0.42 : 0.5))}"/>`;
   under += `<rect ${rect(0, 0)} fill="${hexOf(base)}"/>`;
   const over = `<g clip-path="url(#${id}C)"><rect ${rect(0, 0)} fill="url(#${id}W)"/><rect ${rect(0, 0)} fill="url(#${id}G)"/>` +
     // The turned edge: a band of the hem folded under (a little darker, with its overlocking), then a lit line along the top and the left.

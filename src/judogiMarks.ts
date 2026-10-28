@@ -10,7 +10,7 @@
 import { esc, hashOf, lum, type Rgb } from "./colour.ts";
 import type { Mark } from "./judogiCloth.ts";
 import { HEM_X } from "./judogiCollar.ts";
-import { jacketSpots } from "./judogiJacket.ts";
+import { EMBLEM_ROOM, jacketSpots } from "./judogiJacket.ts";
 import { neckLabel, readBranding, sizeTag, sLogo, type ReadBranding } from "./judogiBrand.ts";
 import { labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
 import { CM, cloth } from "./judogiPatch.ts";
@@ -125,6 +125,9 @@ const LOGO_AREA: Record<MarkRules, { jacket: number; pants: number; belt: number
   ajjf: { jacket: 20, pants: 20, belt: 9 },
 };
 const EMBLEM_AREA = 100;
+/** What the emblem is drawn at when no size is asked for: well inside the 100 cm2 limit (a sewn national emblem is a hand's width, not a chest plate), and no wider than the room between the lapel and the sleeve's head. */
+const EMBLEM_DEFAULT_AREA = { image: 56, placeholder: 40 };
+const EMBLEM_MAX = { w: 9.5, h: 7 };
 
 const IJF = "IJF Judogi Rules, 09 03 2022";
 const AJJF = "All Japan Judo Federation marking rules, as a retailer's chart states them";
@@ -278,8 +281,9 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
     const e = options.emblem as JudogiEmblem;
     const img = readImage(e.svg, e.href);
     const aspect = img?.aspect ?? 1;
-    const area = img === undefined ? 81 : EMBLEM_AREA * 0.96;
-    const h0 = Math.sqrt(area / aspect);
+    const area = img === undefined ? EMBLEM_DEFAULT_AREA.placeholder : EMBLEM_DEFAULT_AREA.image;
+    const fit = Math.min(1, EMBLEM_MAX.w / (Math.sqrt(area * aspect)), EMBLEM_MAX.h / Math.sqrt(area / aspect));
+    const h0 = Math.sqrt(area / aspect) * fit;
     emblem = {
       image: img?.src,
       frame: e.frame === "none" ? "none" : "patch",
@@ -420,6 +424,10 @@ function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string): Out {
     w *= k;
     h *= k;
   }
+  // And inside the room the chest has between the lapel and the sleeve's head, so it never runs onto the sleeve.
+  const room = Math.min(1, EMBLEM_ROOM.w / w, EMBLEM_ROOM.h / h);
+  w *= room;
+  h *= room;
   const rgb = e.thread?.rgb ?? readThread("navy", "navy").rgb;
   if (e.frame === "none") return e.image !== undefined ? { defs: "", body: imageIn(e.image, w, h) } : { defs: satinDefs(`${id}S`, rgb), body: placeholderEmblem(rgb, w, h) };
   const patch = cloth(`${id}P`, -w / 2, -h / 2, w, h, e.image !== undefined ? [255, 255, 255] : lum(clothRgb) > 0.4 ? [252, 251, 248] : [236, 238, 242], [120, 126, 140]);
@@ -513,7 +521,7 @@ export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltLen: num
   }
   if (m.emblem !== undefined) {
     const o = emblemOf(m.emblem, clothRgb, id("m"));
-    set.jacket.front = add(set.jacket.front, o, at(js.chest, o.body));
+    set.jacket.front = add(set.jacket.front, o, at(js.emblem, o.body));
   }
   return set;
 }

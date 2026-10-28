@@ -47,7 +47,7 @@ export function beltRound(depth = 1, width = 12): { y: number; a: number; b: num
   const k = Math.max(0.35, Math.min(1.6, depth));
   const top = WAIST - 2.5;
   const foot = top + 2.5 + width;
-  return { y: top, a: Math.max(halfAt(true, top), halfAt(true, foot)) + 1.2, b: Math.max(rowAt(TIED_D, top), rowAt(TIED_D, foot)) * k, full: FULL, side: 0.4 };
+  return { y: top, a: Math.max(halfAt(true, top), halfAt(true, foot)) + 1.2, b: Math.max(rowAt(TIED_D, top), rowAt(TIED_D, foot)) * k, full: FULL, side: SIDE };
 }
 
 /** A value given at each row, at `y` between them. */
@@ -93,7 +93,7 @@ export function jacketDesc(depth = 1, tied = false): VolumeDesc {
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)], c: CAP.map((v, k) => (k % 2 === 0 ? 200 - v : v)) },
   ];
   // The sleeves are round over the arms, a little flatter than deep.
-  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 20, 8), full: FULL, tube: 0.85 };
+  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 20, 8), full: FULL, side: SIDE, tube: 0.85 };
 }
 
 /**
@@ -119,11 +119,13 @@ export function collarDesc(jd: VolumeDesc): CollarDesc {
       break;
     }
   }
-  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, top: top.flat(), under: under.slice(0, end + 1).flat(), w: LAPEL_BAND, t: 2.4, neck: 8.5 };
+  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, side: SIDE, top: top.flat(), under: under.slice(0, end + 1).flat(), w: LAPEL_BAND, t: 2.4, neck: 8.5 };
 }
 
 /** The jacket's cross-section: rounder than a jersey's square body, as cloth hangs. */
-const FULL = 2.6;
+const FULL = 2.2;
+/** The side wall's depth as a part of the body's: small, so that turning the jacket a little never makes its silhouette wider than it is face on (volume.ts, `side`). */
+const SIDE = 0.1;
 
 /** The outline of the body (no sleeves), clockwise from the collar's top left. */
 function bodyOutline(tied: boolean): Pt[] {
@@ -297,6 +299,13 @@ export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
   return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip };
 }
 
+/** The emblem's middle on the front's drawing, and the room it has there: the band between the top lapel's sewn edge and the sleeve's head (`EMBLEM_ROOM` units wide). */
+export const EMBLEM_AT: Pt = [131, 46];
+export const EMBLEM_ROOM = { w: 27, h: 20 };
+
+/** The jacket's sleeve outline on the front's drawing, the picture's left (`side` -1) or right: the cloth that the sleeve's cells show, which a mark on the chest must stay out of. */
+export const sleeveRegion = (side: -1 | 1): Pt[] => sleeveOutline(side);
+
 /** A place on a face: where a mark's middle goes, and the angle its line of text runs at, in degrees (clockwise on the screen). */
 export interface Spot {
   x: number;
@@ -313,6 +322,8 @@ export interface Spot {
  */
 export function jacketSpots(): {
   chest: Spot;
+  /** The national emblem's middle: on the wearer's left chest above where the lapels cross, clear of the lapel band and of the sleeve's head. */
+  emblem: Spot;
   hemLogo: Spot;
   lapelHem: Spot;
   /** How far along the collar band, from the top lapel's foot at the hem, the lapel hem's spot lies, and the band's width. */
@@ -328,6 +339,7 @@ export function jacketSpots(): {
   const side = (w: "left" | "right", back: boolean): -1 | 1 => ((w === "left") !== back ? 1 : -1);
   return {
     chest: { x: 133, y: 72, rot: 0 },
+    emblem: { x: EMBLEM_AT[0], y: EMBLEM_AT[1], rot: 0 },
     hemLogo: { x: 138, y: 187, rot: 0 },
     lapelHem: { x: lx, y: ly, rot: lean },
     lapelRun: { run: runFromHem(middle, ly), w: LAPEL_BAND },

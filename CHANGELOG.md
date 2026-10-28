@@ -6,6 +6,16 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-10-27
+
+### Fixed
+
+- **The emblem stays on the chest.** The national emblem was set on the front's drawing over the sleeve's head, so turned a little its end showed on the sleeve. It is now placed above where the lapels cross, between the lapel and the sleeve, and kept inside that room however large it is asked for.
+- **The emblem is small.** Its default is a hand's width (a flag about 9.5 by 4.75 cm, a placeholder 6.5 cm square), well inside the IJF's 100 cm2 limit, not most of the chest.
+- **The jacket no longer widens when it turns a little.** A body with flat sides is wider turned some degrees than face on (its corners swing out); the jacket's side wall is now shallow (`side` on the volume), so its width only narrows from the front to the side, and the belt and the collar follow the same section. A test measures the body's width at 0, 1, 2, 3, 4, 8, 15, 30, 45, 60 and 90 degrees.
+- **Patches are thin.** A sewn patch and the emblem's patch were drawn with a soft cushion of shadow a centimetre wide. They now have a hair of contact shadow and a thin cut edge on the shaded side, as 1 to 2 mm of cloth does.
+- **The trousers' drawstring is a round cord**, not a flat band: it has a shadow on the cloth, shading across it, a light along it, the twist of its strands, a bow of two loops with a knot, and two ends that hang with a small knot at each tip.
+
 ## [0.15.0] - 2026-10-27
 
 ### Added
