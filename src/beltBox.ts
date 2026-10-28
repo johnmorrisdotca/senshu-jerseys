@@ -385,6 +385,8 @@ export interface Along {
   u: number;
   /** How much of the belt's thickness it has here, 0 to 1: a tight fold is thinner at its turn, or its inside would turn inside out. */
   k?: number;
+  /** On a fold: where the layer before it ended (how far along the belt and where across the bundle), which its picture carries on from. */
+  fold?: { u0: number; wx0: number };
 }
 
 /** Where the belt's plain stretch is laid on its strip. */
@@ -421,10 +423,10 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
   const side = n % 2 === 1 ? 1 : -1;
   const pts: Along[] = [];
   let u = 0;
-  const push = (p: Vec, d: Vec, out: Vec, k = 1): void => {
+  const push = (p: Vec, d: Vec, out: Vec, k = 1, fold?: { u0: number; wx0: number }): void => {
     const last = pts[pts.length - 1];
     if (last !== undefined) u += Math.hypot(p[0] - last.p[0], p[1] - last.p[1], p[2] - last.p[2]);
-    pts.push({ p, d, out, u, k });
+    pts.push({ p, d, out, u, k, ...(fold === undefined ? {} : { fold }) });
   };
   for (let i = 0; i < n; i++) {
     const dir = i % 2 === 0 ? -1 : 1;
@@ -439,6 +441,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
       const yc = (yAt(i) + yAt(i + 1)) / 2;
       const zn = f.z + ((((i + 1) * 37) % 5) - 2) * 0.02;
       const m = 6;
+      const anchor = { u0: u, wx0: b };
       for (let j = 1; j < m; j++) {
         const th = (Math.PI * j) / m;
         const sgn = left ? -1 : 1;
@@ -446,40 +449,67 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
         const dy = -Math.sin(th) * (yAt(i) - yc);
         const dl = Math.hypot(dx, dy) || 1;
         // The face looks to the right of the way the belt runs (the same side all along it).
-        push([b + sgn * Math.sin(th) * bulge, yc + Math.cos(th) * (yAt(i) - yc), lerp(z, zn, j / m)], [dx / dl, dy / dl, 0], [(-side * dy) / dl, (side * dx) / dl, 0], 1 - 0.5 * Math.sin(th));
+        push([b + sgn * Math.sin(th) * bulge, yc + Math.cos(th) * (yAt(i) - yc), lerp(z, zn, j / m)], [dx / dl, dy / dl, 0], [(-side * dy) / dl, (side * dx) / dl, 0], 1 - 0.5 * Math.sin(th), anchor);
       }
     }
   }
   return { points: pts, length: u, extent: [lo + shift, hi + shift] };
 }
 
-/** The strip's x for a place `u` centimetres along a belt `total` long, and which way x runs there (+1 with the belt, -1 against it). */
-function stripX(u: number, total: number, period: number): { x: number; dir: 1 | -1 } {
-  const uu = u * U;
-  const tot = total * U;
-  // Each free end lies on its own stretch of the strip, as long as the tied belt's hanging end (what is sewn on an end is laid out for that length).
-  const [endA, endB] = END_LENGTH;
-  if (uu < endB) return { x: (END_X[1] as number) + endB - uu, dir: -1 };
-  if (tot - uu < endA) return { x: (END_X[0] as number) + (uu - (tot - endA)), dir: 1 };
-  if (u < total / 2) return { x: (END_X[1] as number) - ((uu - endB) % period), dir: -1 };
-  return { x: X0 - 10 + (uu % period), dir: 1 };
+/**
+ * How the belt's picture is laid along it. Each free end lies on its own stretch of the strip, as long as the tied belt's hanging end (what is sewn on an end is laid
+ * out for that length, so the marks sit where they would). The rest of the belt takes its picture from where it lies across the bundle, one mapping for every layer
+ * (anchored on the top layer's tip, so that end stays red): a kohaku belt's red and white sections then change colour at the same place on every layer, and the side
+ * of the bundle is a clean stack of bands with straight joins. A fold carries the picture of the layer before it on round the turn.
+ */
+interface Laying {
+  total: number;
+  period: number;
+  /** +1 when the picture's x grows toward +x across the bundle, -1 toward -x (the way the top layer's tip lies). */
+  sx: 1 | -1;
+  c: number;
 }
+
+function layingOf(points: readonly Along[], period: number): Laying {
+  const last = points[points.length - 1] as Along;
+  const sx: 1 | -1 = last.d[0] >= 0 ? 1 : -1;
+  const [endA] = END_LENGTH;
+  return { total: last.u, period, sx, c: (END_X[0] as number) + endA - sx * U * last.p[0] };
+}
+
+/** The picture's x at a place on the belt, not wrapped; `mid` says which stretch (by the middle of the step) and the fold, if any, it carries on from. */
+function texAt(l: Laying, u: number, p: Along, mode: "A" | "B" | "bulk"): number {
+  const [endA, endB] = END_LENGTH;
+  if (mode === "B") return (END_X[1] as number) + endB - u * U;
+  if (mode === "A") return (END_X[0] as number) + endA - (l.total - u) * U;
+  if (p.fold !== undefined) return l.sx * U * p.fold.wx0 + l.c + (u - p.fold.u0) * U;
+  return l.sx * U * p.p[0] + l.c;
+}
+
+const modeOf = (l: Laying, u: number): "A" | "B" | "bulk" => {
+  const [endA, endB] = END_LENGTH;
+  return u * U < endB ? "B" : (l.total - u) * U < endA ? "A" : "bulk";
+};
+
+/** The plain stretch of the strip is laid from -40 for one period (the free ends' marks are further along it). */
+const wrapBulk = (x: number, period: number): number => -40 + ((((x + 40) % period) + period) % period);
 
 function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
   const { points, length } = foldPath(f);
   const hw = f.w / 2;
-  // The strip's places where its look changes (where a free end's marks end, and the middle) fall between cells: a step is cut there.
-  const cuts = [END_LENGTH[1] / U, length - END_LENGTH[0] / U, length / 2];
+  const lay = layingOf(points, f.period);
+  // Where a free end's marks end the picture changes: a step is cut there.
+  const cuts = [END_LENGTH[1] / U, length - END_LENGTH[0] / U];
   for (let i = 0; i + 1 < points.length; i++) {
     let a = points[i] as Along;
     const b = points[i + 1] as Along;
     for (const c of cuts.filter((q) => q > a.u + 1e-6 && q < b.u - 1e-6).sort((p, q) => p - q)) {
       const q = (c - a.u) / (b.u - a.u);
-      const mid: Along = { p: [lerp(a.p[0], b.p[0], q), lerp(a.p[1], b.p[1], q), lerp(a.p[2], b.p[2], q)], d: a.d, out: a.out, u: c, k: a.k ?? 1 };
-      step(k, a, mid, hw, f.t, length, f.period);
+      const mid: Along = { p: [lerp(a.p[0], b.p[0], q), lerp(a.p[1], b.p[1], q), lerp(a.p[2], b.p[2], q)], d: a.d, out: a.out, u: c, k: a.k ?? 1, ...(a.fold === undefined ? {} : { fold: a.fold }) };
+      step(k, a, mid, hw, f.t, lay);
       a = mid;
     }
-    step(k, a, b, hw, f.t, length, f.period);
+    step(k, a, b, hw, f.t, lay);
   }
   const first = points[0] as Along;
   const last = points[points.length - 1] as Along;
@@ -495,13 +525,16 @@ const FACE_INSET = 0.2;
 const corner = (p: Along, across: Vec, side: number, hw: number, face: number, T: number): Vec => add(p.p, add(scale(across, side * hw), scale(p.out, face * (T / 2) * (p.k ?? 1))));
 
 /** One step of the belt between two samples: its face, its back, its two long edges, each on its part of the strip. */
-function step(k: Sink, a: Along, b: Along, hw: number, T: number, total: number, period: number): void {
-  const here = stripX((a.u + b.u) / 2, total, period);
-  const start = stripX(a.u + 1e-6, total, period);
-  const x0 = start.x;
-  const x1 = x0 + here.dir * (b.u - a.u) * U;
-  // The belt's width runs along out x (the way the strip's x runs), so the picture of its face reads right from the outside.
-  const across = (s: Along): Vec => unit(cross(s.out, scale(s.d, here.dir)));
+function step(k: Sink, a: Along, b: Along, hw: number, T: number, lay: Laying): void {
+  const mode = modeOf(lay, (a.u + b.u) / 2);
+  const t0 = texAt(lay, a.u + 1e-6, a, mode);
+  const t1 = texAt(lay, b.u - 1e-6, b, mode);
+  // The ends' own stretches are not wrapped; the rest of the belt is laid on the plain part of the strip.
+  const x0 = mode === "bulk" ? wrapBulk(t0, lay.period) : t0;
+  const x1 = x0 + (t1 - t0);
+  const dir: 1 | -1 = x1 >= x0 ? 1 : -1;
+  // The belt's width runs along out x (the way the picture's x runs), so the picture of its face reads right from the outside.
+  const across = (s: Along): Vec => unit(cross(s.out, scale(s.d, dir)));
   const A = across(a);
   const B = across(b);
   const w = hw * 2 * U;

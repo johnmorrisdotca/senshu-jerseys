@@ -178,7 +178,9 @@ export function solidFace(desc: SolidDesc, paint: BeltPaint | undefined, look: B
   const r = regionsOf(desc);
   const belt = paint !== undefined && desc.belt !== undefined ? strapFace(paint, desc.belt.w * 2.63, rows) : undefined;
   // The belt's edges are drawn dark (the rows seen end on); folded, the whole side of the bundle is edges, so they are lifted toward the cloth's own colour.
-  let body = (belt?.body ?? "") + (belt === undefined ? "" : `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" fill="#fff" fill-opacity="0.24"/>`);
+  let body = (belt?.body ?? "") + (belt === undefined ? "" : `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" fill="#fff" fill-opacity="0.24"/>` +
+    // A fine dark line where one layer lies on the next, so the side reads as a stack of bands.
+    `<path d="M-40 ${EDGE1_Y + 0.5}H240M-40 ${EDGE1_Y + EDGE_H - 0.5}H240" stroke="${paint?.edge ?? "#000"}" stroke-width="1" stroke-opacity="0.6"/>`);
   const clip = [...(belt?.clip ?? [])];
   const put = (rect: Rect, inner: string): void => {
     body += group(rect, inner);

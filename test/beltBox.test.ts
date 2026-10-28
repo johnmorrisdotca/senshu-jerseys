@@ -235,3 +235,26 @@ test("the check says when a belt does not fit a box", () => {
   // Other modes do not carry the note.
   assert.ok(!judogiCheck({ mode: "belt" }).notes.some((n) => n.id === "belt-box-fit"));
 });
+
+test("the layers of a folded kohaku belt change colour at the same place across the bundle, so its side is a clean stack", () => {
+  const period = 78.9;
+  const desc = sceneOf({ beltSize: 4, widthCm: 4.5, thickCm: 0.49, belt: true, band: false, period, rot: 0 });
+  const cells = solidCells(desc).filter((c) => c.tex[1] === 0 && c.tex[3] === 0);
+  const offsets: number[] = [];
+  const layers = new Set<number>();
+  for (const c of cells) {
+    const xs = [c.p[0]!, c.p[3]!, c.p[6]!].map((v) => v / UNITS_PER_CM);
+    const wx = (xs[0]! + xs[1]! + xs[2]!) / 3;
+    const tx = (c.tex[0]! + c.tex[2]! + c.tex[4]!) / 3;
+    // Straight stretches of the plain part of the strip only: not the free ends' own stretches, not a fold.
+    if (Math.max(...xs) - Math.min(...xs) < 1 || tx >= 58 || tx < -40) continue;
+    const sx = (c.tex[2]! - c.tex[0]!) * (xs[1]! - xs[0]!) >= 0 ? 1 : -1;
+    offsets.push((((tx - sx * UNITS_PER_CM * wx) % period) + period) % period);
+    layers.add(Math.round((c.p[1]! / UNITS_PER_CM) * 20));
+  }
+  assert.ok(offsets.length > 40 && layers.size >= 4, `${offsets.length} cells on ${layers.size} heights`);
+  // The picture's x less its place across the bundle is one number for every layer (a few units of slack for the cells' own width).
+  const spread = (a: number[]): number => Math.max(...a) - Math.min(...a);
+  const near = offsets.map((o) => (o > period / 2 ? o - period : o));
+  assert.ok(spread(near) < 6 || spread(offsets) < 6, `the layers' pictures are not aligned (${spread(offsets).toFixed(1)} units)`);
+});

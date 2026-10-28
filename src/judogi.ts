@@ -388,7 +388,9 @@ function solidSheet(o: Ready, yaw: number): Sheet {
   const plain = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
   // Folded, a belt shows its label at the free end, as a shop shows it: what is sewn on a hanging end sits well up from its tip, so it is moved toward the tip (an embroidery keeps its place).
   const toTip = (m: Mark | undefined, keep: boolean): Mark | undefined => (m === undefined || keep ? m : { ...m, body: `<g transform="translate(${TO_TIP} 0)">${m.body}</g>` });
-  const paint: BeltPaint | undefined = plain?.ends === undefined ? plain : { ...plain, ends: { ...(plain.ends.left === undefined ? {} : { left: toTip(plain.ends.left, o.beltEmb.left) as Mark }), ...(plain.ends.right === undefined ? {} : { right: toTip(plain.ends.right, o.beltEmb.right) as Mark }) } };
+  // Folded, the rows of stitching are fine (thirteen, as a kohaku belt has) and a kohaku's are pale, as the maker's white thread is, so the broad faces read as cloth and not as stripes.
+  const fine = plain === undefined ? undefined : { ...plain, rows: plain.rows ?? 13, ...(o.belt === "red-white" ? { stitch: "#eac6c6" } : {}) };
+  const paint: BeltPaint | undefined = fine?.ends === undefined ? fine : { ...fine, ends: { ...(fine.ends.left === undefined ? {} : { left: toTip(fine.ends.left, o.beltEmb.left) as Mark }), ...(fine.ends.right === undefined ? {} : { right: toTip(fine.ends.right, o.beltEmb.right) as Mark }) } };
   const sectionCm = Math.max(12, Math.min(18, 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50));
   const widthCm = o.beltCm ?? beltDefaultWidthCm(o.belt === "none" ? "white" : o.belt);
   const { fits, boxSize, ...desc } = sceneOf({
