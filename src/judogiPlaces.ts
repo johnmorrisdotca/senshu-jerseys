@@ -134,7 +134,7 @@ export interface Skipped<T extends Item = Item> {
   reason: string;
 }
 
-const SCALES = [1, 0.92, 0.84, 0.76, 0.68, 0.6];
+const SCALES = [1, 0.92, 0.84, 0.76, 0.68, 0.6, 0.5];
 
 /** The first spot for an item: its preferred one if it is free at some size, else the free spot nearest to it at the largest size that has one. */
 function find(item: Item, area: Area, taken: Obb[]): { scale: number; box: Obb } | undefined {
@@ -227,7 +227,8 @@ export function areasFor(half: number, lapel: { x: number; y: number; rot: numbe
   }
   // A hanging belt end, in its own frame: along it from the knot to the cut end, across it from the middle. The knot's cloth covers the first 9 units.
   for (const [i, face] of (["belt-left", "belt-right"] as const).entries()) {
-    const room = Math.max(1, half - 1.6);
+    // The strap's long sides bow by 2.5 units, so a mark is kept 2.4 in from each edge.
+    const room = Math.max(1, half - 2.4);
     add(face, face, rect(9, -room, (END_LENGTH[i] as number) - 3, room));
   }
   return out;

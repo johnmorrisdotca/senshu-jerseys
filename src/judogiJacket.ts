@@ -331,6 +331,8 @@ export function jacketSpots(): {
   /** How far along the collar band, from the top lapel's foot at the hem, the lapel hem's spot lies, and the band's width. */
   lapelRun: { run: number; w: number };
   sleeve: (wearer: "left" | "right") => Spot;
+  /** The outer upper arm just under the shoulder seam, on the front, turned with the sleeve's slope: where makers put their logo (and a flag patch). */
+  upperSleeve: (wearer: "left" | "right") => Spot;
   shoulder: (wearer: "left" | "right") => Spot;
 } {
   const middle = offset(TOP_EDGE, -LAPEL / 2);
@@ -348,6 +350,11 @@ export function jacketSpots(): {
     sleeve: (w) => {
       const sd = side(w, false);
       const [x, y] = onSleeve(sd, 0.4, 0.5);
+      return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
+    },
+    upperSleeve: (w) => {
+      const sd = side(w, false);
+      const [x, y] = onSleeve(sd, 0.18, 0.5);
       return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
     },
     shoulder: (w) => {

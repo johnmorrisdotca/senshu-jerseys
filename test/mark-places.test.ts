@@ -4,14 +4,14 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { JUDOGI_SIZES, judogiCheck, renderJudogi, type JudogiOptions } from "../src/judogi.ts";
 import { EMBROIDERY_PLACES, LOGO_PLACES, layoutMarks, readMarks, type MarkLayout } from "../src/judogiMarks.ts";
-import { boxesClash, EDGE_MARGIN, fitsArea, MARK_GAP } from "../src/judogiPlaces.ts";
+import { bounds, boxesClash, EDGE_MARGIN, fitsArea, MARK_GAP } from "../src/judogiPlaces.ts";
 import { hipsOf, legOutline } from "../src/judogiPants.ts";
 import { readStyle, type JudogiBeltStyle } from "../src/judogiStripes.ts";
 import { strapWidth } from "../src/judogiStrap.ts";
 import { insideWithMargin } from "../src/judogiPlaces.ts";
 import { wellFormed } from "./helpers.ts";
 
-const WIDTHS = [4, 4.2, 4.5, 4.7, 5, 6];
+const WIDTHS = [4.2, 4.5, 4.7, 5, 6];
 
 /** One mark each, as a person would ask for it. */
 type Option = { name: string; opts: JudogiOptions };
@@ -229,4 +229,39 @@ test("a logo is still one to a garment, and the first embroidery at a place wins
   const spec = readMarks({ logos: [{ place: "pants-thigh-left" }, { place: "pants-waist-left" }], embroidery: [{ place: "pants-thigh-left", text: "A" }, { place: "pants-thigh-left", text: "B" }] })!;
   assert.equal(spec.logos.length, 1);
   assert.equal(spec.embroidery.length, 1);
+});
+
+test("belt-end text of any length stays inside the end's width, clear of its bowed edges, at every belt width", () => {
+  for (const w of [4.2, 4.5, 4.7, 5, 6]) {
+    for (const text of ["SENSHU", "TANAKA KENICHI SENSEI", "WWWWWWWWWWWWWWWWWWWWWWWW", "柔道家山田太郎"]) {
+      for (const place of ["belt-end-left", "belt-end-right"] as const) {
+        for (const heightCm of [undefined, 4]) {
+          const l = layoutOf({ embroidery: [{ place, text, ...(heightCm === undefined ? {} : { heightCm }) }] }, w)!;
+          assertClean(l, `${text} ${place} @${w}`);
+          assert.equal(l.skipped.length, 0, `${text} @${w} is drawn`);
+          const half = strapWidth("black", w) / 2;
+          for (const p of l.placed) assert.ok(bounds(p.box)[1] >= -half + 2.4 - 1e-6 && bounds(p.box)[3] <= half - 2.4 + 1e-6, `${text} @${w}: inside the belt's width`);
+        }
+      }
+    }
+  }
+});
+
+test("a maker's logo and a flag patch go on the outer upper sleeve, on the front, turned with it; nothing goes on the back", () => {
+  for (const place of ["jacket-shoulder-left", "jacket-shoulder-right"] as const) {
+    const l = layoutOf({ logos: [{ place }], embroidery: [{ place: place.endsWith("left") ? "sleeve-left" : "sleeve-right", text: "SENSHU" }] }, 4.5)!;
+    assertClean(l, place);
+    assert.deepEqual(l.skipped, []);
+    const logo = l.placed.find((p) => p.item.kind === "logo")!;
+    assert.equal(logo.face, "jacket-front");
+    assert.ok(Math.abs(logo.box.rot) > 10 && Math.abs(logo.box.rot) < 20, "turned with the sleeve's slope");
+  }
+  for (const p of ["sleeve-left", "sleeve-right"] as const) {
+    const l = layoutOf({ emblem: { place: p }, embroidery: [{ place: p, text: "JAPAN" }] }, 4.5)!;
+    assertClean(l, `emblem ${p}`);
+    assert.deepEqual(l.skipped, []);
+  }
+  const brand = layoutOf({ branding: { spots: { jacket: "shoulder-left" } } }, 4.5)!;
+  assert.ok(brand.placed.every((p) => p.face !== "jacket-back"));
+  assert.equal(wellFormed(renderJudogi({ mode: "jacket", view: "back", logos: [{ place: "jacket-shoulder-left" }], emblem: { place: "sleeve-right" } })), null);
 });

@@ -341,8 +341,8 @@ test("the maker's logo places are none to many, with no raw key in any label, in
   for (const v of ["jacket-hem", "pants-leg-left", "belt-end-right", "jacket-shoulder-left"]) await check(v).uncheck();
   await expect(page).not.toHaveURL(/logo=/);
   await page.goto("/judogi.html?mode=jacket");
-  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, shoulder left" })).toHaveCount(1);
-  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, shoulder right" })).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, upper sleeve, left" })).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, upper sleeve, right" })).toHaveCount(1);
   await expect(page.locator('[data-testid="judo-logo-note"]')).toContainText("one maker's logo on each garment");
 });
 

@@ -90,6 +90,8 @@ export interface JudogiEmblem {
   thread?: ThreadColour | string;
   widthCm?: number;
   heightCm?: number;
+  /** Where it is sewn: the left `chest` (the default), or the outer upper arm just under the shoulder seam of the wearer's `sleeve-left` or `sleeve-right` (a flag patch on the shoulder), turned with the sleeve. */
+  place?: "chest" | "sleeve-left" | "sleeve-right";
 }
 
 /** The system-font stacks. Open fonts named first are suggestions the page may load; the rest are what a computer has. */
@@ -172,6 +174,7 @@ export interface ReadLogo {
 }
 
 export interface ReadEmblem {
+  place: "chest" | "sleeve-left" | "sleeve-right";
   image: string | undefined;
   frame: "patch" | "none";
   thread: { name: string; rgb: Rgb } | undefined;
@@ -304,6 +307,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
     const fit = Math.min(1, EMBLEM_MAX.w / (Math.sqrt(area * aspect)), EMBLEM_MAX.h / Math.sqrt(area / aspect));
     const h0 = Math.sqrt(area / aspect) * fit;
     emblem = {
+      place: e.place === "sleeve-left" || e.place === "sleeve-right" ? e.place : "chest",
       image: img?.src,
       frame: e.frame === "none" ? "none" : "patch",
       thread: e.thread === undefined ? undefined : readThread(e.thread, "navy"),
@@ -457,7 +461,8 @@ function emblemSize(e: ReadEmblem): { w: number; h: number } {
     w *= k;
     h *= k;
   }
-  const room = Math.min(1, EMBLEM_ROOM.w / w, EMBLEM_ROOM.h / h);
+  // On a sleeve the room is the sleeve's own width, not the chest's.
+  const room = e.place === "chest" ? Math.min(1, EMBLEM_ROOM.w / w, EMBLEM_ROOM.h / h) : Math.min(1, 22 / w, 22 / h);
   return { w: w * room, h: h * room };
 }
 
@@ -510,7 +515,9 @@ function itemsOf(m: MarkSpec): MarkItem[] {
   if (m.emblem !== undefined) {
     const e = m.emblem;
     const { w, h } = emblemSize(e);
-    items.push({ id: "emblem", kind: "emblem", place: "emblem", area: "chest", target: "jacket-front", w, h, rot: 0, pref: [js.emblem.x, js.emblem.y], minScale: 0.7, draw: (k, id, cloth) => emblemOf(e, cloth, id, k) });
+    const sw = e.place === "chest" ? undefined : e.place.slice(7) as "left" | "right";
+    const us = sw === undefined ? undefined : js.upperSleeve(sw);
+    items.push({ id: "emblem", kind: "emblem", place: "emblem", area: sw === undefined ? "chest" : `sleeve-${sw}`, target: "jacket-front", w, h, rot: us?.rot ?? 0, pref: us === undefined ? [js.emblem.x, js.emblem.y] : [us.x, us.y], minScale: 0.7, draw: (k, id, cloth) => emblemOf(e, cloth, id, k) });
   }
   const logoItem = (l: ReadLogo): MarkItem => {
     const { w, h } = logoSize(m, l);
@@ -519,9 +526,10 @@ function itemsOf(m: MarkSpec): MarkItem[] {
     const common = { id: `${kind}:${place}`, kind, place, w, h, rot: 0, minScale: 0.6, draw: (k: number, id: string, cloth: Rgb): Out => logoOf(m, l, cloth, id, k) } as const;
     if (place === "jacket-hem") return { ...common, area: "hem-left", target: "jacket-front", pref: [136.6, 183] };
     if (place === "jacket-shoulder-left" || place === "jacket-shoulder-right") {
+      // The outer upper arm under the shoulder seam, on the front, turned with the sleeve (never on the back, where an upright mark floated by the armhole).
       const w2 = place.endsWith("left") ? "left" : "right";
-      const sp = js.shoulder(w2);
-      return { ...common, area: `shoulder-${w2}`, target: "jacket-back", pref: [sp.x, sp.y] };
+      const sp = js.upperSleeve(w2);
+      return { ...common, rot: sp.rot, area: `sleeve-${w2}`, target: "jacket-front", pref: [sp.x, sp.y] };
     }
     if (place === "belt-end-left" || place === "belt-end-right") {
       const k = place.endsWith("left") ? "left" : "right";
@@ -539,7 +547,7 @@ function itemsOf(m: MarkSpec): MarkItem[] {
     const w2 = place.endsWith("left") ? "left" : "right";
     const plan = (k: number): { w: number; h: number } => textPlan(m, e, k);
     const full = plan(1);
-    const common = { id: `embroidery:${place}`, kind: "embroidery", place, w: full.w, h: full.h, size: plan, minScale: 0.6, draw: (k: number, id: string, cloth: Rgb): Out => textPlan(m, e, k).render(id, e.tonal ? cloth : e.thread.rgb) } as const;
+    const common = { id: `embroidery:${place}`, kind: "embroidery", place, w: full.w, h: full.h, size: plan, minScale: 0.5, draw: (k: number, id: string, cloth: Rgb): Out => textPlan(m, e, k).render(id, e.tonal ? cloth : e.thread.rgb) } as const;
     if (place === "jacket-hem") items.push({ ...common, area: "lapel-hem", target: "jacket-front", rot: e.direction === "down" ? js.lapelHem.rot - 90 : js.lapelHem.rot, pref: [js.lapelHem.x, js.lapelHem.y] });
     else if (place === "jacket-chest") items.push({ ...common, area: "chest", target: "jacket-front", rot: 0, pref: [js.chest.x, js.chest.y] });
     else if (place === "sleeve-left" || place === "sleeve-right") {
