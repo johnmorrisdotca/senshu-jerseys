@@ -379,6 +379,8 @@ test("two logos on one garment are both kept and only the first is drawn, with n
 });
 
 test("every display mode in every view: the turn controls are there only where the piece turns, and the zoom always works", async ({ page }) => {
+  // Twenty page loads: about five seconds on a desk, but a shared runner's WebKit takes four times that, and the limit is the default thirty seconds.
+  test.setTimeout(120_000);
   for (const mode of ["pieces", "suit", "jacket", "pants", "belt"]) {
     for (const view of ["front", "back", "flat", "flat-back"]) {
       await page.goto(`/judogi.html?mode=${mode}&view=${view}`);
