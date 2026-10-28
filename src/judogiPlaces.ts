@@ -5,7 +5,7 @@
 // a tip or bars on a belt end). A mark that cannot be placed at 60 per cent of its size is left out and reported (`judogiCheck`), so the earlier marks
 // are never moved or overdrawn. Original geometry; the numbers come from the garment drawings (judogiJacket.ts, judogiPants.ts, judogiBelt.ts).
 
-import { sleeveRegion } from "./judogiJacket.ts";
+import { CHEST_LEFT, CHEST_RIGHT, sleeveRegion, VENT_HALF } from "./judogiJacket.ts";
 import { hipsOf, onLeg } from "./judogiPants.ts";
 import { END_LENGTH, type ReadStyle } from "./judogiStripes.ts";
 import type { Pt } from "./path.ts";
@@ -200,9 +200,9 @@ export function areasFor(half: number, lapel: { x: number; y: number; rot: numbe
     out[id] = { id, face, poly, margin };
   };
   // Jacket front. The hem's corner: right of where the belt's hanging end can reach (its far edge is at about 128), left of the side vent (its slit at 146 from y 182), above the hem's stitching (198).
-  add("hem-left", "jacket-front", rect(130, 131, 143.2, 195.3));
+  add("hem-left", "jacket-front", rect(130, 131, 100 + VENT_HALF - 7, 195.3));
   // The chest: right of the top lapel's free edge and its band (at y 46 to 117), left of the armhole, above the belt's band (111).
-  add("chest", "jacket-front", rect(117.5, 34, 144.5, 106));
+  add("chest", "jacket-front", rect(CHEST_LEFT, 34, CHEST_RIGHT, 106));
   // The lapel hem: along the middle of the top lapel's band (14.5 wide), clear of its edges by a margin and between the belt and the hem's stitching.
   const c = Math.cos((lapel.rot * Math.PI) / 180);
   const s = Math.sin((lapel.rot * Math.PI) / 180);

@@ -14,24 +14,33 @@ import { sleeveAt, type VolumeDesc } from "./volume.ts";
 
 /**
  * The rows of the body: the top of the collar behind the neck, the neck, the slope of the shoulder, the shoulder point, the armhole, the
- * armpit, above the belt, the waist, below the belt, the waist seam, the skirt and the hem. The shoulders slope to the point where the sleeves
- * are set on, the body is boxy from there (a judogi is cut wide: some 57 cm across the chest at 2.63 units to the centimetre, 148 units, for a
- * size 170, where a resale listing of a KuSakura size 4, made for 168 to 177 cm, gives 65 cm across the chest flat, 84 cm long, and one of a 160 cm
- * gi 58 cm and 82 cm: not a maker's chart, and washed; the drawing stops short of 62 to 65 because the sleeves hang outside the body, so a wider body
- * means moving them and the layouts further out), it narrows to the waist under the belt and flares to the skirt and the hem. The neck and the lapels
- * keep their own widths (the first three rows), so the collar, 4 to 5 cm a side, is no larger than it was.
+ * armpit, above the belt, the waist, below the belt, the waist seam, the skirt and the hem.
+ *
+ * A judogi hangs boxy and loose: a dropped, soft shoulder (the sleeve is set on below the point of the shoulder, so the shoulder line is no
+ * wider than the chest), the body straight down from there, a skirt below the belt as wide as the chest or a little wider (it covers the hips
+ * and flares at the hem), and only a small pull-in where a tied belt cinches the waist. The earlier drawing was a V (shoulders 58 cm across,
+ * the chest and waist narrower, the skirt narrower again) and read as a bodybuilder's.
+ *
+ * The numbers, for a size 170 at 2.63 units to the centimetre (the widths are the drawing's half widths, 1.2 more with the volume's padding):
+ * a maker's size chart gives a judogi's chest flat, from armpit to armpit, as some 62 to 65 cm (a resale listing of a KuSakura size 4, made for
+ * 168 to 177 cm: 65 cm across the chest flat and 84 cm long; of a 160 cm gi: 58 and 82; not a maker's chart, and washed). Flat is not worn: the
+ * cloth hangs round a body as a tube, and a 125 cm chest circumference is an oval some 47 cm wide and 31 cm deep. So the worn body is drawn
+ * 47 cm across the chest (half width 62, 63.2 with the padding), 33 cm deep (half depth 43), the shoulder 49.5 cm across (half 66, 1.07 times
+ * the chest), the skirt 49 cm across at the hips (half 64.5) and 50 cm at the hem, and the belted waist 42 cm (half 54.5, 0.88 of the chest).
+ * The neck and the lapels keep their own widths (the first three rows), so the collar, 4 to 5 cm a side, is no larger than it was.
  */
 const Y = [6, 12, 18, 26, 36, 58, 86, 104, 114, 124, 140, 170, 205];
 /** The drawing's half width at each row, hanging loose. */
-const LOOSE = [22, 30, 40, 62, 76.5, 74, 68, 60, 56, 56, 58, 60, 64];
-/** Belted: the belt holds the waist to a 30 cm half round, the skirt flaring out below it. */
-const TIED = [22, 30, 40, 62, 76.5, 74, 68, 52, 39.5, 40.5, 46, 52, 60];
+const LOOSE = [22, 30, 40, 56, 66, 63, 62, 62, 62, 62, 63, 64.5, 66];
+/** Belted: the belt holds the waist in a little, and the skirt hangs from it out to the hips' width and the hem's. */
+const TIED = [22, 30, 40, 56, 66, 63, 62, 59, 54.5, 55, 58, 62, 66];
 /**
- * The half depth of the body at each row, as a person's: some 24 cm deep at the chest with the thick cloth over it, against 34 cm
- * across, about 21 cm at a belted waist, and the skirt as deep as the hips under it.
+ * The half depth of the body at each row, as a person's with the thick cloth over it: 0.68 of the width at the chest, the hips and the hem (a
+ * judoka's torso is deep, and a loose gi adds to it, so from the side the jacket reads as a body and not a board), a little less over the
+ * shoulders.
  */
-const LOOSE_D = [14, 18, 22, 26, 30, 33, 34, 34, 33, 33, 33, 33, 33];
-const TIED_D = [14, 18, 22, 26, 30, 33, 34, 31, 27.5, 28, 30, 32, 33];
+const LOOSE_D = [14, 18, 22, 28, 35, 40, 43, 44, 44, 44, 44, 44, 44];
+const TIED_D = [14, 18, 22, 28, 35, 40, 43, 41, 38, 38.5, 40, 43, 44];
 const WAIST = 114;
 /** The top edge of a tied belt at the back, in the jacket's units: a back patch is kept above it. */
 export const BELT_TOP = WAIST - 2.5;
@@ -72,15 +81,16 @@ function rowAt(h: readonly number[], y: number): number {
  * as a straight curve (`CAP`), so the volume keeps its inner edge level with the outer: the sleeve's head is a band down the armhole,
  * not a tube that narrows to a point at the shoulder.
  */
-const SPREAD = 16;
-const S: Pt = [39.5 - SPREAD, 36];
-const P: Pt = [5 - SPREAD, 162];
-const A: Pt = [57 - SPREAD, 104];
-const Q: Pt = [40 - SPREAD, 174];
+const S: Pt = [34, 36];
+const P: Pt = [-11, 162];
+const A: Pt = [46, 104];
+const Q: Pt = [22, 174];
 /** The outer edge as a straight curve, then where the armhole starts, a little in over the shoulder from its point. */
 const CAP = [S[0] + (P[0] - S[0]) / 3, S[1] + (P[1] - S[1]) / 3, S[0] + (2 * (P[0] - S[0])) / 3, S[1] + (2 * (P[1] - S[1])) / 3, S[0] + 8, S[1] - 5];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
 const SLEEVE_Q = [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]];
+/** How far the sleeve's outer edge leans out from the vertical, in degrees: the angle a mark on the sleeve is turned by. */
+const SLEEVE_DEG = Math.round((Math.atan2(S[0] - P[0], P[1] - S[1]) * 1800) / Math.PI) / 10;
 /** About how far down the sleeve, by length along its outer edge, its head comes down to the armpit's level. */
 const ARM = 0.5;
 
@@ -342,9 +352,16 @@ export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
   return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip, extra: inside(uid, ink, t, face) };
 }
 
+/** Where the side vent's slit is, as a half width from the middle (its top at y 182): the hem's corner for a logo ends short of it. */
+export const VENT_HALF = halfAt(true, 182) - 4.2;
+/** How far the chest runs toward the armhole: the picture's right, at the sleeve's head (the body's half width at the chest) less a margin for the seam. */
+export const CHEST_LEFT = 117.5;
+export const CHEST_RIGHT = 100 + halfAt(false, 70) - 4;
+
 /** The emblem's middle on the front's drawing, and the room it has there: the band between the top lapel's sewn edge and the sleeve's head (`EMBLEM_ROOM` units wide). */
-export const EMBLEM_AT: Pt = [131, 66];
-export const EMBLEM_ROOM = { w: 27, h: 30 };
+/** The chest's room runs from the top lapel's band (at 117.5) to the armhole, so a wider chest gives the emblem more room. */
+export const EMBLEM_AT: Pt = [(CHEST_LEFT + CHEST_RIGHT) / 2, 66];
+export const EMBLEM_ROOM = { w: CHEST_RIGHT - CHEST_LEFT, h: 30 };
 
 /** The jacket's sleeve outline on the front's drawing, the picture's left (`side` -1) or right: the cloth that the sleeve's cells show, which a mark on the chest must stay out of. */
 export const sleeveRegion = (side: -1 | 1): Pt[] => sleeveOutline(side);
@@ -383,25 +400,25 @@ export function jacketSpots(): {
   const lean = (Math.atan2(down[1] - up[1], down[0] - up[0]) * 180) / Math.PI;
   const side = (w: "left" | "right", back: boolean): -1 | 1 => ((w === "left") !== back ? 1 : -1);
   return {
-    chest: { x: 133, y: 72, rot: 0 },
+    chest: { x: EMBLEM_AT[0] + 2, y: 72, rot: 0 },
     emblem: { x: EMBLEM_AT[0], y: EMBLEM_AT[1], rot: 0 },
-    hemLogo: { x: 138, y: 187, rot: 0 },
+    hemLogo: { x: (130 + 100 + VENT_HALF - 7) / 2, y: 187, rot: 0 },
     lapelHem: { x: lx, y: ly, rot: lean },
     lapelRun: { run: runFromHem(middle, ly), w: LAPEL_BAND },
     sleeve: (w) => {
       const sd = side(w, false);
       const [x, y] = onSleeve(sd, 0.4, 0.5);
-      return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
+      return { x, y, rot: sd === -1 ? SLEEVE_DEG : -SLEEVE_DEG };
     },
     upperSleeve: (w) => {
       const sd = side(w, false);
       const [x, y] = onSleeve(sd, 0.18, 0.5);
-      return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
+      return { x, y, rot: sd === -1 ? SLEEVE_DEG : -SLEEVE_DEG };
     },
     shoulder: (w) => {
       const sd = side(w, true);
       const [x, y] = onSleeve(sd, 0.17, 0.16);
-      return { x, y, rot: sd === -1 ? 105.3 : 74.7 };
+      return { x, y, rot: sd === -1 ? 90 + SLEEVE_DEG : 90 - SLEEVE_DEG };
     },
   };
 }
