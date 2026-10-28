@@ -1,11 +1,12 @@
 // Judogi designer: one options object in the address, a preview that turns in place (by a drag, the wheel, the angle slider, by hovering, or on its own), tips and zooms,
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
 import {
-  JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
-  BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS,
+  JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
+  BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
   judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
+import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
 import { bindView, clamp, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
 import { WORDS } from "./words.js";
 
@@ -42,7 +43,8 @@ const state = {
     [`e${n}c`, THREAD_COLOURS.includes(params.get(`e${n}c`)) ? params.get(`e${n}c`) : n === 1 ? "navy" : "gold"],
     [`e${n}f`, EMBROIDERY_FONTS.includes(params.get(`e${n}f`)) ? params.get(`e${n}f`) : "block"],
   ])),
-  logo: LOGO_PLACES.includes(params.get("logo")) ? params.get("logo") : "none",
+  // The maker's logo places, none to many (the rules allow one to a garment): a comma list in the address.
+  logo: (params.get("logo") ?? "").split(",").filter((p) => LOGO_PLACES.includes(p)).join(","),
   emblem: ["placeholder", "flag"].includes(params.get("emblem")) ? params.get("emblem") : "none",
   flag: (params.get("flag") ?? "ca").toLowerCase().replace(/[^a-z-]/g, "").slice(0, 6),
   rules: MARK_RULES.includes(params.get("rules")) ? params.get("rules") : "ijf",
@@ -72,6 +74,8 @@ async function loadFlag(code) {
   return svg;
 }
 
+const logoList = () => state.logo.split(",").filter((p) => LOGO_PLACES.includes(p));
+
 const turning = { on: false, byHover: false, last: 0, frame: 0 };
 
 /** The options the package takes, made from the page's state. A word left empty is the package's own default. */
@@ -86,7 +90,7 @@ function options() {
     place: state[`e${n}p`], text: state[`e${n}t`] || (state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU"), thread: state[`e${n}c`], font: state[`e${n}f`],
   }));
   if (embroidery.length > 0) o.embroidery = embroidery;
-  if (state.logo !== "none") o.logos = [{ place: state.logo }];
+  if (logoList().length > 0) o.logos = logoList().map((place) => ({ place }));
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
   if (state.label !== "none") o.label = { colour: state.label };
@@ -97,7 +101,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -272,71 +276,154 @@ function beltLabel(id) {
 
 const pair = (labels) => (v) => (lang() === "ja" ? labels[v].ja : labels[v].en);
 
-/** The controls, in groups. A field that does not apply to the choices made is not shown. */
+
+const rgb = (c) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+const CLOTH_CSS = { white: "#f4f2ec", blue: "#27489e" };
+const PATCH_CSS = { blue: "#1b3a8c", gold: "#c4981e", red: "#b61824", black: "#16181f", white: "#f6f4ee" };
+const INK_CSS = { black: "#15181f", vermilion: "#c9361c" };
+const LABEL_CSS = { navy: "#1d2b4f", forest: "#1f4d3a", black: "#181818", wine: "#6e1d2c", cream: "#efe6cf" };
+const beltCss = (v) => (v === "red-white" ? "linear-gradient(90deg, #b21622 50%, #f4f2ea 50%)" : rgb(JUDOGI_BELT_RGB[v]));
+
+/** Which garments each display mode draws: a control is shown only where it changes what is on the stage. */
+const GARMENTS = { pieces: ["jacket", "pants", "belt"], suit: ["jacket", "pants", "belt"], jacket: ["jacket", "belt"], pants: ["pants"], belt: ["belt"] };
+const has = (garment) => GARMENTS[state.mode].includes(garment);
+const garmentOf = (place) => (place.startsWith("pants") ? "pants" : place.startsWith("belt") ? "belt" : "jacket");
+
+/** One control in the form: its section's heading key, its id, its label and the element. */
+const field = (section, id, label, node) => ({ section, id, label, node });
+
+/** The controls, in groups. A control that does not change what the current display mode draws is not shown (its value stays in the address). */
 function rows() {
   const ijf = state.patch === "ijf";
   const zekken = state.patch === "zekken";
-  return [
-    ["judo-colour", say("judoColour"), select("judo-colour", JUDOGI_COLOURS, (v) => say(v === "blue" ? "judoBlue" : "judoWhite"))],
-    ["judo-belt", say("judoBelt"), select("judo-belt", JUDOGI_BELTS, beltLabel)],
-    ["judo-mode", say("judoMode"), select("judo-mode", JUDOGI_MODES, (v) => say(`judoMode_${v}`))],
-    ["judo-view", say("judoView"), select("judo-view", JUDOGI_VIEWS, (v) => say(`judoView_${v}`))],
-    ["judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)],
-    ["judo-patch", say("judoPatch"), select("judo-patch", PATCH_STYLES, (v) => say(`judoPatch_${v}`)), true],
-    ...(ijf || zekken ? [["judo-pname", say(zekken ? "judoPatchSurname" : "judoPatchName"), text("judo-pname", 24, zekken ? "山田" : "A. ATHLETE")]] : []),
-    ...(ijf ? [["judo-pcode", say("judoPatchCode"), text("judo-pcode", 3, "SJF")]] : []),
-    ...(ijf || zekken ? [["judo-pline", say(zekken ? "judoPatchAffiliation" : "judoPatchLine"), text("judo-pline", 28, "")]] : []),
-    ...(ijf ? [["judo-pcolour", say("judoPatchColour"), select("judo-pcolour", PATCH_COLOURS, pair(PATCH_COLOUR_LABELS))]] : []),
-    ...(ijf ? [["judo-psew", say("judoPatchSewing"), select("judo-psew", ["x", "lines"], (v) => say(`judoPatchSewing_${v}`))]] : []),
-    ...(zekken ? [["judo-pink", say("judoPatchInk"), select("judo-pink", ZEKKEN_INKS, pair(ZEKKEN_INK_LABELS))]] : []),
-    ...[1, 2].flatMap((n) => (n === 2 && state.e1p === "none" ? [] : [
-      [`judo-e${n}p`, `${say("judoEmb")} ${n}`, select(`judo-e${n}p`, ["none", ...EMBROIDERY_PLACES], (v) => say(`judoPlace_${v}`)), true],
-      ...(state[`e${n}p`] === "none" ? [] : [
-        [`judo-e${n}t`, say("judoEmbText"), text(`judo-e${n}t`, 24, state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU")],
-        [`judo-e${n}c`, say("judoThread"), select(`judo-e${n}c`, THREAD_COLOURS, pair(THREAD_LABELS))],
-        [`judo-e${n}f`, say("judoFont"), select(`judo-e${n}f`, EMBROIDERY_FONTS, (v) => say(`judoFont_${v}`))],
-      ]),
-    ])),
-    ["judo-brand", say("judoBrand"), select("judo-brand", ["0", "1"], (v) => say(v === "1" ? "judoBrand_on" : "judoBrand_off")), true],
-    ...(state.brand === "1" ? [
-      ["judo-bk", say("judoBrandKanji"), select("judo-bk", BRAND_KANJI, (v) => `${BRAND_KANJI_LABELS[v].char}  ${say(`judoKanji_${v}`)}`)],
-      ["judo-bn", say("judoBrandName"), text("judo-bn", 16, "SENSHU")],
-      ["judo-bl", say("judoBrandLine"), text("judo-bl", 20, "SINCE 2026")],
-      ["judo-bt", say("judoBrandTag"), text("judo-bt", 5, state.size)],
-      ["judo-bc", say("judoBrandColour"), select("judo-bc", LABEL_COLOURS, pair(LABEL_COLOUR_LABELS))],
-    ] : []),
-    ["judo-label", say("judoLabel"), select("judo-label", ["none", ...LABEL_COLOURS], (v) => (v === "none" ? say("judoLabel_none") : pair(LABEL_COLOUR_LABELS)(v)))],
-    ["judo-logo", say("judoLogo"), select("judo-logo", ["none", ...LOGO_PLACES], (v) => say(`judoLogo_${v}`))],
-    ["judo-emblem", say("judoEmblem"), select("judo-emblem", ["none", "placeholder", "flag"], (v) => say(`judoEmblem_${v}`)), true],
-    ...(state.emblem === "flag" ? [["judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")]] : []),
-    ...(state.e1p !== "none" || state.logo !== "none" || state.emblem !== "none" || state.label !== "none" || state.brand === "1" ? [["judo-rules", say("judoRules"), select("judo-rules", MARK_RULES, (v) => say(`judoRules_${v}`))]] : []),
-  ];
+  const jacket = has("jacket");
+  const set = (key, rebuild = false) => (value) => change(key, value, rebuild);
+  const out = [];
+  const G = "judoG_garment";
+  out.push(field(G, "judo-mode", say("judoMode"), tiles({ id: "judo-mode", label: say("judoMode"), values: JUDOGI_MODES, current: state.mode, picture: (v) => PICTURES.mode[v], name: (v) => say(`judoMode_${v}`), onPick: set("mode", true), wide: true })));
+  out.push(field(G, "judo-view", say("judoView"), segmented({ id: "judo-view", label: say("judoView"), values: JUDOGI_VIEWS, current: state.view, name: (v) => say(`judoView_${v}`), onPick: set("view") })));
+  if (has("jacket") || has("pants")) out.push(field(G, "judo-colour", say("judoColour"), swatches({ id: "judo-colour", label: say("judoColour"), values: JUDOGI_COLOURS, current: state.colour, css: (v) => CLOTH_CSS[v], name: (v) => say(v === "blue" ? "judoBlue" : "judoWhite"), onPick: set("colour") })));
+  if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: set("belt") })));
+  out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
+
+  if (jacket) {
+    const P = "judoPatch";
+    out.push(field(P, "judo-patch", say("judoPatch"), tiles({ id: "judo-patch", label: say("judoPatch"), values: PATCH_STYLES, current: state.patch, picture: (v) => PICTURES.patch[v], name: (v) => say(`judoPatch_${v}`), onPick: set("patch", true) })));
+    if (ijf || zekken) out.push(field(P, "judo-pname", say(zekken ? "judoPatchSurname" : "judoPatchName"), text("judo-pname", 24, zekken ? "山田" : "A. ATHLETE")));
+    if (ijf) out.push(field(P, "judo-pcode", say("judoPatchCode"), text("judo-pcode", 3, "SJF")));
+    if (ijf || zekken) out.push(field(P, "judo-pline", say(zekken ? "judoPatchAffiliation" : "judoPatchLine"), text("judo-pline", 28, "")));
+    if (ijf) out.push(field(P, "judo-pcolour", say("judoPatchColour"), swatches({ id: "judo-pcolour", label: say("judoPatchColour"), values: PATCH_COLOURS, current: state.pcolour, css: (v) => PATCH_CSS[v], name: pair(PATCH_COLOUR_LABELS), onPick: set("pcolour") })));
+    if (ijf) out.push(field(P, "judo-psew", say("judoPatchSewing"), tiles({ id: "judo-psew", label: say("judoPatchSewing"), values: ["x", "lines"], current: state.psew, picture: (v) => PICTURES.sewing[v], name: (v) => say(`judoPatchSewing_${v}`), onPick: set("psew") })));
+    if (zekken) out.push(field(P, "judo-pink", say("judoPatchInk"), swatches({ id: "judo-pink", label: say("judoPatchInk"), values: ZEKKEN_INKS, current: state.pink, css: (v) => INK_CSS[v], name: pair(ZEKKEN_INK_LABELS), onPick: set("pink") })));
+  }
+
+  // Embroidery: only the places of the garments on show.
+  const places = EMBROIDERY_PLACES.filter((p) => has(garmentOf(p)));
+  const E = "judoEmb";
+  for (const n of [1, 2]) {
+    const here = state[`e${n}p`];
+    const shown = here !== "none" && places.includes(here);
+    if (n === 2 && !(state.e1p !== "none" && places.includes(state.e1p))) continue;
+    out.push(field(E, `judo-e${n}p`, `${say("judoEmb")} ${n}`, select(`judo-e${n}p`, ["none", ...places], (v) => say(`judoPlace_${v}`))));
+    if (!shown) continue;
+    out.push(field(E, `judo-e${n}t`, say("judoEmbText"), text(`judo-e${n}t`, 24, here === "jacket-chest" ? "柔道" : "SENSHU")));
+    out.push(field(E, `judo-e${n}c`, say("judoThread"), swatches({ id: `judo-e${n}c`, label: say("judoThread"), values: THREAD_COLOURS, current: state[`e${n}c`], css: (v) => rgb(THREAD_RGB[v]), name: pair(THREAD_LABELS), onPick: set(`e${n}c`) })));
+    out.push(field(E, `judo-e${n}f`, say("judoFont"), segmented({ id: `judo-e${n}f`, label: say("judoFont"), values: EMBROIDERY_FONTS, current: state[`e${n}f`], name: (v) => say(`judoFont_${v}`), onPick: set(`e${n}f`) })));
+  }
+
+  // Logos, the emblem and the label.
+  const M = "judoG_marks";
+  const logoGroups = ["jacket", "pants", "belt"].filter(has).map((g) => [say(`judoMode_${g}`), LOGO_PLACES.filter((p) => garmentOf(p) === g)]);
+  const logoBox = document.createElement("div");
+  logoBox.append(checks({ id: "judo-logo", label: say("judoLogo"), groups: logoGroups, chosen: logoList(), name: (v) => say(`judoLogo_${v}`), onChange: (list) => change("logo", list.join(",")) }));
+  const note = document.createElement("p");
+  note.className = "fam-fine judo-note";
+  note.dataset.testid = "judo-logo-note";
+  note.textContent = say("judoLogoNote");
+  logoBox.append(note);
+  out.push(field(M, "judo-logos", say("judoLogo"), logoBox));
+  if (jacket) {
+    out.push(field(M, "judo-emblem", say("judoEmblem"), tiles({ id: "judo-emblem", label: say("judoEmblem"), values: ["none", "placeholder", "flag"], current: state.emblem, picture: (v) => PICTURES.emblem[v], name: (v) => say(`judoEmblem_${v}`), onPick: set("emblem", true) })));
+    if (state.emblem === "flag") out.push(field(M, "judo-flag", say("judoFlag"), text("judo-flag", 6, "ca")));
+  }
+  out.push(field(M, "judo-label", say("judoLabel"), swatches({ id: "judo-label", label: say("judoLabel"), values: ["none", ...LABEL_COLOURS], current: state.label, css: (v) => LABEL_CSS[v], name: (v) => (v === "none" ? say("judoLabel_none") : pair(LABEL_COLOUR_LABELS)(v)), onPick: set("label") })));
+
+  // Branding: one switch, and what it carries.
+  const B = "judoG_brand";
+  const brandOn = state.brand === "1";
+  out.push(field(B, "judo-brand", say("judoBrand"), toggle({ id: "judo-brand", label: say("judoBrand"), on: brandOn, words: { on: say("judoBrand_on"), off: say("judoBrand_off") }, onChange: (on) => change("brand", on ? "1" : "0", true) })));
+  if (brandOn) {
+    if (jacket) {
+      out.push(field(B, "judo-bk", say("judoBrandKanji"), tiles({ id: "judo-bk", label: say("judoBrandKanji"), values: BRAND_KANJI, current: state.bk, picture: (v) => BRAND_KANJI_LABELS[v].char, name: (v) => say(`judoKanji_${v}`), onPick: set("bk") })));
+      out.push(field(B, "judo-bn", say("judoBrandName"), text("judo-bn", 16, "SENSHU")));
+      out.push(field(B, "judo-bl", say("judoBrandLine"), text("judo-bl", 20, "SINCE 2026")));
+      out.push(field(B, "judo-bt", say("judoBrandTag"), text("judo-bt", 5, state.size)));
+    }
+    out.push(field(B, "judo-bc", say("judoBrandColour"), swatches({ id: "judo-bc", label: say("judoBrandColour"), values: LABEL_COLOURS, current: state.bc, css: (v) => LABEL_CSS[v], name: pair(LABEL_COLOUR_LABELS), onPick: set("bc") })));
+  }
+
+  const marked = (state.e1p !== "none" && places.includes(state.e1p)) || logoList().length > 0 || (jacket && state.emblem !== "none") || state.label !== "none" || brandOn;
+  if (marked) out.push(field(B, "judo-rules", say("judoRules"), segmented({ id: "judo-rules", label: say("judoRules"), values: MARK_RULES, current: state.rules, name: (v) => say(`judoRules_${v}`), onPick: set("rules") })));
+  return out;
+}
+
+/** A choice was made: keep it, put it in the address, build the form again where it changes which controls apply, and draw. */
+function change(key, value, rebuild = false) {
+  state[key] = value;
+  syncUrl();
+  if (rebuild) controls();
+  draw();
 }
 
 let typing = 0;
 function controls() {
   const box = $("judo-controls");
+  // The control that has focus is found again after the form is built anew, so a keyboard or a screen reader keeps its place.
+  const active = document.activeElement;
+  const where = active !== null && box.contains(active) ? { id: active.closest("[data-testid]")?.dataset.testid, value: active.dataset.value } : undefined;
   box.replaceChildren();
-  for (const [id, label, input, rebuild] of rows()) {
-    const row = document.createElement("label");
-    row.htmlFor = id;
-    const span = document.createElement("span");
-    span.textContent = label;
-    row.append(span, input);
-    box.append(row);
-    const change = () => {
-      state[id.replace("judo-", "")] = input.value;
-      syncUrl();
-      // A choice that changes which fields apply builds them again; typing keeps the field it is in.
-      if (rebuild) controls();
-      draw();
-    };
-    if (input.type === "text") {
-      input.addEventListener("input", () => {
-        globalThis.clearTimeout(typing);
-        typing = globalThis.setTimeout(change, 250);
+  let section;
+  for (const { section: s, id, label, node } of rows()) {
+    if (s !== section) {
+      section = s;
+      const h = document.createElement("h3");
+      h.textContent = say(s);
+      box.append(h);
+    }
+    const row = document.createElement("div");
+    row.className = "judo-field";
+    if (node.tagName === "SELECT" || node.tagName === "INPUT") {
+      const lab = document.createElement("label");
+      lab.htmlFor = id;
+      lab.className = "judo-line";
+      const span = document.createElement("span");
+      span.className = "judo-label";
+      span.textContent = label;
+      lab.append(span, node);
+      row.append(lab);
+      node.addEventListener(node.tagName === "INPUT" ? "input" : "change", () => {
+        state[id.replace("judo-", "")] = node.value;
+        syncUrl();
+        if (node.tagName === "SELECT") {
+          // Embroidery's place changes which controls apply.
+          if (/^judo-e[12]p$/.test(id)) controls();
+          draw();
+        } else {
+          globalThis.clearTimeout(typing);
+          typing = globalThis.setTimeout(draw, 250);
+        }
       });
-    } else input.addEventListener("change", change);
+    } else {
+      const span = document.createElement("span");
+      span.className = "judo-label";
+      span.textContent = label;
+      row.append(span, node);
+    }
+    box.append(row);
+  }
+  if (where?.id !== undefined) {
+    const sel = `[data-testid="${where.id}"]${where.value === undefined ? "" : ` [data-value="${where.value}"]`}`;
+    (box.querySelector(sel) ?? box.querySelector(`[data-testid="${where.id}"]`))?.focus({ preventScroll: true });
   }
 }
 

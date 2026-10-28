@@ -1,6 +1,11 @@
 .judo-layout { align-items: start; }
-.judo-layout .controls { display: grid; gap: 12px; }
-.judo-layout label { display: grid; gap: 6px; font: inherit; }
+.judo-layout .controls { display: grid; gap: 14px; align-content: start; }
+.judo-layout .controls h3 { margin: 6px 0 -4px; padding-top: 10px; border-top: 1px solid var(--rule); }
+.judo-layout .controls h3:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.judo-field { display: grid; gap: 6px; min-width: 0; }
+.judo-line { display: grid; gap: 6px; font: inherit; }
+.judo-label { font-size: .85rem; font-weight: 600; }
+.judo-layout .controls select.fam-field, .judo-layout .controls input.fam-field { width: 100%; max-width: 100%; }
 .judo-layout select, .judo-layout button { min-height: 48px; }
 .judo-layout .stage { min-height: 320px; display: grid; place-items: center; }
 .judo-layout .stage svg, .judo-layout .stage canvas { display: block; max-width: 100%; height: auto; }
@@ -13,3 +18,58 @@
 .judo-zoom { display: inline-flex; gap: 4px; }
 .judo-zoom .fam-button { min-width: 44px; padding: 0 10px; font-variant-numeric: tabular-nums; }
 .judo-zoom #judo-zoom-reset { min-width: 56px; }
+
+/* Swatches: a colour is a dot, a finger wide in its hit area. */
+.judo-swatches { display: flex; flex-wrap: wrap; gap: 2px; }
+.judo-swatch { width: 44px; height: 44px; min-height: 44px !important; padding: 0; border: 0; background: transparent; border-radius: 50%; display: grid; place-items: center; }
+.judo-dot { width: 28px; height: 28px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent); display: block; position: relative; }
+.judo-dot.is-none { background: var(--surface); }
+.judo-dot.is-none::after { content: ""; position: absolute; left: 50%; top: -2px; width: 2px; height: 30px; background: var(--bad); transform: rotate(45deg); }
+.judo-swatch[aria-pressed="true"] .judo-dot { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.judo-swatch:hover .judo-dot { border-color: var(--ink); }
+.judo-swatch:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
+
+/* Picture tiles: a small picture over its name. */
+.judo-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr)); gap: 8px; }
+.judo-tiles.is-wide { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.judo-tiles.is-wide .judo-tile { padding-inline: 2px; }
+.judo-tile { display: grid; justify-items: center; align-content: start; gap: 4px; padding: 6px 4px 6px; min-height: 44px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); font-size: .78rem; font-weight: 600; line-height: 1.15; text-align: center; }
+.judo-tile:hover { border-color: var(--ink); }
+.judo-tile[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: color-mix(in srgb, var(--ink) 7%, var(--surface)); }
+.judo-pic { display: grid; place-items: center; width: 100%; height: 48px; }
+.judo-pic svg { width: auto; height: 48px; max-width: 100%; }
+.judo-pic.is-glyph { font-size: 2rem; line-height: 1; font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif; }
+.judo-cap { overflow-wrap: anywhere; }
+
+/* A segmented choice of words wraps on a narrow screen. */
+.judo-seg { max-width: 100%; }
+.judo-seg button { white-space: normal; font-size: .85rem; }
+
+/* The switch. */
+.judo-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 6px 0 0; border: 0; background: transparent; font-weight: 600; justify-self: start; }
+.judo-track { width: 46px; height: 26px; border-radius: 13px; background: var(--rule); position: relative; transition: background .15s; flex: none; }
+.judo-knob { position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: transform .15s; }
+.judo-switch[aria-checked="true"] .judo-track { background: var(--good); }
+.judo-switch[aria-checked="true"] .judo-knob { transform: translateX(20px); }
+.judo-switch:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 22px; }
+
+/* Places as checkboxes in chips, grouped by garment. */
+.judo-checks { display: grid; gap: 10px; }
+.judo-checktitle { display: block; margin-bottom: 4px; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.judo-checklist { display: flex; flex-wrap: wrap; gap: 6px; }
+.judo-check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px 0 10px; border: 1px solid var(--rule); border-radius: 22px; background: var(--surface); font-size: .85rem; font-weight: 600; cursor: pointer; }
+.judo-check:hover { border-color: var(--ink); }
+.judo-check:has(input:checked) { border-color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, var(--surface)); }
+.judo-check input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); flex: none; }
+.judo-check:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+.judo-note { margin-top: 8px; }
+
+/* On a phone the pinned view must leave room for the form under it: the picture is held to part of the screen and the rows of controls are one line each. */
+@media (max-width: 899px) {
+  .judo-view .stage canvas, .judo-view .stage svg { width: auto !important; max-width: 100%; max-height: 34vh; height: auto; }
+  .judo-view .stage { min-height: 0; padding: 4px; }
+  .stagepin .turnbar output { display: none; }
+  .stagepin .turnbar .fam-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .stagepin .turnbar .range { min-width: 4rem; }
+  .stagepin .turnbar .fam-button { padding-inline: 10px; }
+}

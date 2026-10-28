@@ -6,6 +6,23 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-27
+
+### Added
+
+- **`JUDOGI_BELT_RGB`**: the belt colours the package draws, as `[r, g, b]` by belt name, for a page that shows a swatch of each.
+- **The designer's form is visual.** A colour is a swatch (cloth, belt, back-number band, zekken ink, thread, label and brand colours), a few-way choice is a picture tile (display mode, back patch, stitching, emblem, brush mark), on or off is a switch (the branding), a set of places is a set of checkboxes (the maker's logos), a short choice of words is a segmented control (view, lettering, rules), and a dropdown is left only for the size and the embroidery's place. It is in groups with headings and works on a phone.
+- **Only what matters to the display is shown.** Trousers only has no belt, back patch, emblem or neck-label words, and its places are the trousers'; a belt alone has no cloth colour; the jacket's places show only where the jacket is. What is hidden stays in the address and is back as it was when the display changes.
+
+### Changed
+
+- **The maker's logos are none to many places** (`logo=jacket-hem,belt-end-left` in the address; the old single value still reads). The IJF's one logo to a garment is a note under the places, not a block: two places on one garment are both kept and the first picked is drawn.
+
+### Fixed
+
+- The two jacket shoulder logo places showed their keys (`judoLogo_jacket-shoulder-left`) instead of "Jacket, shoulder left" and "Jacket, shoulder right". A test holds every place, style, mode and font to a name in both languages.
+- On a phone the pinned view took most of the screen; the picture is held to a third of its height and the control rows are one line each.
+
 ## [0.16.0] - 2026-10-27
 
 ### Added

@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 
 // The judogi designer: it draws on a canvas, turns in place, keeps its angle when a choice changes, keeps every choice in the address,
 // and has no control left in the browser's own style.
+/** Choose an option of a swatch, tile or segmented picker. */
+const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
 const yawOf = (page) => page.locator("#judo-stage canvas").getAttribute("data-yaw").then(Number);
 
 test("the designer draws a judogi in pieces, with no errors and no sideways scroll", async ({ page }) => {
@@ -28,12 +30,12 @@ test("the angle slider turns the drawing in place, and a choice keeps the angle"
   // The same element, moved: nothing was drawn again.
   await expect(page.locator('#judo-stage canvas[data-mark="before"]')).toHaveCount(1);
   await expect(page).toHaveURL(/yaw=40/);
-  await page.locator('[data-testid="judo-colour"]').selectOption("blue");
+  await pick(page, "judo-colour", "blue");
   await expect(page).toHaveURL(/colour=blue/);
   expect(await yawOf(page)).toBe(40);
   // The address is the whole state.
   await page.goto(page.url());
-  await expect(page.locator('[data-testid="judo-colour"]')).toHaveValue("blue");
+  await expect(page.locator('[data-testid="judo-colour"] [data-value="blue"]')).toHaveAttribute("aria-pressed", "true");
   expect(await yawOf(page)).toBe(40);
 });
 
@@ -76,7 +78,7 @@ test("the back patch's choices are in the address, show only when they apply, an
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   await expect(page.locator('[data-testid="judo-pcode"]')).toHaveValue("JPN");
   await expect(page.locator('[data-testid="judo-pink"]')).toHaveCount(0);
-  await page.locator('[data-testid="judo-patch"]').selectOption("zekken");
+  await pick(page, "judo-patch", "zekken");
   await expect(page).toHaveURL(/patch=zekken/);
   await expect(page.locator('[data-testid="judo-pink"]')).toHaveCount(1);
   await expect(page.locator('[data-testid="judo-pcode"]')).toHaveCount(0);
@@ -96,11 +98,12 @@ test("embroidery, the logo and the emblem are chosen in the page and kept in the
   await expect(page.locator('[data-testid="judo-e2p"]')).toHaveCount(1);
   await page.locator('[data-testid="judo-e2p"]').selectOption("belt-end-left");
   await expect(page).toHaveURL(/e2p=belt-end-left/);
-  await page.locator('[data-testid="judo-logo"]').selectOption("jacket-hem");
-  await page.locator('[data-testid="judo-emblem"]').selectOption("placeholder");
+  await page.locator('[data-testid="judo-logo"] input[data-value="jacket-hem"]').check();
+  await expect(page).toHaveURL(/logo=jacket-hem/);
+  await pick(page, "judo-emblem", "placeholder");
   await expect(page).toHaveURL(/emblem=placeholder/);
   await expect(page.locator('[data-testid="judo-rules"]')).toHaveCount(1);
-  await page.locator('[data-testid="judo-rules"]').selectOption("ajjf");
+  await pick(page, "judo-rules", "ajjf");
   await expect(page.locator("#judo-check")).toContainText("All Japan Judo Federation");
   expect(errors).toEqual([]);
 });
@@ -110,13 +113,14 @@ test("the branding is one switch with its mark, words and colour, kept in the ad
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/judogi.html?mode=jacket&brand=1&bk=chikara&bt=3B");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  await expect(page.locator('[data-testid="judo-bk"]')).toHaveValue("chikara");
+  await expect(page.locator('[data-testid="judo-bk"] [data-value="chikara"]')).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator('[data-testid="judo-bt"]')).toHaveValue("3B");
-  await page.locator('[data-testid="judo-bk"]').selectOption("kokoro");
+  await pick(page, "judo-bk", "kokoro");
   await expect(page).toHaveURL(/bk=kokoro/);
   await page.locator('[data-testid="judo-bn"]').fill("KAZE");
   await expect(page).toHaveURL(/bn=KAZE/);
-  await page.locator('[data-testid="judo-brand"]').selectOption("0");
+  await page.locator('[data-testid="judo-brand"]').click();
+  await expect(page.locator('[data-testid="judo-brand"]')).toHaveAttribute("aria-checked", "false");
   await expect(page.locator('[data-testid="judo-bk"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -234,4 +238,105 @@ test("a flat view zooms as a drawing and has nothing to turn or tip", async ({ p
   await expect(page.locator('[data-testid="judo-tilt"]')).toBeDisabled();
   await page.locator('[data-testid="judo-zoom-in"]').click();
   await expect(page.locator("#judo-stage")).toHaveAttribute("style", /scale\(/);
+});
+
+// The form: colours are swatches, few-way visual choices are picture tiles, on and off is a switch, places are checkboxes, and only long lists are dropdowns.
+test("a colour is a swatch, a few-way choice a picture tile, on or off a switch, and only long lists are dropdowns", async ({ page }) => {
+  await page.goto("/judogi.html?mode=pieces&belt=brown&patch=ijf&emblem=flag&brand=1&e1p=jacket-chest&e1t=X");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const selects = await page.locator("#judo-controls select").evaluateAll((nodes) => nodes.map((n) => n.id));
+  expect(selects.sort()).toEqual(["judo-e1p", "judo-e2p", "judo-size"]);
+  // Swatches: the belt's ten colours, one pressed, each named.
+  const belts = page.locator('[data-testid="judo-belt"] button');
+  await expect(belts).toHaveCount(10);
+  await expect(page.locator('[data-testid="judo-belt"] [data-value="brown"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="judo-belt"] [data-value="red-white"]')).toHaveAttribute("aria-label", /.+/);
+  await pick(page, "judo-belt", "black");
+  await expect(page).toHaveURL(/belt=black/);
+  await expect(page.locator('[data-testid="judo-belt"] [data-value="black"]')).toHaveAttribute("aria-pressed", "true");
+  // The thread colours and the patch colours are swatches too.
+  await expect(page.locator('[data-testid="judo-e1c"] button')).toHaveCount(24);
+  await expect(page.locator('[data-testid="judo-pcolour"] button')).toHaveCount(5);
+  // Tiles carry a picture over the name.
+  for (const id of ["judo-patch", "judo-emblem", "judo-bk", "judo-mode", "judo-psew"]) {
+    const tile = page.locator(`[data-testid="${id}"] button`).first();
+    await expect(tile.locator("svg, .is-glyph")).toHaveCount(1);
+  }
+  // The branding is a switch.
+  const brand = page.locator('[data-testid="judo-brand"]');
+  await expect(brand).toHaveAttribute("role", "switch");
+  await expect(brand).toHaveAttribute("aria-checked", "true");
+  await brand.click();
+  await expect(page).not.toHaveURL(/brand=1/);
+  await expect(page.locator('[data-testid="judo-bk"]')).toHaveCount(0);
+});
+
+test("only the options that change the current display mode are shown, and the others stay in the address", async ({ page }) => {
+  const shown = (id) => page.locator(`[data-testid="${id}"]`);
+  await page.goto("/judogi.html?mode=pants&belt=black&patch=ijf&emblem=flag&logo=jacket-hem,belt-end-left&e1p=jacket-chest&e1t=X&brand=1&bk=chikara");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  // Trousers only: no belt, no back patch, no emblem, no neck label words; the places are the trousers'.
+  for (const id of ["judo-belt", "judo-patch", "judo-emblem", "judo-bk", "judo-pname"]) await expect(shown(id)).toHaveCount(0);
+  await expect(shown("judo-colour")).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(4);
+  await expect(page.locator('[data-testid="judo-e1p"] option, #judo-e1p option').first()).toBeAttached();
+  const places = await page.locator("#judo-e1p option").evaluateAll((nodes) => nodes.map((n) => n.value));
+  expect(places.every((p) => p === "none" || p.startsWith("pants"))).toBe(true);
+  // Choosing something does not drop what is hidden.
+  await pick(page, "judo-colour", "blue");
+  await expect(page).toHaveURL(/patch=ijf/);
+  await expect(page).toHaveURL(/emblem=flag/);
+  await expect(page).toHaveURL(/logo=jacket-hem/);
+  await expect(page).toHaveURL(/belt=black/);
+  // Back to the jacket: they are there as they were left.
+  await pick(page, "judo-mode", "jacket");
+  await expect(page.locator('[data-testid="judo-patch"] [data-value="ijf"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="judo-emblem"] [data-value="flag"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="judo-logo"] input[data-value="jacket-hem"]')).toBeChecked();
+  await expect(shown("judo-belt")).toHaveCount(1);
+  // A belt alone has no cloth colour, no patch and no jacket places.
+  await pick(page, "judo-mode", "belt");
+  await expect(shown("judo-colour")).toHaveCount(0);
+  await expect(shown("judo-patch")).toHaveCount(0);
+  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(2);
+  // A suit and the pieces show everything.
+  await pick(page, "judo-mode", "suit");
+  await expect(shown("judo-patch")).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(9);
+});
+
+test("the maker's logo places are none to many, with no raw key in any label, in either language", async ({ page }) => {
+  for (const lang of ["en", "ja"]) {
+    await page.goto(`/judogi.html?mode=suit&lang=${lang}`);
+    await expect(page.locator("#judo-stage canvas")).toBeVisible();
+    const boxes = page.locator('[data-testid="judo-logo"] input');
+    await expect(boxes).toHaveCount(9);
+    // Every label is words, not the key it is looked up by.
+    const labels = await page.locator("#judo-controls").evaluate((root) => [...root.querySelectorAll("label, button, option, h3, .judo-cap, .judo-label")].map((n) => n.textContent ?? "").concat([...root.querySelectorAll("[aria-label]")].map((n) => n.getAttribute("aria-label") ?? "")));
+    for (const text of labels) expect(text, text).not.toMatch(/judo[A-Z_]|judo[A-Za-z]*_|shoulder-left|shoulder-right/);
+    // Any number of places, none included.
+    await page.locator('[data-testid="judo-logo"] input[data-value="jacket-hem"]').check();
+    await page.locator('[data-testid="judo-logo"] input[data-value="pants-leg-left"]').check();
+    await page.locator('[data-testid="judo-logo"] input[data-value="belt-end-right"]').check();
+    await expect(page).toHaveURL(/logo=jacket-hem%2Cpants-leg-left%2Cbelt-end-right/);
+    await page.locator('[data-testid="judo-logo"] input[data-value="jacket-shoulder-left"]').check();
+    await expect(page.locator('[data-testid="judo-logo"] input:checked')).toHaveCount(4);
+    for (const v of ["jacket-hem", "pants-leg-left", "belt-end-right", "jacket-shoulder-left"]) await page.locator(`[data-testid="judo-logo"] input[data-value="${v}"]`).uncheck();
+    await expect(page).not.toHaveURL(/logo=/);
+    // The rule is a note, not a block.
+    await expect(page.locator('[data-testid="judo-logo-note"]')).toBeVisible();
+  }
+  await page.goto("/judogi.html?mode=jacket");
+  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, shoulder left" })).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo"] label', { hasText: "Jacket, shoulder right" })).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo-note"]')).toContainText("one maker's logo on each garment");
+});
+
+test("two logos on one garment are both kept and only the first is drawn, with no error", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&logo=jacket-hem,jacket-shoulder-left");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-logo"] input:checked')).toHaveCount(2);
+  expect(errors).toEqual([]);
 });
