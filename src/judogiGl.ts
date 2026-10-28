@@ -44,9 +44,9 @@ export function drawOrder(p: PaintPiece, yaw: number, placed: readonly Placed[])
  * What is drawn at a turn, in order: each piece's cells, list by list (`drawOrder`). A piece with others worn on it (`VolumeDesc.worn`: a
  * jacket's collar and belt) is drawn up to its near sleeve, then those pieces, then its near sleeve, so the sleeve hangs over the belt.
  */
-export function paintOrder(pieces: readonly PaintPiece[], yaw: number): { n: number; placed: Placed[]; lists: number[][] }[] {
+export function paintOrder(pieces: readonly PaintPiece[], yaw: number, tilt = 0): { n: number; placed: Placed[]; lists: number[][] }[] {
   const plans = pieces.map((p) => {
-    const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch));
+    const placed = p.cells.map((c) => placeCell(c, yaw, p.desc.pitch + tilt));
     return { placed, lists: drawOrder(p, yaw, placed) };
   });
   const out: { n: number; placed: Placed[]; lists: number[][] }[] = [];
@@ -106,7 +106,7 @@ const GROW = 0.9;
 const STRIDE = 5;
 
 /** A painter for `canvas`: turn(yaw) draws every piece at that turn. Undefined when the browser has no WebGL 2 or it fails to start. */
-export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece[], place: (p: PaintPiece) => [number, number, number]): { kind: string; paint(yaw: number): void; dispose(): void } | undefined {
+export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece[], place: (p: PaintPiece) => [number, number, number]): { kind: string; paint(yaw: number, tilt?: number): void; dispose(): void } | undefined {
   const gl = canvas.getContext("webgl2", { antialias: true, premultipliedAlpha: true, alpha: true });
   if (gl === null) return undefined;
   const program = link(gl);
@@ -118,7 +118,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
   const loc = { at: gl.getAttribLocation(program, "at"), uv: gl.getAttribLocation(program, "uv"), shade: gl.getAttribLocation(program, "shade"), size: gl.getUniformLocation(program, "size") };
   const [fx, fy, fw, fh] = FACE_BOX;
   let data = new Float32Array(0);
-  const paint = (yaw: number): void => {
+  const paint = (yaw: number, tilt = 0): void => {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -131,7 +131,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       gl.enableVertexAttribArray(at);
       gl.vertexAttribPointer(at, size, gl.FLOAT, false, STRIDE * 4, offset * 4);
     }
-    for (const job of paintOrder(pieces, yaw)) {
+    for (const job of paintOrder(pieces, yaw, tilt)) {
       const n = job.n;
       const p = pieces[n]!;
       const [u, ox, oy] = place(p);
@@ -148,12 +148,12 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
         const sm = p.smooth[i];
         let s: [number, number, number];
         if (sm === undefined) {
-          const flat = shadeOf(c.n, yaw, p.desc.pitch);
+          const flat = shadeOf(c.n, yaw, p.desc.pitch + tilt);
           s = [flat, flat, flat];
         } else {
           let pair = edges.get(sm);
           if (pair === undefined) {
-            pair = [shadeOf(sm.n0, yaw, p.desc.pitch), shadeOf(sm.n1, yaw, p.desc.pitch)];
+            pair = [shadeOf(sm.n0, yaw, p.desc.pitch + tilt), shadeOf(sm.n1, yaw, p.desc.pitch + tilt)];
             edges.set(sm, pair);
           }
           // A quadrilateral's first triangle is its top left, top right and bottom left corners, the second its top right, bottom right

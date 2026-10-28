@@ -5,3 +5,11 @@
 .judo-layout .stage { min-height: 320px; display: grid; place-items: center; }
 .judo-layout .stage svg, .judo-layout .stage canvas { display: block; max-width: 100%; height: auto; }
 #judo-check { margin-top: 12px; max-width: 42rem; }
+/* The view clips the stage, which a zoom scales and a pan moves; a hand on it turns it. */
+.judo-view { position: relative; overflow: hidden; border-radius: 14px; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+.judo-view[data-grab] { cursor: grabbing; }
+.judo-view:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.judo-view .stage { background: transparent; overflow: visible; transform-origin: 50% 50%; }
+.judo-zoom { display: inline-flex; gap: 4px; }
+.judo-zoom .fam-button { min-width: 44px; padding: 0 10px; font-variant-numeric: tabular-nums; }
+.judo-zoom #judo-zoom-reset { min-width: 56px; }

@@ -244,10 +244,10 @@ function holdOf(root: Element): Held | undefined {
 }
 
 /** Move one piece made by `pieceMarkup` to another turn: the maps, which cells show, the shade, and what is drawn in front. Returns false when `root` is not one. */
-export function applyPiece(root: Element, yaw: number): boolean {
+export function applyPiece(root: Element, yaw: number, tilt = 0): boolean {
   const h = holdOf(root);
   if (h === undefined) return false;
-  const placed = h.cells.map((c) => placeCell(c, yaw, h.desc.pitch));
+  const placed = h.cells.map((c) => placeCell(c, yaw, h.desc.pitch + tilt));
   h.cells.forEach((c, i) => {
     const pl = placed[i] as Placed;
     for (const n of [h.cloth[i], h.shade[i]]) {
@@ -261,9 +261,9 @@ export function applyPiece(root: Element, yaw: number): boolean {
     const sm = h.smooth[i];
     const stops = sm === undefined ? undefined : h.stops[sm.k];
     if (sm !== undefined && stops !== undefined) {
-      stops[0]?.setAttribute("stop-color", greyOf(shadeOf(sm.n0, yaw, h.desc.pitch)));
-      stops[1]?.setAttribute("stop-color", greyOf(shadeOf(sm.n1, yaw, h.desc.pitch)));
-    } else h.shade[i]?.firstElementChild?.setAttribute("fill", greyOf(shadeOf(c.n, yaw, h.desc.pitch)));
+      stops[0]?.setAttribute("stop-color", greyOf(shadeOf(sm.n0, yaw, h.desc.pitch + tilt)));
+      stops[1]?.setAttribute("stop-color", greyOf(shadeOf(sm.n1, yaw, h.desc.pitch + tilt)));
+    } else h.shade[i]?.firstElementChild?.setAttribute("fill", greyOf(shadeOf(c.n, yaw, h.desc.pitch + tilt)));
   });
   if (isBand(h.desc)) {
     for (const i of depthOrder(placed)) {

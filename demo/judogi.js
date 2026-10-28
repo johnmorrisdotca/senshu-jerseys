@@ -1,4 +1,4 @@
-// Judogi designer: one options object in the address, a preview that turns in place (by the angle slider, by hovering, or on its own),
+// Judogi designer: one options object in the address, a preview that turns in place (by a drag, the wheel, the angle slider, by hovering, or on its own), tips and zooms,
 // export to SVG or PNG. A choice redraws the judogi at the angle it was at, so the camera stays where it was.
 import {
   JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
@@ -6,6 +6,7 @@ import {
   judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
+import { bindView, clamp, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -23,6 +24,9 @@ const state = {
   view: JUDOGI_VIEWS.includes(params.get("view")) ? params.get("view") : "front",
   size: JUDOGI_SIZES.includes(params.get("size")) ? params.get("size") : "170",
   yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
+  // How far the camera is tipped (degrees, up is positive) and zoomed (1 to 3): in the address, like the angle.
+  tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
+  zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
   // The back patch: its style, the words on it and its colours. Every one is in the address.
   patch: PATCH_STYLES.includes(params.get("patch")) ? params.get("patch") : "none",
   pname: (params.get("pname") ?? "").slice(0, 24),
@@ -93,7 +97,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "none", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -106,7 +110,15 @@ function syncUrl() {
 }
 
 const flat = () => state.view === "flat" || state.view === "flat-back";
-const wrap = (a) => ((((Math.round(a) + 180) % 360) + 360) % 360) - 180;
+const wrap = wrapYaw;
+/** Where the zoomed stage is moved to, in pixels from its middle (not in the address). */
+const pan = { x: 0, y: 0 };
+/** The picture quality the canvas was last made at: it is made again when a zoom settles somewhere that wants another. */
+let madeAt = { ratio: 0, scale: 0 };
+const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), scale: state.zoom > 1.8 ? 6 : state.zoom > 1.2 ? 5 : 4 });
+/** The zoom and pan the canvas paints with: it is made as wide as its view, so a zoomed drawing has the room, and the camera moves inside it. */
+const camera = () => ({ zoom: state.zoom, panX: pan.x, panY: pan.y });
+const boxWidth = () => Math.max(0, $("judo-stage").clientWidth - 20);
 
 let drawing = 0;
 /** The judogi on the stage as a canvas that turns it, or undefined while the stage shows an SVG (a flat view). */
@@ -120,19 +132,23 @@ async function draw() {
   const holder = document.createElement("div");
   holder.innerHTML = judogiFrame(o);
   const svg = holder.firstElementChild;
-  const canvas = svg === null || flat() ? undefined : await judogiCanvas(svg);
+  const q = quality();
+  const canvas = svg === null || flat() ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
   if (mine !== drawing) {
     canvas?.dispose();
     return;
   }
   painted?.dispose();
   painted = canvas;
+  madeAt = q;
+  canvas?.turn(state.yaw + (state.view === "back" ? 180 : 0), state.tilt, camera());
   if (canvas === undefined) $("judo-stage").replaceChildren(...holder.childNodes);
   else $("judo-stage").replaceChildren(canvas.canvas);
   $("judo-check").textContent = checkText(judogiCheck(o));
-  for (const id of ["judo-yaw", "judo-play", "judo-front"]) $(id).disabled = flat();
+  for (const id of ["judo-yaw", "judo-play", "judo-front", "judo-tilt"]) $(id).disabled = flat();
   if (flat()) stop();
   showAngle();
+  placeStage();
 }
 
 /** What the size check found, in the page's language: the facts themselves are English, so the Japanese page says only whether the size meets them. */
@@ -146,16 +162,45 @@ function checkText(check) {
 function showAngle() {
   $("judo-yaw-out").textContent = `${wrap(state.yaw)}°`;
   $("judo-yaw").value = String(wrap(state.yaw));
+  $("judo-tilt-out").textContent = `${state.tilt}°`;
+  $("judo-tilt").value = String(state.tilt);
+}
+
+/** The stage's zoom and pan: a transform only, so a drag or a pinch costs no drawing. Pan is kept so that the picture still covers the view. */
+function placeStage() {
+  const box = $("judo-turntable").getBoundingClientRect();
+  const room = (state.zoom - 1) / 2;
+  pan.x = state.zoom === 1 ? 0 : clamp(pan.x, -box.width * room, box.width * room);
+  pan.y = state.zoom === 1 ? 0 : clamp(pan.y, -box.height * room, box.height * room);
+  // A canvas zooms inside itself (sharp, and the same cost at any zoom); a flat drawing is an SVG, scaled by a transform.
+  if (painted !== undefined) {
+    $("judo-stage").style.transform = "";
+    painted.turn(state.yaw + (state.view === "back" ? 180 : 0), state.tilt, camera());
+  } else $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
+  $("judo-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
+  $("judo-zoom-out").disabled = state.zoom <= ZOOM_MIN + 1e-6;
+  $("judo-zoom-in").disabled = state.zoom >= ZOOM_MAX - 1e-6;
 }
 
 /** Move the drawing already on the stage to the current angle, without drawing it again. */
-function turnTo(yaw) {
+function turnTo(yaw, tilt = state.tilt) {
   state.yaw = yaw;
+  state.tilt = tilt;
   const shown = state.yaw + (state.view === "back" ? 180 : 0);
   const svg = $("judo-stage").querySelector("svg");
-  if (painted !== undefined) painted.turn(shown);
-  else if (svg !== null && !flat()) judogiTurn(svg, shown);
+  if (painted !== undefined) painted.turn(shown, state.tilt, camera());
+  else if (svg !== null && !flat()) judogiTurn(svg, shown, state.tilt);
   showAngle();
+}
+
+let crisp = 0;
+/** After a zoom settles, draw the canvas again at the quality that zoom wants (sharper in, lighter out), keeping the angle. */
+function settleQuality() {
+  globalThis.clearTimeout(crisp);
+  crisp = globalThis.setTimeout(() => {
+    const q = quality();
+    if (!flat() && (q.ratio !== madeAt.ratio || q.scale !== madeAt.scale)) draw();
+  }, 350);
 }
 
 function tick(now) {
@@ -327,14 +372,59 @@ $("judo-yaw").addEventListener("input", () => {
   turnTo(Number($("judo-yaw").value));
   syncUrl();
 });
-$("judo-front").addEventListener("click", () => { stop(); turnTo(0); syncUrl(); });
 $("judo-play").addEventListener("click", () => (turning.on ? stop() : play()));
-// Still until a mouse comes over it: then it turns, and stops when the mouse leaves, unless it was set turning with the button.
-$("judo-stage").addEventListener("pointerenter", (event) => {
-  if (event.pointerType === "mouse" && !reduced.matches) play(true);
+// Still until a mouse comes over it: then it turns, and stops when the mouse leaves, unless it was set turning with the button. Grabbing it (a drag, the wheel, a key) stops the turn for good.
+$("judo-turntable").addEventListener("pointerenter", (event) => {
+  if (event.pointerType === "mouse" && !reduced.matches && !grabbed) play(true);
 });
-$("judo-stage").addEventListener("pointerleave", () => {
+$("judo-turntable").addEventListener("pointerleave", () => {
   if (turning.byHover) stop();
+});
+let grabbed = false;
+const hands = bindView($("judo-turntable"), {
+  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: !flat() }),
+  grab() {
+    grabbed = true;
+    turning.byHover = false;
+    stop();
+  },
+  set(next, final) {
+    if (next.zoom !== undefined) state.zoom = next.zoom;
+    if (next.panX !== undefined) pan.x = next.panX;
+    if (next.panY !== undefined) pan.y = next.panY;
+    if (next.yaw !== undefined || next.tilt !== undefined) turnTo(next.yaw ?? state.yaw, next.tilt ?? state.tilt);
+    placeStage();
+    if (final) {
+      syncUrl();
+      settleQuality();
+    }
+  },
+});
+$("judo-tilt").addEventListener("input", () => {
+  stop();
+  turnTo(state.yaw, Number($("judo-tilt").value));
+  syncUrl();
+});
+$("judo-zoom-in").addEventListener("click", () => hands.zoomBy(1.4));
+$("judo-zoom-out").addEventListener("click", () => hands.zoomBy(1 / 1.4));
+$("judo-zoom-reset").addEventListener("click", () => {
+  pan.x = 0;
+  pan.y = 0;
+  state.zoom = 1;
+  placeStage();
+  syncUrl();
+  settleQuality();
+});
+$("judo-front").addEventListener("click", () => {
+  stop();
+  turnTo(0, 0);
+  syncUrl();
+});
+let resizing = 0;
+window.addEventListener("resize", () => {
+  placeStage();
+  globalThis.clearTimeout(resizing);
+  resizing = globalThis.setTimeout(() => { if (!flat() && Math.abs(boxWidth() - (painted?.canvas.clientWidth ?? 0)) > 8) draw(); }, 300);
 });
 $("judo-svg").addEventListener("click", exportSvg);
 $("judo-png").addEventListener("click", exportPng);

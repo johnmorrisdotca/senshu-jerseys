@@ -6,6 +6,14 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-27
+
+### Added
+
+- **`judogiCanvas` takes a camera.** `turn(yaw, tilt, camera)` looks from `tilt` degrees further above (negative: below) than the drawing was made for, up to 45, and zooms about the drawing's middle (`zoom`, 1 up to 8) and moves it (`panX`, `panY`, CSS pixels) inside the canvas, which the new `box` option can make wider than the SVG so a zoomed drawing has the room. A zoom costs the painter nothing more: the same cells are drawn at a larger scale into a canvas of the same size, and `scale` (the pictures' pixels a unit) gives it the sharpness. `judogiTurn(svg, yaw, tilt)` tips an SVG the same way.
+- **The designer is turned by hand.** A drag across the view is a half turn and up and down tips it up to 30 degrees (on a finger the browser keeps the vertical drag to scroll the page, so the Tilt slider tips it); a sideways swipe on a trackpad turns it; the wheel over the view tips it when the view has focus and otherwise scrolls the page as before; the arrow keys step it. Grabbing it stops the automatic turn. The Tilt slider and the angle are in the address (`tilt`).
+- **Zoom from 1x to 3x** by a pinch, Ctrl (or Command) and the wheel, the zoom buttons, the keys `+`, `-` and `0`, and a double press (in to 2x where it was pressed, and again back); Shift and a drag, or two fingers, move a zoomed view. In the address (`zoom`).
+
 ## [0.15.1] - 2026-10-27
 
 ### Fixed

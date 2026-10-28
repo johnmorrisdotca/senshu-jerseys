@@ -14,10 +14,20 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 export interface JudogiCanvas {
   /** The canvas, sized like the SVG it was made from: put it on the page in its place. */
   readonly canvas: HTMLCanvasElement;
-  /** Turn to `yaw` degrees and paint at once (0 is the front, 180 the back, as for `judogiTurn`). Returns the angle it was set to. */
-  turn(yaw: number): number;
+  /**
+   * Turn to `yaw` degrees and paint at once (0 is the front, 180 the back, as for `judogiTurn`), looking from `tilt` degrees further above (negative: below)
+   * the camera the drawing was made for (0 by default). Returns the angle it was set to.
+   */
+  turn(yaw: number, tilt?: number, camera?: JudogiCamera): number;
   /** Let the graphics card go: call it when the canvas leaves the page (a browser keeps only so many canvases on the card). */
   dispose(): void;
+}
+
+/** Where the camera looks: a zoom (1 is the whole drawing in the canvas) and how far the drawing is moved from the middle, in CSS pixels. */
+export interface JudogiCamera {
+  zoom?: number;
+  panX?: number;
+  panY?: number;
 }
 
 /** What the canvas may be told: how many pixels a unit of a face's picture gets, and how many pixels a CSS pixel of the canvas gets. */
@@ -26,6 +36,8 @@ export interface JudogiCanvasOptions {
   scale?: number;
   /** Canvas pixels per CSS pixel (the screen's own density by default). */
   pixelRatio?: number;
+  /** The canvas's size in CSS pixels where it should be larger than the SVG's (the drawing is set in its middle, whole): a zoomed view needs the room to show the drawing larger. */
+  box?: { width: number; height: number };
   /** False paints on a 2D canvas even where WebGL 2 is there (slower; for a test or a browser whose graphics card misbehaves). */
   webgl?: boolean;
 }
@@ -50,8 +62,10 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   const [vx, vy, vw, vh] = view as [number, number, number, number];
   const k = clamp(options.scale ?? 4, 1, 6, 4);
   const ratio = clamp(options.pixelRatio ?? (globalThis.devicePixelRatio || 1), 1, 4, 1);
-  const cssW = Number(svg.getAttribute("width")) || vw;
-  const cssH = Number(svg.getAttribute("height")) || (cssW * vh) / vw;
+  const natW = Number(svg.getAttribute("width")) || vw;
+  const natH = Number(svg.getAttribute("height")) || (natW * vh) / vw;
+  const cssW = Math.max(natW, options.box?.width ?? 0);
+  const cssH = Math.max(natH, options.box?.height ?? 0);
   const faces = new Map<string, Promise<CanvasImageSource>>();
   const faceOf = (id: string): Promise<CanvasImageSource> => {
     const known = faces.get(id);
@@ -80,15 +94,27 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   canvas.setAttribute("role", "img");
   const title = svg.querySelector("title")?.textContent;
   if (title) canvas.setAttribute("aria-label", title);
-  const unit = canvas.width / vw;
-  const place = (p: PaintPiece): [number, number, number] => [unit, unit * (p.dx - vx), unit * (p.dy - vy)];
+  // The drawing sits whole in the middle of the canvas at its own size; a camera zooms it about that middle and moves it.
+  const base = (natW / vw) * ratio;
+  const cam = { zoom: 1, panX: 0, panY: 0 };
+  const place = (p: PaintPiece): [number, number, number] => {
+    const u = base * cam.zoom;
+    return [u, canvas.width / 2 + cam.panX * ratio + u * (p.dx - (vx + vw / 2)), canvas.height / 2 + cam.panY * ratio + u * (p.dy - (vy + vh / 2))];
+  };
   const painter = (options.webgl === false ? undefined : glPainter(canvas, pieces, place)) ?? flatPainter(canvas, pieces, place, k);
   if (painter === undefined) return undefined;
   canvas.setAttribute("data-painter", painter.kind);
-  const turn = (yaw: number): number => {
+  const turn = (yaw: number, tilt = 0, camera?: JudogiCamera): number => {
+    if (camera !== undefined) {
+      cam.zoom = clamp(camera.zoom ?? 1, 1, 8, 1);
+      cam.panX = camera.panX ?? 0;
+      cam.panY = camera.panY ?? 0;
+    }
     const a = normalYaw(yaw);
-    painter.paint(a);
+    const t = Math.max(-45, Math.min(45, Number.isFinite(tilt) ? tilt : 0));
+    painter.paint(a, t);
     canvas.setAttribute("data-yaw", String(a));
+    canvas.setAttribute("data-tilt", String(t));
     return a;
   };
   turn(Number(svg.getAttribute("data-yaw")) || 0);
@@ -96,17 +122,17 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
 }
 
 /** The 2D canvas's painter: each cell a clipped part of its face's picture, each layer's shades multiplied onto it. */
-function flatPainter(canvas: HTMLCanvasElement, pieces: readonly Piece[], place: (p: PaintPiece) => [number, number, number], k: number): { kind: string; paint(yaw: number): void; dispose(): void } | undefined {
+function flatPainter(canvas: HTMLCanvasElement, pieces: readonly Piece[], place: (p: PaintPiece) => [number, number, number], k: number): { kind: string; paint(yaw: number, tilt?: number): void; dispose(): void } | undefined {
   const ctx = canvas.getContext("2d");
   const layer = sheet(canvas.width, canvas.height);
   const shade = sheet(canvas.width, canvas.height);
   if (ctx === null || layer === null || shade === null) return undefined;
-  const paint = (yaw: number): void => {
+  const paint = (yaw: number, tilt = 0): void => {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const job of paintOrder(pieces, yaw)) {
+    for (const job of paintOrder(pieces, yaw, tilt)) {
       const p = pieces[job.n]!;
-      paintPiece(ctx, layer, shade, p, yaw, job.placed, job.lists, ...place(p), k);
+      paintPiece(ctx, layer, shade, p, yaw, job.placed, job.lists, ...place(p), k, tilt);
     }
   };
   return { kind: "2d", paint, dispose: () => undefined };
@@ -192,7 +218,7 @@ type Matrix = [number, number, number, number, number, number];
  * One piece at a turn (or the part of it `paintOrder` gives), layer by layer in the SVG's order: each layer's cloth (every cell its face's picture under its map, clipped to its
  * grown triangle), then its shades as opaque greys on the same triangles, kept to where the layer has cloth and multiplied onto it.
  */
-function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext2D, shade: CanvasRenderingContext2D, p: Piece, yaw: number, placed: readonly Placed[], lists: readonly number[][], u: number, ox: number, oy: number, k: number): void {
+function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext2D, shade: CanvasRenderingContext2D, p: Piece, yaw: number, placed: readonly Placed[], lists: readonly number[][], u: number, ox: number, oy: number, k: number, tilt: number): void {
   const [fx, fy, fw, fh] = FACE_BOX;
   const W = ctx.canvas.width;
   const H = ctx.canvas.height;
@@ -244,12 +270,12 @@ function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext
       layer.restore();
       shade.setTransform(...m);
       const sm = p.smooth[i];
-      if (sm === undefined) shade.fillStyle = greyOf(shadeOf(c.n, yaw, p.desc.pitch));
+      if (sm === undefined) shade.fillStyle = greyOf(shadeOf(c.n, yaw, p.desc.pitch + tilt));
       else {
         // A gradient is made in the space the transform sets: each triangle of a quadrilateral needs its own.
         const g = shade.createLinearGradient(...sm.line);
-        g.addColorStop(0, greyOf(shadeOf(sm.n0, yaw, p.desc.pitch)));
-        g.addColorStop(1, greyOf(shadeOf(sm.n1, yaw, p.desc.pitch)));
+        g.addColorStop(0, greyOf(shadeOf(sm.n0, yaw, p.desc.pitch + tilt)));
+        g.addColorStop(1, greyOf(shadeOf(sm.n1, yaw, p.desc.pitch + tilt)));
         shade.fillStyle = g;
       }
       shade.fill(p.paths[i]!);

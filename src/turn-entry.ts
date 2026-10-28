@@ -2,5 +2,5 @@
 export { applyTurn, bindTurn, jerseyFrame, normalYaw, turnDirection, turnState } from "./turn.ts";
 export { judogiCanvas } from "./judogiCanvas.ts";
 export { judogiTurn } from "./judogiTurn.ts";
-export type { JudogiCanvas, JudogiCanvasOptions } from "./judogiCanvas.ts";
+export type { JudogiCamera, JudogiCanvas, JudogiCanvasOptions } from "./judogiCanvas.ts";
 export type { TurnDirection, TurnHandle, TurnOptions, TurnSettings, TurnState } from "./turn.ts";
