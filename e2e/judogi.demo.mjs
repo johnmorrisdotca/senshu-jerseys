@@ -467,4 +467,69 @@ test("a belt's rows of stitching, thickness and cover are offered as its colour 
   await page.goto("/judogi.html?mode=pants&belt=black&sl=16");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   await expect(shown("judo-belt-rows")).toHaveCount(0);
+
+test("the folded belt and the belt's gift box are Display choices with their own controls, keep them in the address, and turn", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  const ctl = (id) => page.locator(`[data-testid="${id}"]`);
+  await page.goto("/judogi.html?mode=folded&belt=red-white");
+  const canvas = page.locator("#judo-stage canvas");
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute("data-painter", /^(webgl|2d)$/);
+  await expect(ctl("judo-mode").locator('[data-value="folded"]')).toHaveAttribute("aria-pressed", "true");
+  // The folded belt has its paper band and its belt size; no box, no cloth colour.
+  await expect(ctl("judo-bnd")).toHaveCount(1);
+  await expect(ctl("judo-bsz")).toHaveCount(1);
+  await expect(ctl("judo-bxt")).toHaveCount(0);
+  await expect(ctl("judo-colour")).toHaveCount(0);
+  await ctl("judo-bnd").click();
+  await expect(page).toHaveURL(/bnd=1/);
+  // It turns like the other views.
+  await page.locator('[data-testid="judo-yaw"]').fill("50");
+  await expect.poll(() => canvas.getAttribute("data-yaw").then(Number)).toBe(50);
+  // The box: its type, state, words and wood, each in the address.
+  await pick(page, "judo-mode", "box");
+  await expect(page).toHaveURL(/mode=box/);
+  await expect(canvas).toBeVisible();
+  await expect(ctl("judo-bxt")).toHaveCount(1);
+  await expect(ctl("judo-bnd")).toHaveCount(0);
+  await pick(page, "judo-bxs", "open");
+  await expect(page).toHaveURL(/bxs=open/);
+  await pick(page, "judo-bxw", "honey");
+  await expect(page).toHaveURL(/bxw=honey/);
+  await ctl("judo-bxx").fill("黒帯");
+  await expect(page).toHaveURL(/bxx=/);
+  await pick(page, "judo-bxt", "silver");
+  await expect(page).toHaveURL(/bxt=silver/);
+  // The wood's tone is a kiri choice only.
+  await expect(ctl("judo-bxw")).toHaveCount(0);
+  // The whole state comes back from the address.
+  await page.goto(page.url());
+  await expect(ctl("judo-bxt").locator('[data-value="silver"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(ctl("judo-bxs").locator('[data-value="open"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(canvas).toBeVisible();
+  // A belt too long for any box says so, in words, instead of being drawn in one.
+  await expect(ctl("judo-box-nofit")).toHaveCount(0);
+  await page.goto("/judogi.html?mode=box&bsz=7&bxs=open");
+  await expect(ctl("judo-box-nofit")).toHaveCount(1);
+  await expect(canvas).toBeVisible();
+  await page.goto("/judogi.html?mode=box&bsz=6.5&bxt=silver");
+  await expect(ctl("judo-box-nofit")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("the folded belt and the box have no controls that do nothing in a flat view, and every view draws", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  for (const mode of ["folded", "box"]) {
+    for (const view of ["back", "flat-back"]) {
+      await page.goto(`/judogi.html?mode=${mode}&view=${view}&bxs=open`);
+      await expect(page.locator("#judo-stage canvas, #judo-stage svg").first()).toBeVisible();
+      // A flat view is the same scene standing still: its turn controls are taken away, a turning view keeps them.
+      if (view.startsWith("flat")) await expect(page.locator("#judo-turnbar")).toBeHidden();
+      else await expect(page.locator("#judo-turnbar")).toBeVisible();
+    }
+  }
+  expect(errors).toEqual([]);
 });

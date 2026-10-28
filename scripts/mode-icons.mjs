@@ -27,14 +27,34 @@ try {
     const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: SCALE });
     await page.setContent(`<!doctype html><body style="margin:0;background:transparent;width:${W}px;height:${H}px;display:flex;align-items:center;justify-content:center"><div style="width:${W}px;height:${H}px;display:flex;align-items:center;justify-content:center">${svg.replace("<svg ", `<svg style="max-width:${W}px;max-height:${H}px;width:auto;height:auto" `)}</div>`);
     // The drawing's own width sets its size: scale it to the box.
-    await page.evaluate(({ W, H }) => {
+    await page.evaluate(async ({ W, H, tight }) => {
       const el = document.querySelector("svg");
+      // A folded belt and a box are drawn in a view box that holds them at any turn: the tile crops to the ink, found by drawing the picture once and looking at where its pixels are.
+      if (tight) {
+        const box = el.viewBox.baseVal;
+        const k = 6;
+        const img = new Image();
+        const copy = el.cloneNode(true);
+        copy.setAttribute("width", String(box.width * k));
+        copy.setAttribute("height", String(box.height * k));
+        img.src = URL.createObjectURL(new globalThis.Blob([new globalThis.XMLSerializer().serializeToString(copy)], { type: "image/svg+xml" }));
+        await img.decode();
+        const c = document.createElement("canvas");
+        c.width = Math.round(box.width * k);
+        c.height = Math.round(box.height * k);
+        const g = c.getContext("2d");
+        g.drawImage(img, 0, 0, c.width, c.height);
+        const d = g.getImageData(0, 0, c.width, c.height).data;
+        let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+        for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 24) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        el.setAttribute("viewBox", `${box.x + x0 / k - 1} ${box.y + y0 / k - 1} ${(x1 - x0) / k + 2} ${(y1 - y0) / k + 2}`);
+      }
       const vb = el.viewBox.baseVal;
       const k = Math.min(W / vb.width, H / vb.height);
       el.setAttribute("width", String(vb.width * k));
       el.setAttribute("height", String(vb.height * k));
       el.style.cssText = "";
-    }, { W, H });
+    }, { W, H, tight: mode === "folded" || mode === "box" });
     const png = join(work, `${mode}.png`);
     const webp = join(work, `${mode}.webp`);
     await page.screenshot({ path: png, omitBackground: true });
