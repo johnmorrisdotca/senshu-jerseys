@@ -15,6 +15,12 @@ All notable changes to this project are written here. The format follows
 
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.18.5] - 2026-10-28
+
+### Changed
+
+- **The designer's Display tiles show the package's own drawing.** The five pictures (Pieces, Suit, Jacket, Trousers, Belt) were hand-drawn outlines, and the Suit one was wrong; each is now the judogi in that display mode, as the designer draws it, made small by `scripts/mode-icons.mjs` (`pnpm mode-icons`, after the drawing changes) into `demo/judogiIcons.js`. A test checks that every mode has one.
+
 ## [0.18.4] - 2026-10-28
 
 ### Changed

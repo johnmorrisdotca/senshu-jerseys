@@ -129,6 +129,8 @@ export function checks({ id, label, groups, chosen, name, onChange }) {
   return box;
 }
 
+import { MODE_ICON_SIZE, MODE_ICONS } from "./judogiIcons.js";
+
 // ---- Pictures for the tiles: small, flat, and made for the page's text colour so that they follow a dark theme. ----
 const svg = (inner, w = 64, h = 56) => `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" focusable="false">${inner}</svg>`;
 const BODY = '<path d="M21 7 28 4h8l7 3 15 15-6 8-6-5v27H18V25l-6 5-6-8Z" fill="currentColor" fill-opacity=".1"/>';
@@ -136,13 +138,8 @@ const FRONT = `${BODY}<path d="M27 5l5 19 5-19" />`;
 const BACK = `${BODY}<path d="M26 5q6 3 12 0" />`;
 
 export const PICTURES = {
-  mode: {
-    pieces: svg('<g transform="translate(-7 0) scale(.78)"><path d="M21 7 28 4h8l7 3 15 15-6 8-6-5v27H18V25l-6 5-6-8Z" fill="currentColor" fill-opacity=".1"/><path d="M27 5l5 19 5-19"/></g><path d="M40 20h18l-2 33h-7l-3-17-3 17h-7Z" fill="currentColor" fill-opacity=".1"/>'),
-    suit: svg('<path d="M21 3 28 1h8l7 2 13 13-5 7-5-4v16H18V19l-5 4-5-7Z" fill="currentColor" fill-opacity=".1"/><path d="M27 2l5 14 5-14"/><path d="M20 33h24l-1 21h-6l-2-12-2 12h-6l-2-12Z" fill="currentColor" fill-opacity=".1"/><path d="M19 29h26" stroke-width="3"/>'),
-    jacket: svg(FRONT),
-    pants: svg('<path d="M20 6h24l3 46h-9l-6-24-6 24h-9Z" fill="currentColor" fill-opacity=".1"/><path d="M20 12h24"/>'),
-    belt: svg('<path d="M5 24h54v8H5Z" fill="currentColor" fill-opacity=".1"/><path d="M26 22h12v12H26Z"/><path d="M29 34l-4 16M35 34l5 16" stroke-width="3"/>'),
-  },
+  // Each is the package's own drawing of that display mode, made small by scripts/mode-icons.mjs (so it always matches what the designer draws).
+  mode: Object.fromEntries(Object.entries(MODE_ICONS).map(([m, uri]) => [m, `<svg viewBox="0 0 ${MODE_ICON_SIZE[0]} ${MODE_ICON_SIZE[1]}" width="${MODE_ICON_SIZE[0]}" height="${MODE_ICON_SIZE[1]}" focusable="false"><image href="${uri}" width="${MODE_ICON_SIZE[0]}" height="${MODE_ICON_SIZE[1]}"/></svg>`])),
   patch: {
     none: svg(BACK),
     ijf: svg(`${BACK}<rect x="21" y="14" width="22" height="22" fill="#fff" fill-opacity=".9"/><rect x="21" y="14" width="22" height="6" fill="#1b3a8c" stroke="none"/><path d="M24 25h16M24 30h16" stroke-width="2.6"/>`),

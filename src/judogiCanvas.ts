@@ -32,7 +32,7 @@ export interface JudogiCamera {
 
 /** What the canvas may be told: how many pixels a unit of a face's picture gets, and how many pixels a CSS pixel of the canvas gets. */
 export interface JudogiCanvasOptions {
-  /** Pixels per unit in the pictures of the faces, 1 to 6 (4 by default: crisp at the size a page shows a judogi). */
+  /** Pixels per unit in the pictures of the faces, 1 to 8 (4 by default: crisp at the size a page shows a judogi). */
   scale?: number;
   /** Canvas pixels per CSS pixel (the screen's own density by default). */
   pixelRatio?: number;
