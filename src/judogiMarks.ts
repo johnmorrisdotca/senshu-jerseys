@@ -92,6 +92,10 @@ export interface JudogiEmblem {
   heightCm?: number;
   /** Where it is sewn: the left `chest` (the default), or the outer upper arm just under the shoulder seam of the wearer's `sleeve-left` or `sleeve-right` (a flag patch on the shoulder), turned with the sleeve. */
   place?: "chest" | "sleeve-left" | "sleeve-right";
+  /** A word under the artwork, in thread: the country's name ("CANADA"), or with `style: "square"` a word in script ("Nippon"). Up to 16 characters. */
+  caption?: string;
+  /** `flag` (the default): the artwork alone, in a patch with a stitched border. `named`: the artwork with the caption under it (the default when a caption is given). `square`: a white woven square with the artwork above a caption in script, thread gold by default. */
+  style?: "flag" | "named" | "square";
 }
 
 /** The system-font stacks. Open fonts named first are suggestions the page may load; the rest are what a computer has. */
@@ -174,6 +178,8 @@ export interface ReadLogo {
 }
 
 export interface ReadEmblem {
+  caption: string;
+  style: "flag" | "named" | "square";
   place: "chest" | "sleeve-left" | "sleeve-right";
   image: string | undefined;
   frame: "patch" | "none";
@@ -306,7 +312,10 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
     const area = img === undefined ? EMBLEM_DEFAULT_AREA.placeholder : EMBLEM_DEFAULT_AREA.image;
     const fit = Math.min(1, EMBLEM_MAX.w / (Math.sqrt(area * aspect)), EMBLEM_MAX.h / Math.sqrt(area / aspect));
     const h0 = Math.sqrt(area / aspect) * fit;
+    const caption = clean(e.caption, 16) ?? "";
     emblem = {
+      caption,
+      style: e.style === "square" && caption !== "" ? "square" : caption !== "" ? "named" : "flag",
       place: e.place === "sleeve-left" || e.place === "sleeve-right" ? e.place : "chest",
       image: img?.src,
       frame: e.frame === "none" ? "none" : "patch",
@@ -452,30 +461,66 @@ function logoOf(m: MarkSpec, l: ReadLogo, cloth: Rgb, id: string, k: number): Ou
   return { defs: satinDefs(`${id}S`, rgb), body: placeholderLogo(rgb, w, h) };
 }
 
-/** The emblem's size at full scale: no larger than 100 cm2, and inside the room the chest has between the lapel and the sleeve's head, so it never runs onto the sleeve. */
-function emblemSize(e: ReadEmblem): { w: number; h: number } {
-  let w = e.widthCm * CM;
-  let h = e.heightCm * CM;
-  if (w * h > EMBLEM_AREA * CM * CM) {
-    const k = Math.sqrt((EMBLEM_AREA * CM * CM) / (w * h));
-    w *= k;
-    h *= k;
+/**
+ * The emblem's box at full scale and where its parts lie in it, centred on the origin: the artwork (no larger than 100 cm2) and, with a caption, the word
+ * under it (`named`) or a white square carrying both (`square`). The whole is held inside the room the chest has between the lapel and the sleeve's head
+ * (or the sleeve's own width), so it never runs onto the sleeve or the lapel.
+ */
+function emblemBox(e: ReadEmblem): { w: number; h: number; art: { w: number; h: number; y: number }; cap?: { y: number; h: number; w: number } } {
+  let aw = e.widthCm * CM;
+  let ah = e.heightCm * CM;
+  if (aw * ah > EMBLEM_AREA * CM * CM) {
+    const k = Math.sqrt((EMBLEM_AREA * CM * CM) / (aw * ah));
+    aw *= k;
+    ah *= k;
   }
-  // On a sleeve the room is the sleeve's own width, not the chest's.
-  const room = e.place === "chest" ? Math.min(1, EMBLEM_ROOM.w / w, EMBLEM_ROOM.h / h) : Math.min(1, 22 / w, 22 / h);
-  return { w: w * room, h: h * room };
+  let box: ReturnType<typeof emblemBox>;
+  if (e.style === "named") {
+    const capH = Math.min(ah * 0.26, 6.5);
+    const gap = Math.min(ah * 0.14, 3);
+    const h = ah + gap + capH;
+    box = { w: aw, h, art: { w: aw, h: ah, y: -h / 2 + ah / 2 }, cap: { y: h / 2 - capH / 2, h: capH, w: aw * 0.94 } };
+  } else if (e.style === "square") {
+    const side = Math.max(aw * 1.3, (ah * 1.2) / 0.58);
+    const fit = Math.min(1, ((side - 8) / aw), ((side * 0.58) / ah));
+    box = { w: side, h: side, art: { w: aw * fit, h: ah * fit, y: -side / 2 + side * 0.08 + (ah * fit) / 2 }, cap: { y: side / 2 - side * 0.19, h: side * 0.17, w: side * 0.8 } };
+  } else box = { w: aw, h: ah, art: { w: aw, h: ah, y: 0 } };
+  const room = e.place === "chest" ? Math.min(1, EMBLEM_ROOM.w / box.w, EMBLEM_ROOM.h / box.h) : Math.min(1, 22 / box.w, 22 / box.h);
+  if (room === 1) return box;
+  return { w: box.w * room, h: box.h * room, art: { w: box.art.w * room, h: box.art.h * room, y: box.art.y * room }, ...(box.cap === undefined ? {} : { cap: { y: box.cap.y * room, h: box.cap.h * room, w: box.cap.w * room } }) };
 }
 
-/** The national emblem as a sewn patch with a stitched border, centred on the origin, at a share `k` of its size. */
+const emblemSize = (e: ReadEmblem): { w: number; h: number } => {
+  const b = emblemBox(e);
+  return { w: b.w, h: b.h };
+};
+
+/** The national emblem as a sewn patch with a stitched border (or a white square, or the artwork alone with its caption), centred on the origin, at a share `k` of its size. */
 function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string, k: number): Out {
-  const full = emblemSize(e);
-  const w = full.w * k;
-  const h = full.h * k;
-  const rgb = e.thread?.rgb ?? readThread("navy", "navy").rgb;
-  if (e.frame === "none") return e.image !== undefined ? { defs: "", body: imageIn(e.image, w, h) } : { defs: satinDefs(`${id}S`, rgb), body: placeholderEmblem(rgb, w, h) };
-  const patch = cloth(`${id}P`, -w / 2, -h / 2, w, h, e.image !== undefined ? [255, 255, 255] : lum(clothRgb) > 0.4 ? [252, 251, 248] : [236, 238, 242], [120, 126, 140]);
-  const inner = e.image !== undefined ? imageIn(e.image, w - 7 * k, h - 7 * k) : placeholderEmblem(rgb, w, h);
-  return { defs: patch.defs + satinDefs(`${id}S`, rgb), body: patch.under + inner + patch.over };
+  const b = emblemBox(e);
+  const w = b.w * k;
+  const h = b.h * k;
+  const aw = b.art.w * k;
+  const ah = b.art.h * k;
+  const ay = b.art.y * k;
+  const script = e.style === "square";
+  const rgb = e.thread?.rgb ?? (script ? readThread("gold", "gold").rgb : readThread("navy", "navy").rgb);
+  const art = (inner: number): string => (e.image !== undefined ? `<g transform="translate(0 ${n2(ay)})">${imageIn(e.image, aw - inner, ah - inner)}</g>` : `<g transform="translate(0 ${n2(ay)})">${placeholderEmblem(rgb, aw, ah)}</g>`);
+  const caption = (): string => {
+    if (b.cap === undefined) return "";
+    const run = layout(e.caption, 0, b.cap.y * k, { height: b.cap.h * k, maxWidth: b.cap.w * k, weight: "bold", tracking: script ? 0.2 : 0.6, asText: script });
+    return satinRun(run, rgb, `${id}S`, script ? FONT_STACKS.cursive : FONT_STACKS.gothic, undefined, e.caption);
+  };
+  const thread = satinDefs(`${id}S`, rgb);
+  const white: Rgb = e.image !== undefined || script ? [255, 255, 255] : lum(clothRgb) > 0.4 ? [252, 251, 248] : [236, 238, 242];
+  if (script) {
+    const patch = cloth(`${id}P`, -w / 2, -h / 2, w, h, [252, 251, 248], [120, 126, 140]);
+    return { defs: patch.defs + thread, body: patch.under + art(0) + caption() + patch.over };
+  }
+  if (e.frame === "none") return { defs: thread, body: art(0) + caption() };
+  // A patch with a stitched border round the artwork; a caption stands under it on the cloth.
+  const patch = cloth(`${id}P`, -aw / 2, ay - ah / 2, aw, ah, white, [120, 126, 140]);
+  return { defs: patch.defs + thread, body: patch.under + art(7 * k) + patch.over + caption() };
 }
 
 const at = (s: { x: number; y: number; rot?: number }, body: string): string => `<g transform="translate(${n2(s.x)} ${n2(s.y)})${s.rot ? ` rotate(${n2(s.rot)})` : ""}">${body}</g>`;

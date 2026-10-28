@@ -207,7 +207,7 @@ export function areasFor(half: number, lapel: { x: number; y: number; rot: numbe
   const c = Math.cos((lapel.rot * Math.PI) / 180);
   const s = Math.sin((lapel.rot * Math.PI) / 180);
   const along = (u: number, v: number): Pt => [lapel.x + u * c - v * s, lapel.y + u * s + v * c];
-  add("lapel-hem", "jacket-front", [along(-29, -5.3), along(29, -5.3), along(29, 5.3), along(-29, 5.3)]);
+  add("lapel-hem", "jacket-front", [along(-29, -4.6), along(29, -4.6), along(29, 4.6), along(-29, 4.6)]);
   for (const side of [-1, 1] as const) {
     // A sleeve, as drawn, held a margin in from its seams and cuff. On the front the picture's left sleeve is the wearer's right; from behind it is the wearer's left.
     add(`sleeve-${side === -1 ? "right" : "left"}`, "jacket-front", sleeveRegion(side), EDGE_MARGIN);

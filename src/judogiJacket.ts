@@ -85,7 +85,7 @@ const TOP_EDGE: Pt[] = [[110, 9], [106, 30], [100, 50], [92, 78], [84, 110], [78
 /** The lapel underneath (the wearer's right), by its free edge, from the collar until it passes under the other. */
 const UNDER_EDGE: Pt[] = [[90, 9], [94, 30], [99, 46], [104, 60], [110, 76]];
 /** The lapel band's width on the drawing: 4.7 cm at this scale, which with its roll and its shadow reads as the 4-5 cm band of the rules. */
-const LAPEL = 14.5;
+const LAPEL = 12.6;
 /** The collar's band in the turning view, a little inside the drawn lapel so none of the drawing shows past its edges. */
 export const LAPEL_BAND = LAPEL - 1;
 
@@ -302,8 +302,8 @@ export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
 }
 
 /** The emblem's middle on the front's drawing, and the room it has there: the band between the top lapel's sewn edge and the sleeve's head (`EMBLEM_ROOM` units wide). */
-export const EMBLEM_AT: Pt = [131, 46];
-export const EMBLEM_ROOM = { w: 27, h: 20 };
+export const EMBLEM_AT: Pt = [131, 66];
+export const EMBLEM_ROOM = { w: 27, h: 30 };
 
 /** The jacket's sleeve outline on the front's drawing, the picture's left (`side` -1) or right: the cloth that the sleeve's cells show, which a mark on the chest must stay out of. */
 export const sleeveRegion = (side: -1 | 1): Pt[] => sleeveOutline(side);

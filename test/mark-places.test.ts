@@ -9,6 +9,7 @@ import { hipsOf, legOutline } from "../src/judogiPants.ts";
 import { readStyle, type JudogiBeltStyle } from "../src/judogiStripes.ts";
 import { strapWidth } from "../src/judogiStrap.ts";
 import { insideWithMargin } from "../src/judogiPlaces.ts";
+import { LAPEL_BAND } from "../src/judogiJacket.ts";
 import { wellFormed } from "./helpers.ts";
 
 const WIDTHS = [4.2, 4.5, 4.7, 5, 6];
@@ -264,4 +265,28 @@ test("a maker's logo and a flag patch go on the outer upper sleeve, on the front
   const brand = layoutOf({ branding: { spots: { jacket: "shoulder-left" } } }, 4.5)!;
   assert.ok(brand.placed.every((p) => p.face !== "jacket-back"));
   assert.equal(wellFormed(renderJudogi({ mode: "jacket", view: "back", logos: [{ place: "jacket-shoulder-left" }], emblem: { place: "sleeve-right" } })), null);
+});
+
+test("the emblem comes plain, with the country's name under it, or on a white square with a word in script, high on the chest or on the sleeve", () => {
+  const art = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"><rect width="30" height="20" fill="#fff"/><rect width="7" height="20" fill="#d52b1e"/></svg>`;
+  for (const emblem of [{}, { svg: art }, { svg: art, caption: "CANADA" }, { svg: art, caption: "CANADA", frame: "none" }, { svg: art, caption: "Nippon", style: "square" }, { caption: "PHILIPPINES" }] as const) {
+    for (const place of ["chest", "sleeve-left", "sleeve-right"] as const) {
+      for (const w of [4.2, 5]) {
+        const l = layoutOf({ emblem: { ...emblem, place }, embroidery: [{ place: "jacket-chest", text: "SENSHU" }, { place: "sleeve-left", text: "JAPAN" }], logos: [{ place: "jacket-shoulder-left" }] } as JudogiOptions, w)!;
+        assertClean(l, `emblem ${JSON.stringify(emblem).slice(0, 40)} ${place}`);
+        const e = l.placed.find((p) => p.item.kind === "emblem");
+        assert.ok(e !== undefined, "the emblem is drawn");
+        if (place === "chest") assert.ok(e.box.y < 90 && e.box.y > 50, `high on the chest (${e.box.y})`);
+        const svg = renderJudogi({ mode: "jacket", view: "flat", emblem: { ...emblem, place } } as JudogiOptions);
+        assert.equal(wellFormed(svg), null);
+        if ("caption" in emblem && emblem.caption !== "Nippon") assert.ok(svg.includes(">C<") || svg.includes("<path"), "caption drawn");
+      }
+    }
+  }
+  assert.equal(readMarks({ emblem: { caption: "x".repeat(40) } })!.emblem!.caption.length, 16);
+  assert.equal(readMarks({ emblem: { style: "square" } })!.emblem!.style, "flag", "a square with no word is a plain patch");
+});
+
+test("the lapel is no wider than the 5 cm the rules allow", () => {
+  assert.ok(LAPEL_BAND / 2.63 <= 5, `${LAPEL_BAND / 2.63} cm`);
 });
