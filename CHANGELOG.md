@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-10-28
+
 ### Fixed
 
 - **The designer's mouse is back as John had it** (SPX-750). A press and drag turns the piece at every zoom, as before (the last release made a drag pan once zoomed in). To move a zoomed view: Shift and drag, the middle or right button, or two fingers. The Drag: move / Drag: turn button is gone. **The wheel tips the piece the way it first did** (wheel down shows it more from below, as before the drag fix flipped it, which was only meant for the drag); Arrow Up and Arrow Down go back with it. A drag up still lifts the front, and the Tilt slider is as it was. In a flat layout, which cannot turn, a drag still moves a zoomed view.
