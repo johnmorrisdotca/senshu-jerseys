@@ -13,6 +13,7 @@ import { buildMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroid
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
+import { bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup } from "./pieceVolume.ts";
 import type { VolumeDesc } from "./volume.ts";
@@ -72,6 +73,8 @@ export interface JudogiOptions {
   emblem?: JudogiEmblem;
   /** The belt's width in centimetres, 3 to 6 drawn (the IJF allows 4 to 5, and `judogiCheck` says when it is outside). By default the grade's own: 4 for the rank colours, 4.75 for black, 5 for red-white and red. */
   beltWidthCm?: number;
+  /** Stripes, a second colour, a tip block, bars or tags on the belt, any number in any arrangement (`BELT_PRESETS` has the common real ones). Nothing by default. */
+  beltStyle?: JudogiBeltStyle;
   /** The package's own woven "Approved Judogi" label on the jacket, the trousers and the belt: `true`, or a colour variant and thread. */
   label?: boolean | JudogiLabel;
   /** The Senshu branding: a woven neck label with a size tag, the brush kanji mark, and the S as the maker's logo, every part swappable. `true` for the defaults. */
@@ -163,6 +166,8 @@ interface Ready {
   thickness: number;
   /** The belt width asked for in centimetres, kept to what can be drawn. */
   beltCm: number | undefined;
+  /** What is laid on the belt besides its colour, checked. */
+  style: ReadStyle | undefined;
   cloth: Rgb;
   uid: string;
   patch: PatchSpec | undefined;
@@ -193,13 +198,14 @@ function read(options?: JudogiOptions): Ready {
   const thickness = typeof o.thickness === "number" && Number.isFinite(o.thickness) ? Math.max(0, Math.min(28, o.thickness)) : 12;
   const beltAsked = readBeltCm(o.beltWidthCm);
   const beltCm = beltAsked === undefined ? undefined : Math.max(3, Math.min(6, beltAsked));
+  const style = readStyle(o.beltStyle);
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, patch, spec]))}`;
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, patch, spec]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, BELT_END);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, cloth, uid, patch, marks,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, cloth, uid, patch, marks,
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
       : "A judogi: jacket, trousers and belt. No maker or federation marks.",
@@ -244,9 +250,18 @@ function pantsMarks(o: Ready): GiInk["marks"] | undefined {
 
 /** A belt's paint with what is sewn on its ends, and the defs those marks need. */
 function paintOf(o: Ready, belt: string): BeltPaint | undefined {
-  const p = beltPaint(o.uid, belt);
+  const base = beltPaint(o.uid, belt);
+  if (base === undefined) return undefined;
+  const bands = bandsOf(o.style);
+  const half = strapWidth(belt, o.beltCm) / 2;
+  const stripes = { left: endMark(o.style, 0, half), right: endMark(o.style, 1, half), half };
+  const p: BeltPaint = {
+    ...base,
+    ...(bands.length === 0 ? {} : { bands }),
+    ...(stripes.left === "" && stripes.right === "" ? {} : { stripeEnds: stripes }),
+  };
   const { left, right } = o.marks?.belt ?? {};
-  if (p === undefined || (left === undefined && right === undefined)) return p;
+  if (left === undefined && right === undefined) return p;
   return { ...p, defs: p.defs + (left?.defs ?? "") + (right?.defs ?? ""), ends: { ...(left === undefined ? {} : { left }), ...(right === undefined ? {} : { right }) } };
 }
 

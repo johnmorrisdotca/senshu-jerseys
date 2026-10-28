@@ -60,7 +60,10 @@ function rows(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 10): st
 /** A length of belt between two edges: cloth, rows, a lit top edge and a darker lower one. */
 function length(top: readonly Pt[], foot: readonly Pt[], p: BeltPaint, n = 10): string {
   const shape = band(top, foot);
-  return `<path d="${shape}" fill="${p.fill}"/>` + rows(top, foot, p, n) +
+  // Colours along the belt (a half grade's second colour, a centre stripe): the part of the width between two lines, drawn over the cloth.
+  const at = (f: number): Pt[] => top.map((q, i) => [q[0] + (foot[i]![0] - q[0]) * f, q[1] + (foot[i]![1] - q[1]) * f] as Pt);
+  const bands = (p.bands ?? []).map((b) => `<path d="${band(at(b.from), at(b.to))}" fill="${b.fill}"/>`).join("");
+  return `<path d="${shape}" fill="${p.fill}"/>` + bands + rows(top, foot, p, n) +
     `<path d="${smooth(top)}" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="0.9"/>` +
     `<path d="${smooth(foot)}" fill="none" stroke="${p.edge}" stroke-opacity="0.8" stroke-width="0.9"/>` +
     `<path d="${shape}" fill="none" stroke="${p.edge}" stroke-opacity="0.55" stroke-width="0.5"/>`;
@@ -89,7 +92,7 @@ function endSides(from: Pt, to: Pt): [Pt[], Pt[]] {
  * A hanging end, with its rows running down it. It is drawn in a frame along its own length and turned into place, so a pattern (a
  * kohaku belt's panels) runs along the end as it does along the turns, not across it.
  */
-function end(from: Pt, to: Pt, p: BeltPaint, marks = ""): string {
+function end(from: Pt, to: Pt, p: BeltPaint, marks = "", stripes = "", half = WIDTH / 2): string {
   const angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
   const c = Math.cos(angle);
   const s = Math.sin(angle);
@@ -97,7 +100,7 @@ function end(from: Pt, to: Pt, p: BeltPaint, marks = ""): string {
   const [left, right] = endSides(from, to).map(local) as [Pt[], Pt[]];
   const a = left[2] as Pt;
   const b = right[2] as Pt;
-  return `<g transform="translate(${n2(from[0])} ${n2(from[1])}) rotate(${n2((angle * 180) / Math.PI)})">` + length(left, right, p) + marks +
+  return `<g transform="translate(${n2(from[0])} ${n2(from[1])}) rotate(${n2((angle * 180) / Math.PI)})">` + length(left, right, p) + (stripes === "" ? "" : `<g transform="scale(1 ${n2(WIDTH / 2 / half)})">${stripes}</g>`) + marks +
     `<path d="M${n2(a[0])} ${n2(a[1])}L${n2(b[0])} ${n2(b[1])}" stroke="${p.edge}" stroke-width="1" stroke-opacity="0.7"/></g>`;
 }
 
@@ -135,7 +138,7 @@ export function beltOnJacket(p: BeltPaint, t: Tone, face: "front" | "back", wais
     rows([k[0] as Pt, k[1] as Pt], [k[3] as Pt, k[2] as Pt], p, 8) +
     fold(`M${cx - 12} ${cy + 10}L${cx + 14} ${cy + 8}`, 3, 0.35) +
     length(down[0], down[1], p, 8);
-  const ends = hang.map(([from, to], i) => end(from, to, p, (i === 0 ? p.ends?.left : p.ends?.right)?.body ?? "")).join("");
+  const ends = hang.map(([from, to], i) => end(from, to, p, (i === 0 ? p.ends?.left : p.ends?.right)?.body ?? "", i === 0 ? p.stripeEnds?.left : p.stripeEnds?.right, p.stripeEnds?.half)).join("");
   // The shadows fall on the jacket; a belt on its own has nothing under it to take them.
   return shadow + turn + ends + knot;
 }

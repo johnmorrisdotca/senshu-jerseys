@@ -3,7 +3,7 @@
 import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
-  beltWidthsFor, judogiCheck, judogiFrame,
+  beltWidthsFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -15,6 +15,19 @@ const params = new URLSearchParams(location.search);
 /** The belt's width: its grade's own, or one of the widths that grade is made in (4.2, 4.5 or 4.7 cm; a maker's catalogue, see docs/judogi.md). */
 const BELT_WIDTHS = ["auto", "4.2", "4.5", "4.7"];
 const widthsFor = (belt) => ["auto", ...beltWidthsFor(belt).map(String)];
+/** A stripe colour from the address, or none. */
+function stripeColour(v) {
+  return STRIPE_COLOURS.includes(v) ? v : "none";
+}
+/** The designer's stripe controls for a style: one of each kind (a split, a stripe along, a tip with degree bars, bars across). */
+function stateOfStyle(style) {
+  const first = style.tip?.ends ?? style.bars?.[0]?.ends ?? "both";
+  return {
+    ss: stripeColour(style.split), sc: stripeColour(style.along?.[0]?.colour),
+    st: stripeColour(style.tip?.colour), stn: String(style.tip?.bars?.count ?? 0), stc: style.tip?.bars?.colour ?? "white",
+    sb: stripeColour(style.bars?.[0]?.colour), sbn: String(style.bars?.[0]?.count ?? 1), se: first,
+  };
+}
 const lang = () => window.senshuLanguage?.lang ?? "en";
 const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 /** Degrees a second when it turns on its own: slow enough to look at the cloth. */
@@ -61,7 +74,23 @@ const state = {
   bt: (params.get("bt") ?? "").slice(0, 5),
   bc: LABEL_COLOURS.includes(params.get("bc")) ? params.get("bc") : "navy",
   bw: BELT_WIDTHS.includes(params.get("bw")) ? params.get("bw") : "auto",
+  // The belt's stripes: a second colour (split), a stripe along it (centre), a tip block with degree bars, bars across, and which ends carry the tip and bars.
+  ss: stripeColour(params.get("ss")),
+  sc: stripeColour(params.get("sc")),
+  st: stripeColour(params.get("st")),
+  stn: String(clamp(Number.parseInt(params.get("stn") ?? "0", 10) || 0, 0, 6)),
+  stc: STRIPE_COLOURS.includes(params.get("stc")) ? params.get("stc") : "white",
+  sb: stripeColour(params.get("sb")),
+  sbn: String(clamp(Number.parseInt(params.get("sbn") ?? "1", 10) || 1, 1, 6)),
+  se: ["both", "left", "right"].includes(params.get("se")) ? params.get("se") : "both",
 };
+// A named real-world arrangement in the address (`bp=half-yellow-orange`) fills the belt and its stripes, unless the address names them itself.
+const named = beltPreset(params.get("bp") ?? "");
+if (named !== undefined) {
+  const filled = stateOfStyle(named.style);
+  if (!params.has("belt")) state.belt = named.belt;
+  for (const [k, v] of Object.entries(filled)) if (!params.has(k)) state[k] = v;
+}
 
 /** The flag's SVG, loaded from Hata (the package is not a dependency of this one: the demo asks for one flag when it is chosen). */
 const flags = new Map();
@@ -98,6 +127,12 @@ function options() {
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
   if (state.bw !== "auto" && widthsFor(state.belt).includes(state.bw)) o.beltWidthCm = Number(state.bw);
+  const style = {};
+  if (state.ss !== "none") style.split = state.ss;
+  if (state.sc !== "none") style.along = [{ colour: state.sc }];
+  if (state.st !== "none") style.tip = { colour: state.st, ends: state.se, ...(Number(state.stn) > 0 ? { bars: { colour: state.stc, count: Number(state.stn) } } : {}) };
+  if (state.sb !== "none") style.bars = [{ colour: state.sb, count: Number(state.sbn), ends: state.se }];
+  if (Object.keys(style).length > 0) o.beltStyle = style;
   if (state.label !== "none") o.label = { colour: state.label };
   if (state.brand === "1") {
     o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
@@ -106,7 +141,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -284,6 +319,8 @@ function beltLabel(id) {
   return lang() === "ja" ? pair.ja : pair.en;
 }
 
+/** The names of the stripe colours, in the page's language. */
+const STRIPE_NAMES = Object.fromEntries(STRIPE_COLOURS.map((c) => [c, () => say(`judoColourName_${c}`)]));
 const pair = (labels) => (v) => (lang() === "ja" ? labels[v].ja : labels[v].en);
 
 
@@ -292,7 +329,17 @@ const CLOTH_CSS = { white: "#f4f2ec", blue: "#27489e" };
 const PATCH_CSS = { blue: "#1b3a8c", gold: "#c4981e", red: "#b61824", black: "#16181f", white: "#f6f4ee" };
 const INK_CSS = { black: "#15181f", vermilion: "#c9361c" };
 const LABEL_CSS = { navy: "#1d2b4f", forest: "#1f4d3a", black: "#181818", wine: "#6e1d2c", cream: "#efe6cf" };
-const beltCss = (v) => (v === "red-white" ? "linear-gradient(90deg, #b21622 50%, #f4f2ea 50%)" : rgb(JUDOGI_BELT_RGB[v]));
+const STRIPE_EXTRA = { grey: "#8a8c92", purple: "#68348c", gold: "#c9a030" };
+const beltCss = (v) => (v === "red-white" ? "linear-gradient(90deg, #b21622 50%, #f4f2ea 50%)" : JUDOGI_BELT_RGB[v] === undefined ? STRIPE_EXTRA[v] : rgb(JUDOGI_BELT_RGB[v]));
+/** Fill the belt and its stripe controls from a real system's arrangement. */
+function applyPreset(id) {
+  const p = beltPreset(id);
+  if (p === undefined) return;
+  Object.assign(state, { belt: p.belt, ...stateOfStyle(p.style) });
+  syncUrl();
+  controls();
+  draw();
+}
 
 /** Which garments each display mode draws: a control is shown only where it changes what is on the stage. */
 const GARMENTS = { pieces: ["jacket", "pants", "belt"], suit: ["jacket", "pants", "belt"], jacket: ["jacket", "belt"], pants: ["pants"], belt: ["belt"] };
@@ -315,6 +362,40 @@ function rows() {
   if (has("jacket") || has("pants")) out.push(field(G, "judo-colour", say("judoColour"), swatches({ id: "judo-colour", label: say("judoColour"), values: JUDOGI_COLOURS, current: state.colour, css: (v) => CLOTH_CSS[v], name: (v) => say(v === "blue" ? "judoBlue" : "judoWhite"), onPick: set("colour") })));
   if (has("belt")) out.push(field(G, "judo-belt", say("judoBelt"), swatches({ id: "judo-belt", label: say("judoBelt"), values: JUDOGI_BELTS, current: state.belt, css: beltCss, name: beltLabel, onPick: (v) => { if (!widthsFor(v).includes(state.bw)) state.bw = "auto"; set("belt", true)(v); } })));
   if (has("belt")) out.push(field(G, "judo-belt-width", say("judoBeltWidth"), segmented({ id: "judo-belt-width", label: say("judoBeltWidth"), values: widthsFor(state.belt), current: state.bw, name: (v) => (v === "auto" ? say("judoBeltWidth_auto") : `${v} cm`), onPick: set("bw") })));
+  if (has("belt")) {
+    const S = "judoG_stripes";
+    const swatchOf = (key, values, rebuild = false) => swatches({ id: `judo-${key}`, label: say(`judoStripe_${key}`), values, current: state[key], css: beltCss, name: (v) => (v === "none" ? say("judoStripe_none") : STRIPE_NAMES[v]()), onPick: set(key, rebuild) });
+    const preset = document.createElement("select");
+    preset.id = "judo-preset";
+    preset.className = "fam-field";
+    preset.dataset.testid = "judo-preset";
+    const first = document.createElement("option");
+    first.value = "";
+    first.textContent = say("judoStripe_pick");
+    preset.append(first);
+    for (const sys of [...new Set(BELT_PRESETS.map((p) => p.system))]) {
+      const group = document.createElement("optgroup");
+      group.label = sys;
+      for (const p of BELT_PRESETS.filter((q) => q.system === sys)) {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = p.label;
+        group.append(opt);
+      }
+      preset.append(group);
+    }
+    out.push(field(S, "judo-preset", say("judoStripe_preset"), preset));
+    out.push(field(S, "judo-ss", say("judoStripe_ss"), swatchOf("ss", ["none", ...STRIPE_COLOURS])));
+    out.push(field(S, "judo-sc", say("judoStripe_sc"), swatchOf("sc", ["none", ...STRIPE_COLOURS])));
+    out.push(field(S, "judo-st", say("judoStripe_st"), swatchOf("st", ["none", ...STRIPE_COLOURS], true)));
+    if (state.st !== "none") {
+      out.push(field(S, "judo-stn", say("judoStripe_stn"), segmented({ id: "judo-stn", label: say("judoStripe_stn"), values: ["0", "1", "2", "3", "4", "5", "6"], current: state.stn, name: (v) => v, onPick: set("stn", true) })));
+      if (state.stn !== "0") out.push(field(S, "judo-stc", say("judoStripe_stc"), swatchOf("stc", STRIPE_COLOURS)));
+    }
+    out.push(field(S, "judo-sb", say("judoStripe_sb"), swatchOf("sb", ["none", ...STRIPE_COLOURS], true)));
+    if (state.sb !== "none") out.push(field(S, "judo-sbn", say("judoStripe_sbn"), segmented({ id: "judo-sbn", label: say("judoStripe_sbn"), values: ["1", "2", "3", "4", "5", "6"], current: state.sbn, name: (v) => v, onPick: set("sbn") })));
+    if (state.st !== "none" || state.sb !== "none") out.push(field(S, "judo-se", say("judoStripe_se"), segmented({ id: "judo-se", label: say("judoStripe_se"), values: ["both", "left", "right"], current: state.se, name: (v) => say(`judoStripe_se_${v}`), onPick: set("se") })));
+  }
   out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
 
   if (jacket) {
@@ -413,6 +494,7 @@ function controls() {
       lab.append(span, node);
       row.append(lab);
       node.addEventListener(node.tagName === "INPUT" ? "input" : "change", () => {
+        if (id === "judo-preset") return applyPreset(node.value);
         state[id.replace("judo-", "")] = node.value;
         syncUrl();
         if (node.tagName === "SELECT") {

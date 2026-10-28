@@ -85,7 +85,8 @@ test("integrated embroidery is flatter than applied, on any garment, and the def
   for (const font of ["block", "gothic"] as const) {
     assert.equal(norm(draw("applied", font)), norm(draw(undefined, font)));
     assert.notEqual(norm(draw("integrated", font)), norm(draw("applied", font)));
-    assert.ok(draw("integrated", font).length < draw("applied", font).length, "no side wall, no light line");
+    // Compared with the drawing's own id taken out: a longer hash in the id of one is thousands of characters, which is no drawing.
+    assert.ok(norm(draw("integrated", font)).length < norm(draw("applied", font)).length, "no side wall, no light line");
   }
   for (const belt of ["white", "black", "red-white"] as const) assert.match(renderJudogi({ mode: "belt", belt, embroidery: [{ place: "belt-end-right", text: "X", stitching: "integrated" }] }), /<svg /);
 });

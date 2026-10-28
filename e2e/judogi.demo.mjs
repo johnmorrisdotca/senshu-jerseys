@@ -256,7 +256,7 @@ test("a colour is a swatch, a few-way choice a picture tile, on or off a switch,
   await page.goto("/judogi.html?mode=pieces&belt=brown&patch=ijf&emblem=flag&brand=1&e1p=jacket-chest&e1t=X");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const selects = await page.locator("#judo-controls select").evaluateAll((nodes) => nodes.map((n) => n.id));
-  expect(selects.sort()).toEqual(["judo-e1p", "judo-e2p", "judo-size"]);
+  expect(selects.sort()).toEqual(["judo-e1p", "judo-e2p", "judo-preset", "judo-size"]);
   // Swatches: the belt's ten colours, one pressed, each named.
   const belts = page.locator('[data-testid="judo-belt"] button');
   await expect(belts).toHaveCount(10);
@@ -382,4 +382,42 @@ test("every display mode in every view: the turn controls are there only where t
       await expect(page.locator('[data-testid="judo-zoom-reset"]'), where).not.toHaveText("1×");
     }
   }
+});
+
+test("a belt's stripes, halves, tips and tags are chosen in the page, start from a real system, and stay in the address", async ({ page }) => {
+  const shown = (id) => page.locator(`[data-testid="${id}"]`);
+  await page.goto("/judogi.html?mode=belt&belt=yellow&ss=orange");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(shown("judo-ss").locator('[data-value="orange"]')).toHaveAttribute("aria-pressed", "true");
+  // The tip's stripes and the end choice appear only when they apply.
+  await expect(shown("judo-stn")).toHaveCount(0);
+  await expect(shown("judo-se")).toHaveCount(0);
+  await pick(page, "judo-st", "black");
+  await expect(page).toHaveURL(/st=black/);
+  await expect(shown("judo-stn")).toHaveCount(1);
+  await pick(page, "judo-stn", "3");
+  await expect(page).toHaveURL(/stn=3/);
+  await expect(shown("judo-stc")).toHaveCount(1);
+  await expect(shown("judo-se")).toHaveCount(1);
+  await pick(page, "judo-se", "right");
+  await expect(page).toHaveURL(/se=right/);
+  // A real system fills the belt and the controls, and the address says what they are.
+  await page.locator("#judo-preset").selectOption("mon-12");
+  await expect(page).toHaveURL(/belt=green/);
+  await expect(page).toHaveURL(/sb=red/);
+  await expect(page).toHaveURL(/sbn=3/);
+  await expect(page).not.toHaveURL(/ss=/);
+  await expect(shown("judo-belt").locator('[data-value="green"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(shown("judo-sbn").locator('[data-value="3"]')).toHaveAttribute("aria-pressed", "true");
+  // A preset can also be named in the address.
+  await page.goto("/judogi.html?mode=belt&bp=half-yellow-orange");
+  await expect(shown("judo-belt").locator('[data-value="yellow"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(shown("judo-ss").locator('[data-value="orange"]')).toHaveAttribute("aria-pressed", "true");
+  // Without a belt on show there are no stripes to choose, and what was chosen stays in the address.
+  await page.goto("/judogi.html?mode=pants&belt=green&sb=red&sbn=2");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(shown("judo-ss")).toHaveCount(0);
+  await expect(shown("judo-preset")).toHaveCount(0);
+  await pick(page, "judo-colour", "blue");
+  await expect(page).toHaveURL(/sb=red/);
 });

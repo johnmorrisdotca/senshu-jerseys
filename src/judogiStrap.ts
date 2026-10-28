@@ -321,10 +321,11 @@ export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
     return s;
   };
   const strip = (y0: number, h: number): string => `<rect x="-40" y="${n2(y0 - 1.5)}" width="280" height="${n2(h + 3)}" fill="${p.fill}"/>`;
-  const cloth = (y0: number): string => strip(y0, w) + rows(y0, w, n) +
+  const bands = (p.bands ?? []).map((b) => `<rect x="-40" y="${n2(b.from * w)}" width="280" height="${n2((b.to - b.from) * w)}" fill="${b.fill}"/>`).join("");
+  const cloth = (y0: number, plain = false): string => strip(y0, w) + (plain ? "" : bands.replace(/y="([\d.-]+)"/g, (_, y: string) => `y="${n2(Number(y) + y0)}"`)) + rows(y0, w, n) +
     `<path d="M-40 ${n2(y0 + 0.4)}H240M-40 ${n2(y0 + w - 0.4)}H240" stroke="${p.edge}" stroke-width="0.9" stroke-opacity="0.75"/>`;
   const faceStrip = cloth(FACE_Y);
-  const backStrip = cloth(BACK_Y);
+  const backStrip = cloth(BACK_Y, false);
   // An edge is the stitched rows seen end on: the cloth a little darker, and on the two turns the line where one lies on the other.
   const dark = `fill="${p.edge}" fill-opacity="0.3"`;
   const edges = strip(EDGE2_Y, EDGE_H) + `<rect x="-40" y="${EDGE2_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>` +
@@ -339,5 +340,5 @@ export function strapFace(p: BeltPaint, w: number, n = ROWS): Face {
   // What is sewn on each hanging end lies on that end's own stretch of the strip, its frame's origin at the knot's end and its middle on the strip's.
   const sewn = (m: { body: string } | undefined, x: number): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(w / 2)})">${m.body}</g>`);
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
-  return { defs: p.strip?.defs ?? "", body: faceStrip + backStrip + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
+  return { defs: p.strip?.defs ?? "", body: faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

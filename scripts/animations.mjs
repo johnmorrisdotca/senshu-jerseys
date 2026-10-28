@@ -82,18 +82,18 @@ const judogiRow = (S, T, H, yaw, row) => row.map((o) => {
   return `<figure style="margin:0;display:flex;align-items:center;justify-content:center">${S.judogiFrame({ mode: "jacket", ...opts, yaw: turns ? yaw : rest, width: 200 })}</figure>`;
 });
 
-// The belts row: every belt colour and no two alike, as in a real dojo: plain, a maker's tag, the Senshu brand, a club name, kanji, handwriting script, a name at each end, the Approved label, a Japanese surname, a narrow and a wide black. One turns (the orange).
+// The belts row: every belt colour and no two alike, as in a real dojo: plain, a half grade with a maker's tag, a kids' centre stripe, the Senshu brand, a club name, kanji, handwriting script, a name at each end, the Approved label, a Japanese surname, a narrow and a wide black. One turns (the orange).
 const BELT_ROW = [
   { belt: "white", rest: 0 },
-  { belt: "yellow", logos: [{ place: "belt-end-right" }], rest: 0 },
+  { belt: "yellow", beltStyle: { split: "orange" }, logos: [{ place: "belt-end-right" }], rest: 0 },
   { belt: "orange", branding: true, turns: true },
-  { belt: "green", embroidery: [{ place: "belt-end-left", text: "KESTREL", thread: "white" }], rest: 0 },
+  { belt: "green", beltStyle: { along: [{ colour: "black" }] }, rest: 0 },
   { belt: "blue", embroidery: [{ place: "belt-end-right", text: "山田", font: "kaisho", thread: "white" }], rest: 0 },
   { belt: "brown", embroidery: [{ place: "belt-end-right", text: "SMITH", font: "cursive", heightCm: 4, thread: "white" }], rest: 0 },
   { belt: "black", beltWidthCm: 5, embroidery: [{ place: "belt-end-left", text: "TANAKA", thread: "gold" }, { place: "belt-end-right", text: "SENSHU", thread: "gold" }], rest: 0 },
   { belt: "red-white", label: { colour: "navy" }, rest: 0 },
   { belt: "black", embroidery: [{ place: "belt-end-left", text: "講道館", font: "kaisho", thread: "gold" }, { place: "belt-end-right", text: "山下", font: "kaisho", thread: "gold" }], rest: 0 },
-  { belt: "black", beltWidthCm: 4, label: { colour: "forest" }, embroidery: [{ place: "belt-end-right", text: "JUDO CLUB", thread: "red" }], rest: 0 },
+  { belt: "black", beltWidthCm: 4, beltStyle: { bars: [{ colour: "red", count: 3 }] }, rest: 0 },
 ];
 const beltRow = (S, T, H, yaw, row) => row.map((o) => {
   const { rest, turns, ...opts } = o;

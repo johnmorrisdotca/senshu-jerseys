@@ -86,6 +86,44 @@ Words in the demo: `ゼッケン` (zekken, the numbered patch), `苗字` (surnam
 
 `judogiCheck({ backPatch })` adds the patch's rules to the size check, each with its source, and fails when a patch is outside them (a zekken 20 cm wide, a back number 6 cm below the collar). Nothing is clamped: the drawing shows what you asked for, and the check tells you where it leaves the rules.
 
+## Belt stripes, halves, tips and tags
+
+Belts are not all one colour. Clubs and federations mark a grade, an age or a degree by splitting a belt's colours, running a stripe down it, or putting bars or a tip block at an end, and the arrangements differ from country to country, so the package takes one flexible description, `beltStyle`, and names the common real ones as `BELT_PRESETS`. Every part is optional and they combine.
+
+```js
+import { BELT_PRESETS, beltPreset, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+
+// Judo Canada's yellow-orange half belt: orange on the lower half, yellow above it.
+renderJudogi({ mode: "belt", belt: "yellow", beltStyle: { split: "orange" } });
+// A white stripe down the middle of an orange belt.
+renderJudogi({ mode: "belt", belt: "orange", beltStyle: { along: [{ colour: "white" }] } });
+// A blue belt with a black tip at each end carrying three white degree stripes.
+renderJudogi({ mode: "belt", belt: "blue", beltStyle: { tip: { colour: "black", lengthCm: 7, bars: { colour: "white", count: 3 } } } });
+// Three red tags on a green belt, the British Judo way of showing 12th Mon.
+const mon = beltPreset("mon-12");
+renderJudogi({ mode: "jacket", belt: mon?.belt, beltStyle: mon?.style });
+```
+
+- **`split`**: a second colour; the belt is split lengthwise, the belt's own colour on the upper half and this one on the lower.
+- **`along`**: stripes running the whole length. Each has a `colour`, an `at` (`centre`, `edges`, `top`, `bottom` or a number from 0 at the top edge to 1 at the bottom) and a `widthCm` (1 by default).
+- **`bars`**: bars across the belt near a cut end: `colour`, `count` (1 to 6), `ends` (`both`, `left` or `right`, as seen from the front), `widthCm` (1), `gapCm` (0.8) and `fromEndCm` (1.5). One bar is a tag, a few are a count of grades or degrees.
+- **`tip`**: a block of one colour over the end of the belt (`colour`, `lengthCm` 6, `ends`), with its own `bars: { colour, count, widthCm, gapCm }` across it, counted from its inner edge the way degrees are added.
+
+Colours are the belt colours (`white` to `red`) or `grey`, `purple`, `gold` or any `#rrggbb` (`STRIPE_COLOURS`). It all rides on the belt's own cloth, so it turns with it, in every view, and it combines with embroidery, the label, the brand and a maker's logo. A style with no colour that exists draws nothing and the belt is drawn as before. The designer's "Stripes, tips and tags" group has a control for each part and a list of the real systems (`bp=<preset id>` in the address chooses one; `ss`, `sc`, `st`, `stn`, `stc`, `sb`, `sbn` and `se` hold the rest).
+
+**The presets, and where they come from.** Only a page a person read is a source here; the rest are marked as leads.
+
+| Preset ids | System | Source |
+|---|---|---|
+| `half-white-yellow`, `half-yellow-orange`, `half-orange-green`, `half-green-blue`, `half-blue-brown` | Judo Canada's kyu list: White, White-Yellow (6+), Yellow, Yellow-Orange (5+), Orange, Orange-Green (4+), Green, Green-Blue (3+), Blue, Blue-Brown (2+), Brown | [Judo Canada, Grading](https://judocanada.org/grading/) (read) |
+| `mon-4` to `mon-18` | British Judo's 18 Mon grades: a coloured belt with one to three tags, red tags on yellow, orange, green, blue and brown | [British Judo, Mon Grade Promotion Syllabus, Dec 2024](https://britishjudo.org.uk/wp-content/uploads/2024/12/Mon-Grade-Promotion-Syllabus-Dec-2024.pdf) (read, its table of Mon grades) |
+| `womens-black-white-line` | The women's black belt of the AJJF-approved kind (Kodokan women's belt): black with one white line down the middle of its whole length, sold in Japan | [KuSakura, Kodokan black belt for women (JGRK)](https://www.kusakurashop.com/products/judo-kodokan-belts-black-jgrk) (a retailer: read for what is sold, not a federation's rules; the line's width, about a quarter of the belt, is taken from its product picture) |
+| `kids-centre-white`, `kids-centre-black`, `kids-centre-black-yellow` | Jiu-jitsu kids' two-colour belts (a centre stripe) | [Brazilian Black Belt, Kids belt system](https://brazilianblackbelt.com/2011/07/jiu-jitsu-kids-belt-system-from-2012-on-bjj) (read: two-colour belts, optional stripes) and [IBJJF, Graduation system](https://ibjjf.com/graduation-system) (read: it names three kids' graduation systems of degrees and stripes) |
+| `tip-black-degrees-3`, `tip-red-degrees-3` | Degree stripes on a coloured tip | the same two pages; the tip's look is from John's reference photographs (jiu-jitsu and karate retailers' belts), not a federation page |
+| `bars-white-1` to `bars-white-3`, `stripes-red-2` | Junior bars at each end (Australia: 3, 2 or 1 white bars by age) and one to three red stripes on both ends (Finland) | [Wikipedia, Rank in judo](https://en.wikipedia.org/wiki/Rank_in_judo) (read, **a secondary source: a lead, not confirmed from either federation**) |
+
+Not confirmed: Judo Australia's and Finland's own pages (the Judo Australia policy PDF would not load), and any Kodokan junior belt (the Kodokan's page was not found, and Wikipedia says nothing of one). IBJJF's own graduation PDF would not load either, so the adult rank bars (a red bar on a black belt, coral belts) and karate's and taekwondo's stripes are not claimed here. Wikipedia also reports sub-rank tabs as "a small piece of fabric on the end of the belt" (Austria, Brazil's ends in the next colour, Denmark's half belts); those are what `bars` and `split` draw.
+
 ## Embroidery, logos and the national emblem
 
 All three are drawn on the cloth's faces, so they turn with the pieces, and only in the places the rules name.

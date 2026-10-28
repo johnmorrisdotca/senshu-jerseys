@@ -15,6 +15,18 @@ All notable changes to this project are written here. The format follows
 
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.19.0] - 2026-10-28
+
+### Added
+
+- **`beltStyle`: stripes, halves, tips and tags on the belt.** A second colour split lengthwise (`split`, the half grades), stripes along the belt (`along`: centre, edges, top, bottom or a place across it), bars or tags across the ends (`bars`: count, which ends, width, gap, distance from the end) and a tip block with degree stripes on it (`tip`), in any combination and any number, on the worn, flat, turned and belt-alone drawings, together with embroidery, labels, the brand and logos.
+- **`BELT_PRESETS`, `beltPreset`, `STRIPE_COLOURS`**: Judo Canada's half grades, British Judo's 18 Mon grades (a coloured belt with one to three tags), the women's black belt with a white line down its length (the AJJF-approved kuro-obi), kids' centre stripes, a tip with degree stripes (`tip.fromEndCm` sets how far from the end it starts) and junior bars at the ends, each with its system and source, listed with the pages they rest on in `docs/judogi.md` (what could not be confirmed is said there).
+- **The designer's "Stripes, tips and tags"** group: a list of the real systems and a control for each part (`ss`, `sc`, `st`, `stn`, `stc`, `sb`, `sbn`, `se` in the address, `bp=<preset id>` to start from one).
+
+### Changed
+
+- The README's belts picture shows a yellow-orange half grade, a green belt with a black centre stripe and a black belt with red bars.
+
 ## [0.18.5] - 2026-10-28
 
 ### Changed
