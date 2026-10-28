@@ -640,3 +640,20 @@ test("a sleeve hangs in front of the belt and the body: nothing behind it shows 
   expect(counts.all).toBeGreaterThan(200);
   expect(counts.middle).toBe(0);
 });
+
+test("a belt's end tags are a switch with the end they are on and the grade lines, kept in the address", async ({ page }) => {
+  const shown = (id) => page.locator(`[data-testid="${id}"]`);
+  await page.goto("/judogi.html?mode=belt&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(shown("judo-te")).toHaveCount(0);
+  await shown("judo-tg").click();
+  await expect(page).toHaveURL(/tg=1/);
+  await expect(shown("judo-te")).toHaveCount(1);
+  await pick(page, "judo-te", "left");
+  await expect(page).toHaveURL(/te=left/);
+  await pick(page, "judo-gl", "4");
+  await expect(page).toHaveURL(/gl=4/);
+  await page.goto("/judogi.html?mode=belt&belt=black&gl=3&te=left");
+  await expect(shown("judo-gl").locator('[data-value="3"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(shown("judo-te")).toHaveCount(1);
+});

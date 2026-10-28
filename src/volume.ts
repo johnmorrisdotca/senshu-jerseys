@@ -278,7 +278,7 @@ function headDepth(d: VolumeDesc, sleeve: VolumeDesc["sl"][number], y: number): 
 const softMax = (a: number, b: number): number => (a ** 3 + b ** 3) ** (1 / 3);
 
 /** A sleeve's head as a part of the body's half depth at the armhole. */
-const HEAD = 0.55;
+const HEAD = 0.42;
 
 const CAP_STEPS = 64;
 const capLengths = new Map<string, number[]>();

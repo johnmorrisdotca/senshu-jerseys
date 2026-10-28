@@ -85,7 +85,7 @@ const judogiRow = (S, T, H, yaw, row) => row.map((o) => {
 // The belts row: every belt colour and no two alike, as in a real dojo: plain, a half grade with a maker's tag, a kids' centre stripe, the Senshu brand, a club name, kanji, handwriting script, a name at each end, the Approved label, a Japanese surname, a narrow and a wide black. One turns (the orange).
 const BELT_ROW = [
   { belt: "white", rest: 0 },
-  { belt: "yellow", beltStyle: { split: "orange" }, logos: [{ place: "belt-end-right" }], rest: 0 },
+  { belt: "yellow", beltStyle: { split: "orange" }, beltTags: true, rest: 0 },
   { belt: "orange", branding: true, turns: true },
   { belt: "green", beltStyle: { along: [{ colour: "black" }] }, rest: 0 },
   { belt: "blue", embroidery: [{ place: "belt-end-right", text: "山田", font: "kaisho", thread: "white" }], rest: 0 },

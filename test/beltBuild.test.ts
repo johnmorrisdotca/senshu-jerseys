@@ -141,3 +141,31 @@ test("every belt system has its picture, drawn from its data, and the page shows
     assert.ok(page.includes(`](images/belts/${system.id}.webp)`), `${system.id} is on the page`);
   }
 });
+
+test("a belt's end tags: the maker's label, the size tag and the white tag go together, on the end asked for, with grade lines, and read down the end", () => {
+  const marks = (svg: string): { tags: number; label: boolean; kanji: boolean } => ({ tags: (svg.match(/id="[^"]*T[mswts]S?[A-Za-z]*"/g) ?? []).length, label: /T[m]/.test(svg), kanji: svg.includes("日本製") || /Hiragino Mincho/.test(svg) });
+  const plain = renderJudogi({ mode: "belt", belt: "black", view: "flat" });
+  const all = renderJudogi({ mode: "belt", belt: "black", view: "flat", beltTags: true });
+  assert.notEqual(plain, all);
+  assert.equal(wellFormed(all), null);
+  // The three tags are there by default: the label, the size tag with the made-in-Japan line, and the white tag.
+  assert.match(all, /Tm/);
+  assert.match(all, /Ts/);
+  assert.match(all, /Tw/);
+  assert.ok(marks(all).kanji, "the size tag carries its line");
+  // A tag needs the one above it: with no label there are no tags at all, and with no size tag there is no white tag.
+  const none = renderJudogi({ mode: "belt", belt: "black", view: "flat", beltTags: { maker: false } });
+  assert.ok(!/Tm|Ts|Tw/.test(none.replace(/jg[0-9a-z]+/g, "")), "no label, no tags");
+  const noSize = renderJudogi({ mode: "belt", belt: "black", view: "flat", beltTags: { size: false } });
+  assert.ok(/Tm/.test(noSize) && !/Ts[A-Z]|Tw[A-Z]/.test(noSize.replace(/jg[0-9a-z]+/g, "")) , "a label alone");
+  // The line under the size is the wearer's to change or take off.
+  assert.ok(renderJudogi({ mode: "belt", belt: "black", view: "flat", beltTags: { sizeLine: false } }).length < all.length);
+  // Which end: the right by default, the left when asked, never both.
+  const [rl, rr] = [renderJudogi({ mode: "belt", belt: "black", view: "flat", beltTags: { end: "left" } }), all];
+  assert.notEqual(rl, rr);
+  // Grade lines: 0 to 10, clamped.
+  const bars = (n: number): number => (renderJudogi({ mode: "belt", belt: "black", view: "flat", beltTags: { maker: false, gradeLines: n } }).match(/rx="0\.2"/g) ?? []).length;
+  assert.deepEqual([bars(0), bars(3), bars(10), bars(25)], [0, 3, 10, 10]);
+  // On the turning strap too, and well formed at every cover and angle.
+  for (const yaw of [0, 30, 90]) assert.equal(wellFormed(judogiFrame({ mode: "jacket", belt: "red-white", beltTags: { gradeLines: 4, white: "山下" }, yaw })), null);
+});

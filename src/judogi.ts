@@ -15,6 +15,7 @@ import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type 
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
+import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "./judogiEndTags.ts";
 import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
@@ -82,6 +83,8 @@ export interface JudogiOptions {
   beltThickness?: BeltThickness;
   /** What covers the belt: plain `cotton` (the default), satin-woven `shusu` or `silk`, the last two with a sheen. */
   beltCover?: BeltCover;
+  /** What most belts carry near one end: a woven maker's label with a size tag and a white tag under it, and grade lines (see `JudogiEndTags`); `true` for the usual three on the right end. */
+  beltTags?: boolean | JudogiEndTags;
   /** Stripes, a second colour, a tip block, bars or tags on the belt, any number in any arrangement (`BELT_PRESETS` has the common real ones). Nothing by default. */
   beltStyle?: JudogiBeltStyle;
   /** The package's own woven "Approved Judogi" label on the jacket, the trousers and the belt: `true`, or a colour variant and thread. */
@@ -211,6 +214,7 @@ interface Ready {
   beltRows: BeltStitchLines | undefined;
   beltT: number;
   beltCover: BeltCover;
+  endTags: ReadEndTags | undefined;
   cloth: Rgb;
   uid: string;
   patch: PatchSpec | undefined;
@@ -254,6 +258,7 @@ function read(options?: JudogiOptions): Ready {
   const beltRows = (BELT_STITCH_LINES as readonly unknown[]).includes(o.beltStitchLines) ? o.beltStitchLines : undefined;
   const beltThickness = pick(BELT_THICKNESSES, o.beltThickness, "standard");
   const beltCover = pick(BELT_COVERS, o.beltCover, "cotton");
+  const endTags = readEndTags(o.beltTags, size);
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
   const beltSize = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[size];
@@ -268,7 +273,7 @@ function read(options?: JudogiOptions): Ready {
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band,
     beltEmb: { left: (o.embroidery ?? []).some((e) => e?.place === "belt-end-left"), right: (o.embroidery ?? []).some((e) => e?.place === "belt-end-right") },
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
@@ -320,9 +325,12 @@ function paintOf(o: Ready, belt: string): BeltPaint | undefined {
   if (base === undefined) return undefined;
   const bands = bandsOf(o.style);
   const half = strapWidth(belt, o.beltCm) / 2;
-  const stripes = { left: endMark(o.style, 0, half), right: endMark(o.style, 1, half), half };
+  const tagL = endTagsMark(o.endTags, 0, half, o.uid);
+  const tagR = endTagsMark(o.endTags, 1, half, o.uid);
+  const stripes = { left: endMark(o.style, 0, half) + tagL.body, right: endMark(o.style, 1, half) + tagR.body, half };
   const p: BeltPaint = {
     ...base,
+    defs: base.defs + tagL.defs + tagR.defs,
     ...(bands.length === 0 ? {} : { bands }),
     ...(o.beltRows === undefined ? {} : { rows: o.beltRows }),
     ...(o.beltCover === "cotton" ? {} : { cover: o.beltCover }),

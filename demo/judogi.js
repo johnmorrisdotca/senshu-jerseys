@@ -90,6 +90,10 @@ const state = {
   sl: params.get("sl") ?? "auto",
   th: params.get("th") ?? "auto",
   cv: params.get("cv") ?? "auto",
+  // The belt's end tags (a maker's label, a size tag, a white tag) on or off, the end they are on, and the number of grade lines.
+  tg: params.get("tg") === "1" ? "1" : "0",
+  te: params.get("te") === "left" ? "left" : "right",
+  gl: String(clamp(Number.parseInt(params.get("gl") ?? "0", 10) || 0, 0, 10)),
   // The belt's stripes: a second colour (split), a stripe along it (centre), a tip block with degree bars, bars across, and which ends carry the tip and bars.
   ss: stripeColour(params.get("ss")),
   sc: stripeColour(params.get("sc")),
@@ -161,6 +165,7 @@ function options() {
   if (state.sl !== "auto" && rowsFor(state.belt).includes(state.sl)) o.beltStitchLines = Number(state.sl);
   if (state.th !== "auto" && thicknessFor(state.belt).includes(state.th)) o.beltThickness = state.th;
   if (state.cv !== "auto" && coverFor(state.belt).includes(state.cv)) o.beltCover = state.cv;
+  if (state.tg === "1" || Number(state.gl) > 0) o.beltTags = { end: state.te, maker: state.tg === "1", gradeLines: Number(state.gl) };
   const style = {};
   if (state.ss !== "none") style.split = state.ss;
   if (state.sc !== "none") style.along = [{ colour: state.sc }];
@@ -440,6 +445,9 @@ function rows() {
     const more = (id, key, values, name) => out.push(field(G, `judo-${id}`, say(`judoBelt_${key}`), segmented({ id: `judo-${id}`, label: say(`judoBelt_${key}`), values, current: state[id === "belt-rows" ? "sl" : id === "belt-thickness" ? "th" : "cv"], name: (v) => (v === "auto" ? auto(key) : name(v)), onPick: set(id === "belt-rows" ? "sl" : id === "belt-thickness" ? "th" : "cv") })));
     if (rowsFor(state.belt).length > 2) more("belt-rows", "rows", rowsFor(state.belt), (v) => v);
     if (thicknessFor(state.belt).length > 2) more("belt-thickness", "thickness", thicknessFor(state.belt), (v) => say(`judoBelt_thickness_${v}`));
+    out.push(field(G, "judo-tg", say("judoBelt_tags"), toggle({ id: "judo-tg", label: say("judoBelt_tags"), on: state.tg === "1", words: { on: say("judoBelt_tags_on"), off: say("judoBelt_tags_off") }, onChange: (on) => change("tg", on ? "1" : "0", true) })));
+    if (state.tg === "1" || Number(state.gl) > 0) out.push(field(G, "judo-te", say("judoBelt_tagEnd"), segmented({ id: "judo-te", label: say("judoBelt_tagEnd"), values: ["left", "right"], current: state.te, name: (v) => say(`judoBelt_tagEnd_${v}`), onPick: set("te") })));
+    out.push(field(G, "judo-gl", say("judoBelt_gradeLines"), segmented({ id: "judo-gl", label: say("judoBelt_gradeLines"), values: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], current: state.gl, name: (v) => v, onPick: set("gl", true) })));
     if (coverFor(state.belt).length > 2) more("belt-cover", "cover", coverFor(state.belt), (v) => say(`judoBelt_cover_${v}`));
   }
   if (has("belt")) out.push(field(G, "judo-belt-width", say("judoBeltWidth"), segmented({ id: "judo-belt-width", label: say("judoBeltWidth"), values: widthsFor(state.belt), current: state.bw, name: (v) => (v === "auto" ? say("judoBeltWidth_auto") : `${v} cm`), onPick: set("bw") })));
