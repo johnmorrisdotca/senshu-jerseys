@@ -5,7 +5,7 @@
 // a tip or bars on a belt end). A mark that cannot be placed at 60 per cent of its size is left out and reported (`judogiCheck`), so the earlier marks
 // are never moved or overdrawn. Original geometry; the numbers come from the garment drawings (judogiJacket.ts, judogiPants.ts, judogiBelt.ts).
 
-import { sleeveRegion } from "./judogiJacket.ts";
+import { BELT_BOTTOM, BELT_TOP, CHEST_BOTTOM, CHEST_TOP, chestSpan, sleeveRegion } from "./judogiJacket.ts";
 import { hipsOf, onLeg } from "./judogiPants.ts";
 import { END_LENGTH, type ReadStyle } from "./judogiStripes.ts";
 import type { Pt } from "./path.ts";
@@ -199,10 +199,12 @@ export function areasFor(half: number, lapel: { x: number; y: number; rot: numbe
   const add = (id: string, face: FaceId, poly: Pt[], margin = 0): void => {
     out[id] = { id, face, poly, margin };
   };
-  // Jacket front. The hem's corner: right of where the belt's hanging end can reach (its far edge is at about 128), left of the side vent (its slit at 146 from y 182), above the hem's stitching (198).
-  add("hem-left", "jacket-front", rect(130, 131, 143.2, 195.3));
-  // The chest: right of the top lapel's free edge and its band (at y 46 to 117), left of the armhole, above the belt's band (111).
-  add("chest", "jacket-front", rect(117.5, 34, 144.5, 106));
+  // Jacket front. The hem's corner: below the belt's band, right of where the belt's hanging end can reach (its far edge is at about 128), left of the side vent (its slit at 146 from y 182), above the hem's stitching (198).
+  add("hem-left", "jacket-front", rect(130, BELT_BOTTOM + 4, 143.2, 195.3));
+  // The chest: from the right edge of the top lapel's band to the sleeve's seam (the jacket's own outline: `chestSpan`), below the sleeve's head, above the belt's band.
+  const [cl0, cr0] = chestSpan(CHEST_TOP);
+  const [cl1, cr1] = chestSpan(CHEST_BOTTOM);
+  add("chest", "jacket-front", [[cl0, CHEST_TOP], [cr0, CHEST_TOP], [cr1, CHEST_BOTTOM], [cl1, CHEST_BOTTOM]], EDGE_MARGIN);
   // The lapel hem: along the middle of the top lapel's band (14.5 wide), clear of its edges by a margin and between the belt and the hem's stitching.
   const c = Math.cos((lapel.rot * Math.PI) / 180);
   const s = Math.sin((lapel.rot * Math.PI) / 180);
@@ -237,8 +239,8 @@ export function areasFor(half: number, lapel: { x: number; y: number; rot: numbe
 /** What is already on each face that marks keep clear of: the belt's band across the jacket, the neck label and size tag, the drawstring, and a belt end's tip and bars. */
 export function obstaclesFor(half: number, style: ReadStyle | undefined, neck: boolean): Obstacle[] {
   const out: Obstacle[] = [
-    // A belt's band tied on the jacket: 111.5 to about 127 at the front.
-    { id: "belt-band", face: "jacket-front", box: { x: 100, y: 119.5, w: 160, h: 17, rot: 0 } },
+    // A belt's band tied on the jacket: from its top to about 15.5 units under it, at the front.
+    { id: "belt-band", face: "jacket-front", box: { x: 100, y: BELT_TOP + 8, w: 160, h: 17, rot: 0 } },
     // The drawstring's bow and its two hanging ends with their knots.
     { id: "drawstring", face: "pants-front", box: { x: 100, y: 25, w: 28, h: 42, rot: 0 } },
   ];

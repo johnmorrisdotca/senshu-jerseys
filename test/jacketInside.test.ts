@@ -220,3 +220,76 @@ test("a collar's near cells are drawn after the far ones it overlaps, at every t
   }
   assert.ok(worst < 0.6, `${worst.toFixed(2)} per cent of the collar's pixels show a far cell over a near one at ${where}`);
 });
+
+/**
+ * The jacket seen at a turn, alone: how many pixels inside its silhouette (the union of every cell, whichever way it faces) no visible cell covers. The V
+ * between the lapels is cut through the cloth and is left out; looking up into the open bottom, or down through the neck, a line of sight must end on cloth.
+ */
+function bareInside(yaw: number, tilt: number): { bare: number; area: number } {
+  const cy = Math.cos((yaw * Math.PI) / 180);
+  const sy = Math.sin((yaw * Math.PI) / 180);
+  const cp = Math.cos(((body.pitch + tilt) * Math.PI) / 180);
+  const sp = Math.sin(((body.pitch + tilt) * Math.PI) / 180);
+  const screen = (x: number, y: number, z: number): [number, number] => {
+    const t = turn(x, y, z, cy, sy, cp, sp);
+    return [(t[0] + 100) * K + 40 * K, t[1] * K + 20 * K];
+  };
+  const sil = new Uint8Array(W * H);
+  const cover = new Uint8Array(W * H);
+  for (const cells of [bodyCells, collarCells]) {
+    for (const c of cells) {
+      const g = [0, 1, 2].map((k) => {
+        const [x, y] = screen(c.p[3 * k]!, c.p[3 * k + 1]!, c.p[3 * k + 2]!);
+        return [x, y, 0] as [number, number, number];
+      });
+      fill(g, (p) => (sil[p] = 1));
+    }
+    for (const c of cells) {
+      if (!hasCloth(c)) continue;
+      const q = placeCell(c, yaw, (cells === bodyCells ? body : collar).pitch + tilt);
+      if (q.visible && q.tri !== undefined) fill(grown(q, 1.5), (p) => (cover[p] = 1));
+    }
+  }
+  const v = jacketOpening().flatMap((p, i, all) => {
+    const q = all[(i + 1) % all.length]!;
+    return [0, 0.25, 0.5, 0.75].map((f) => bodyPoint(body, p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f));
+  }).map(([x, y, z]) => screen(x, y, z));
+  const vx = v.reduce((a, p) => a + p[0], 0) / v.length;
+  const vy = v.reduce((a, p) => a + p[1], 0) / v.length;
+  const cut = v.map(([x, y]): [number, number] => [x + (x - vx) * 0.15, y + (y - vy) * 0.15]);
+  let bare = 0;
+  let area = 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (sil[y * W + x] === 0) continue;
+      area++;
+      // A sliver along the silhouette's own edge is a grazing cell, not a hole: only pixels well inside count.
+      const E = 5;
+      if (x < E || y < E || x >= W - E || y >= H - E || sil[y * W + x - E] === 0 || sil[y * W + x + E] === 0 || sil[(y - E) * W + x] === 0 || sil[(y + E) * W + x] === 0) continue;
+      if (cover[y * W + x] === 0 && !inside(x + 0.5, y + 0.5, cut)) bare++;
+    }
+  }
+  return { bare: bare / (K * K), area: area / (K * K) };
+}
+
+test("tipped to look up into the open bottom, the jacket alone shows its inside, and no background, at every turn", () => {
+  let worst = 0;
+  let where = "";
+  for (let yaw = 0; yaw < 360; yaw += 20) {
+    for (const tilt of [-15, -26, -35]) {
+      const { bare } = bareInside(yaw, tilt);
+      if (bare > worst) {
+        worst = bare;
+        where = `yaw ${yaw}, tilt ${tilt}`;
+      }
+    }
+  }
+  assert.ok(worst <= 25, `${worst.toFixed(1)} square units of background inside the jacket's silhouette at ${where}`);
+});
+
+test("the open bottom has a hem rim and the inner faces and walls run down to it", () => {
+  const rimmed = bodyCells.filter((c) => c.tex[1]! >= INNER_DY + 88 && c.p[1]! >= (body.y[body.y.length - 1] as number) - 0.01 && c.p[4]! >= (body.y[body.y.length - 1] as number) - 0.01);
+  assert.ok(rimmed.length >= 12, `${rimmed.length} cells in the hem's rim`);
+  const lowest = Math.max(...bodyCells.filter((c) => c.tex[1]! >= INNER_DY).flatMap((c) => [c.p[1]!, c.p[4]!, c.p[7]!]));
+  assert.equal(lowest, body.y[body.y.length - 1], "the inner faces reach the hem");
+});

@@ -110,8 +110,8 @@ const LAPEL = 12.6;
 /** The collar's band in the turning view, a little inside the drawn lapel so none of the drawing shows past its edges. */
 export const LAPEL_BAND = LAPEL - 1;
 
-/** How far down the drawing the jacket's inside is built (judogiInner.ts): the neck and the upper chest, as far as the eye can look down through the neck and the lapels' opening. */
-const INNER_TO = 130;
+/** How far down the drawing the jacket's inside is built (judogiInner.ts): all the way to the hem, so that looking up into the open bottom, as well as down through the neck, shows cloth. */
+const INNER_TO = HEM;
 
 export function jacketDesc(depth = 1, tied = false): VolumeDesc {
   const sl: VolumeDesc["sl"] = [
@@ -154,7 +154,7 @@ const FULL = 2.2;
 const SIDE = 0.1;
 
 /** The outline of the body (no sleeves), clockwise from the collar's top left. */
-function bodyOutline(tied: boolean): Pt[] {
+export function bodyOutline(tied: boolean): Pt[] {
   const h = halves(tied);
   const left: Pt[] = Y.map((y, j) => [100 - (h[j] as number), y]);
   const right: Pt[] = [...left].reverse().map(mirror);
@@ -359,8 +359,32 @@ export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
   return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip, extra: inside(uid, ink, t, face) };
 }
 
-/** The emblem's middle on the front's drawing, and the room it has there: the band between the top lapel's sewn edge and the sleeve's head (`EMBLEM_ROOM` units wide). */
-export const EMBLEM_AT: Pt = [131, 66];
+/** The bottom of a tied belt's band at the front: a mark on the jacket's front stays below it (the band is 15.5 units from its top). */
+export const BELT_BOTTOM = BELT_TOP + 15.5;
+
+/** How far a sleeve leans from the body, in degrees: a mark on a sleeve is turned with it. */
+export const SLEEVE_ANGLE = (Math.atan((S[0] - P[0]) / (P[1] - S[1])) * 180) / Math.PI;
+
+/**
+ * The chest of the front on the wearer's left (the picture's right), between the top lapel's collar band and the sleeve's seam, at height `y`: from the band's
+ * right edge to the sleeve's inner edge (the armhole's seam, from the sleeve's head down to the armpit). Marks on the chest (the national emblem, IJF: at most
+ * 100 cm2 on the left chest) are put inside it, so none runs onto the lapel or the sleeve, whatever shape the body is cut to.
+ */
+export function chestSpan(y: number): [number, number] {
+  const band = offset(TOP_EDGE, -LAPEL);
+  const left = atY(band, y)[0];
+  const [hx, hy] = [200 - CAP[4]!, CAP[5]!];
+  const [ax, ay] = mirror(A);
+  const right = hx + ((ax - hx) * (Math.max(hy, Math.min(ay, y)) - hy)) / (ay - hy);
+  return [left, right];
+}
+
+/** The chest's rows: below the collar's foot and the sleeve's head, above the belt's band. */
+export const CHEST_TOP = 34;
+export const CHEST_BOTTOM = BELT_TOP - 14;
+
+/** The emblem's middle on the front's drawing, centred between the lapel's band and the sleeve's seam, and the room it has there (`EMBLEM_ROOM` units wide). */
+export const EMBLEM_AT: Pt = [(chestSpan(66)[0] + chestSpan(66)[1]) / 2, 66];
 export const EMBLEM_ROOM = { w: 27, h: 30 };
 
 /** The jacket's sleeve outline on the front's drawing, the picture's left (`side` -1) or right: the cloth that the sleeve's cells show, which a mark on the chest must stay out of. */
@@ -400,7 +424,7 @@ export function jacketSpots(): {
   const lean = (Math.atan2(down[1] - up[1], down[0] - up[0]) * 180) / Math.PI;
   const side = (w: "left" | "right", back: boolean): -1 | 1 => ((w === "left") !== back ? 1 : -1);
   return {
-    chest: { x: 133, y: 72, rot: 0 },
+    chest: { x: (chestSpan(72)[0] + chestSpan(72)[1]) / 2, y: 72, rot: 0 },
     emblem: { x: EMBLEM_AT[0], y: EMBLEM_AT[1], rot: 0 },
     hemLogo: { x: 138, y: 187, rot: 0 },
     lapelHem: { x: lx, y: ly, rot: lean },
@@ -408,17 +432,17 @@ export function jacketSpots(): {
     sleeve: (w) => {
       const sd = side(w, false);
       const [x, y] = onSleeve(sd, 0.4, 0.5);
-      return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
+      return { x, y, rot: sd === -1 ? SLEEVE_ANGLE : -SLEEVE_ANGLE };
     },
     upperSleeve: (w) => {
       const sd = side(w, false);
       const [x, y] = onSleeve(sd, 0.18, 0.5);
-      return { x, y, rot: sd === -1 ? 15.3 : -15.3 };
+      return { x, y, rot: sd === -1 ? SLEEVE_ANGLE : -SLEEVE_ANGLE };
     },
     shoulder: (w) => {
       const sd = side(w, true);
       const [x, y] = onSleeve(sd, 0.17, 0.16);
-      return { x, y, rot: sd === -1 ? 105.3 : 74.7 };
+      return { x, y, rot: sd === -1 ? 90 + SLEEVE_ANGLE : 90 - SLEEVE_ANGLE };
     },
   };
 }

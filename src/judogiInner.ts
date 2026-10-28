@@ -24,7 +24,11 @@ const INNER_PLAIN = 60;
 
 /** The inner faces are plain cloth with a label on it, so they are cut in far fewer, larger cells than the outer shell (and below the neck's own region, in rows `ROW_SKIP` of the body's at a time). */
 const INNER_NT = 6;
-const ROW_SKIP = 3;
+/** Every row of the body is a line of cells: the inner faces run to the hem now, and a skipped row at the waist would carry the inner face outside the narrower outer one. */
+const ROW_SKIP = 1;
+/** The hem's rim, as heights below the inner drawing's own top: the plain cloth at the foot of the drawing, where the hem's own row samples it. */
+const HEM_RIM_FROM = 90;
+const HEM_RIM_TO = 95;
 
 const tAt = (i: number, n: number): number => ((-90 + (180 * i) / n) * Math.PI) / 180;
 
@@ -76,6 +80,24 @@ export function innerCells(d: VolumeDesc): Cell[] {
         p.push(...(k === 0 ? out(top, t, sg) : at(top, t, sg)));
       }
       cells.push(...split(back ? 3 : 0, back, tex, p, [0, -1, 0]));
+    }
+  }
+  // The hem's rim: the bottom edge of the open jacket, from the outer cloth to the inner, all the way round each half, so that looking up into the opening
+  // shows a cloth's thickness and then the inside, not a bare shell.
+  const bottom = lines[lines.length - 1] as number;
+  if (bottom === d.y.length - 1) {
+    for (const back of [false, true]) {
+      const sg = back ? -1 : 1;
+      for (let i = 0; i < INNER_NT; i++) {
+        const tex: number[] = [];
+        const p: number[] = [];
+        for (const [k, ii] of [[0, i], [0, i + 1], [1, i], [1, i + 1]] as const) {
+          const t = tAt(ii, INNER_NT);
+          tex.push(100 - texHalf(d, bottom) * Math.sin(t), INNER_DY + (k === 0 ? HEM_RIM_FROM : HEM_RIM_TO));
+          p.push(...(k === 0 ? out(bottom, t, sg) : at(bottom, t, sg)));
+        }
+        cells.push(...split(back ? 3 : 0, back, tex, p, [0, 1, 0]));
+      }
     }
   }
   // The walls between the two inner faces, down each side.

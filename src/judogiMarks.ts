@@ -89,8 +89,12 @@ export interface JudogiEmblem {
   href?: string;
   /** A ready-made mark the package draws itself: `"kodokan"`, the Kodokan's emblem (a white flower of sixteen petals round a red disc), when `svg` and `href` are not given. It is sewn on with no patch border unless `frame: "patch"` is asked for. */
   mark?: "kodokan";
-  /** Sewn on as a patch with a stitched border (the default), or the artwork alone. */
-  frame?: "patch" | "none";
+  /**
+   * How it is sewn on. `"patch"` (the default): the artwork fills the patch edge to edge with only a thin merrowed (overlock) edge, 1.7 mm of thread that takes the
+   * colours of the artwork's own edge, as a flag patch is made; a placeholder, which has no flag, is a white patch with the star in it. `"bordered"`: a white patch with a
+   * stitched border and a margin of cloth round the artwork. `"none"`: the artwork alone.
+   */
+  frame?: "patch" | "bordered" | "none";
   thread?: ThreadColour | string;
   widthCm?: number;
   heightCm?: number;
@@ -186,7 +190,9 @@ export interface ReadEmblem {
   style: "flag" | "named" | "square";
   place: "chest" | "sleeve-left" | "sleeve-right";
   image: string | undefined;
-  frame: "patch" | "none";
+  frame: "patch" | "bordered" | "none";
+  /** The package's own round badge (the Kodokan's), not a flag. */
+  badge: boolean;
   thread: { name: string; rgb: Rgb } | undefined;
   widthCm: number;
   heightCm: number;
@@ -324,7 +330,9 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       place: e.place === "sleeve-left" || e.place === "sleeve-right" ? e.place : "chest",
       image: img?.src,
       // The Kodokan's emblem is a round badge of its own, so it is sewn on without a patch border unless one is asked for.
-      frame: e.frame === "none" || (mark === "kodokan" && e.frame !== "patch" && e.svg === undefined && e.href === undefined) ? "none" : "patch",
+      // The Kodokan's badge is round: a patch asked for round it is a bordered one, as a flag patch's edge to edge would show the corners of its box.
+      badge: mark === "kodokan" && e.svg === undefined && e.href === undefined,
+      frame: e.frame === "none" || (mark === "kodokan" && e.frame !== "patch" && e.frame !== "bordered" && e.svg === undefined && e.href === undefined) ? "none" : e.frame === "bordered" ? "bordered" : "patch",
       thread: e.thread === undefined ? undefined : readThread(e.thread, "navy"),
       widthCm: num(e.widthCm, 1, 40, Math.round(h0 * aspect * 10) / 10),
       heightCm: num(e.heightCm, 1, 40, Math.round(h0 * 10) / 10),
@@ -439,6 +447,29 @@ function placeholderEmblem(rgb: Rgb, w: number, h: number): string {
   return satinStroke(ring, Math.max(0.8, r * 0.12), rgb) + satinStroke(`M${pts.join("L")}Z`, Math.max(0.7, r * 0.1), rgb);
 }
 
+/** The width of a flag patch's merrowed edge: 1.7 mm (0.45 of a unit). */
+export const MERROW = 0.45;
+
+/**
+ * A flag patch's edge, as sewn: the flag itself fills the patch to its edge, and round it runs the overlock stitching, 1.7 mm of thread across, in the colours of the
+ * flag's own edge (the flag's picture again, a little larger, shows through a ring cut round the patch), darker where the thread is dense, and ribbed across.
+ * `under` goes beneath the flag (the patch's hair of shadow on the cloth), `over` on top of it (the edge).
+ */
+function flagPatch(id: string, w: number, h: number, src: string): { defs: string; under: string; over: string } {
+  const e = MERROW;
+  const sx = (w + 2 * e) / w;
+  const sy = (h + 2 * e) / h;
+  const box = (g: number): string => `M${n2(-w / 2 + g)} ${n2(-h / 2 + g)}H${n2(w / 2 - g)}V${n2(h / 2 - g)}H${n2(-w / 2 + g)}Z`;
+  const defs = `<clipPath id="${id}E"><path clip-rule="evenodd" d="${box(0)}${box(e)}"/></clipPath>`;
+  const shadow = [[0.7, 0.07], [0.35, 0.12]].map(([k, o]) => `<rect x="${n2(-w / 2 - k! + 0.3)}" y="${n2(-h / 2 - k! + 0.45)}" width="${n2(w + 2 * k!)}" height="${n2(h + 2 * k!)}" rx="0.4" fill="#1a2230" fill-opacity="${o}"/>`).join("");
+  const ring = `<g clip-path="url(#${id}E)"><g transform="scale(${sx.toFixed(4)} ${sy.toFixed(4)})">${imageIn(src, w, h)}</g>` +
+    `<path d="${box(0)}${box(e)}" fill-rule="evenodd" fill="#1a2230" fill-opacity="0.2"/>` +
+    // The ribbing of the overlock: short stitches across the edge, and a lit hair along the outside.
+    `<path d="${box(e / 2)}" fill="none" stroke="#10141c" stroke-opacity="0.38" stroke-width="${n2(e)}" stroke-dasharray="0.18 0.26"/>` +
+    `<path d="${box(0.12)}" fill="none" stroke="#fff" stroke-opacity="0.25" stroke-width="0.14"/></g>`;
+  return { defs, under: shadow, over: ring };
+}
+
 /** A person's artwork in a box, drawn as an image so nothing in it can touch the page. */
 const imageIn = (src: string, w: number, h: number): string =>
   `<image href="${esc(src)}" x="${n2(-w / 2)}" y="${n2(-h / 2)}" width="${n2(w)}" height="${n2(h)}" preserveAspectRatio="xMidYMid meet"/>`;
@@ -524,6 +555,11 @@ function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string, k: number): Out {
     return { defs: patch.defs + thread, body: patch.under + art(0) + caption() + patch.over };
   }
   if (e.frame === "none") return { defs: thread, body: art(0) + caption() };
+  // A flag patch: the flag edge to edge, with only a thin merrowed edge; a caption stands under it on the cloth.
+  if (e.frame === "patch" && e.image !== undefined && !e.badge) {
+    const flag = flagPatch(`${id}P`, aw, ah, e.image);
+    return { defs: flag.defs + thread, body: `<g transform="translate(0 ${n2(ay)})">${flag.under}${imageIn(e.image, aw, ah)}${flag.over}</g>` + caption() };
+  }
   // A patch with a stitched border round the artwork; a caption stands under it on the cloth.
   const patch = cloth(`${id}P`, -aw / 2, ay - ah / 2, aw, ah, white, [120, 126, 140]);
   return { defs: patch.defs + thread, body: patch.under + art(7 * k) + patch.over + caption() };

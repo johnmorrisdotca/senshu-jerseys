@@ -49,7 +49,7 @@ export function pantsDesc(depth = 1, worn = false): VolumeDesc {
   return { ...pieceDesc(Y, hipsOf(worn).map((h) => h + 1.2), D, sl, depth, 10, 4, 6, LOBES), full: 2.6, tube: 0.95 };
 }
 
-function hipOutline(h: readonly number[]): Pt[] {
+export function hipOutline(h: readonly number[]): Pt[] {
   const left: Pt[] = Y.map((y, j) => [100 - (h[j] as number), y]);
   return [...left, ...[...left].reverse().map(mirror)];
 }
