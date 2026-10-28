@@ -8,7 +8,7 @@ All notable changes to this project are written here. The format follows
 
 ### Added
 
-- **Belt specifications as data** (`beltWidthsFor`, `BELT_MODELS`, `BELT_SIZES`, `KOHAKU`, `MAKER_EMBROIDERY`, `BELT_THICKNESSES`, `BELT_END_TAGS`, `EMBROIDERY_STITCHINGS` and the helpers): the widths, stitch lines, thicknesses and lengths by size number that a maker's catalogue gives, the kohaku belt's sections, and the embroidery a maker offers, with sources and the day read (docs/judogi.md, "Belt specifications").
+- **Belt specifications as data** (`beltWidthsFor`, `BELT_MODELS`, `BELT_SIZES`, `KOHAKU`, `MAKER_EMBROIDERY`, `BELT_THICKNESSES`, `BELT_END_TAGS`, `BELT_SIZE_TAG_LINE`, `EMBROIDERY_STITCHINGS` and the helpers): the widths, stitch lines, thicknesses and lengths by size number that a maker's catalogue gives, the kohaku belt's sections, and the embroidery a maker offers, with sources and the day read (docs/judogi.md, "Belt specifications").
 - **`stitching: "integrated"`** on an embroidery: worked into the belt as it is made, flatter than the default `applied`, on every garment.
 
 ### Changed

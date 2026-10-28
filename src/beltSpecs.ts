@@ -153,11 +153,13 @@ export const beltThicknessesFor = (belt: string): BeltThickness[] =>
 
 /**
  * What most belts carry near one end, for the drawing (a hand-over note, not drawn here): a woven maker's label, right under it a small size tag (the size
- * number only, no words unless the user gives text), and under that a small white tag that almost every belt has: where the size tag shows, the white tag shows
+ * number, and under it by default three tiny kanji, `BELT_SIZE_TAG_LINE`, which the user may change or remove), and under that a small white tag that almost every belt has: where the size tag shows, the white tag shows
  * too. What a real one carries is not known, so it is drawn blank (a fine woven texture), with optional text from the user, never wording made up here. The
  * label is neutral placeholder art in this package, never a maker's mark.
  */
 export const BELT_END_TAGS = ["maker-label", "size-tag", "white-tag"] as const;
 export type BeltEndTag = (typeof BELT_END_TAGS)[number];
+/** The line under the number on a size tag by default: the three kanji for "made in Japan", in very small type; a user may change it or remove it. */
+export const BELT_SIZE_TAG_LINE = "日本製";
 /** A tag that needs another: the white tag goes with the size tag. */
 export const BELT_TAG_NEEDS: Readonly<Record<BeltEndTag, BeltEndTag | undefined>> = { "maker-label": undefined, "size-tag": "maker-label", "white-tag": "size-tag" };

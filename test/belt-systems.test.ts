@@ -97,3 +97,8 @@ test("thickness grades and the tags near a belt's end", async () => {
   assert.deepEqual(beltThicknessesFor("black"), ["standard", "thick", "extra-thick"]);
   assert.equal(BELT_TAG_NEEDS["white-tag"], "size-tag");
 });
+
+test("the size tag's default line is the three kanji for made in Japan", async () => {
+  const { BELT_SIZE_TAG_LINE } = await import("../src/index.ts");
+  assert.equal([...BELT_SIZE_TAG_LINE].length, 3);
+});
