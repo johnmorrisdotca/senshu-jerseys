@@ -6,6 +6,19 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Hangul embroidery and lettering.** Korean text is set as one square per syllable, in a font stack that names Korean faces after the Japanese ones (Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, Nanum), and tagged `lang="ko"` so Han characters beside it take Korean forms (`ja` beside kana). A column (`direction: "down"`) works the same.
+
+### Changed
+
+- **Text from outside is cleaned the same way everywhere** (embroidery, back patches, labels, brand, banners, names): composed to NFC (Hangul sent as parts is one syllable), control, direction and joiner characters out, and emoji, flags and right-to-left scripts, which thread and type here cannot set, taken out; it is cut to its length in whole characters (an accented letter or an astral character is one). A text left empty draws nothing. An invalid SVG from a control character is no longer possible.
+- **The zekken** is drawn at the smallest size the rule allows, 30 by 25 cm and 5 cm below the collar, and any back patch stops 1.3 cm above the belt's top edge.
+
+### Fixed
+
+- **Zekken and back-number lettering stays inside its patch:** system text is centred on its line (it sat a third of a letter too high), and lettering shrinks to fit down to half its height, then is cut with an ellipsis.
+
 ## [0.17.2] - 2026-10-27
 
 ### Added

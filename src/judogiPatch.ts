@@ -8,8 +8,9 @@
 // 10 cm below the back collar and stitched across its diagonals). The rules' pictures and wording are not copied; the lettering is the
 // package's own strokes. No federation mark is drawn, and the letters of a federation (IJF) are never printed.
 
-import { blend, clean, hashOf, hexOf, lum, readColour, shade, type Rgb } from "./colour.ts";
+import { blend, clean, graphemes, hashOf, hexOf, lum, readColour, shade, type Rgb } from "./colour.ts";
 import { layout, drawRun } from "./text.ts";
+import { BELT_TOP } from "./judogiJacket.ts";
 import { n2 } from "./path.ts";
 
 /** The drawing's scale: units to the centimetre, for a 170 cm size (the jacket is 78 cm long and 200 units across its box). */
@@ -83,9 +84,12 @@ const BAND: Record<PatchColour, Rgb> = {
 };
 
 /** The rules' own numbers, and the defaults this package draws with (the IJF's text fixes the place and the stitching, not the size). */
+/** The lowest a patch's bottom edge may be drawn: 1.3 cm above the top edge of the belt tied at the waist, whatever the belt's width (it hangs down from that edge). */
+export const PATCH_LIMIT = BELT_TOP - 1.3 * CM;
+
 export const PATCH_FACTS = {
   ijf: { top: 3, widthCm: 25, heightCm: 29 },
-  zekken: { top: 7.5, topMin: 5, topMax: 10, widthMin: 30, widthMax: 35, heightMin: 25, heightMax: 30, widthCm: 33, heightCm: 28 },
+  zekken: { top: 5, topMin: 5, topMax: 10, widthMin: 30, widthMax: 35, heightMin: 25, heightMax: 30, widthCm: 30, heightCm: 25 },
 } as const;
 
 const num = (v: unknown, min: number, max: number, fallback: number): number =>
@@ -172,16 +176,23 @@ export function cloth(id: string, x: number, y: number, w: number, h: number, ba
 /** A run of letters in a fill, centred on `(cx, cy)`, as the package's own strokes (or system text for characters it has no stroke for). */
 export function letters(text: string, cx: number, cy: number, height: number, maxWidth: number, fill: string, weight: "regular" | "bold" | "black" = "bold"): string {
   if (text === "") return "";
-  return drawRun(layout(text, cx, cy, { height, maxWidth, weight, tracking: 0.35 }), fill, undefined, undefined);
+  const o = { height, maxWidth, weight, tracking: 0.35 };
+  // Shrunk to fit down to half the height it was meant to have; below that the end is cut and an ellipsis marks it, so a long name stays legible.
+  const whole = layout(text, cx, cy, { ...o, maxWidth: undefined }).height;
+  let run = layout(text, cx, cy, o);
+  const parts = graphemes(text);
+  for (let n = parts.length - 1; n >= 1 && run.height < whole * 0.5; n--) run = layout(`${parts.slice(0, n).join("").trimEnd()}…`, cx, cy, o);
+  return drawRun(run, fill, undefined, undefined);
 }
 
 /** The back patch drawn on the jacket's back face (the 200-wide box), its top the right number of centimetres below the collar's foot. */
 export function backPatch(uid: string, p: PatchSpec, collarFootY: number): { defs: string; body: string } {
   const id = idOf(uid, p);
   const w = p.widthCm * CM;
-  const h = p.heightCm * CM;
-  const x = 100 - w / 2;
   const y = collarFootY + p.topCm * CM;
+  // A patch never reaches the belt: it stops PATCH_CLEAR units above where a 5 cm belt's top edge is, whatever was asked for (`judogiCheck` still reports the size).
+  const h = Math.min(p.heightCm * CM, Math.max(8, PATCH_LIMIT - y));
+  const x = 100 - w / 2;
   if (p.style === "ijf") {
     const white: Rgb = [250, 249, 246];
     const base = cloth(id, x, y, w, h, white, [150, 156, 170]);
@@ -210,8 +221,8 @@ export function backPatch(uid: string, p: PatchSpec, collarFootY: number): { def
   const ink = p.ink === "vermilion" ? "#c9361c" : "#15181f";
   const top = h * 0.66;
   const s = base.under +
-    letters(p.name, 100, y + top * 0.52, Math.min(top * 0.78, w * 0.4), w - 8, ink, "black") +
-    letters(p.line, 100, y + top + (h - top) * 0.5, (h - top) * 0.52, w - 9, ink, "bold");
+    letters(p.name, 100, y + top * 0.52, Math.min(top * 0.62, w * 0.36), w - 16, ink, "black") +
+    letters(p.line, 100, y + top + (h - top) * 0.5, (h - top) * 0.46, w - 16, ink, "bold");
   return { defs: base.defs, body: s + base.over + stitchOver(id, x, y, w, h, "x", [120, 126, 140]) };
 }
 

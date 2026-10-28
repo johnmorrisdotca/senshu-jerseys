@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { clean, graphemes, settable } from "../src/colour.ts";
 import { renderJudogi, type JudogiEmbroidery } from "../src/index.ts";
+import { BELT_TOP } from "../src/judogiJacket.ts";
+import { PATCH_LIMIT } from "../src/judogiPatch.ts";
 import { layout, langAttr } from "../src/text.ts";
 import { wellFormed } from "./helpers.ts";
 
@@ -125,4 +127,56 @@ test("a back patch, a label and the brand take the same text rules", () => {
   assert.equal(wellFormed(zekken), null);
   const brand = renderJudogi({ ...base, branding: { name: "Kim 🥋", line: "서울" } as never });
   assert.equal(wellFormed(brand), null);
+});
+
+test("a patch's lettering fits its box: shrunk to half its height, then cut with an ellipsis", () => {
+  const box = (svg: string): { x: number; y: number; w: number; h: number } => {
+    const m = /<clipPath id="[^"]*pt[^"]*C"><rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"/.exec(svg);
+    assert.ok(m, "the patch's cloth box");
+    return { x: Number(m[1]), y: Number(m[2]), w: Number(m[3]), h: Number(m[4]) };
+  };
+  const names = ["山田", "山田太郎一郎山田太郎一郎山田太郎一郎", "한국어 김민준 한국어 김민준", "A", "M. TANAKA-SMITH-JONES-WILLIAMS", "W".repeat(24), "é".normalize("NFD").repeat(24)];
+  for (const style of ["zekken", "ijf"] as const) {
+    for (const view of ["front", "back", "flat", "flat-back"] as const) {
+      for (const size of ["1", "170", "190"] as const) {
+        for (const name of names) {
+          const svg = renderJudogi({ mode: "jacket", view, size, belt: "black", backPatch: { style, name, code: "JPN", line: name } });
+          assert.equal(wellFormed(svg), null, `${style} ${view} ${size} ${name}`);
+          assert.ok(!/NaN/.test(svg));
+        }
+      }
+    }
+  }
+  // Every glyph of the back view's patch stays inside the cloth: the flat back is a plain 1:1 drawing, so the characters' centres can be read.
+  for (const style of ["zekken", "ijf"] as const) {
+    for (const name of names) {
+      const svg = renderJudogi({ mode: "jacket", view: "flat-back", belt: "black", backPatch: { style, name, line: name } });
+      const b = box(svg);
+      for (const m of svg.matchAll(/translate\(([-\d.]+) ([-\d.]+)\) rotate\(0\)" font-size="([-\d.]+)"/g)) {
+        const [x, y, size] = [Number(m[1]), Number(m[2]), Number(m[3])];
+        if (x < b.x - 1 || x > b.x + b.w + 1 || y < b.y - 1 || y > b.y + b.h + size) continue; // another mark of the jacket
+        assert.ok(x - size / 2 >= b.x + 2 && x + size / 2 <= b.x + b.w - 2, `${style} ${name}: a character leaves the cloth sideways`);
+        assert.ok(y - size * 0.9 >= b.y + 1 && y + size * 0.15 <= b.y + b.h - 1, `${style} ${name}: a character leaves the cloth vertically`);
+      }
+    }
+  }
+  const cut = renderJudogi({ mode: "jacket", view: "flat-back", backPatch: { style: "zekken", name: "山田太郎一郎山田太郎一郎山田太郎一郎" } });
+  assert.match(cut, />…<\/text>/);
+});
+
+test("a back patch never reaches the belt, at any size, view, belt or measure", () => {
+  for (const style of ["zekken", "ijf"] as const) {
+    for (const belt of ["none", "white", "black", "red-white"] as const) {
+      for (const beltWidthCm of [3, 4.5, 6]) {
+        for (const asked of [{}, { heightCm: 40, topCm: 20 }, { heightCm: 30, topCm: 10, widthCm: 35 }, { heightCm: 8, topCm: 0 }]) {
+          const svg = renderJudogi({ mode: "jacket", view: "back", belt, beltWidthCm, backPatch: { style, ...asked } });
+          const m = /<clipPath id="[^"]*pt[^"]*C"><rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"/.exec(svg);
+          assert.ok(m);
+          const bottom = Number(m[2]) + Number(m[4]);
+          assert.ok(bottom <= BELT_TOP - 3, `${style} ${belt} ${beltWidthCm} ${JSON.stringify(asked)}: bottom ${bottom} against the belt's top ${BELT_TOP}`);
+        }
+      }
+    }
+  }
+  assert.ok(PATCH_LIMIT <= BELT_TOP - 3);
 });

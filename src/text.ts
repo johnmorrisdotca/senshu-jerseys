@@ -85,7 +85,8 @@ export function layout(text: string, cx: number, cy: number, o: RunOptions): Run
         d += mapPath(g.d, (gx, gy) => place(gx - g.w / 2, gy - 90 - weight / 2), k);
       }
     } else if (c !== " ") {
-      out.push({ c, x: px, y: py - height / 2 + height * 0.05, r: rot, size: height * 0.9 });
+      // The text's baseline is a third of its size below the middle of the line, so its letters (cap height, or a kanji's square) are centred on it.
+      out.push({ c, x: px, y: py - height / 2 + height * 0.3, r: rot, size: height * 0.9 });
     }
     x += (w + gapOf(i)) * k;
   });

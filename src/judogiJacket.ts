@@ -30,6 +30,8 @@ const TIED = [22, 30, 40, 51, 60.5, 58.5, 51.5, 45, 39.5, 40.5, 43.5, 49, 56];
 const LOOSE_D = [14, 18, 22, 26, 29, 31, 32, 32, 31, 31, 31, 31.5, 32];
 const TIED_D = [14, 18, 22, 26, 29, 31, 32, 30, 27.5, 28, 29.5, 31, 32];
 const WAIST = 114;
+/** The top edge of a tied belt at the back, in the jacket's units: a back patch is kept above it. */
+export const BELT_TOP = WAIST - 2.5;
 /** Where the collar's foot crosses the middle of the back: a back patch is measured from here. */
 export const BACK_COLLAR_FOOT = 19.5;
 const HEM = Y[Y.length - 1] as number;
@@ -45,7 +47,7 @@ const halfAt = (tied: boolean, y: number): number => rowAt(halves(tied), y);
  */
 export function beltRound(depth = 1, width = 12): { y: number; a: number; b: number; full: number; side: number } {
   const k = Math.max(0.35, Math.min(1.6, depth));
-  const top = WAIST - 2.5;
+  const top = BELT_TOP;
   const foot = top + 2.5 + width;
   return { y: top, a: Math.max(halfAt(true, top), halfAt(true, foot)) + 1.2, b: Math.max(rowAt(TIED_D, top), rowAt(TIED_D, foot)) * k, full: FULL, side: SIDE };
 }
