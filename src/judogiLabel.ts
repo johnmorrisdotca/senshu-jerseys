@@ -102,16 +102,17 @@ export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: s
     `<clipPath id="${id}C"><rect x="${n2(-w / 2)}" y="${n2(-h / 2)}" width="${n2(w)}" height="${n2(h)}" rx="${n2(side * 0.05)}"/></clipPath>`;
   const rect = (grow = 0, dx = 0, dy = 0): string => `x="${n2(-w / 2 - grow + dx)}" y="${n2(-h / 2 - grow + dy)}" width="${n2(w + grow * 2)}" height="${n2(h + grow * 2)}" rx="${n2(side * 0.05 + grow)}"`;
   let under = "";
-  for (const [k, o] of [[side * 0.11, 0.04], [side * 0.07, 0.06], [side * 0.04, 0.09], [side * 0.016, 0.12]] as const) under += `<rect ${rect(k, side * 0.03, side * 0.055)} fill="#1a2230" fill-opacity="${o}"/>`;
+  // A soft contact shadow all round, nearly level (a label is a thin cloth: it throws a hair of shadow, not a slab down one side).
+  for (const [k, o] of [[side * 0.06, 0.03], [side * 0.036, 0.05], [side * 0.02, 0.07], [side * 0.008, 0.09]] as const) under += `<rect ${rect(k, side * 0.008, side * 0.016)} fill="#1a2230" fill-opacity="${o}"/>`;
   under += `<rect ${rect()} fill="${cloth}"/><g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}W)"/><rect ${rect()} fill="url(#${id}T)"/></g>`;
   // A woven border (two lines of thread with the cloth between them), inset from the edge.
   const edge = side * 0.075;
   let over = `<rect x="${n2(-w / 2 + edge)}" y="${n2(-h / 2 + edge)}" width="${n2(w - 2 * edge)}" height="${n2(h - 2 * edge)}" rx="${n2(side * 0.025)}" fill="none" stroke="${thread}" stroke-width="${n2(side * 0.022)}"/>`;
   over += `<rect x="${n2(-w / 2 + edge * 1.7)}" y="${n2(-h / 2 + edge * 1.7)}" width="${n2(w - 3.4 * edge)}" height="${n2(h - 3.4 * edge)}" rx="${n2(side * 0.015)}" fill="none" stroke="${thread}" stroke-width="${n2(side * 0.01)}" stroke-opacity="0.8"/>`;
   // The sheen across the weave, and a slight curl at the bottom right corner: a lit fold and its shadow.
-  const c = side * 0.22;
+  const c = side * 0.13;
   over += `<g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}G)"/>` +
-    `<path d="M${n2(w / 2)} ${n2(h / 2 - c)}L${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2)}Z" fill="#fff" fill-opacity="${light ? 0.35 : 0.14}"/>` +
+    `<path d="M${n2(w / 2)} ${n2(h / 2 - c)}L${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2)}Z" fill="#fff" fill-opacity="${light ? 0.2 : 0.1}"/>` +
     `<path d="M${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2 - c)}" stroke="#101620" stroke-opacity="0.3" stroke-width="0.5"/></g>`;
   over += `<rect ${rect()} fill="none" stroke="${deep}" stroke-width="0.6" stroke-opacity="0.8"/>`;
   return { defs, under, over, thread };

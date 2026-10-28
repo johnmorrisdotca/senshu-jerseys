@@ -244,12 +244,13 @@ export function smoothOf(cells: readonly Cell[]): (Smooth | undefined)[] {
  */
 const TILT = 0.2;
 
-export function shadeOf(n: Vec, yaw: number, pitch: number): number {
+export function shadeOf(n: Vec, yaw: number, pitch: number, inside = false): number {
   const k = Math.hypot(n[0], n[1] * TILT, n[2]) || 1;
   const r = (d: number): number => (d * Math.PI) / 180;
   const w = turn(n[0] / k, (n[1] * TILT) / k, n[2] / k, Math.cos(r(yaw)), Math.sin(r(yaw)), Math.cos(r(pitch)), Math.sin(r(pitch)));
   const lit = w[0] * LIGHT[0] + w[1] * LIGHT[1] + w[2] * LIGHT[2];
-  return Math.round(Math.max(0, Math.min(0.52, (0.84 - lit) * 0.36)) * 1000) / 1000;
+  // The inside of a sleeve or a leg at its open end is in the shade of the cloth round it.
+  return Math.round(Math.max(0, Math.min(0.52, (0.84 - lit) * 0.36 + (inside ? 0.22 : 0))) * 1000) / 1000;
 }
 
 /**
@@ -298,7 +299,7 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
     defs += `<path id="${uid}q${i}" d="${quadPath(c.tex)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
     const pl = placeCell(c, yaw, d.pitch);
     const at = pl.visible ? ` transform="${pl.matrix}"` : ' display="none"';
-    let fill = `fill="${greyOf(shadeOf(c.n, yaw, d.pitch))}"`;
+    let fill = `fill="${greyOf(shadeOf(c.n, yaw, d.pitch, c.inside === true))}"`;
     const sm = smooth[i];
     if (sm !== undefined) {
       const k = sm.k;
@@ -399,7 +400,7 @@ export function applyPiece(root: Element, yaw: number, tilt = 0): boolean {
     if (sm !== undefined && stops !== undefined) {
       stops[0]?.setAttribute("stop-color", greyOf(shadeOf(sm.n0, yaw, h.desc.pitch + tilt)));
       stops[1]?.setAttribute("stop-color", greyOf(shadeOf(sm.n1, yaw, h.desc.pitch + tilt)));
-    } else h.shade[i]?.firstElementChild?.setAttribute("fill", greyOf(shadeOf(c.n, yaw, h.desc.pitch + tilt)));
+    } else h.shade[i]?.firstElementChild?.setAttribute("fill", greyOf(shadeOf(c.n, yaw, h.desc.pitch + tilt, c.inside === true)));
   });
   if (isBand(h.desc)) {
     for (const i of depthOrder(placed)) {

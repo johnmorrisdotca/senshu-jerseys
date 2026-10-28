@@ -164,7 +164,8 @@ function sleeve(uid: string, t: Tone, side: -1 | 1, back: boolean): string {
   const along = (u: number, f0: number, f1: number): string => smooth([onSleeve(side, arm(f0), u), onSleeve(side, arm((f0 + f1) / 2), u + 0.04 * side), onSleeve(side, arm(f1), u)]);
   const shadowSide = side === -1 ? 0.12 : 0.88;
   const innerSide = side === -1 ? 0.9 : 0.1;
-  return `<path d="${out}" fill="${t.fill}"/><path d="${out}" fill="url(#${uid}S)"/>` +
+  // The cloth runs a little past the outline (a stroke of its own colour), so that the cells along a sleeve's edge and seam, which sample right up to it, find no see-through texels.
+  return `<path d="${out}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${out}" fill="url(#${uid}S)"/>` +
     // The sleeve is rounder than the drawing: a little darker along its edges, lighter along its top.
     fold(along(shadowSide, 0.08, 0.95), 7, t.light ? 0.08 : 0.2) +
     fold(along(innerSide, 0.04, 0.9), 6, t.light ? 0.1 : 0.22) +
@@ -189,7 +190,7 @@ function leftOf(pts: readonly Pt[]): string {
 /** The cloth of the body: the grain above the waist seam, the quilting below, and the waist seam itself. */
 function bodyCloth(uid: string, t: Tone, outline: string, tied: boolean): string {
   const w = halfAt(tied, WAIST);
-  return `<path d="${outline}" fill="${t.fill}"/>` +
+  return `<path d="${outline}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/>` +
     `<g clip-path="url(#${uid}body)"><rect x="0" y="0" width="200" height="${WAIST}" fill="url(#${uid}G)"/>` +
     `<rect x="0" y="${WAIST}" width="200" height="${HEM - WAIST + 4}" fill="url(#${uid}Q)"/></g>` +
     seam(`M${n2(100 - w)} ${WAIST}Q100 ${WAIST + 2.5} ${n2(100 + w)} ${WAIST}`, t, 0.35) +

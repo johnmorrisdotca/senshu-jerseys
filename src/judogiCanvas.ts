@@ -333,7 +333,7 @@ function paintPiece(ctx: CanvasRenderingContext2D, layer: CanvasRenderingContext
       layer.restore();
       shade.setTransform(...m);
       const sm = p.smooth[i];
-      if (sm === undefined) shade.fillStyle = greyOf(shadeOf(c.n, yaw, p.desc.pitch + tilt));
+      if (sm === undefined) shade.fillStyle = greyOf(shadeOf(c.n, yaw, p.desc.pitch + tilt, c.inside === true));
       else {
         // A gradient is made in the space the transform sets: each triangle of a quadrilateral needs its own.
         const g = shade.createLinearGradient(...sm.line);

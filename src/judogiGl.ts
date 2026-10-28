@@ -165,7 +165,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
         const sm = p.smooth[i];
         let s: [number, number, number];
         if (sm === undefined) {
-          const flat = shadeOf(c.n, yaw, p.desc.pitch + tilt);
+          const flat = shadeOf(c.n, yaw, p.desc.pitch + tilt, c.inside === true);
           s = [flat, flat, flat];
         } else {
           let pair = edges.get(sm);

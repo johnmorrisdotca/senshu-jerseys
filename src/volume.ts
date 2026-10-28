@@ -62,7 +62,11 @@ const rad = (deg: number): number => (deg * Math.PI) / 180;
 const PAD = 1.2;
 const SLEEVE_DEPTH = 0.75;
 /** How far down the sleeve the cuff's lining samples, as a part of its length. */
-const CAP_FROM = 0.86;
+/** The hem of a sleeve or a trouser leg is about 4 mm thick (1 unit), and the inside of the open end goes in about 5 cm (14 units). */
+const HEM_THICK = 1;
+const DEPTH_IN = 14;
+/** How far up the sleeve (a part of its length) the inside of an open end samples its cloth from, so that no cell has a flat drawing. */
+const TEX_UP = 0.04;
 /** The exponent of the torso's cross-section in depth: 2 is an ellipse, more is a fuller, squarer body that fills out to the sleeves. */
 const FULL = 4;
 const BODY_DEPTH = 0.6;
@@ -214,6 +218,8 @@ export interface Cell {
   src?: number;
   /** In a scene of several things (a box with a belt in it): what is drawn first, 0, 1, 2 (what lies inside, the belt, what stands round it), so a wall always covers what it holds; within a layer the cells are put in order by depth. */
   layer?: number;
+  /** The cloth seen from inside (the inside of a sleeve or a leg at its open end): shaded darker. */
+  inside?: true;
   /** A second way the cell must face the viewer to be seen: a belt's edge behind the jacket it is tied on faces the viewer, but is hidden. */
   also?: [number, number, number];
 }
@@ -436,20 +442,26 @@ export function cellsOf(d: VolumeDesc): Cell[] {
           cells.push(...split(g, back, tex, p, n));
         }
       }
-      // The cuff is closed by a lining: a fan from the middle of the opening, sampling the cloth a little above the hem, so a side view never looks up an open tube.
-      const ringAt = (f: number, th: number): { tex: number[]; p: number[] } => {
+      // The end of the tube is open: a rim as thick as the hem (a ring facing along the sleeve), then the inside of the tube going in (its cloth seen from within, darker),
+      // and at the bottom of it a lining that closes it, so a side view never looks up an empty tube and a view into the cuff sees a hollow.
+      const ringAt = (f: number, th: number, rs = 1): { tex: number[]; p: number[] } => {
         const [o, inn] = sleeveAt(q, sleeve.c, f);
         const wx = inn[0] - o[0];
         const wy = inn[1] - o[1];
         const w = Math.hypot(wx, wy) || 1;
-        const u = 0.5 + 0.5 * Math.sin(th);
+        const u = 0.5 + 0.5 * Math.sin(th) * rs;
         const tx = o[0] + u * wx;
-        const r = (w / 2) * Math.sin(th);
-        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * (d.tube ?? SLEEVE_DEPTH) * (w / 2) * Math.cos(th)] };
+        const r = (w / 2) * Math.sin(th) * rs;
+        return { tex: [back ? 200 - tx : tx, o[1] + u * wy], p: [(o[0] + inn[0]) / 2 - 100 + (r * wx) / w, (o[1] + inn[1]) / 2 + (r * wy) / w, (back ? -1 : 1) * (d.tube ?? SLEEVE_DEPTH) * (w / 2) * rs * Math.cos(th)] };
       };
       const ref = cells[tube] as Cell;
-      const lining = ringAt(CAP_FROM, 0);
+      const [oHem, iHem] = sleeveAt(q, sleeve.c, 1);
+      const bore = Math.hypot(iHem[0] - oHem[0], iHem[1] - oHem[1]) || 1;
+      // The hem is about 4 mm thick (1 unit), the inside goes in 14 units.
+      const RS = Math.max(0.6, 1 - HEM_THICK / (bore / 2));
+      const fIn = 1 - Math.min(0.9, DEPTH_IN / (Math.hypot(P[0] - S[0], P[1] - S[1]) || 1));
       const hem = ringAt(1, 0);
+      const bottom = ringAt(fIn, 0, RS);
       let nx = P[1] - Q[1];
       let ny = Q[0] - P[0];
       if (nx * (P[0] - S[0]) + ny * (P[1] - S[1]) < 0) {
@@ -457,13 +469,35 @@ export function cellsOf(d: VolumeDesc): Cell[] {
         ny = -ny;
       }
       const nl = Math.hypot(nx, ny) || 1;
+      const out: [number, number, number] = [nx / nl, ny / nl, 0];
+      const inward: [number, number, number] = [-out[0], -out[1], 0];
+      const keep = (cell: Cell): Cell => (winding(cell) === winding(ref) ? cell : { ...cell, tex: cell.tex.map((t, k) => (k % 2 === 0 ? 2 * (hem.tex[0] as number) - t : t)) });
+      const inside: Cell[] = [];
       for (let i = 0; i < d.nh; i++) {
-        const u = ringAt(1, tAt(i, d.nh));
-        const v = ringAt(1, tAt(i + 1, d.nh));
-        const fan: Cell = { g, back, tex: [...lining.tex, ...u.tex, ...v.tex], p: [hem.p[0] as number, hem.p[1] as number, 0, ...u.p, ...v.p], n: [nx / nl, ny / nl, 0] };
-        // Seen from the cuff the lining is the arm's cloth inside out, so its drawing is turned over the middle line to keep its sense.
-        cells.push(winding(fan) === winding(ref) ? fan : { ...fan, tex: fan.tex.map((t, k) => (k % 2 === 0 ? 2 * (lining.tex[0] as number) - t : t)) });
+        const t0 = tAt(i, d.nh);
+        const t1 = tAt(i + 1, d.nh);
+        const o0 = ringAt(1, t0);
+        const o1 = ringAt(1, t1);
+        // The inside edge of the rim samples the cloth a little above the hem, so that a rim triangle has an area on the drawing.
+        const e0 = { ...ringAt(1, t0, RS), tex: ringAt(1 - TEX_UP, t0, RS).tex };
+        const e1 = { ...ringAt(1, t1, RS), tex: ringAt(1 - TEX_UP, t1, RS).tex };
+        const b0 = ringAt(fIn, t0, RS);
+        const b1 = ringAt(fIn, t1, RS);
+        // The rim: between the outside and the inside edge of the hem, facing out along the sleeve.
+        inside.push(keep({ g, back, tex: [...o0.tex, ...o1.tex, ...e0.tex], p: [...o0.p, ...o1.p, ...e0.p], n: out }), keep({ g, back, tex: [...o1.tex, ...e1.tex, ...e0.tex], p: [...o1.p, ...e1.p, ...e0.p], n: out }));
+        // The inside of the tube: from the rim in to the bottom, its cloth facing the axis, in shade.
+        const wall = normalOf([...e0.p, ...e1.p, ...b0.p, ...b1.p], (hem.p[0] as number), (hem.p[1] as number), 0);
+        const toward: [number, number, number] = [-wall[0], -wall[1], -wall[2]];
+        inside.push(
+          { ...keep({ g, back, tex: [...e0.tex, ...e1.tex, ...b0.tex], p: [...e0.p, ...e1.p, ...b0.p], n: toward }), inside: true },
+          { ...keep({ g, back, tex: [...e1.tex, ...b1.tex, ...b0.tex], p: [...e1.p, ...b1.p, ...b0.p], n: toward }), inside: true },
+        );
+        // The bottom: a lining closing the inside, a fan from the middle of the tube, facing the opening.
+        inside.push({ ...keep({ g, back, tex: [...ringAt(fIn - TEX_UP, 0, RS).tex, ...b0.tex, ...b1.tex], p: [bottom.p[0] as number, bottom.p[1] as number, 0, ...b0.p, ...b1.p], n: out }), inside: true });
       }
+      void inward;
+      // The inside is drawn before the sleeve's outside, so the near wall of the sleeve covers the far inside where it should.
+      cells.splice(tube, 0, ...inside);
     }
   }
   // What the sleeves carry: a small grid over the arm's surface, each cell of the thing's own drawing.

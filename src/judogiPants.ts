@@ -91,7 +91,7 @@ function longFolds(h: readonly number[], t: Tone, side: -1 | 1): string {
 /** A leg: twill cloth, its seams, the knee panel (front only) and the turned hem with a break where it would meet the foot. */
 function leg(uid: string, t: Tone, side: -1 | 1, front: boolean): string {
   const out = poly(legOutline(side));
-  let s = `<path d="${out}" fill="${t.fill}"/><path d="${out}" fill="url(#${uid}T)"/>`;
+  let s = `<path d="${out}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${out}" fill="url(#${uid}T)"/>`;
   s += seam(down(side, side === -1 ? 0.012 : 0.988, 0, 1), t, 0.3);
   s += seam(down(side, side === -1 ? 0.988 : 0.012, 0.02, 1), t, 0.28);
   if (front) {
@@ -192,7 +192,7 @@ function hipSides(h: readonly number[], t: Tone): string {
 function front(uid: string, t: Tone, h: readonly number[], marks = ""): string {
   const hip = poly(hipOutline(h));
   let s = leg(uid, t, -1, true) + leg(uid, t, 1, true);
-  s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
+  s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
   s += waistband(h, t);
   s += seam("M100 19C100.5 48 100 78 100 106", t, 0.55);
   s += fold(smooth([[100, 48], [100, 80], [100, 104]]), 6, t.light ? 0.09 : 0.18);
@@ -205,7 +205,7 @@ function front(uid: string, t: Tone, h: readonly number[], marks = ""): string {
 function back(uid: string, t: Tone, h: readonly number[], marks = ""): string {
   const hip = poly(hipOutline(h));
   let s = leg(uid, t, -1, false) + leg(uid, t, 1, false);
-  s += `<path d="${hip}" fill="${t.fill}"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
+  s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
   s += waistband(h, t);
   s += seam("M100 19C100 48 100.5 78 100 106", t, 0.6);
   // The seat: a soft curve of light over each side, and the cloth drawn in under it.
