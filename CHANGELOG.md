@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-10-28
+
+### Fixed
+
+- **No slivers or saw-teeth through the belt's knot** at any turn or tip. The knot is two lengths of strap that cross one another and the turns, and ordering its cells by their middles drew some of the layer underneath over the one above. A band's cells are now ordered by where they lie over one another (the nearer one last), and the graphics-card painter tests how near each part of a strap or a collar is at each point.
+
 ## [0.18.0] - 2026-10-28
 
 ### Added

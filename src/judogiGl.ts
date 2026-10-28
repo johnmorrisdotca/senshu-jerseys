@@ -78,13 +78,15 @@ const VERTEX = `#version 300 es
 in vec2 at;
 in vec2 uv;
 in float shade;
+in float nearz;
 uniform vec2 size;
+uniform float deep;
 out vec2 vUv;
 out float vShade;
 void main() {
   vUv = uv;
   vShade = shade;
-  gl_Position = vec4(at.x / size.x * 2.0 - 1.0, 1.0 - at.y / size.y * 2.0, 0.0, 1.0);
+  gl_Position = vec4(at.x / size.x * 2.0 - 1.0, 1.0 - at.y / size.y * 2.0, deep > 0.5 ? clamp(-nearz / 400.0, -0.99, 0.99) : 0.0, 1.0);
 }`;
 
 // The pictures are premultiplied, so multiplying the whole colour by the grey darkens the cloth and keeps its edge.
@@ -93,9 +95,12 @@ precision mediump float;
 in vec2 vUv;
 in float vShade;
 uniform sampler2D face;
+uniform highp float deep;
 out vec4 colour;
 void main() {
   vec4 c = texture(face, vUv);
+  // Where cloth is judged by how near it is (a strap), a see-through edge must not hide what is behind it.
+  if (deep > 0.5 && c.a < 0.4) discard;
   colour = vec4(c.rgb * (1.0 - vShade), c.a);
 }`;
 
@@ -103,7 +108,7 @@ void main() {
 const GROW = 0.9;
 
 /** Floats a corner takes: where it is on the canvas, where on the faces' picture, and its shade. */
-const STRIDE = 5;
+const STRIDE = 6;
 
 /** A painter for `canvas`: turn(yaw) draws every piece at that turn. Undefined when the browser has no WebGL 2 or it fails to start. */
 export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece[], place: (p: PaintPiece) => [number, number, number]): { kind: string; paint(yaw: number, tilt?: number): void; dispose(): void } | undefined {
@@ -115,19 +120,21 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
   // Each piece's two faces side by side in one picture, so a piece is one draw with its cells in order.
   const atlases = pieces.map((p) => atlasOf(gl, p));
   if (atlases.some((t) => t === null)) return undefined;
-  const loc = { at: gl.getAttribLocation(program, "at"), uv: gl.getAttribLocation(program, "uv"), shade: gl.getAttribLocation(program, "shade"), size: gl.getUniformLocation(program, "size") };
+  const loc = { at: gl.getAttribLocation(program, "at"), uv: gl.getAttribLocation(program, "uv"), shade: gl.getAttribLocation(program, "shade"), nearz: gl.getAttribLocation(program, "nearz"), size: gl.getUniformLocation(program, "size"), deep: gl.getUniformLocation(program, "deep") };
   const [fx, fy, fw, fh] = FACE_BOX;
   let data = new Float32Array(0);
   const paint = (yaw: number, tilt = 0): void => {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearDepth(1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.depthFunc(gl.LEQUAL);
     gl.useProgram(program);
     gl.uniform2f(loc.size, canvas.width, canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    for (const [at, size, offset] of [[loc.at, 2, 0], [loc.uv, 2, 2], [loc.shade, 1, 4]] as const) {
+    for (const [at, size, offset] of [[loc.at, 2, 0], [loc.uv, 2, 2], [loc.shade, 1, 4], [loc.nearz, 1, 5]] as const) {
       gl.enableVertexAttribArray(at);
       gl.vertexAttribPointer(at, size, gl.FLOAT, false, STRIDE * 4, offset * 4);
     }
@@ -137,6 +144,14 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       const [u, ox, oy] = place(p);
       const placed = job.placed;
       const order = job.lists.flat();
+      // A strap or a collar is judged by how near each part of it is at each point, not by the order of its cells alone (a knot's cells cross
+      // one another); the order still breaks ties. Nothing else in the picture is tested against it.
+      const deep = isBand(p.desc);
+      gl.uniform1f(loc.deep, deep ? 1 : 0);
+      if (deep) {
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.DEPTH_TEST);
+      } else gl.disable(gl.DEPTH_TEST);
       const need = order.length * 3 * STRIDE;
       if (data.length < need) data = new Float32Array(need);
       // Each quadrilateral's shade at its two side edges, worked out once for its two triangles.
@@ -177,6 +192,7 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
           data[w++] = ((tx - fx) / fw) * 0.5 + half;
           data[w++] = (ty - fy) / fh;
           data[w++] = s[q]!;
+          data[w++] = placed[i]!.tri?.[3 * q + 2] ?? 0;
         }
       }
       gl.bufferData(gl.ARRAY_BUFFER, data.subarray(0, w), gl.STREAM_DRAW);

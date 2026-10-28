@@ -497,6 +497,8 @@ export interface Placed {
   shade: number;
   /** How near the cell's middle is to the viewer. */
   depth: number;
+  /** Where the cell's three corners are once turned: x, y and nearness for each, for ordering a band whose cells overlap. */
+  tri?: number[];
 }
 
 /** How far past side on a cell's second way (`Cell.also`) may turn and still be seen: a knot just round the side still stands clear of the body. */
@@ -509,10 +511,12 @@ export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   const cp = Math.cos(rad(pitch));
   const sp = Math.sin(rad(pitch));
   const s: number[] = [];
+  const tri: number[] = [];
   let z = 0;
   for (let k = 0; k < 3; k++) {
     const t = turn(c.p[3 * k] as number, c.p[3 * k + 1] as number, c.p[3 * k + 2] as number, cy, sy, cp, sp);
     s.push(t[0] + 100, t[1]);
+    tri.push(t[0] + 100, t[1], t[2]);
     z += t[2];
   }
   const nn = turn(c.n[0], c.n[1], c.n[2], cy, sy, cp, sp);
@@ -538,7 +542,7 @@ export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   const f = s[1]! - (b * T[0]! + d * T[1]!);
   const lit = nn[0] * LIGHT[0] + nn[1] * LIGHT[1] + nn[2] * LIGHT[2];
   const shade = Math.max(0, Math.min(0.45, (1 - lit) * 0.24));
-  return { visible: true, matrix: `matrix(${n4(a)} ${n4(b)} ${n4(c2)} ${n4(d)} ${n2(e)} ${n2(f)})`, shade: Math.round(shade * 100) / 100, depth: z / 3 };
+  return { visible: true, matrix: `matrix(${n4(a)} ${n4(b)} ${n4(c2)} ${n4(d)} ${n2(e)} ${n2(f)})`, shade: Math.round(shade * 100) / 100, depth: z / 3, tri };
 }
 
 /** Which side's sleeve is nearer the viewer at this turn: -1 for the picture's left sleeve, 1 for the right, 0 when neither (face on or from behind). */

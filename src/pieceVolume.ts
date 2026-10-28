@@ -26,7 +26,123 @@ export const isBand = (d: VolumeDesc): boolean => d.strap !== undefined || d.col
  * enough that their middles order them.
  */
 export function depthOrder(placed: readonly Placed[]): number[] {
-  return placed.map((_, i) => i).sort((i, j) => placed[i]!.depth - placed[j]!.depth);
+  const first = placed.map((_, i) => i).sort((i, j) => placed[i]!.depth - placed[j]!.depth);
+  return settle(placed, first);
+}
+
+/** The corners of a placed cell as three `[x, y, nearness]`, or undefined when the cell is not seen. */
+const corners = (q: Placed): number[][] | undefined => (q.visible && q.tri !== undefined ? [q.tri.slice(0, 3), q.tri.slice(3, 6), q.tri.slice(6, 9)] : undefined);
+
+/** The part of a convex polygon on the inside of the edge a to b (Sutherland-Hodgman, one edge). */
+function clip(poly: number[][], a: number[], b: number[]): number[][] {
+  const side = (p: number[]): number => (b[0]! - a[0]!) * (p[1]! - a[1]!) - (b[1]! - a[1]!) * (p[0]! - a[0]!);
+  const out: number[][] = [];
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i]!;
+    const q = poly[(i + 1) % poly.length]!;
+    const sp = side(p);
+    const sq = side(q);
+    if (sp >= 0) out.push(p);
+    if ((sp >= 0) !== (sq >= 0)) {
+      const t = sp / (sp - sq);
+      out.push([p[0]! + (q[0]! - p[0]!) * t, p[1]! + (q[1]! - p[1]!) * t]);
+    }
+  }
+  return out;
+}
+
+/** The nearness of the plane of triangle `t` at the point (x, y) on screen. */
+function nearAt(t: number[][], x: number, y: number): number {
+  const [a, b, c] = t as [number[], number[], number[]];
+  const d = (b[1]! - c[1]!) * (a[0]! - c[0]!) + (c[0]! - b[0]!) * (a[1]! - c[1]!);
+  if (Math.abs(d) < 1e-9) return (a[2]! + b[2]! + c[2]!) / 3;
+  const l1 = ((b[1]! - c[1]!) * (x - c[0]!) + (c[0]! - b[0]!) * (y - c[1]!)) / d;
+  const l2 = ((c[1]! - a[1]!) * (x - c[0]!) + (a[0]! - c[0]!) * (y - c[1]!)) / d;
+  return l1 * a[2]! + l2 * b[2]! + (1 - l1 - l2) * c[2]!;
+}
+
+/**
+ * The middles of two cells decide their order when they are far apart; where two cells lie over one another on the screen the one that is
+ * nearer at the middle of the part they share must be drawn after the other, and middles can say the opposite (a knot's cells cross one
+ * another, a long thin cell's middle is far from where it meets its neighbour). So each pair that overlaps puts its farther cell first, and
+ * the cells are ordered to keep every such pair in order, the middles' order deciding the rest and any ring of cells that each cover the next.
+ */
+function settle(placed: readonly Placed[], first: number[]): number[] {
+  const seen = first.filter((i) => corners(placed[i]!) !== undefined);
+  if (seen.length < 2) return first;
+  const tris = new Map(seen.map((i) => [i, corners(placed[i]!)!]));
+  const box = new Map(seen.map((i) => {
+    const t = tris.get(i)!;
+    return [i, [Math.min(t[0]![0]!, t[1]![0]!, t[2]![0]!), Math.min(t[0]![1]!, t[1]![1]!, t[2]![1]!), Math.max(t[0]![0]!, t[1]![0]!, t[2]![0]!), Math.max(t[0]![1]!, t[1]![1]!, t[2]![1]!)]] as const;
+  }));
+  const after = new Map<number, number[]>(seen.map((i) => [i, []]));
+  const waiting = new Map<number, number>(seen.map((i) => [i, 0]));
+  for (let x = 0; x < seen.length; x++) {
+    const i = seen[x]!;
+    const bi = box.get(i)!;
+    for (let y = x + 1; y < seen.length; y++) {
+      const j = seen[y]!;
+      const bj = box.get(j)!;
+      // Cells whose middles are far apart in depth keep the order of their middles: only close cells can disagree.
+      if (bi[2] < bj[0] || bj[2] < bi[0] || bi[3] < bj[1] || bj[3] < bi[1]) continue;
+      const ti = tris.get(i)!;
+      const tj = tris.get(j)!;
+      let poly: number[][] = ti.map((p) => [p[0]!, p[1]!]);
+      // Both triangles are put the same way round before they are cut.
+      const wind = (t: number[][]): number => (t[1]![0]! - t[0]![0]!) * (t[2]![1]! - t[0]![1]!) - (t[1]![1]! - t[0]![1]!) * (t[2]![0]! - t[0]![0]!);
+      const cut = wind(tj) >= 0 ? tj : [tj[0]!, tj[2]!, tj[1]!];
+      if (wind(ti) < 0) poly = [poly[0]!, poly[2]!, poly[1]!];
+      for (let k = 0; k < 3 && poly.length > 2; k++) poly = clip(poly, cut[k]!, cut[(k + 1) % 3]!);
+      if (poly.length < 3) continue;
+      let area = 0;
+      let cx = 0;
+      let cy = 0;
+      for (let k = 0; k < poly.length; k++) {
+        const p = poly[k]!;
+        const q = poly[(k + 1) % poly.length]!;
+        const w = p[0]! * q[1]! - q[0]! * p[1]!;
+        area += w;
+        cx += (p[0]! + q[0]!) * w;
+        cy += (p[1]! + q[1]!) * w;
+      }
+      if (Math.abs(area) < 0.05) continue;
+      cx /= 3 * area;
+      cy /= 3 * area;
+      const zi = nearAt(ti, cx, cy);
+      const zj = nearAt(tj, cx, cy);
+      if (Math.abs(zi - zj) < 0.12) continue;
+      const [far, near] = zi < zj ? [i, j] : [j, i];
+      after.get(far)!.push(near);
+      waiting.set(near, waiting.get(near)! + 1);
+    }
+  }
+  // Draw a cell once everything that must come before it has: the middles' order picks among the ready ones, and a ring of cells that each
+  // must follow another is broken at the one whose middle is farthest.
+  const rank = new Map(seen.map((i, r) => [i, r]));
+  const ready = seen.filter((i) => waiting.get(i) === 0);
+  const done = new Set<number>();
+  const out: number[] = [];
+  const pickReady = (): number => {
+    let best = 0;
+    for (let k = 1; k < ready.length; k++) if (rank.get(ready[k]!)! < rank.get(ready[best]!)!) best = k;
+    return ready.splice(best, 1)[0]!;
+  };
+  while (out.length < seen.length) {
+    if (ready.length === 0) {
+      const left = seen.filter((i) => !done.has(i));
+      ready.push(left.reduce((a, b) => (rank.get(a)! <= rank.get(b)! ? a : b)));
+    }
+    const i = pickReady();
+    if (done.has(i)) continue;
+    done.add(i);
+    out.push(i);
+    for (const j of after.get(i)!) {
+      const w = waiting.get(j)! - 1;
+      waiting.set(j, w);
+      if (w === 0 && !done.has(j)) ready.push(j);
+    }
+  }
+  return [...first.filter((i) => !tris.has(i)), ...out];
 }
 
 type Vec = [number, number, number];
