@@ -143,14 +143,15 @@ test("a drag turns and tips the view, and grabbing it stops the automatic turn",
   await page.mouse.down();
   await expect(page.locator('[data-testid="judo-play"]')).toHaveAttribute("aria-pressed", "false");
   const before = await attr(page, "data-yaw");
-  // A drag across the view's width is a half turn; down tips it.
-  await page.mouse.move(m.x + m.width / 4, m.y + m.height / 4, { steps: 6 });
+  // A drag across the view's width is a half turn; up lifts the front of the piece (the package's tilt is then negative: seen from below).
+  await page.mouse.move(m.x + m.width / 4, m.y - m.height / 4, { steps: 6 });
   await page.mouse.up();
   const yaw = await attr(page, "data-yaw");
   expect(Math.abs(yaw - before)).toBeGreaterThan(30);
-  expect(await attr(page, "data-tilt")).toBeLessThan(0);
-  await expect(page).toHaveURL(/tilt=-\d+/);
-  expect(await page.locator('[data-testid="judo-tilt"]').inputValue()).toBe(String(await attr(page, "data-tilt")));
+  const lifted = await attr(page, "data-tilt");
+  expect(lifted).toBeLessThan(0);
+  await expect(page).toHaveURL(/tilt=\d+/);
+  expect(await page.locator('[data-testid="judo-tilt"]').inputValue()).toBe(String(-lifted));
   // It stays still: nothing turns it on again.
   await page.waitForTimeout(300);
   expect(await attr(page, "data-yaw")).toBe(yaw);
@@ -160,11 +161,12 @@ test("the tilt slider tips the view by up to 30 degrees and the address keeps it
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   await page.locator('[data-testid="judo-tilt"]').fill("30");
-  expect(await attr(page, "data-tilt")).toBe(30);
+  // The slider's top lifts the front, like a drag up: the package is told the opposite sign.
+  expect(await attr(page, "data-tilt")).toBe(-30);
   await expect(page).toHaveURL(/tilt=30/);
   await page.goto(page.url());
   await expect(page.locator('[data-testid="judo-tilt"]')).toHaveValue("30");
-  expect(await attr(page, "data-tilt")).toBe(30);
+  expect(await attr(page, "data-tilt")).toBe(-30);
 });
 
 test("a sideways swipe turns the view, an up and down wheel is the page's unless the view has focus, Ctrl and the wheel zooms", async ({ page }) => {
@@ -184,7 +186,8 @@ test("a sideways swipe turns the view, an up and down wheel is the page's unless
   await page.locator('[data-testid="judo-turntable"]').focus();
   await page.mouse.move(m.x, m.y);
   await page.mouse.wheel(0, 100);
-  await expect.poll(() => attr(page, "data-tilt")).toBeLessThan(0);
+  // Down on the wheel lowers the front, as a drag down does.
+  await expect.poll(() => attr(page, "data-tilt")).toBeGreaterThan(0);
   // Ctrl and the wheel is a pinch on a trackpad: zoom.
   await page.keyboard.down("Control");
   await page.mouse.wheel(0, -200);
@@ -223,7 +226,8 @@ test("the arrow keys turn and tip the view and plus and minus zoom it", async ({
   await page.keyboard.press("ArrowRight");
   expect(await attr(page, "data-yaw")).toBe(15);
   await page.keyboard.press("ArrowUp");
-  expect(await attr(page, "data-tilt")).toBe(5);
+  expect(await attr(page, "data-tilt")).toBe(-5);
+  await expect(page.locator('[data-testid="judo-tilt"]')).toHaveValue("5");
   await page.keyboard.press("+");
   await expect(page.locator('[data-testid="judo-zoom-reset"]')).not.toHaveText("1×");
   await page.keyboard.press("0");

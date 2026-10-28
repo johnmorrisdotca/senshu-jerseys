@@ -117,6 +117,8 @@ function syncUrl() {
   history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
 }
 
+/** The tip the package is given: the designer's Tilt is positive when the FRONT of the piece goes up (a drag up, the wheel up, Arrow Up, the slider toward its top), the package's is positive when the piece is seen more from above. */
+const pitchOf = () => (state.tilt === 0 ? 0 : -state.tilt);
 const flat = () => state.view === "flat" || state.view === "flat-back";
 const wrap = wrapYaw;
 /** Where the zoomed stage is moved to, in pixels from its middle (not in the address). */
@@ -149,7 +151,7 @@ async function draw() {
   painted?.dispose();
   painted = canvas;
   madeAt = q;
-  canvas?.turn(state.yaw + (state.view === "back" ? 180 : 0), state.tilt, camera());
+  canvas?.turn(state.yaw + (state.view === "back" ? 180 : 0), pitchOf(), camera());
   if (canvas === undefined) $("judo-stage").replaceChildren(...holder.childNodes);
   else $("judo-stage").replaceChildren(canvas.canvas);
   $("judo-check").textContent = checkText(judogiCheck(o));
@@ -183,7 +185,7 @@ function placeStage() {
   // A canvas zooms inside itself (sharp, and the same cost at any zoom); a flat drawing is an SVG, scaled by a transform.
   if (painted !== undefined) {
     $("judo-stage").style.transform = "";
-    painted.turn(state.yaw + (state.view === "back" ? 180 : 0), state.tilt, camera());
+    painted.turn(state.yaw + (state.view === "back" ? 180 : 0), pitchOf(), camera());
   } else $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
   $("judo-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
   $("judo-zoom-out").disabled = state.zoom <= ZOOM_MIN + 1e-6;
@@ -196,8 +198,8 @@ function turnTo(yaw, tilt = state.tilt) {
   state.tilt = tilt;
   const shown = state.yaw + (state.view === "back" ? 180 : 0);
   const svg = $("judo-stage").querySelector("svg");
-  if (painted !== undefined) painted.turn(shown, state.tilt, camera());
-  else if (svg !== null && !flat()) judogiTurn(svg, shown, state.tilt);
+  if (painted !== undefined) painted.turn(shown, pitchOf(), camera());
+  else if (svg !== null && !flat()) judogiTurn(svg, shown, pitchOf());
   showAngle();
 }
 

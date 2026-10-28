@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.18.3] - 2026-10-28
+
+### Fixed
+
+- **The designer's tilt goes the right way.** A drag up (or the wheel up, Arrow Up, the Tilt slider toward its top) now lifts the FRONT of the piece, as a mouse or a finger on the slider would expect; it lowered it. The Tilt value is positive when the front is up; the package's own `tilt` is unchanged (positive when the piece is seen more from above), the designer gives it the opposite sign. An address with `tilt=` from before tips the other way.
+
 ## [0.18.2] - 2026-10-28
 
 ### Fixed
