@@ -17,7 +17,7 @@ export const CM = 2.63;
 export const MARK_GAP = 1 * CM;
 export const EDGE_MARGIN = 1 * CM;
 
-export type FaceId = "jacket-front" | "jacket-back" | "pants-front" | "belt-left" | "belt-right";
+export type FaceId = "jacket-front" | "jacket-back" | "jacket-back-inner" | "pants-front" | "belt-left" | "belt-right";
 
 /** A mark's box: its middle, its size before it is turned and the angle it is turned by, in degrees clockwise on the screen. */
 export interface Obb {
@@ -243,7 +243,7 @@ export function obstaclesFor(half: number, style: ReadStyle | undefined, neck: b
     { id: "drawstring", face: "pants-front", box: { x: 100, y: 25, w: 28, h: 42, rot: 0 } },
   ];
   if (neck) {
-    out.push({ id: "neck-label", face: "jacket-front", box: { x: 100, y: 25, w: 11, h: 11 / 1.4, rot: 0 } }, { id: "size-tag", face: "jacket-front", box: { x: 100, y: 33.6, w: 4.6, h: 4.6 * 0.62, rot: 0 } });
+    out.push({ id: "neck-label", face: "jacket-back-inner", box: { x: 100, y: 25, w: 11, h: 11 / 1.4, rot: 0 } }, { id: "size-tag", face: "jacket-back-inner", box: { x: 100, y: 33.6, w: 4.6, h: 4.6 * 0.62, rot: 0 } });
   }
   if (style !== undefined) {
     for (const [i, face] of (["belt-left", "belt-right"] as const).entries()) {

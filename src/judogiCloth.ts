@@ -39,7 +39,7 @@ export interface GiInk {
   uid: string;
   cloth: Rgb;
   /** What is sewn on each face of the piece, drawn over its cloth and under the light that falls on it. */
-  marks?: { front?: Mark; back?: Mark };
+  marks?: { front?: Mark; back?: Mark; /** Sewn on the inside of the jacket's back panel, below the collar: the neck label and its size tag. */ backInner?: Mark };
   /** The belt tied on the jacket, when one is. */
   belt?: BeltPaint;
   /** The belt is a strap of its own over the jacket (the turning view, judogiStrap.ts): the jacket's faces carry only its shadows. */
@@ -55,6 +55,8 @@ export interface Face {
   defs: string;
   body: string;
   clip: string[];
+  /** The drawing of the piece's inside, below its own in the face's picture (the turning view only: a flat view never shows it). */
+  extra?: string;
 }
 
 /** The cloth's own colours, from its base colour. A white judogi is never pure white, and its shadows are a cool grey rather than black. */

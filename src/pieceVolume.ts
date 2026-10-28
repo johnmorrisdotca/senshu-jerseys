@@ -7,6 +7,7 @@
 
 import { solidCells } from "./beltBox.ts";
 import { collarCells } from "./judogiCollar.ts";
+import { innerCells } from "./judogiInner.ts";
 import { strapCells } from "./judogiStrap.ts";
 import { n2 } from "./path.ts";
 import { APART, cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
@@ -16,7 +17,7 @@ export function pieceCells(d: VolumeDesc): Cell[] {
   if (d.strap !== undefined) return strapCells(d.strap);
   if (d.solid !== undefined) return solidCells(d.solid);
   if (d.collar !== undefined) return collarCells(d.collar);
-  return cellsOf(d);
+  return d.inner === undefined ? cellsOf(d) : [...cellsOf(d), ...innerCells(d)];
 }
 
 /** A strap or a collar: a band whose cells are drawn farthest first (`depthOrder`), not in a body's fixed groups. */

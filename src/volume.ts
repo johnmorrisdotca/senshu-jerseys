@@ -46,6 +46,11 @@ export interface VolumeDesc {
   lobes?: number[];
   /** How deep the tubes (sleeves, legs) are, as a part of their width (`SLEEVE_DEPTH` when not given): a judogi's legs and sleeves are rounder than a shirt's flat sleeves. */
   tube?: number;
+  /**
+   * A jacket's inside, as far down as this height of the drawing (judogiInner.ts): the back and front panels' inner faces, a rim round the neck and the walls between them, so
+   * looking into the neck from any side shows cloth. Their drawing lies in the faces' picture below the jacket's own (`INNER_DY`).
+   */
+  inner?: number;
   /** A belt as a solid strap (judogiStrap.ts): its cells are the strap's own, drawn nearest last, and the rows above are empty. */
   strap?: StrapDesc;
   /** A folded belt and/or a gift box (beltBox.ts): a scene of cells drawn nearest last like a strap. */
@@ -81,7 +86,7 @@ const OVERLAP = 0.15;
 const EDGE = 0.6;
 
 /** The half width, on the drawing, a row samples: inside the outline's own edge, and further in at the shoulder tip, whose corner the drawing rounds off and leaves clear. */
-function texHalf(d: VolumeDesc, j: number): number {
+export function texHalf(d: VolumeDesc, j: number): number {
   return (d.a[j] as number) - PAD - EDGE - (j === 1 && d.piece !== true ? 5 : 0);
 }
 
@@ -92,12 +97,12 @@ function depthAt(b: number, t: number, full = FULL, side = SIDE): number {
 }
 
 /** How deep the side wall of row `j` is on each half: as deep as the half's own edge, so the two always meet; none where the row has become two rounds. */
-function wallOf(d: VolumeDesc, j: number): number {
+export function wallOf(d: VolumeDesc, j: number): number {
   return zAt(d, j, Math.PI / 2);
 }
 
 /** Depth of row `j` of the body at parameter `t`: its round, or that round going over to two side by side (`VolumeDesc.lobes`). */
-function zAt(d: VolumeDesc, j: number, t: number): number {
+export function zAt(d: VolumeDesc, j: number, t: number): number {
   const b = d.b[j] as number;
   const round = depthAt(b, t, d.full, d.side);
   const w = d.lobes?.[j] ?? 0;
@@ -225,7 +230,7 @@ export interface Cell {
 }
 
 /** The two triangles of a quadrilateral given as the corners tl, tr, bl, br (x, y of the drawing, and x, y, z of the space). */
-function split(g: Cell["g"], back: boolean, tex: number[], p: number[], n: [number, number, number], src?: number): Cell[] {
+export function split(g: Cell["g"], back: boolean, tex: number[], p: number[], n: [number, number, number], src?: number): Cell[] {
   const pick = (ks: number[]): { tex: number[]; p: number[] } => ({ tex: ks.flatMap((k) => [tex[2 * k] as number, tex[2 * k + 1] as number]), p: ks.flatMap((k) => [p[3 * k] as number, p[3 * k + 1] as number, p[3 * k + 2] as number]) });
   return [pick([0, 1, 2]), pick([1, 3, 2])].map((t) => ({ g, back, tex: t.tex, p: t.p, n, ...(src === undefined ? {} : { src }) }));
 }
@@ -310,7 +315,7 @@ function capAt(S: readonly number[], c: readonly number[], P: readonly number[],
 }
 
 /** The way a cell of four corners faces: the cross product of its two sides, turned to point away from `(cx, cy, cz)`, the middle of the ring it lies on. */
-function normalOf(p: readonly number[], cx: number, cy: number, cz: number): [number, number, number] {
+export function normalOf(p: readonly number[], cx: number, cy: number, cz: number): [number, number, number] {
   const sub = (i: number, j: number): number[] => [p[3 * i]! - p[3 * j]!, p[3 * i + 1]! - p[3 * j + 1]!, p[3 * i + 2]! - p[3 * j + 2]!];
   const du = sub(1, 0).map((v, k) => v + sub(3, 2)[k]!);
   const dv = sub(2, 0).map((v, k) => v + sub(3, 1)[k]!);

@@ -9,6 +9,7 @@ import { atY, band, fold, lightDefs, offset, pieceDesc, seam, smooth, stitch, to
 import { beltOnJacket, beltShadow } from "./judogiBelt.ts";
 import { n2, poly, type Pt } from "./path.ts";
 import type { CollarDesc } from "./judogiCollar.ts";
+import { INNER_DY, RIM_FROM, RIM_TO } from "./judogiInner.ts";
 import { sleeveAt, type VolumeDesc } from "./volume.ts";
 
 /**
@@ -89,13 +90,16 @@ const LAPEL = 12.6;
 /** The collar's band in the turning view, a little inside the drawn lapel so none of the drawing shows past its edges. */
 export const LAPEL_BAND = LAPEL - 1;
 
+/** How far down the drawing the jacket's inside is built (judogiInner.ts): the neck and the upper chest, as far as the eye can look down through the neck and the lapels' opening. */
+const INNER_TO = 130;
+
 export function jacketDesc(depth = 1, tied = false): VolumeDesc {
   const sl: VolumeDesc["sl"] = [
     { s: -1, q: SLEEVE_Q, c: CAP },
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)], c: CAP.map((v, k) => (k % 2 === 0 ? 200 - v : v)) },
   ];
   // The sleeves are round over the arms, a little flatter than deep.
-  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 20, 8), full: FULL, side: SIDE, tube: 0.85 };
+  return { ...pieceDesc(Y, halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 20, 8), full: FULL, side: SIDE, tube: 0.85, inner: INNER_TO };
 }
 
 /**
@@ -231,19 +235,25 @@ function lapelBand(uid: string, t: Tone, edge: readonly Pt[], sign: 1 | -1, shad
   return s;
 }
 
-/** The front: under panel, the opening at the neck with the inside of the collar behind it, the lapel underneath, then the one on top. */
+/**
+ * The V between the two lapels' free edges, from the neck down to where they cross, as the front panel's own cut: the cloth is not there, so the
+ * turning view shows what is behind it (the inside of the back, judogiInner.ts). It runs 2 units under each lapel's band so no seam shows.
+ */
+function opening(): Pt[] {
+  const cross = atY(TOP_EDGE, 48);
+  return [[UNDER_EDGE[0]![0] - 2, 6], ...UNDER_EDGE.slice(0, 3), cross, ...TOP_EDGE.slice(0, 2).reverse(), [TOP_EDGE[0]![0] + 2, 6]];
+}
+
+/** The outline of a face's body: the front's has the V cut out of its top edge. */
+function faceOutline(tied: boolean, face: "front" | "back"): Pt[] {
+  return face === "front" ? [...bodyOutline(tied), ...[...opening()].reverse()] : bodyOutline(tied);
+}
+
+/** The front: the under panel with the V cut at the neck, the lapel underneath, then the one on top. */
 function front(uid: string, ink: GiInk, t: Tone): string {
   const tied = ink.belt !== undefined;
-  const outline = poly(bodyOutline(tied));
-  const cross = atY(TOP_EDGE, 48);
+  const outline = poly(faceOutline(tied, "front"));
   let s = sleeve(uid, t, -1, false) + sleeve(uid, t, 1, false) + bodyCloth(uid, t, outline, tied);
-  // The opening: the inside of the back and of the collar, seen between the two lapels above where they cross.
-  const opening = poly([[UNDER_EDGE[0]![0] - 2, 6], ...UNDER_EDGE.slice(0, 3), cross, ...TOP_EDGE.slice(0, 2).reverse(), [TOP_EDGE[0]![0] + 2, 6]]);
-  s += `<path d="${opening}" fill="${t.inside}"/>`;
-  s += `<path d="M77 6Q100 3.5 123 6L121 16Q100 21 79 16Z" fill="${t.shadow}"/>`;
-  for (const k of [8.2, 10.4, 12.6, 14.8]) s += stitch(`M80 ${k}Q100 ${k + 3.5} 120 ${k}`, t, 0.38, 0.55);
-  s += fold(`M84 18Q100 24 116 18`, 5, t.light ? 0.3 : 0.4);
-  s += fold(smooth([[96, 24], [100, 38], [101, 46]]), 6, t.light ? 0.28 : 0.38);
   // The lapel underneath, as far as the top one lets it show, with the top one's shadow on it.
   s += `<g clip-path="url(#${uid}under)">${lapelBand(uid, t, UNDER_EDGE, -1, t.light ? 0.16 : 0.26)}</g>`;
   // The top panel's free edge throws a shadow on the panel under it, down to the hem.
@@ -289,17 +299,38 @@ function back(uid: string, ink: GiInk, t: Tone): string {
   return s;
 }
 
+/**
+ * The inside of the jacket's upper body, as the turning view's inner faces sample it (judogiInner.ts): below the face's own drawing by `INNER_DY`, each row of
+ * the body at its own height there. The same cloth and weave, darker where it is turned from the light and in the collar's shadow at the neck, the collar's
+ * seam on the back panel, and the rim's strip above. The neck label and its size tag are sewn on the back panel just under the collar.
+ */
+function inside(uid: string, ink: GiInk, t: Tone, face: "front" | "back"): string {
+  const x0 = 14;
+  const w = 172;
+  const cloth = `<rect x="${x0}" y="${RIM_TO + 1}" width="${w}" height="96" fill="${t.fill}"/><rect x="${x0}" y="${RIM_TO + 1}" width="${w}" height="96" fill="url(#${uid}G)"/>` +
+    `<rect x="${x0}" y="${RIM_TO + 1}" width="${w}" height="96" fill="${t.shadow}" fill-opacity="0.6"/>`;
+  // The rim: the cut edge of the neck's cloth, a plain strip with its turned hem.
+  const rim = `<rect x="${x0}" y="${RIM_FROM - 1}" width="${w}" height="${RIM_TO - RIM_FROM + 2}" fill="${t.fill}"/><path d="M${x0} ${(RIM_FROM + RIM_TO) / 2}H${x0 + w}" stroke="${t.seam}" stroke-width="0.5" stroke-opacity="0.6"/>`;
+  // Under the collar the cloth is in its shadow, and deeper still where the neck goes in.
+  const shadow = fold(`M${x0 + 6} 8L${x0 + w - 6} 8`, 16, t.light ? 0.4 : 0.5) + fold(`M${x0 + 20} 14L${x0 + w - 20} 14`, 10, t.light ? 0.25 : 0.35);
+  const sewn = face === "back" ? seam(smooth([[75, 16], [100, 19.5], [125, 16]]), t, 0.6) + stitch(smooth([[76, 17.8], [100, 21.3], [124, 17.8]]), t, 0.4, 0.7) : "";
+  const marks = face === "back" ? ink.marks?.backInner?.body ?? "" : "";
+  return `<g transform="translate(0 ${INNER_DY})">${cloth}${shadow}${sewn}${marks}${rim}</g>`;
+}
+
 /** The jacket's front or back, in the 200-wide box the volume samples. */
 export function jacketFace(ink: GiInk, face: "front" | "back"): Face {
   const t = toneOf(ink.cloth);
+  const tied = ink.belt !== undefined;
   const uid = `${ink.uid}${face === "front" ? "f" : "b"}`;
-  const outline = poly(bodyOutline(ink.belt !== undefined));
-  const clip = [outline, poly(sleeveOutline(-1)), poly(sleeveOutline(1))];
+  const outline = poly(faceOutline(tied, face));
+  const room = `M14 ${INNER_DY + RIM_FROM - 1}H186V${INNER_DY + 96}H14Z`;
+  const clip = [outline, poly(sleeveOutline(-1)), poly(sleeveOutline(1)), room];
   const defs = weaves(uid, t) + lightDefs(uid, t) +
     `<clipPath id="${uid}body"><path d="${outline}"/></clipPath>` +
     `<clipPath id="${uid}under"><path d="${leftOf(TOP_EDGE)}"/></clipPath>` +
-    (ink.marks?.[face]?.defs ?? "");
-  return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip };
+    (ink.marks?.[face]?.defs ?? "") + (face === "back" ? ink.marks?.backInner?.defs ?? "" : "");
+  return { defs, body: face === "front" ? front(uid, ink, t) : back(uid, ink, t), clip, extra: inside(uid, ink, t, face) };
 }
 
 /** The emblem's middle on the front's drawing, and the room it has there: the band between the top lapel's sewn edge and the sleeve's head (`EMBLEM_ROOM` units wide). */

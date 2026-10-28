@@ -1,0 +1,83 @@
+// The inside of a jacket, for the turning view. The body is a shell of outer cells only (volume.ts, culled where they face away), so looking into
+// the neck from above or through the lapels' opening would show the page through it. Here the upper body gets a second shell a cloth's
+// thickness inside the first, facing inward, a rim of that thickness round the neck's edge, and a narrow wall down each inner side: the inner
+// face of the back panel (with the neck label sewn just below the collar), of the front, and between them. Their drawing is one more picture
+// in each face's own picture, below the jacket's (`INNER_DY`), so it has its own cloth, shade and marks; the flat views never show it.
+import { normalOf, split, texHalf, wallOf, zAt, type Cell, type VolumeDesc } from "./volume.ts";
+
+/** How far below its own drawing a face carries the drawing of its inside: past the hem and the vents, and inside the face's picture (`FACE_BOX`, to 300). */
+export const INNER_DY = 220;
+/** The cloth's thickness at the neck's edge, in drawing units (about 3 mm). */
+export const INNER_T = 0.9;
+/** The rim's strip on the picture, as heights above the inner drawing's own top. */
+export const RIM_FROM = -9;
+export const RIM_TO = -2;
+/** Where the walls sample the inner drawing, across: plain cloth, clear of the label at the middle. */
+const WALL_X = 150;
+
+/**
+ * Where a row of the body samples the inner drawing, below its top: as itself down to the neck's own region (the label, the collar's shadow), and then squeezed, so the plain cloth
+ * below it, as far as the waist, fits the room the face's picture has under the jacket.
+ */
+export const innerY = (y: number): number => INNER_DY + (y <= INNER_PLAIN ? y : INNER_PLAIN + (y - INNER_PLAIN) * 0.2);
+const INNER_PLAIN = 60;
+
+const tAt = (i: number, n: number): number => ((-90 + (180 * i) / n) * Math.PI) / 180;
+
+/** The inner cells of a jacket: nothing unless `VolumeDesc.inner` names how far down the drawing they go. */
+export function innerCells(d: VolumeDesc): Cell[] {
+  if (d.inner === undefined) return [];
+  const rows: number[] = [];
+  for (let j = 0; j + 1 < d.y.length; j++) if ((d.y[j] as number) < d.inner) rows.push(j);
+  if (rows.length === 0) return [];
+  const cells: Cell[] = [];
+  const at = (j: number, t: number, sg: number): number[] => [sg * ((d.a[j] as number) - INNER_T) * Math.sin(t), d.y[j] as number, sg * Math.max(0.4, zAt(d, j, t) - INNER_T)];
+  const out = (j: number, t: number, sg: number): number[] => [sg * (d.a[j] as number) * Math.sin(t), d.y[j] as number, sg * zAt(d, j, t)];
+  // The inner faces of each half, seen from inside: their drawing is turned over (its x runs the other way) so that it reads from the inside.
+  for (const back of [false, true]) {
+    const sg = back ? -1 : 1;
+    for (const j of rows) {
+      for (let i = 0; i < d.nt; i++) {
+        const tex: number[] = [];
+        const p: number[] = [];
+        for (const [jj, ii] of [[j, i], [j, i + 1], [j + 1, i], [j + 1, i + 1]] as const) {
+          const t = tAt(ii, d.nt);
+          tex.push(100 - texHalf(d, jj) * Math.sin(t), innerY(d.y[jj] as number));
+          p.push(...at(jj, t, sg));
+        }
+        const n = normalOf(p, 0, ((d.y[j] as number) + (d.y[j + 1] as number)) / 2, 0);
+        cells.push(...split(back ? 3 : 0, back, tex, p, [-n[0], -n[1], -n[2]]));
+      }
+    }
+  }
+  // The rim: the top edge of the neck from the outer cloth to the inner, all the way round each half.
+  const top = rows[0] as number;
+  for (const back of [false, true]) {
+    const sg = back ? -1 : 1;
+    for (let i = 0; i < d.nt; i++) {
+      const tex: number[] = [];
+      const p: number[] = [];
+      for (const [k, ii] of [[0, i], [0, i + 1], [1, i], [1, i + 1]] as const) {
+        const t = tAt(ii, d.nt);
+        tex.push(100 - texHalf(d, top) * Math.sin(t), INNER_DY + (k === 0 ? RIM_FROM : RIM_TO));
+        p.push(...(k === 0 ? out(top, t, sg) : at(top, t, sg)));
+      }
+      cells.push(...split(back ? 3 : 0, back, tex, p, [0, -1, 0]));
+    }
+  }
+  // The walls between the two inner faces, down each side.
+  for (const j of rows) {
+    const y0 = d.y[j] as number;
+    const y1 = d.y[j + 1] as number;
+    for (const s of [-1, 1]) {
+      const x0 = s * ((d.a[j] as number) - INNER_T);
+      const x1 = s * ((d.a[j + 1] as number) - INNER_T);
+      const z0 = Math.max(0.4, wallOf(d, j) - INNER_T);
+      const z1 = Math.max(0.4, wallOf(d, j + 1) - INNER_T);
+      const p = [x0, y0, z0, x0, y0, -z0, x1, y1, z1, x1, y1, -z1];
+      const tex = [WALL_X, innerY(y0), WALL_X + 4, innerY(y0), WALL_X, innerY(y1), WALL_X + 4, innerY(y1)];
+      cells.push(...split(0, false, tex, p, [-s, 0, 0]));
+    }
+  }
+  return cells;
+}

@@ -526,7 +526,7 @@ function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string, k: number): Out {
 const at = (s: { x: number; y: number; rot?: number }, body: string): string => `<g transform="translate(${n2(s.x)} ${n2(s.y)})${s.rot ? ` rotate(${n2(s.rot)})` : ""}">${body}</g>`;
 
 export interface MarkSet {
-  jacket: { front?: Mark; back?: Mark };
+  jacket: { front?: Mark; back?: Mark; /** On the inside of the back panel, below the collar: the neck label and size tag, seen through the neck's opening. */ backInner?: Mark };
   /** What is stitched on the collar band's lapel hem, in the strip's own units: in the turning view the band hides the jacket's drawing there. */
   collar?: Mark;
   pants: { front?: Mark };
@@ -670,7 +670,7 @@ export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltWidthU: 
     // Inside the back of the neck, seen through the opening of the jacket below the collar: the neck label, and the size tag sewn under it.
     const nl = neckLabel(id("Bn"), m.branding, m.brandLabel, 11);
     const tag = sizeTag(id("Bt"), m.branding.sizeTag, m.brandLabel, 4.6);
-    set.jacket.front = add(add(set.jacket.front, nl, at({ x: 100, y: 25 }, nl.body)), tag, at({ x: 100, y: 33.6 }, tag.body));
+    set.jacket.backInner = add(add(set.jacket.backInner, nl, at({ x: 100, y: 25 }, nl.body)), tag, at({ x: 100, y: 33.6 }, tag.body));
   }
   return set;
 }

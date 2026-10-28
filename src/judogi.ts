@@ -307,8 +307,9 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
   const patch: Mark | undefined = o.patch === undefined ? undefined : backPatch(`${o.uid}j`, o.patch, BACK_COLLAR_FOOT);
   const front = o.marks?.jacket.front;
   const back = join(patch, o.marks?.jacket.back);
-  if (front === undefined && back === undefined) return undefined;
-  return { ...(front === undefined ? {} : { front }), ...(back === undefined ? {} : { back }) };
+  const backInner = o.marks?.jacket.backInner;
+  if (front === undefined && back === undefined && backInner === undefined) return undefined;
+  return { ...(front === undefined ? {} : { front }), ...(back === undefined ? {} : { back }), ...(backInner === undefined ? {} : { backInner }) };
 }
 
 /** What is sewn on the trousers' front. */
@@ -466,7 +467,7 @@ const NO_FACE: Face = { defs: "", body: "", clip: [] };
 function volumeOf(uid: string, desc: VolumeDesc, front: Face, back: Face, yaw: number): { defs: string; body: string; tail: string } {
   const mk = pieceMarkup(desc, uid, `${uid}F`, `${uid}B`, `${uid}Fc`, `${uid}Bc`, yaw);
   const clip = (f: Face): string => f.clip.map((d) => `<path d="${d}"/>`).join("");
-  const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}</g>${mk.defs}`;
+  const defs = `${front.defs}${back.defs}<clipPath id="${uid}Fc">${clip(front)}</clipPath><clipPath id="${uid}Bc">${clip(back)}</clipPath><g id="${uid}F" data-face="${FACE_BOX.join(" ")}">${front.body}${front.extra ?? ""}</g><g id="${uid}B" data-face="${FACE_BOX.join(" ")}">${back.body}${back.extra ?? ""}</g>${mk.defs}`;
   return { defs, body: mk.body, tail: mk.tail };
 }
 
