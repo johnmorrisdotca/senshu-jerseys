@@ -194,6 +194,8 @@ const pan = { x: 0, y: 0 };
 let madeAt = { ratio: 0, scale: 0 };
 const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), scale: state.zoom > 3.5 ? 8 : state.zoom > 1.8 ? 6 : state.zoom > 1.2 ? 5 : 4 });
 /** The zoom and pan the canvas paints with: it is made as wide as its view, so a zoomed drawing has the room, and the camera moves inside it. */
+/** What a plain drag does while zoomed in: `move` the view (the default) or `turn` the piece. Not in the address. */
+let hand = "move";
 const camera = () => ({ zoom: state.zoom, panX: pan.x, panY: pan.y });
 const boxWidth = () => Math.max(0, $("judo-stage").clientWidth - 20);
 
@@ -262,6 +264,12 @@ function placeStage() {
     painted.turn(state.yaw + (state.view === "back" ? 180 : 0), pitchOf(), camera());
   } else $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
   $("judo-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
+  // Zoomed in the page does not scroll under a finger, so a drag can move the view; the choice between moving and turning is offered only then.
+  const zoomed = state.zoom > 1.05;
+  $("judo-turntable").style.touchAction = zoomed ? "none" : "";
+  $("judo-hand").hidden = !zoomed || flat();
+  $("judo-hand").setAttribute("aria-pressed", String(hand === "turn"));
+  $("judo-hand").textContent = say(hand === "turn" ? "judoHandTurn" : "judoHandMove");
   $("judo-zoom-out").disabled = state.zoom <= ZOOM_MIN + 1e-6;
   $("judo-zoom-in").disabled = state.zoom >= ZOOM_MAX - 1e-6;
 }
@@ -644,7 +652,7 @@ $("judo-turntable").addEventListener("pointerleave", () => {
 });
 let grabbed = false;
 const hands = bindView($("judo-turntable"), {
-  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: !flat() }),
+  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, hand, turnable: !flat() }),
   grab() {
     grabbed = true;
     turning.byHover = false;
@@ -669,6 +677,19 @@ $("judo-tilt").addEventListener("input", () => {
 });
 $("judo-zoom-in").addEventListener("click", () => hands.zoomBy(1.4));
 $("judo-zoom-out").addEventListener("click", () => hands.zoomBy(1 / 1.4));
+$("judo-hand").addEventListener("click", () => {
+  hand = hand === "move" ? "turn" : "move";
+  placeStage();
+});
+const fit = () => {
+  pan.x = 0;
+  pan.y = 0;
+  state.zoom = 1;
+  placeStage();
+  syncUrl();
+  settleQuality();
+};
+$("judo-fit").addEventListener("click", fit);
 $("judo-zoom-reset").addEventListener("click", () => {
   pan.x = 0;
   pan.y = 0;

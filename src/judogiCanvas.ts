@@ -6,7 +6,7 @@
 import { glPainter, matrixOf, paintOrder, type PaintPiece } from "./judogiGl.ts";
 import { FACE_BOX, greyOf, pieceCells, shadeOf, smoothOf } from "./pieceVolume.ts";
 import { normalYaw } from "./turn.ts";
-import { quadPath, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
+import { quadPath, turn as rotate, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -28,6 +28,11 @@ export interface JudogiCamera {
   zoom?: number;
   panX?: number;
   panY?: number;
+  /**
+   * Fit the piece in the canvas whatever the turn and the tip (true by default): the drawing is made smaller, and moved only as far as it must be, so that the
+   * whole of it as it is turned now lies inside the canvas with a margin, and the zoom and the pan above are then on top of that. False keeps the drawing at its own size.
+   */
+  fit?: boolean;
 }
 
 /** What the canvas may be told: how many pixels a unit of a face's picture gets, and how many pixels a CSS pixel of the canvas gets. */
@@ -92,14 +97,65 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   canvas.height = Math.max(1, Math.round(cssH * ratio));
   canvas.style.width = `${cssW}px`;
   canvas.setAttribute("role", "img");
+  // Its size in CSS pixels as made (a page may show it smaller): what `data-bounds` is measured against.
+  canvas.setAttribute("data-size", `${cssW} ${cssH}`);
   const title = svg.querySelector("title")?.textContent;
   if (title) canvas.setAttribute("aria-label", title);
   // The drawing sits whole in the middle of the canvas at its own size; a camera zooms it about that middle and moves it.
   const base = (natW / vw) * ratio;
-  const cam = { zoom: 1, panX: 0, panY: 0 };
+  const cam = { zoom: 1, panX: 0, panY: 0, fit: true };
+  // How the turned drawing is made to fit: a scale (never above 1) about the canvas's middle and a move, in device pixels, kept to what it needs.
+  const framing = { scale: 1, dx: 0, dy: 0 };
   const place = (p: PaintPiece): [number, number, number] => {
-    const u = base * cam.zoom;
-    return [u, canvas.width / 2 + cam.panX * ratio + u * (p.dx - (vx + vw / 2)), canvas.height / 2 + cam.panY * ratio + u * (p.dy - (vy + vh / 2))];
+    const u = base * cam.zoom * framing.scale;
+    return [u, canvas.width / 2 + cam.panX * ratio + cam.zoom * framing.dx + u * (p.dx - (vx + vw / 2)), canvas.height / 2 + cam.panY * ratio + cam.zoom * framing.dy + u * (p.dy - (vy + vh / 2))];
+  };
+  /** The box round every corner of every cell as turned (the silhouette's box), on the canvas at zoom 1 with no pan, in device pixels. */
+  const boundsAt = (yaw: number, tilt: number): { x0: number; y0: number; x1: number; y1: number } => {
+    const b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    const cy = Math.cos((yaw * Math.PI) / 180);
+    const sy = Math.sin((yaw * Math.PI) / 180);
+    for (const p of pieces) {
+      const pitch = ((p.desc.pitch + tilt) * Math.PI) / 180;
+      const cp = Math.cos(pitch);
+      const sp = Math.sin(pitch);
+      const ox = canvas.width / 2 + base * (p.dx - (vx + vw / 2));
+      const oy = canvas.height / 2 + base * (p.dy - (vy + vh / 2));
+      for (const c of p.cells) {
+        for (let k = 0; k < 3; k++) {
+          const t = rotate(c.p[3 * k]!, c.p[3 * k + 1]!, c.p[3 * k + 2]!, cy, sy, cp, sp);
+          const x = ox + base * (t[0] + 100);
+          const y = oy + base * t[1];
+          if (x < b.x0) b.x0 = x;
+          if (x > b.x1) b.x1 = x;
+          if (y < b.y0) b.y0 = y;
+          if (y > b.y1) b.y1 = y;
+        }
+      }
+    }
+    return b;
+  };
+  /** Set `framing` for this turn so that the drawing lies inside the canvas with a margin. */
+  const frame = (yaw: number, tilt: number): void => {
+    framing.scale = 1;
+    framing.dx = 0;
+    framing.dy = 0;
+    if (!cam.fit) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    const m = 0.05 * Math.min(W, H);
+    const b = boundsAt(yaw, tilt);
+    if (!Number.isFinite(b.x0)) return;
+    const s = Math.min(1, (W - 2 * m) / Math.max(1, b.x1 - b.x0), (H - 2 * m) / Math.max(1, b.y1 - b.y0));
+    // Scaled about the middle of the canvas, then moved only as far as the margin asks.
+    const lo = (v: number, mid: number): number => mid + s * (v - mid);
+    const x0 = lo(b.x0, W / 2);
+    const x1 = lo(b.x1, W / 2);
+    const y0 = lo(b.y0, H / 2);
+    const y1 = lo(b.y1, H / 2);
+    framing.scale = s;
+    framing.dx = x0 < m ? m - x0 : x1 > W - m ? W - m - x1 : 0;
+    framing.dy = y0 < m ? m - y0 : y1 > H - m ? H - m - y1 : 0;
   };
   const painter = (options.webgl === false ? undefined : glPainter(canvas, pieces, place)) ?? flatPainter(canvas, pieces, place, k);
   if (painter === undefined) return undefined;
@@ -109,10 +165,17 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
       cam.zoom = clamp(camera.zoom ?? 1, 1, 8, 1);
       cam.panX = camera.panX ?? 0;
       cam.panY = camera.panY ?? 0;
+      cam.fit = camera.fit !== false;
     }
     const a = normalYaw(yaw);
     const t = Math.max(-45, Math.min(45, Number.isFinite(tilt) ? tilt : 0));
+    frame(a, t);
     painter.paint(a, t);
+    // Where the drawing lies on the canvas as painted (CSS pixels), for a page or a test to see that it is in view.
+    const b = boundsAt(a, t);
+    const at = (v: number, mid: number, d: number, pan: number): number => (mid + cam.zoom * (framing.scale * (v - mid) + d) + pan * ratio) / ratio;
+    canvas.setAttribute("data-bounds", [at(b.x0, canvas.width / 2, framing.dx, cam.panX), at(b.y0, canvas.height / 2, framing.dy, cam.panY), at(b.x1, canvas.width / 2, framing.dx, cam.panX), at(b.y1, canvas.height / 2, framing.dy, cam.panY)].map((v) => Math.round(v)).join(" "));
+    canvas.setAttribute("data-fit", String(Math.round(framing.scale * 1000) / 1000));
     canvas.setAttribute("data-yaw", String(a));
     canvas.setAttribute("data-tilt", String(t));
     return a;

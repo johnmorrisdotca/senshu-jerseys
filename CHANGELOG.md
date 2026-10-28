@@ -24,6 +24,13 @@ All notable changes to this project are written here. The format follows
 - **Woven labels show a twill** (diagonal ribs, a lit one and a dark one in turn) over their weave, and the Senshu S has a thin outline stitch in a lighter second colour round its satin.
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.21.1] - 2026-10-28
+
+### Fixed
+
+- **The whole piece is in view at 1x at every angle and tilt** (a belt seen from behind and tipped had its loop cut off at the top, with no way to move it). `judogiCanvas` fits the drawing as turned: smaller if it must be, moved only as far as it must be, with a margin (`camera.fit`, true by default, and `data-bounds` and `data-fit` on the canvas say where it lies); the zoom and the pan are on top of that.
+- **Zoomed in, a plain drag moves the view**, and a toggle beside the zoom buttons (shown only when zoomed) gives the drag back to turning; Shift swaps whichever it is; on touch one finger turns at 1x and moves the view when zoomed, with two fingers still pinching and moving. A **Fit** button puts the zoom and the pan back. Zoom still centres on the pointer or the pinch, and the plus and minus buttons about the middle.
+
 ## [0.21.0] - 2026-10-28
 
 ### Added

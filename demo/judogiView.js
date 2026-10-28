@@ -1,5 +1,5 @@
 // The judogi view's own hands: a drag turns it (across the view is a half turn) and tips it (up and down), the wheel and a trackpad turn it, a pinch, Ctrl or
-// Command with the wheel, the buttons, and a double press zoom it from 1x to 5x, and two fingers or Shift with a drag move a zoomed view. Grabbing it stops the
+// Command with the wheel, the buttons, and a double press zoom it from 1x to 5x, and, zoomed in, a plain drag moves the view (two fingers always do; Shift swaps a drag between moving and turning). Grabbing it stops the
 // automatic turn. The same pattern as the kyogijo-stadiums 3D view: a plain wheel over the view leaves the page to scroll unless the view has focus, and Ctrl with the wheel
 // (what a trackpad's pinch sends) is the zoom. The view only reports changes; the page draws.
 export const TILT_MAX = 30;
@@ -14,7 +14,7 @@ export const wrapYaw = (a) => ((((Math.round(a) + 180) % 360) + 360) % 360) - 18
 
 /**
  * Bind the hands to `view` (the element that clips and holds the stage, which the page transforms by `zoom` and `pan`).
- * `hooks.get()` gives `{ yaw, tilt, zoom, panX, panY, turnable }`; `hooks.set(partial, final)` takes what changed; `hooks.grab()` is called when a hand takes hold.
+ * `hooks.get()` gives `{ yaw, tilt, zoom, panX, panY, hand, turnable }`; `hooks.set(partial, final)` takes what changed; `hooks.grab()` is called when a hand takes hold.
  */
 export function bindView(view, hooks) {
   const pointers = new Map();
@@ -49,7 +49,9 @@ export function bindView(view, hooks) {
       const [a, b] = [...pointers.values()];
       gesture = { kind: "pinch", dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: s.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, panX: s.panX, panY: s.panY };
     } else if (pointers.size === 1) {
-      const pan = e.shiftKey || e.button === 1 || e.button === 2;
+      // Zoomed in, a plain drag moves the view (the toggle beside the zoom buttons gives it back to turning, and Shift swaps whichever it is); at 1x a drag turns, and Shift moves.
+      const zoomed = s.zoom > 1.05;
+      const pan = e.button === 1 || e.button === 2 || (zoomed ? (s.hand !== "turn") !== e.shiftKey : e.shiftKey);
       gesture = { kind: pan ? "pan" : "turn", x: e.clientX, y: e.clientY, yaw: s.yaw, tilt: s.tilt, panX: s.panX, panY: s.panY, moved: false };
     }
     view.dataset.grab = "1";

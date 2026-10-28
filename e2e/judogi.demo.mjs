@@ -57,7 +57,7 @@ test("the controls are in the page's own style, beside the view, and a finger wi
   await page.goto("/judogi.html");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const plain = await page.evaluate(() => [...document.querySelectorAll("#judo-controls select, .judo-layout button")]
-    .filter((el) => window.getComputedStyle(el).appearance !== "none" && el.tagName === "SELECT" || el.getBoundingClientRect().height < 44)
+    .filter((el) => !el.hidden && (window.getComputedStyle(el).appearance !== "none" && el.tagName === "SELECT" || el.getBoundingClientRect().height < 44))
     .map((el) => el.id));
   expect(plain).toEqual([]);
   // The turn controls are on screen with the view, without scrolling.
@@ -533,4 +533,62 @@ test("the folded belt and the box have no controls that do nothing in a flat vie
     }
   }
   expect(errors).toEqual([]);
+});
+
+test("at 1x every piece fits the view with a margin at every angle and tilt, extremes included", async ({ page }) => {
+  const inside = async (where) => {
+    const r = await page.locator("#judo-stage canvas").evaluate((c) => { const [w, h] = (c.getAttribute("data-size") ?? "").split(" ").map(Number); return { b: (c.getAttribute("data-bounds") ?? "").split(" ").map(Number), w, h, fit: Number(c.getAttribute("data-fit")) }; });
+    expect(r.b.length, where).toBe(4);
+    expect(r.fit, where).toBeLessThanOrEqual(1);
+    expect(r.b[0], `${where}: left`).toBeGreaterThanOrEqual(-1);
+    expect(r.b[1], `${where}: top`).toBeGreaterThanOrEqual(-1);
+    expect(r.b[2], `${where}: right`).toBeLessThanOrEqual(r.w + 1);
+    expect(r.b[3], `${where}: bottom`).toBeLessThanOrEqual(r.h + 1);
+  };
+  for (const mode of ["belt", "jacket", "pants", "suit"]) {
+    await page.goto(`/judogi.html?mode=${mode}&belt=red-white`);
+    await expect(page.locator("#judo-stage canvas")).toBeVisible();
+    for (const tilt of [-30, 0, 30]) {
+      await page.locator('[data-testid="judo-tilt"]').fill(String(tilt));
+      for (const yaw of [-179, -135, -90, -45, 0, 45, 90, 135, 179]) {
+        await page.locator('[data-testid="judo-yaw"]').fill(String(yaw));
+        await inside(`${mode} yaw ${yaw} tilt ${tilt}`);
+      }
+    }
+  }
+});
+
+test("zoomed in, a plain drag moves the view; the toggle gives the drag back to turning; Fit puts it all back", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black&zoom=2");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const bounds = () => page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-bounds") ?? "").split(" ").map(Number));
+  const m = await middle(page);
+  const start = await bounds();
+  const yaw0 = await attr(page, "data-yaw");
+  await page.mouse.move(m.x, m.y);
+  await page.mouse.down();
+  await page.mouse.move(m.x + 60, m.y + 30, { steps: 5 });
+  await page.mouse.up();
+  const moved = await bounds();
+  expect(Math.round(moved[0] - start[0])).toBeGreaterThan(20);
+  expect(await attr(page, "data-yaw")).toBe(yaw0);
+  // The toggle appears when zoomed, and turns the drag back into turning.
+  const hand = page.locator('[data-testid="judo-hand"]');
+  await expect(hand).toBeVisible();
+  await hand.click();
+  await expect(hand).toHaveAttribute("aria-pressed", "true");
+  const m2 = await middle(page);
+  await page.mouse.move(m2.x, m2.y);
+  await page.mouse.down();
+  await page.mouse.move(m2.x + 60, m2.y, { steps: 5 });
+  await page.mouse.up();
+  expect(await attr(page, "data-yaw")).not.toBe(yaw0);
+  // Fit: zoom and pan back, and the toggle goes away with the zoom.
+  await page.locator('[data-testid="judo-fit"]').click();
+  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("1×");
+  await expect(hand).toBeHidden();
+  const fitted = await bounds();
+  const canvas = await page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-size") ?? "").split(" ").map(Number));
+  expect(fitted[0]).toBeGreaterThanOrEqual(-1);
+  expect(fitted[2]).toBeLessThanOrEqual(canvas[0] + 1);
 });
