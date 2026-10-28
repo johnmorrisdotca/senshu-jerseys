@@ -22,14 +22,26 @@ const WALL_X = 150;
 export const innerY = (y: number): number => INNER_DY + (y <= INNER_PLAIN ? y : INNER_PLAIN + (y - INNER_PLAIN) * 0.2);
 const INNER_PLAIN = 60;
 
+/** The inner faces are plain cloth with a label on it, so they are cut in far fewer, larger cells than the outer shell (and below the neck's own region, in rows `ROW_SKIP` of the body's at a time). */
+const INNER_NT = 6;
+const ROW_SKIP = 3;
+
 const tAt = (i: number, n: number): number => ((-90 + (180 * i) / n) * Math.PI) / 180;
 
 /** The inner cells of a jacket: nothing unless `VolumeDesc.inner` names how far down the drawing they go. */
 export function innerCells(d: VolumeDesc): Cell[] {
   if (d.inner === undefined) return [];
-  const rows: number[] = [];
-  for (let j = 0; j + 1 < d.y.length; j++) if ((d.y[j] as number) < d.inner) rows.push(j);
+  // The rows of the body the inner faces run along: every one down to the plain cloth, then every `ROW_SKIP`th. A cell runs from one to the next.
+  const lines: number[] = [];
+  let skipped = 0;
+  for (let j = 0; j < d.y.length && (d.y[j] as number) <= d.inner + 8; j++) {
+    const plain = (d.y[j] as number) > INNER_PLAIN;
+    if (plain && skipped++ % ROW_SKIP !== 0 && j !== d.y.length - 1) continue;
+    lines.push(j);
+  }
+  const rows = lines.slice(0, -1);
   if (rows.length === 0) return [];
+  const next = (j: number): number => lines[lines.indexOf(j) + 1] as number;
   const cells: Cell[] = [];
   const at = (j: number, t: number, sg: number): number[] => [sg * ((d.a[j] as number) - INNER_T) * Math.sin(t), d.y[j] as number, sg * Math.max(0.4, zAt(d, j, t) - INNER_T)];
   const out = (j: number, t: number, sg: number): number[] => [sg * (d.a[j] as number) * Math.sin(t), d.y[j] as number, sg * zAt(d, j, t)];
@@ -37,15 +49,16 @@ export function innerCells(d: VolumeDesc): Cell[] {
   for (const back of [false, true]) {
     const sg = back ? -1 : 1;
     for (const j of rows) {
-      for (let i = 0; i < d.nt; i++) {
+      const jn = next(j);
+      for (let i = 0; i < INNER_NT; i++) {
         const tex: number[] = [];
         const p: number[] = [];
-        for (const [jj, ii] of [[j, i], [j, i + 1], [j + 1, i], [j + 1, i + 1]] as const) {
-          const t = tAt(ii, d.nt);
+        for (const [jj, ii] of [[j, i], [j, i + 1], [jn, i], [jn, i + 1]] as const) {
+          const t = tAt(ii, INNER_NT);
           tex.push(100 - texHalf(d, jj) * Math.sin(t), innerY(d.y[jj] as number));
           p.push(...at(jj, t, sg));
         }
-        const n = normalOf(p, 0, ((d.y[j] as number) + (d.y[j + 1] as number)) / 2, 0);
+        const n = normalOf(p, 0, ((d.y[j] as number) + (d.y[jn] as number)) / 2, 0);
         cells.push(...split(back ? 3 : 0, back, tex, p, [-n[0], -n[1], -n[2]]));
       }
     }
@@ -54,11 +67,11 @@ export function innerCells(d: VolumeDesc): Cell[] {
   const top = rows[0] as number;
   for (const back of [false, true]) {
     const sg = back ? -1 : 1;
-    for (let i = 0; i < d.nt; i++) {
+    for (let i = 0; i < INNER_NT; i++) {
       const tex: number[] = [];
       const p: number[] = [];
       for (const [k, ii] of [[0, i], [0, i + 1], [1, i], [1, i + 1]] as const) {
-        const t = tAt(ii, d.nt);
+        const t = tAt(ii, INNER_NT);
         tex.push(100 - texHalf(d, top) * Math.sin(t), INNER_DY + (k === 0 ? RIM_FROM : RIM_TO));
         p.push(...(k === 0 ? out(top, t, sg) : at(top, t, sg)));
       }
@@ -67,13 +80,14 @@ export function innerCells(d: VolumeDesc): Cell[] {
   }
   // The walls between the two inner faces, down each side.
   for (const j of rows) {
+    const jn = next(j);
     const y0 = d.y[j] as number;
-    const y1 = d.y[j + 1] as number;
+    const y1 = d.y[jn] as number;
     for (const s of [-1, 1]) {
       const x0 = s * ((d.a[j] as number) - INNER_T);
-      const x1 = s * ((d.a[j + 1] as number) - INNER_T);
+      const x1 = s * ((d.a[jn] as number) - INNER_T);
       const z0 = Math.max(0.4, wallOf(d, j) - INNER_T);
-      const z1 = Math.max(0.4, wallOf(d, j + 1) - INNER_T);
+      const z1 = Math.max(0.4, wallOf(d, jn) - INNER_T);
       const p = [x0, y0, z0, x0, y0, -z0, x1, y1, z1, x1, y1, -z1];
       const tex = [WALL_X, innerY(y0), WALL_X + 4, innerY(y0), WALL_X, innerY(y1), WALL_X + 4, innerY(y1)];
       cells.push(...split(0, false, tex, p, [-s, 0, 0]));
