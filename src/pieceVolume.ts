@@ -197,10 +197,12 @@ export function smoothOf(cells: readonly Cell[]): (Smooth | undefined)[] {
     i++;
   }
   const sums = new Map<string, Vec>();
+  const counts = new Map<string, number>();
   for (const q of quads) {
     for (const e of [q.left, q.right]) {
       const s = sums.get(e) ?? [0, 0, 0];
       sums.set(e, [s[0] + q.n[0], s[1] + q.n[1], s[2] + q.n[2]]);
+      counts.set(e, (counts.get(e) ?? 0) + 1);
     }
   }
   const unit = (v: Vec): Vec => {
@@ -208,8 +210,14 @@ export function smoothOf(cells: readonly Cell[]): (Smooth | undefined)[] {
     return [v[0] / l, v[1] / l, v[2] / l];
   };
   const out: (Smooth | undefined)[] = [];
+  // Where the cloth turns sharply (the crease between a pair of trousers' legs, where two lobes meet at an angle past a right angle and more) the
+  // cells either side do not share a normal: averaging them would give an edge that faces nowhere, and a dark wedge along it.
+  const at = (e: string, own: Vec): Vec => {
+    const sum = sums.get(e) as Vec;
+    return Math.hypot(sum[0], sum[1], sum[2]) < 0.6 * (counts.get(e) ?? 1) ? own : unit(sum);
+  };
   quads.forEach((q, k) => {
-    const s: Smooth = { k, n0: unit(sums.get(q.left) as Vec), n1: unit(sums.get(q.right) as Vec), line: edgeLine(q.tex) };
+    const s: Smooth = { k, n0: at(q.left, q.n), n1: at(q.right, q.n), line: edgeLine(q.tex) };
     out[q.i] = s;
     out[q.i + 1] = s;
   });

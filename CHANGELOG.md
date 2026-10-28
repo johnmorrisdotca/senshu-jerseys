@@ -16,6 +16,12 @@ All notable changes to this project are written here. The format follows
 - **Woven labels show a twill** (diagonal ribs, a lit one and a dark one in turn) over their weave, and the Senshu S has a thin outline stitch in a lighter second colour round its satin.
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.19.1] - 2026-10-28
+
+### Fixed
+
+- **No wedge or crack at the trousers' crotch.** Turned about 45 to 60 degrees and tipped, the trousers showed a dark wedge where the hip block meets the legs and a hairline of the page behind it. The legs were a little narrower than the hip's last row (the cleft's edge sat 2 units short and the lip of the block hung over them), they began only under the hip, and the cleft between the lobes began high and deep. The legs are now as wide as the hip's last row and begin 12 units up inside it, the cleft forms later and smoother (`LOBES`), cells at the cleft are judged from the middle of their own lobe, and the shade does not average across the crease. A test fills every seen cell for a turn every 15 degrees at seven tips and fails on a hole in the silhouette (it found one of 9.5 square units before).
+
 ## [0.19.0] - 2026-10-28
 
 ### Added

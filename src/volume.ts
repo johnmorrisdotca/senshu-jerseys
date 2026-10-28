@@ -320,6 +320,20 @@ function winding(c: Cell): number {
   return Math.sign(t) * Math.sign(cross[0]! * c.n[0] + cross[1]! * c.n[1] + cross[2]! * c.n[2]);
 }
 
+/**
+ * The middle a cell's outward side is judged from. A body is round about its own axis, but a row that has gone over to two lobes (trousers)
+ * is round about the middle of each lobe, so a cell on the inner side of a lobe, by the cleft, faces sideways into it and not forward: judged
+ * from the body's axis it came out facing the wrong way and showed its inside (a dark wedge between the legs).
+ */
+function lobeCentre(d: VolumeDesc, j: number, p: readonly number[]): number {
+  if (d.lobes === undefined) return 0;
+  const w = ((d.lobes[j] ?? 0) + (d.lobes[j + 1] ?? 0)) / 2;
+  if (w <= 0) return 0;
+  const x = (p[0]! + p[3]! + p[6]! + p[9]!) / 4;
+  const a = ((d.a[j] as number) + (d.a[j + 1] as number)) / 2;
+  return Math.sign(x) * (a / 2) * w;
+}
+
 /** Every cell of the garment. */
 export function cellsOf(d: VolumeDesc): Cell[] {
   const cells: Cell[] = [];
@@ -336,7 +350,7 @@ export function cellsOf(d: VolumeDesc): Cell[] {
           tex.push(100 + halfW * Math.sin(t), d.y[jj] as number);
           p.push(sg * (d.a[jj] as number) * Math.sin(t), d.y[jj] as number, sg * zAt(d, jj, t));
         }
-        cells.push(...split(back ? 3 : 0, back, tex, p, normalOf(p, 0, (d.y[j]! + d.y[j + 1]!) / 2, 0)));
+        cells.push(...split(back ? 3 : 0, back, tex, p, normalOf(p, lobeCentre(d, j, p), (d.y[j]! + d.y[j + 1]!) / 2, 0)));
       }
     }
   }

@@ -84,11 +84,11 @@ test("the trousers' legs are two tubes, hanging from a hip that parts into them"
   assert.equal(d.hang, true);
   assert.equal(d.lobes?.[0], 0);
   assert.equal(d.lobes?.[d.lobes.length - 1], 1);
-  // Each leg starts at the hip's last row, a little under it, and as wide as half of it.
+  // Each leg starts inside the hip's last rows (so the two overlap, and no crack opens where they meet) and is as wide as half of it.
   const bottom = d.y[d.y.length - 1] as number;
   for (const leg of d.sl) {
     const [sx, sy, , , ax, ay] = leg.q as [number, number, number, number, number, number];
-    assert.ok(sy <= bottom && ay <= bottom && sy > bottom - 6, "a leg starts just under the hip");
+    assert.ok(sy <= bottom && ay <= bottom && sy > bottom - 16, "a leg starts inside the hip's last rows");
     assert.ok(Math.abs(Math.abs(sx - ax) - ((d.a[d.a.length - 1] as number) - 1.2)) < 2, "a leg is half the hip wide");
   }
   // The sleeves of the jacket hang beside the body, not from it.
