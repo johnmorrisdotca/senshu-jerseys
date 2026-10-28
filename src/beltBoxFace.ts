@@ -57,7 +57,7 @@ export function lidTextLayout(length: number, width: number, text: string, near 
 const group = (r: Rect, body: string, id?: string): string => `<g${id === undefined ? "" : ` id="${id}"`}><svg x="${n2(r.x)}" y="${n2(r.y)}" width="${n2(r.w)}" height="${n2(r.h)}" viewBox="0 0 ${n2(r.w)} ${n2(r.h)}" overflow="hidden">${body}</svg></g>`;
 
 /** Wood in a region `w` by `h` units: the ground, long wavy grain lines and the odd darker streak. */
-function wood(w: number, h: number, tone: KiriWood, seed: number, darker = 0, lift = 0): string {
+function wood(w: number, h: number, tone: KiriWood, seed: number, darker = 0, lift = 0, shadow: "top" | "bottom" | "" = ""): string {
   const c = WOODS[tone];
   const rand = rng(seed);
   let s = `<rect width="${n2(w)}" height="${n2(h)}" fill="${c.ground}"/>`;
@@ -76,6 +76,13 @@ function wood(w: number, h: number, tone: KiriWood, seed: number, darker = 0, li
   }
   // The sides stand turned from the light and darken more than a top does: they are painted a little paler to read as the same wood.
   if (lift > 0) s += `<rect width="${n2(w)}" height="${n2(h)}" fill="#fff" fill-opacity="${lift}"/>`;
+  // A lid's shadow on the tray below it (the tray's top edge), or the dark underside of the lid's own edge: a soft band, where one board meets the other.
+  if (shadow !== "") {
+    const id = `gs${shadow}${Math.round(w)}`;
+    const band = Math.min(h, 2.4);
+    const y0 = shadow === "top" ? 0 : h - band;
+    s += `<defs><linearGradient id="${id}" x1="0" y1="${shadow === "top" ? 0 : 1}" x2="0" y2="${shadow === "top" ? 1 : 0}"><stop offset="0" stop-color="#2e1a08" stop-opacity="${shadow === "top" ? 0.62 : 0.5}"/><stop offset="1" stop-color="#2e1a08" stop-opacity="0"/></linearGradient></defs><rect y="${n2(y0)}" width="${n2(w)}" height="${n2(band)}" fill="url(#${id})"/>`;
+  }
   return s;
 }
 
@@ -178,9 +185,10 @@ export function solidFace(desc: SolidDesc, paint: BeltPaint | undefined, look: B
   const r = regionsOf(desc);
   const belt = paint !== undefined && desc.belt !== undefined ? strapFace(paint, desc.belt.w * 2.63, rows) : undefined;
   // The belt's edges are drawn dark (the rows seen end on); folded, the whole side of the bundle is edges, so they are lifted toward the cloth's own colour.
-  let body = (belt?.body ?? "") + (belt === undefined ? "" : `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" fill="#fff" fill-opacity="0.24"/>` +
-    // A fine dark line where one layer lies on the next, so the side reads as a stack of bands.
-    `<path d="M-40 ${EDGE1_Y + 0.5}H240M-40 ${EDGE1_Y + EDGE_H - 0.5}H240" stroke="${paint?.edge ?? "#000"}" stroke-width="1" stroke-opacity="0.6"/>`);
+  let body = (belt?.body ?? "") + (belt === undefined ? "" : `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" fill="#fff" fill-opacity="0.2"/>` +
+    // The edge is the cloth folded on itself lengthwise: the lines of its plies, and a dark one where it meets the next layer.
+    `<path d="M-40 ${EDGE1_Y + EDGE_H / 3}H240M-40 ${EDGE1_Y + (2 * EDGE_H) / 3}H240" stroke="${paint?.edge ?? "#000"}" stroke-width="0.3" stroke-opacity="0.3"/>` +
+    `<path d="M-40 ${EDGE1_Y + 0.3}H240M-40 ${EDGE1_Y + EDGE_H - 0.3}H240" stroke="${paint?.edge ?? "#000"}" stroke-width="0.8" stroke-opacity="0.45"/>`);
   const clip = [...(belt?.clip ?? [])];
   const put = (rect: Rect, inner: string): void => {
     body += group(rect, inner);
@@ -190,9 +198,9 @@ export function solidFace(desc: SolidDesc, paint: BeltPaint | undefined, look: B
   if (b !== undefined) {
     if (b.type === "kiri") {
       put(r.lidTop, wood(r.lidTop.w, r.lidTop.h, look.wood, 11) + engraving(r.lidTop.w, r.lidTop.h, look.text));
-      put(r.lidLong, wood(r.lidLong.w, r.lidLong.h, look.wood, 14, 0, 0.2));
+      put(r.lidLong, wood(r.lidLong.w, r.lidLong.h, look.wood, 14, 0, 0.2, "bottom"));
       put(r.lidEnd, endGrain(r.lidEnd.w, r.lidEnd.h, look.wood));
-      put(r.baseLong, wood(r.baseLong.w, r.baseLong.h, look.wood, 12, 0, 0.22));
+      put(r.baseLong, wood(r.baseLong.w, r.baseLong.h, look.wood, 12, 0, 0.22, "top"));
       put(r.baseEnd, endGrain(r.baseEnd.w, r.baseEnd.h, look.wood));
       put(r.baseEnd2, endGrain(r.baseEnd2.w, r.baseEnd2.h, look.wood));
       put(r.rimLong, wood(r.rimLong.w, r.rimLong.h, look.wood, 15, 0.04));

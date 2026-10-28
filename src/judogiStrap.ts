@@ -315,16 +315,26 @@ export function strapDesc(s: StrapDesc, pitch: number): VolumeDesc {
  * that is grown at its edge still finds cloth.
  */
 export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
+  const fine = p.fine !== undefined;
+  const thread = p.fine?.thread ?? p.stitch;
   const rows = (y0: number, h: number, n: number): string => {
     let s = "";
-    for (let k = 1; k <= n; k++) s += `<path d="M-40 ${n2(y0 + (h * k) / (n + 1))}H240" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
+    // Close up, a row is a line of separate stitches (a dash and a gap), the thread a little lighter than the cloth and a faint shadow beside it; far off, a plain fine line.
+    for (let k = 1; k <= n; k++) {
+      const y = n2(y0 + (h * k) / (n + 1));
+      s += fine
+        ? `<path d="M-40 ${y}H240" stroke="${thread}" stroke-width="0.17" stroke-opacity="0.85" stroke-dasharray="1.3 1.1"/>`
+        : `<path d="M-40 ${y}H240" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
+    }
     return s;
   };
+  // A fine diagonal twill over the cloth: ribs a lit one and a dark one in turn.
+  const twill = (y0: number, h: number): string => (fine ? `<rect x="-40" y="${n2(y0)}" width="280" height="${n2(h)}" fill="url(#jgtwill)"/>` : "");
   const strip = (y0: number, h: number): string => `<rect x="-40" y="${n2(y0 - 1.5)}" width="280" height="${n2(h + 3)}" fill="${p.stripFill ?? p.fill}"/>`;
   const bands = (p.bands ?? []).map((b) => `<rect x="-40" y="${n2(b.from * w)}" width="280" height="${n2((b.to - b.from) * w)}" fill="${b.fill}"/>`).join("");
   // A satin or silk cover: a soft light along the strip's lit side and a fainter one near its other, over the rows.
   const sheen = (y0: number): string => p.cover === undefined || p.cover === "cotton" ? "" : `<rect x="-40" y="${n2(y0 + w * 0.06)}" width="280" height="${n2(w * 0.32)}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.3 : 0.2}"/><rect x="-40" y="${n2(y0 + w * 0.7)}" width="280" height="${n2(w * 0.16)}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.14 : 0.08}"/>`;
-  const cloth = (y0: number, plain = false): string => strip(y0, w) + (plain ? "" : bands.replace(/y="([\d.-]+)"/g, (_, y: string) => `y="${n2(Number(y) + y0)}"`)) + rows(y0, w, n) + sheen(y0) +
+  const cloth = (y0: number, plain = false): string => strip(y0, w) + twill(y0, w) + (plain ? "" : bands.replace(/y="([\d.-]+)"/g, (_, y: string) => `y="${n2(Number(y) + y0)}"`)) + rows(y0, w, n) + sheen(y0) +
     `<path d="M-40 ${n2(y0 + 0.4)}H240M-40 ${n2(y0 + w - 0.4)}H240" stroke="${p.edge}" stroke-width="0.9" stroke-opacity="0.75"/>`;
   const faceStrip = cloth(FACE_Y);
   const backStrip = cloth(BACK_Y, false);
@@ -342,5 +352,6 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
   // What is sewn on each hanging end lies on that end's own stretch of the strip, its frame's origin at the knot's end and its middle on the strip's.
   const sewn = (m: { body: string } | undefined, x: number): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(w / 2)})">${m.body}</g>`);
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
-  return { defs: p.strip?.defs ?? "", body: faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
+  const twillDefs = fine ? `<pattern id="jgtwill" width="0.62" height="0.62" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="0.62" height="0.24" fill="#000" fill-opacity="0.09"/><rect y="0.31" width="0.62" height="0.14" fill="#fff" fill-opacity="0.07"/></pattern>` : "";
+  return { defs: twillDefs + (p.strip?.defs ?? ""), body: faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

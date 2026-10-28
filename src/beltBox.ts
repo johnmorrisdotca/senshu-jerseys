@@ -79,8 +79,9 @@ export interface BoxDims {
 /** The figures of a box of `size` and `type`. Kiri: 7 cm wide and 7 cm high (the maker's page). Silver: 5 cm wide (the maker's page), about 4.6 cm high (read from the photograph). */
 export function boxDims(size: BoxSize, type: BoxType): BoxDims {
   const inner = boxInnerCm(size);
-  if (type === "kiri") return { type, w: 7, h: 7, inner, length: inner + 1.6, wall: 0.8, lid: 1, baseW: 7, baseH: 6 };
-  return { type, w: 5.4, h: 4.6, inner, length: inner + 0.3, wall: 0.15, lid: 0.15, baseW: 5.1, baseH: 4.4 };
+  // Kiri: 7 x 7 cm closed (the lid a touch proud of the tray, which is 6.6 wide), walls 6 mm. Silver: board 2 mm thick, the lid a cap a little larger than the base.
+  if (type === "kiri") return { type, w: 7, h: 7, inner, length: inner + 1.2, wall: 0.6, lid: 1, baseW: 6.6, baseH: 6 };
+  return { type, w: 5.5, h: 4.6, inner, length: inner + 0.4, wall: 0.2, lid: 0.2, baseW: 5.2, baseH: 4.4 };
 }
 
 /** The widest belt a box holds, in centimetres (the inside width less a little play). */
@@ -99,6 +100,10 @@ export interface FoldDesc {
   z: number;
   /** A paper band round the middle of the bundle (the shop's wrap), as its width along the bundle, or 0 for none. */
   band: number;
+  /** Where the folds' small imperfections come from (a number made from the belt's options): the same belt is always folded the same way. */
+  seed: number;
+  /** How loosely it lies, 0 to 1: 1 a coil with its layers fanned and its folds open, near 0 packed snug in a box (the wobbles scale with it). */
+  loose: number;
   /** The length, in drawing units, after which a kohaku belt's red and white sections repeat (two sections), so the plain stretch of the strip wraps without a seam. */
   period: number;
 }
@@ -158,7 +163,7 @@ export interface Regions {
 }
 
 /** The length of the lid: the kiri slab is a little shorter than the tray, the silver cap a little shorter than the base so that the base's end shows. */
-export const lidLength = (d: BoxDims): number => (d.type === "kiri" ? d.length - 0.4 : d.length - 1.6);
+export const lidLength = (d: BoxDims): number => (d.type === "kiri" ? d.length + 0.4 : d.length - 1.6);
 
 export function regionsOf(s: SolidDesc): Regions {
   const d = s.box?.d;
@@ -213,6 +218,8 @@ function spin(deg: number, about: Vec = [0, 0, 0]): (p: Vec) => Vec {
 class Sink {
   cells: Cell[] = [];
   private at: (p: Vec) => Vec = (p) => p;
+  /** The layer the cells being made belong to (see `Cell.layer`), or none. */
+  layer: number | undefined;
   private readonly base: (p: Vec) => Vec;
   constructor(rot: number) {
     this.base = spin(rot);
@@ -232,7 +239,19 @@ class Sink {
   }
   /** One cell between four points (tl, tr, bl, br) and the same four on the picture. */
   quad(c: [Vec, Vec, Vec, Vec], tex: [number, number][], out: Vec): void {
-    this.cells.push(...quad(c.map((p) => this.wp(p)) as [Vec, Vec, Vec, Vec], tex, this.wn(out)));
+    const w = c.map((p) => this.wp(p)) as [Vec, Vec, Vec, Vec];
+    // A picture must read the right way round from outside: where the picture's axes would cross inward (a fold's turning belt can do that), its rows are swapped.
+    const ex = sub(w[1], w[0]);
+    const ey = sub(w[2], w[0]);
+    const tx = (tex[1] as [number, number])[0] - (tex[0] as [number, number])[0];
+    const ty = (tex[2] as [number, number])[1] - (tex[0] as [number, number])[1];
+    const n = cross(ex, ey);
+    const wo = this.wn(out);
+    const flip = (n[0] * wo[0] + n[1] * wo[1] + n[2] * wo[2]) * tx * ty < 0;
+    const t = flip ? [tex[2], tex[3], tex[0], tex[1]] as [number, number][] : tex;
+    const made = quad(w, t, wo);
+    if (this.layer !== undefined) for (const c of made) c.layer = this.layer;
+    this.cells.push(...made);
   }
   /**
    * A rectangle seen from outside as a picture: `o` its top left, `u` the way the picture's x runs and `v` the way its y runs, so that u x v points out of the
@@ -276,6 +295,8 @@ export function solidCells(s: SolidDesc): Cell[] {
   const reg = regionsOf(s);
   if (s.box !== undefined) boxCells(sink, s.box, reg);
   sink.place((p) => p);
+  // A belt in a box lies between what is inside the box (layer 0) and what stands round it (layer 2).
+  if (s.box !== undefined) sink.layer = 1;
   if (s.belt !== undefined) foldedCells(sink, s.belt, reg);
   return sink.cells;
 }
@@ -294,6 +315,7 @@ function boxCells(k: Sink, b: BoxScene, r: Regions): void {
   const yBot = b.y;
   const yTop = yBot - d.baseH;
   k.place((p) => p);
+  k.layer = 2;
   if (kiri) {
     k.cuboid([x0, yTop, zLo], [x1, yBot, zHi], { front: r.baseLong, back: r.baseLong, bottom: part(r.inside, 0, 0, 1, d.baseW / d.h), left: r.baseEnd, right: r.baseEnd2 });
   } else {
@@ -321,12 +343,14 @@ function boxCells(k: Sink, b: BoxScene, r: Regions): void {
     const nx = Math.ceil(dx / 3);
     const ny = Math.max(1, Math.ceil(h / 3));
     const plain = (w: number, hh: number): Rect => part(r.inside, 0, 0, w / L, hh / d.h);
+    k.layer = 0;
     // The floor, the four inner walls (each seen from inside), the tops of the walls.
     k.face([ix0, yi, iz0], [dx, 0, 0], [0, 0, dz], nx, Math.ceil(dz / 3), plain(dx, dz));
     k.face([ix0, yTop, iz0], [dx, 0, 0], [0, h, 0], nx, ny, plain(dx, h));
     k.face([ix1, yTop, iz1], [-dx, 0, 0], [0, h, 0], nx, ny, plain(dx, h));
     k.face([ix0, yTop, iz1], [0, 0, -dz], [0, h, 0], 2, ny, plain(dz, h));
     k.face([ix1, yTop, iz0], [0, 0, dz], [0, h, 0], 2, ny, plain(dz, h));
+    k.layer = 2;
     k.face([x0, yTop, zLo], [L, 0, 0], [0, 0, wl], Math.ceil(L / 6), 1, r.rimLong);
     k.face([x0, yTop, zHi - wl], [L, 0, 0], [0, 0, wl], Math.ceil(L / 6), 1, r.rimLong);
     k.face([x0, yTop, zLo + wl], [wl, 0, 0], [0, 0, d.baseW - 2 * wl], 1, 1, r.rimEnd);
@@ -341,10 +365,10 @@ function lidCells(k: Sink, b: BoxScene, r: Regions): void {
   const closed = b.state === "closed";
   const L = lidLength(d);
   const yTop = b.y - d.baseH;
+  const zc = closed ? b.z : b.lidZ;
   if (d.type === "kiri") {
-    // The slab lies in the walls' grooves, or on the table beside the tray; the engraving shows on its top either way.
-    const zc = closed ? b.z : b.lidZ;
-    const yb = closed ? yTop + d.lid * 0.45 : b.y;
+    // The slab slides in the walls' grooves, sitting on the tray's rim a touch proud of it each way (so there is a step and a seam to see), or lies on the table beside the tray; the engraving shows on its top either way.
+    const yb = closed ? yTop : b.y;
     k.place(closed ? (p) => p : spin(b.lidRot, [0, 0, zc]));
     k.cuboid([-L / 2, yb - d.lid, zc - d.w / 2], [L / 2, yb, zc + d.w / 2], {
       top: r.lidTop,
@@ -352,27 +376,30 @@ function lidCells(k: Sink, b: BoxScene, r: Regions): void {
       back: r.lidLong,
       left: r.lidEnd,
       right: r.lidEnd,
-      bottom: closed ? undefined : part(r.inside, 0, 0, L / d.length, d.w / d.h),
+      bottom: closed ? part(r.inside, 0, 0, L / d.length, d.w / d.h) : part(r.inside, 0, 0, L / d.length, d.w / d.h),
     });
     return;
   }
-  // The silver lid: a cap with a top, two sides and a closed end, white board inside. Closed, it sits over the base with the base's end showing; open, it lies across the base.
+  // The silver lid: a cap with a top, two sides and a closed end, white board inside, open at one end. Closed, it sits over the base with the base's end showing; open, it lies beside the base on the table.
   const w = d.w;
   const h = d.h;
   const wl = d.wall;
-  const zc = b.z;
   const x0 = closed ? -d.length / 2 + 1.6 : -L / 2;
-  const yb = closed ? b.y + (d.h - d.baseH) * 0.5 : yTop - 0.05;
+  const yb = closed ? b.y + (d.h - d.baseH) * 0.5 : b.y;
   const yt = yb - h;
   k.place(closed ? (p) => p : spin(b.lidRot, [0, 0, zc]));
   k.cuboid([x0, yt, zc - w / 2], [x0 + L, yb, zc + w / 2], { top: r.lidTop, front: r.lidLong, back: r.lidLong, right: r.lidEnd });
-  // Looking into the open end: the board's inside.
+  // The open end: the board's thickness all round, and the white inside looking in.
   const iw = w - 2 * wl;
   const ih = h - wl;
   const inner = (len: number, other: number): Rect => part(r.inside, 0, 0, len / d.length, other / d.h);
-  k.face([x0, yt + wl, zc - w / 2 + wl], [L, 0, 0], [0, 0, iw], Math.ceil(L / 3), 2, inner(L, iw));
-  k.face([x0, yt + wl, zc + w / 2 - wl], [L, 0, 0], [0, ih, 0], Math.ceil(L / 3), 2, inner(L, ih));
-  k.face([x0 + L, yt + wl, zc - w / 2 + wl], [-L, 0, 0], [0, ih, 0], Math.ceil(L / 3), 2, inner(L, ih));
+  k.face([x0, yt, zc - w / 2], [0, 0, w], [0, wl, 0], 2, 1, r.rimEnd);
+  k.face([x0, yt + wl, zc - w / 2], [0, 0, wl], [0, ih, 0], 1, 2, r.rimEnd);
+  k.face([x0, yt + wl, zc + w / 2 - wl], [0, 0, wl], [0, ih, 0], 1, 2, r.rimEnd);
+  if (closed) return;
+  k.face([x0, yt + wl, zc + iw / 2], [L, 0, 0], [0, 0, -iw], Math.ceil(L / 3), 2, inner(L, iw));
+  k.face([x0 + L, yt + wl, zc + w / 2 - wl], [-L, 0, 0], [0, ih, 0], Math.ceil(L / 3), 2, inner(L, ih));
+  k.face([x0, yt + wl, zc - w / 2 + wl], [L, 0, 0], [0, ih, 0], Math.ceil(L / 3), 2, inner(L, ih));
 }
 
 // ---- the folded belt ----
@@ -392,35 +419,84 @@ export interface Along {
 /** Where the belt's plain stretch is laid on its strip. */
 const X0 = -30;
 
+/** A small deterministic random sequence (mulberry32): the folds are imperfect, but the same every time for the same belt. */
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /**
- * The belt's path in the scene: its layers from the bottom one (free end B, on the right) up to the top one (free end A, on the left, face up), joined by folds,
- * the belt's own length along it. A belt is doubled back on itself `n` times; the bottom layer is a little longer so that its end shows beyond the stack.
+ * The belt's path in the scene: its layers from the bottom one (free end B) up to the top one (free end A, face up), joined by folds, the belt's own length along it.
+ * It is a loose coil, not a stack of planks: the layers fan out a little toward the near end (the lower ones lie further toward the viewer, so each layer's edge shows on its
+ * own), bow a little in plan, and each lies a touch off the one below (a few millimetres left or right, a little skewed, the loops at the ends not quite in line); with an even
+ * number of layers both free ends are at the near end, the top one with the label, and the folds below it step down. Every wobble comes from `f.seed`, so a belt is the same each time.
  */
 export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent: [number, number] } {
   const n = f.n;
+  const rand = rng(f.seed);
+  const wob = (amp: number): number => (rand() - 0.5) * 2 * amp * f.loose;
   const pitch = f.t + LAYER_GAP;
-  const bulge = 1.15 * pitch;
-  const arc = Math.PI * Math.sqrt((pitch * pitch / 4 + bulge * bulge) / 2);
-  const total = f.cm - (n - 1) * arc;
-  const base = total / n;
-  const ext = Math.min(1.6, base / 8);
-  const jit = [0, 0, 0, 0, 0, 0, 0, 0];
-  const len = Array.from({ length: n }, (_, i) => (i === 0 ? base + ext : base - ext / (n - 1)) + (jit[i % jit.length] ?? 0));
-  len[n - 1] = (len[n - 1] as number) - (len.reduce((a, c) => a + c, 0) - total);
-  const xs: number[] = [];
-  const xe: number[] = [];
-  let x = 0;
-  for (let i = 0; i < n; i++) {
-    xs.push(x);
-    x += (i % 2 === 0 ? -1 : 1) * (len[i] as number);
-    xe.push(x);
+  const bulge = 1.2 * pitch;
+  const even = n % 2 === 0;
+  // Which end of each layer is at the near end: the top layer's tip when the number is even, the bottom one's tip when it is odd.
+  const stepBack = even ? -0.3 * f.loose : 0;
+  const level = (i: number): number => Math.ceil((n - 1 - i) / 2);
+  const nearJit = Array.from({ length: n }, () => wob(0.22));
+  const farJit = Array.from({ length: n }, () => wob(0.28));
+  const arcLen = Math.PI * Math.sqrt((pitch * pitch / 4 + bulge * bulge) / 2);
+  // Where each layer starts and ends along the bundle for a bundle `L` long.
+  const ends = (L: number): { xs: number[]; xe: number[] } => {
+    const xs: number[] = [];
+    const xe: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const dir = i % 2 === 0 ? -1 : 1;
+      // A layer that runs toward -x starts at +x. In an even coil +x is the near end; in an odd one the free end of the top layer is at -x, so the near end is +x there too.
+      const near = L / 2 - level(i) * stepBack + (nearJit[Math.floor((i + 1) / 2)] as number);
+      const far = -L / 2 + (farJit[Math.floor(i / 2)] as number);
+      xs.push(dir === -1 ? near : far);
+      xe.push(dir === -1 ? far : near);
+    }
+    return { xs, xe };
+  };
+  const lengthFor = (L: number): number => {
+    const e = ends(L);
+    let t = 0;
+    for (let i = 0; i < n; i++) t += Math.abs((e.xe[i] as number) - (e.xs[i] as number));
+    return t + (n - 1) * arcLen;
+  };
+  // The bundle's length that makes the path the belt's length (the path grows with it).
+  let lo = f.cm / n - 6;
+  let hi = f.cm / n + 6;
+  for (let k = 0; k < 40; k++) {
+    const mid = (lo + hi) / 2;
+    if (lengthFor(mid) < f.cm) lo = mid;
+    else hi = mid;
   }
-  const lo = Math.min(...xs, ...xe) - bulge;
-  const hi = Math.max(...xs, ...xe) + bulge;
-  const shift = f.x - (lo + hi) / 2;
-  const yAt = (i: number): number => f.y - (i + 0.5) * pitch;
+  const L = (lo + hi) / 2;
+  const { xs, xe } = ends(L);
+  const all = [...xs, ...xe];
+  const shift = f.x - (Math.min(...all) + Math.max(...all)) / 2;
+  // Loose coil: the lower layers lie lower and lower toward the near end, so the loops there are open and step down, while the far end is stacked close.
+  const sink = even ? 0.55 * f.loose : 0;
+  const tOf = (x: number): number => Math.max(0, Math.min(1, (x - shift + L / 2) / L));
+  const yAt = (i: number, x: number): number => f.y - (i + 0.5) * pitch + (n - 1 - i) * sink * Math.pow(tOf(x), 1.6);
   // The top layer's face looks up; with an odd number of layers the face is on the right of the way the belt runs, with an even number on its left.
-  const side = n % 2 === 1 ? 1 : -1;
+  const side = even ? -1 : 1;
+  // Plan: lower layers lie further toward the viewer, more so toward the near end; each bows a little and sits a touch skewed.
+  const fan = Array.from({ length: n }, (_, i) => even ? (n - 1 - i) * 0.45 * f.loose : 0);
+  const bow = Array.from({ length: n }, () => wob(0.3));
+  const off = Array.from({ length: n }, () => wob(0.14));
+  const skew = Array.from({ length: n }, () => wob(0.012));
+  const zOf = (i: number, x: number): number => {
+    const t = Math.max(0, Math.min(1, (x - shift + L / 2) / L));
+    return f.z + (off[i] as number) + (fan[i] as number) * t * t + (bow[i] as number) * Math.sin(Math.PI * t) + (skew[i] as number) * (x - f.x);
+  };
   const pts: Along[] = [];
   let u = 0;
   const push = (p: Vec, d: Vec, out: Vec, k = 1, fold?: { u0: number; wx0: number }): void => {
@@ -432,28 +508,39 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
     const dir = i % 2 === 0 ? -1 : 1;
     const a = (xs[i] as number) + shift;
     const b = (xe[i] as number) + shift;
-    const y = yAt(i);
-    const z = f.z + (((i * 37) % 5) - 2) * 0.02;
-    const nn = Math.max(2, Math.ceil(Math.abs(b - a) / 2.4));
-    for (let j = 0; j <= nn; j++) push([lerp(a, b, j / nn), y, z], [dir, 0, 0], [0, side * dir, 0]);
+    const nn = Math.max(2, Math.ceil(Math.abs(b - a) / 4));
+    for (let j = 0; j <= nn; j++) {
+      const x = lerp(a, b, j / nn);
+      const y = yAt(i, x);
+      // The layer's own line is bowed and skewed in plan, so its direction is not quite along x.
+      const x2 = lerp(a, b, Math.min(1, (j + 0.01) / nn));
+      const dz = (zOf(i, x2) - zOf(i, x)) / (x2 - x || 1e-6) * dir;
+      const dl = Math.hypot(1, dz);
+      push([x, y, zOf(i, x)], [dir / dl, 0, dz / dl], [0, side * dir, 0]);
+    }
     if (i < n - 1) {
       const left = i % 2 === 0;
-      const yc = (yAt(i) + yAt(i + 1)) / 2;
-      const zn = f.z + ((((i + 1) * 37) % 5) - 2) * 0.02;
-      const m = 6;
+      const yA = yAt(i, b);
+      const yB = yAt(i + 1, b);
+      const yc = (yA + yB) / 2;
+      const ry = Math.max(0.01, (yA - yB) / 2);
+      const rx = Math.max(bulge, ry * 1.25 + 0.15);
+      const m = f.loose >= 0.5 ? 8 : 6;
       const anchor = { u0: u, wx0: b };
+      const z0 = zOf(i, b);
+      const z1 = zOf(i + 1, b);
       for (let j = 1; j < m; j++) {
         const th = (Math.PI * j) / m;
         const sgn = left ? -1 : 1;
-        const dx = sgn * Math.cos(th) * bulge;
-        const dy = -Math.sin(th) * (yAt(i) - yc);
+        const dx = sgn * Math.cos(th) * rx;
+        const dy = -Math.sin(th) * ry;
         const dl = Math.hypot(dx, dy) || 1;
         // The face looks to the right of the way the belt runs (the same side all along it).
-        push([b + sgn * Math.sin(th) * bulge, yc + Math.cos(th) * (yAt(i) - yc), lerp(z, zn, j / m)], [dx / dl, dy / dl, 0], [(-side * dy) / dl, (side * dx) / dl, 0], 1 - 0.5 * Math.sin(th), anchor);
+        push([b + sgn * Math.sin(th) * rx, yc + Math.cos(th) * ry, lerp(z0, z1, j / m)], [dx / dl, dy / dl, 0], [(-side * dy) / dl, (side * dx) / dl, 0], 1 - 0.3 * Math.sin(th) * Math.exp(-ry * 1.5), anchor);
       }
     }
   }
-  return { points: pts, length: u, extent: [lo + shift, hi + shift] };
+  return { points: pts, length: u, extent: [Math.min(...all) + shift - bulge, Math.max(...all) + shift + bulge] };
 }
 
 /**
@@ -468,13 +555,15 @@ interface Laying {
   /** +1 when the picture's x grows toward +x across the bundle, -1 toward -x (the way the top layer's tip lies). */
   sx: 1 | -1;
   c: number;
+  /** Cells round each rounded edge. */
+  arc: number;
 }
 
-function layingOf(points: readonly Along[], period: number): Laying {
+function layingOf(points: readonly Along[], period: number, loose: number): Laying {
   const last = points[points.length - 1] as Along;
   const sx: 1 | -1 = last.d[0] >= 0 ? 1 : -1;
   const [endA] = END_LENGTH;
-  return { total: last.u, period, sx, c: (END_X[0] as number) + endA - sx * U * last.p[0] };
+  return { total: last.u, period, arc: loose >= 0.5 ? ARC_DEFAULT : 1, sx, c: (END_X[0] as number) + endA - sx * U * last.p[0] };
 }
 
 /** The picture's x at a place on the belt, not wrapped; `mid` says which stretch (by the middle of the step) and the fold, if any, it carries on from. */
@@ -497,7 +586,7 @@ const wrapBulk = (x: number, period: number): number => -40 + ((((x + 40) % peri
 function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
   const { points, length } = foldPath(f);
   const hw = f.w / 2;
-  const lay = layingOf(points, f.period);
+  const lay = layingOf(points, f.period, f.loose);
   // Where a free end's marks end the picture changes: a step is cut there.
   const cuts = [END_LENGTH[1] / U, length - END_LENGTH[0] / U];
   for (let i = 0; i + 1 < points.length; i++) {
@@ -518,13 +607,18 @@ function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
   if (f.band > 0) bandCells(k, f, r);
 }
 
-/** How far in from the belt's side its broad faces stop, in centimetres. */
-const FACE_INSET = 0.2;
+/** How round the cloth is where it wraps round the belt's edge, in centimetres (a belt is a sheet folded on itself lengthwise: its edges are rounded). */
+const ROUND_EDGE = 0.2;
+/** Cells round each rounded edge. */
+const ARC_DEFAULT = 2;
 
-/** The corner of the belt at a sample: `side` -1 to 1 across it, `face` -1 (back) to 1 (face) through it. */
-const corner = (p: Along, across: Vec, side: number, hw: number, face: number, T: number): Vec => add(p.p, add(scale(across, side * hw), scale(p.out, face * (T / 2) * (p.k ?? 1))));
+/** The corner of the belt at a sample: `side` -1 to 1 across it (an offset in centimetres), `face` through it (an offset in centimetres, scaled where the belt is thinned at a fold). */
+const corner = (p: Along, across: Vec, side: number, face: number): Vec => add(p.p, add(scale(across, side), scale(p.out, face * (p.k ?? 1))));
 
-/** One step of the belt between two samples: its face, its back, its two long edges, each on its part of the strip. */
+/**
+ * One step of the belt between two samples: its face and back, the four rounded edges where the cloth wraps round (their cells carry on the face's own picture, so the
+ * stitch rows run up to the edge), and the two side walls of the folded cloth (the picture of an edge, with the lines of its plies).
+ */
 function step(k: Sink, a: Along, b: Along, hw: number, T: number, lay: Laying): void {
   const mode = modeOf(lay, (a.u + b.u) / 2);
   const t0 = texAt(lay, a.u + 1e-6, a, mode);
@@ -538,17 +632,51 @@ function step(k: Sink, a: Along, b: Along, hw: number, T: number, lay: Laying): 
   const A = across(a);
   const B = across(b);
   const w = hw * 2 * U;
-  const fy = (y0: number): [number, number][] => [[x0, y0], [x1, y0], [x0, y0 + w], [x1, y0 + w]];
-  const ey = (y0: number): [number, number][] => [[x0, y0], [x1, y0], [x0, y0 + EDGE_H], [x1, y0 + EDGE_H]];
+  const r = Math.min(ROUND_EDGE, T * 0.45, hw * 0.2);
+  const rw = (r / (2 * hw)) * w;
+  const half = T / 2;
   const o = unit(add(a.out, b.out));
   const m = unit(add(A, B));
-  // The two broad faces stop a hair short of the sides: a cell is drawn grown at its corners, and the grown part would otherwise hang over the edge below it.
-  const hi = hw - FACE_INSET;
-  k.quad([corner(a, A, -1, hi, 1, T), corner(b, B, -1, hi, 1, T), corner(a, A, 1, hi, 1, T), corner(b, B, 1, hi, 1, T)], fy(FACE_Y), o);
+  const pa = (s: number, f: number): Vec => corner(a, A, s, f);
+  const pb = (s: number, f: number): Vec => corner(b, B, s, f);
+  const q = (cs: [Vec, Vec, Vec, Vec], ys: [number, number], out: Vec): void => {
+    k.quad(cs, [[x0, ys[0]], [x1, ys[0]], [x0, ys[1]], [x1, ys[1]]], out);
+  };
+  // The broad faces, to where the cloth starts to round the edge.
+  const hi = hw - r;
+  q([pa(-hi, half), pb(-hi, half), pa(hi, half), pb(hi, half)], [FACE_Y + rw, FACE_Y + w - rw], o);
   // Each picture is laid so that its x and y cross outward: the back's sides and the left edge's rows run the other way round.
-  k.quad([corner(a, A, 1, hi, -1, T), corner(b, B, 1, hi, -1, T), corner(a, A, -1, hi, -1, T), corner(b, B, -1, hi, -1, T)], fy(BACK_Y), scale(o, -1));
-  k.quad([corner(a, A, -1, hw, -1, T), corner(b, B, -1, hw, -1, T), corner(a, A, -1, hw, 1, T), corner(b, B, -1, hw, 1, T)], ey(EDGE1_Y), scale(m, -1));
-  k.quad([corner(a, A, 1, hw, 1, T), corner(b, B, 1, hw, 1, T), corner(a, A, 1, hw, -1, T), corner(b, B, 1, hw, -1, T)], ey(EDGE1_Y), m);
+  q([pa(hi, -half), pb(hi, -half), pa(-hi, -half), pb(-hi, -half)], [BACK_Y + rw, BACK_Y + w - rw], scale(o, -1));
+  // The rounded edges: a quarter circle from the face's end to the wall's start, on the same picture so the stitching carries up to them.
+  for (const face of [1, -1] as const) {
+    for (const side of [-1, 1] as const) {
+      for (let j = 0; j < lay.arc; j++) {
+        const th0 = (Math.PI / 2) * (1 - j / lay.arc);
+        const th1 = (Math.PI / 2) * (1 - (j + 1) / lay.arc);
+        const at = (th: number): [number, number] => [side * (hi + r * Math.cos(th)), face * (half - r + r * Math.sin(th))];
+        const [s0, f0] = at(th0);
+        const [s1, f1] = at(th1);
+        const mid = (th0 + th1) / 2;
+        const nrm = unit(add(scale(m, side * Math.cos(mid)), scale(o, face * Math.sin(mid))));
+        // The picture's y runs from the face's one side to its other (for the back the other way round); toward the wall it tends to the strip's border.
+        const y = (th: number): number => {
+          const t = (1 - th / (Math.PI / 2)) * rw;
+          return face === 1 ? (side === -1 ? FACE_Y + rw - t : FACE_Y + w - rw + t) : (side === 1 ? BACK_Y + rw - t : BACK_Y + w - rw + t);
+        };
+        // Corners are given in the order that keeps the picture's axes crossing outward: the one with the smaller y first.
+        const [ya, yb] = [y(th0), y(th1)];
+        const pairs: [Vec, Vec, number][] = [[pa(s0, f0), pb(s0, f0), ya], [pa(s1, f1), pb(s1, f1), yb]];
+        pairs.sort((u, v) => u[2] - v[2]);
+        q([pairs[0]![0], pairs[0]![1], pairs[1]![0], pairs[1]![1]], [pairs[0]![2], pairs[1]![2]], nrm);
+      }
+    }
+  }
+  // The side walls: the folded cloth seen end on, its plies as lines. (Packed in a box, a belt's sides face the walls, which always hide them.)
+  if (lay.arc < 2) return;
+  const wall = half - r;
+  const ey = (): [number, number] => [EDGE1_Y, EDGE1_Y + EDGE_H];
+  k.quad([pa(-hw, -wall), pb(-hw, -wall), pa(-hw, wall), pb(-hw, wall)], [[x0, ey()[0]], [x1, ey()[0]], [x0, ey()[1]], [x1, ey()[1]]], scale(m, -1));
+  k.quad([pa(hw, wall), pb(hw, wall), pa(hw, -wall), pb(hw, -wall)], [[x0, ey()[0]], [x1, ey()[0]], [x0, ey()[1]], [x1, ey()[1]]], m);
 }
 
 /** The cut end of the belt: a small face of its edge cloth, looking the way the belt would go on (`way` is +1 at the end, -1 at the start). */
@@ -557,24 +685,20 @@ function endCap(k: Sink, e: Along, hw: number, T: number, way: 1 | -1): void {
   const w = hw * 2 * U;
   const tex: [number, number][] = [[X0, EDGE1_Y], [X0 + w, EDGE1_Y], [X0, EDGE1_Y + EDGE_H], [X0 + w, EDGE1_Y + EDGE_H]];
   const [l, r] = way === 1 ? [1, -1] : [-1, 1];
-  k.quad([corner(e, across, l, hw, 1, T), corner(e, across, r, hw, 1, T), corner(e, across, l, hw, -1, T), corner(e, across, r, hw, -1, T)], tex, scale(e.d, way));
+  k.quad([corner(e, across, l * hw, T / 2), corner(e, across, r * hw, T / 2), corner(e, across, l * hw, -T / 2), corner(e, across, r * hw, -T / 2)], tex, scale(e.d, way));
 }
 
-/** The width of the bundle's stack and the height it reaches, for the band that wraps it. */
-export function bundleSize(f: FoldDesc): { height: number; width: number } {
-  return { height: f.n * (f.t + LAYER_GAP), width: f.w };
-}
-
-/** The shop's paper band round the middle of the bundle: four faces, the top carrying the picture (a mark and the size), the rest plain paper. */
+/** The shop's paper band round the middle of the bundle: four faces, the top carrying the picture (a mark and the size), the rest plain paper. It fits the bundle where it lies. */
 function bandCells(k: Sink, f: FoldDesc, r: Regions): void {
-  const { height } = bundleSize(f);
-  const m = 0.32;
-  const hw = f.w / 2 + m;
   const x0 = f.x - f.band / 2;
-  const yTop = f.y - height - m * 0.5;
-  const yBot = f.y + m * 0.5;
-  const z0 = f.z - hw;
-  const z1 = f.z + hw;
+  const x1 = f.x + f.band / 2;
+  const near = foldPath(f).points.filter((p) => p.fold === undefined && p.p[0] >= x0 - 0.5 && p.p[0] <= x1 + 0.5);
+  const m = 0.3;
+  const hw = f.w / 2;
+  const yTop = Math.min(...near.map((p) => p.p[1])) - f.t / 2 - m * 0.4;
+  const yBot = Math.max(...near.map((p) => p.p[1])) + f.t / 2 + m * 0.4;
+  const z0 = Math.min(...near.map((p) => p.p[2])) - hw - m;
+  const z1 = Math.max(...near.map((p) => p.p[2])) + hw + m;
   const pic = part(r.band, 0, 0, 0.5, 1);
   const plain = part(r.band, 0.52, 0, 0.4, 1);
   k.face([x0, yTop, z0], [f.band, 0, 0], [0, 0, z1 - z0], 2, 2, pic);
@@ -602,11 +726,13 @@ export interface SceneOptions {
   rot?: number;
   /** After what length (drawing units) a kohaku belt's two sections repeat. */
   period?: number;
+  /** What the folds' imperfections come from. */
+  seed?: number;
 }
 
 /** How much thicker a belt looks folded than stitched, and the gap between two layers, in centimetres. */
 const PUFF = 1.4;
-const LAYER_GAP = 0.005;
+const LAYER_GAP = 0.04;
 /** The folded belt on its own lies the other way round (its free ends at the near end), turned by this many degrees. */
 export const FOLDED_TURN = -118;
 
@@ -624,21 +750,21 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
   const period = o.period ?? 78.9;
   if (o.box === undefined || boxSize === undefined) {
     // On its own: six layers, so that both free ends lie at the same end of the bundle, the label end on top, and that end toward the viewer.
-    const belt: FoldDesc = { cm, w: o.widthCm, t: t0, n: FOLDED_LAYERS, band: o.band ? 4 : 0, period, x: 0, y: 0, z: 0 };
+    const belt: FoldDesc = { cm, w: o.widthCm, t: t0, n: FOLDED_LAYERS, band: o.band ? 4 : 0, period, seed: o.seed ?? 1, loose: 1, x: 0, y: 0, z: 0 };
     belt.y = (belt.n * (belt.t + LAYER_GAP)) / 2;
     return { rot: o.rot ?? FOLDED_TURN, belt, fits, boxSize };
   }
   const rot = o.rot ?? BASE_TURN;
-  const belt: Omit<FoldDesc, "x" | "y" | "z"> = { cm, w: o.widthCm, t: t0, n: FOLD_LAYERS, band: 0, period };
+  const belt: Omit<FoldDesc, "x" | "y" | "z"> = { cm, w: o.widthCm, t: t0, n: FOLD_LAYERS, band: 0, period, seed: o.seed ?? 1, loose: 0.15 };
   const d = boxDims(boxSize, type);
   const open = o.box.state === "open";
   const wid = Math.min(o.widthCm, boxBeltRoom(d));
-  const lidBeside = type === "kiri" && o.box.state === "open";
+  const lidBeside = o.box.state === "open";
   const gap = 3;
   const z = lidBeside ? -(d.w + gap) / 2 : 0;
   const scene: SolidDesc & { fits: boolean; boxSize: BoxSize | undefined } = {
     rot,
-    box: { type, state: o.box.state, d, z, y: d.h / 2, lidZ: lidBeside ? (d.w + gap) / 2 : z, lidRot: type === "silver" ? 38 : 0 },
+    box: { type, state: o.box.state, d, z, y: d.h / 2, lidZ: lidBeside ? (d.w + gap) / 2 : z, lidRot: type === "silver" ? 7 : 0 },
     fits,
     boxSize,
   };
@@ -649,26 +775,32 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
   return scene;
 }
 
-/** The radius of the scene's drawing about the vertical axis through its middle, in drawing units, and its half height: what a view box must hold at any turn. */
-export function sceneReach(s: SolidDesc): { radius: number; half: number } {
-  let r = 0;
+/**
+ * What a view box must hold at any turn and any tip the designer allows: the scene's radius about the vertical axis through its middle, and how far up and down its drawing
+ * can reach (drawing units, down positive), worked out from every cell of the scene, so a lid lying beside a box or a fan of layers is held whatever the state.
+ */
+export function solidBounds(s: SolidDesc): { radius: number; top: number; bottom: number } {
+  let radius = 0;
+  let minY = 0;
+  let maxY = 0;
+  for (const c of solidCells(s)) {
+    for (let k = 0; k < 3; k++) {
+      radius = Math.max(radius, Math.hypot(c.p[3 * k] as number, c.p[3 * k + 2] as number));
+      minY = Math.min(minY, c.p[3 * k + 1] as number);
+      maxY = Math.max(maxY, c.p[3 * k + 1] as number);
+    }
+  }
+  // Seen from `pitch` degrees above, a point at height y and depth z lies at y cos + z sin: at worst a depth of the radius.
   let top = 0;
   let bottom = 0;
-  const take = (x: number, z: number, y0: number, y1: number): void => {
-    r = Math.max(r, Math.hypot(x, z));
-    top = Math.min(top, y0);
-    bottom = Math.max(bottom, y1);
-  };
-  if (s.box !== undefined) {
-    const d = s.box.d;
-    const open = s.box.state !== "closed";
-    take(d.length / 2, Math.abs(s.box.z) + d.w / 2, s.box.y - d.h, s.box.y);
-    if (open && s.box.type === "kiri") take(d.length / 2, Math.abs(s.box.lidZ) + d.w / 2, s.box.y - d.lid, s.box.y);
-    if (open && s.box.type === "silver") take(d.length / 2, d.w, s.box.y - d.h, s.box.y);
+  for (let pitch = -SOLID_TIP; pitch <= SOLID_TIP + 1e-9; pitch += 5) {
+    const cp = Math.cos((pitch * Math.PI) / 180);
+    const sp = Math.abs(Math.sin((pitch * Math.PI) / 180));
+    top = Math.min(top, minY * cp - radius * sp);
+    bottom = Math.max(bottom, maxY * cp + radius * sp);
   }
-  if (s.belt !== undefined) {
-    const { points } = foldPath(s.belt);
-    for (const p of points) take(Math.abs(p.p[0]) + s.belt.w / 2, Math.abs(p.p[2]) + s.belt.w / 2, p.p[1] - s.belt.t, p.p[1] + s.belt.t);
-  }
-  return { radius: r * U, half: Math.max(-top, bottom) * U };
+  return { radius, top, bottom };
 }
+
+/** The pitches a solid is looked at from run to this many degrees above or below level: the camera's own 28 plus the designer's 30 of tilt and a margin, up to the 45 the canvas allows. */
+const SOLID_TIP = 73;

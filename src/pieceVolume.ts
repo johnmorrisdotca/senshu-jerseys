@@ -28,8 +28,11 @@ export const isBand = (d: VolumeDesc): boolean => d.strap !== undefined || d.col
  * enough that their middles order them.
  */
 export function depthOrder(placed: readonly Placed[]): number[] {
-  const first = placed.map((_, i) => i).sort((i, j) => placed[i]!.depth - placed[j]!.depth);
-  return settle(placed, first);
+  const byDepth = (idx: number[]): number[] => idx.sort((i, j) => placed[i]!.depth - placed[j]!.depth);
+  const layers = [...new Set(placed.map((q) => q.layer ?? 0))].sort((a, b) => a - b);
+  if (layers.length < 2) return settle(placed, byDepth(placed.map((_, i) => i)));
+  // Things made of layers (a box, the belt in it, the box's walls) are drawn layer by layer, each in its own settled order: a wall then always covers what it holds.
+  return layers.flatMap((l) => settle(placed, byDepth(placed.flatMap((q, i) => ((q.layer ?? 0) === l ? [i] : [])))));
 }
 
 /** The corners of a placed cell as three `[x, y, nearness]`, or undefined when the cell is not seen. */

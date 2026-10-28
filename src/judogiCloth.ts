@@ -23,6 +23,8 @@ export interface BeltPaint {
   cover?: "cotton" | "shusu" | "silk";
   /** Colours laid along the whole belt, as parts of its width from the top edge (a half grade's second colour, a centre stripe). */
   bands?: { from: number; to: number; fill: string }[];
+  /** Drawn close up (a folded belt): the rows of stitching are dashed stitches in `thread` (the stitch colour by default), and the cloth shows a fine diagonal twill. */
+  fine?: { thread?: string };
   /** Marks laid straight on a strap's face strip, in the strip's own units (the collar's lapel hem). */
   strip?: Mark;
 }

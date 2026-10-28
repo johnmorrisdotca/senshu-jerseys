@@ -209,6 +209,8 @@ export interface Cell {
   n: [number, number, number];
   /** The drawing of a thing on a sleeve, by its place in `VolumeDesc.sd`; the cell is of that drawing and not of the front or the back. */
   src?: number;
+  /** In a scene of several things (a box with a belt in it): what is drawn first, 0, 1, 2 (what lies inside, the belt, what stands round it), so a wall always covers what it holds; within a layer the cells are put in order by depth. */
+  layer?: number;
   /** A second way the cell must face the viewer to be seen: a belt's edge behind the jacket it is tied on faces the viewer, but is hidden. */
   also?: [number, number, number];
 }
@@ -514,6 +516,8 @@ export interface Placed {
   shade: number;
   /** How near the cell's middle is to the viewer. */
   depth: number;
+  /** The cell's `layer`, if it has one. */
+  layer?: number;
   /** Where the cell's three corners are once turned: x, y and nearness for each, for ordering a band whose cells overlap. */
   tri?: number[];
 }
@@ -538,7 +542,7 @@ export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   }
   const nn = turn(c.n[0], c.n[1], c.n[2], cy, sy, cp, sp);
   const facing = nn[2];
-  if (facing <= 0.01 || (c.also !== undefined && turn(c.also[0], c.also[1], c.also[2], cy, sy, cp, sp)[2] < ALSO)) return { visible: false, matrix: "", shade: 0, depth: z / 3 };
+  if (facing <= 0.01 || (c.also !== undefined && turn(c.also[0], c.also[1], c.also[2], cy, sy, cp, sp)[2] < ALSO)) return { visible: false, matrix: "", shade: 0, depth: z / 3, ...(c.layer === undefined ? {} : { layer: c.layer }) };
   const T = c.tex;
   const t1x = T[2]! - T[0]!;
   const t1y = T[3]! - T[1]!;
@@ -559,7 +563,7 @@ export function placeCell(c: Cell, yaw: number, pitch: number): Placed {
   const f = s[1]! - (b * T[0]! + d * T[1]!);
   const lit = nn[0] * LIGHT[0] + nn[1] * LIGHT[1] + nn[2] * LIGHT[2];
   const shade = Math.max(0, Math.min(0.45, (1 - lit) * 0.24));
-  return { visible: true, matrix: `matrix(${n4(a)} ${n4(b)} ${n4(c2)} ${n4(d)} ${n2(e)} ${n2(f)})`, shade: Math.round(shade * 100) / 100, depth: z / 3, tri };
+  return { visible: true, matrix: `matrix(${n4(a)} ${n4(b)} ${n4(c2)} ${n4(d)} ${n2(e)} ${n2(f)})`, shade: Math.round(shade * 100) / 100, depth: z / 3, tri, ...(c.layer === undefined ? {} : { layer: c.layer }) };
 }
 
 /** Which side's sleeve is nearer the viewer at this turn: -1 for the picture's left sleeve, 1 for the right, 0 when neither (face on or from behind). */

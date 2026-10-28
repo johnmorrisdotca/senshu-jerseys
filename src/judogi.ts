@@ -3,7 +3,7 @@
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
 import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltWidthIsReal, beltDefaultWidthCm, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
-import { BOX_STATES, BOX_TEXT_DEFAULT, BOX_TYPES, KIRI_WOODS, boxSizeFor, sceneOf, sceneReach, type BoxSize, type BoxState, type BoxType, type KiriWood } from "./beltBox.ts";
+import { BOX_STATES, BOX_TEXT_DEFAULT, BOX_TYPES, KIRI_WOODS, boxSizeFor, sceneOf, solidBounds, type BoxSize, type BoxState, type BoxType, type KiriWood } from "./beltBox.ts";
 import { solidFace } from "./beltBoxFace.ts";
 import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint } from "./judogiBelt.ts";
@@ -15,7 +15,8 @@ import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type 
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
-import { bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
+import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
+import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup } from "./pieceVolume.ts";
 import type { VolumeDesc } from "./volume.ts";
@@ -386,32 +387,36 @@ function compose(o: Ready): Sheet {
 function solidSheet(o: Ready, yaw: number): Sheet {
   const box = o.mode === "box";
   const plain = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
-  // Folded, a belt shows its label at the free end, as a shop shows it: what is sewn on a hanging end sits well up from its tip, so it is moved toward the tip (an embroidery keeps its place).
-  const toTip = (m: Mark | undefined, keep: boolean): Mark | undefined => (m === undefined || keep ? m : { ...m, body: `<g transform="translate(${TO_TIP} 0)">${m.body}</g>` });
-  // Folded, the rows of stitching are fine (thirteen, as a kohaku belt has) and a kohaku's are pale, as the maker's white thread is, so the broad faces read as cloth and not as stripes.
-  const fine = plain === undefined ? undefined : { ...plain, rows: plain.rows ?? 13, ...(o.belt === "red-white" ? { stitch: "#eac6c6" } : {}) };
-  const paint: BeltPaint | undefined = fine?.ends === undefined ? fine : { ...fine, ends: { ...(fine.ends.left === undefined ? {} : { left: toTip(fine.ends.left, o.beltEmb.left) as Mark }), ...(fine.ends.right === undefined ? {} : { right: toTip(fine.ends.right, o.beltEmb.right) as Mark }) } };
+  // Folded, a belt shows its label at the free end, as a shop shows it: what is sewn on a hanging end sits well up from its tip, so it is moved toward the tip until the tip-most of it is
+  // a few centimetres from the cut (the label, with its size tag under it). Close up, the rows of stitching are dashed stitches (white thread on a kohaku) and the cloth shows its twill.
+  const toTip = (m: Mark | undefined, end: 0 | 1): Mark | undefined => {
+    if (m === undefined) return m;
+    const placed = (o.marks?.layout.placed ?? []).filter((q) => q.item.target === (end === 0 ? "belt-left" : "belt-right"));
+    const reach = Math.max(0, ...placed.map((q) => q.box.x + (Math.abs(Math.cos((q.box.rot * Math.PI) / 180)) * q.box.w + Math.abs(Math.sin((q.box.rot * Math.PI) / 180)) * q.box.h) / 2));
+    const shift = Math.max(0, (END_LENGTH[end] as number) - 4.5 * UNITS_PER_CM - reach);
+    return shift === 0 ? m : { ...m, body: `<g transform="translate(${n2(shift)} 0)">${m.body}</g>` };
+  };
+  const fine = plain === undefined ? undefined : { ...plain, rows: plain.rows ?? 15, fine: { thread: o.belt === "red-white" ? "#ffffff" : plain.stitch } };
+  const paint: BeltPaint | undefined = fine?.ends === undefined ? fine : { ...fine, ends: { ...(fine.ends.left === undefined ? {} : { left: toTip(fine.ends.left, 0) as Mark }), ...(fine.ends.right === undefined ? {} : { right: toTip(fine.ends.right, 1) as Mark }) } };
   const sectionCm = Math.max(12, Math.min(18, 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50));
   const widthCm = o.beltCm ?? beltDefaultWidthCm(o.belt === "none" ? "white" : o.belt);
   const { fits, boxSize, ...desc } = sceneOf({
-    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band, period: 2 * sectionCm * UNITS_PER_CM,
+    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band, period: 2 * sectionCm * UNITS_PER_CM, seed: [...o.uid].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7),
     ...(box ? { box: { type: o.boxType, state: o.boxState, ...(o.boxSize === undefined ? {} : { size: o.boxSize }) } } : {}),
   });
   void fits;
   void boxSize;
   const look = { wood: o.boxWood, text: o.boxText, sizeLabel: String(o.beltSize) };
   const face = solidFace(desc, paint, look, o.uid);
-  const reach = sceneReach(desc);
+  // The view box holds the scene turned any way and tipped by the whole range the designer allows, so nothing is ever cut off.
+  const bound = solidBounds(desc);
   const vol: VolumeDesc = { y: [], a: [], b: [], nt: 0, nf: 0, nh: 0, sl: [], sd: [], pitch: SOLID_PITCH, piece: true, solid: desc };
   const v = volumeOf(`${o.uid}x`, vol, face, NO_FACE, yaw);
-  // The view box holds the scene turned any way and tipped by the designer's whole range (a tilt of 30 degrees beyond the camera's own).
-  const w = Math.ceil(2 * reach.radius + 16);
-  const h = Math.ceil(2 * (reach.radius * 0.88 + reach.half) + 16);
-  return box_(`${paint?.defs ?? ""}${v.defs}`, v.body, [100 - w / 2, -h / 2, w, h], yaw);
+  const w = Math.ceil(2 * bound.radius + 12);
+  const top = Math.floor(bound.top - 6);
+  const h = Math.ceil(bound.bottom + 6 - top);
+  return box_(`${paint?.defs ?? ""}${v.defs}`, v.body, [100 - w / 2, top, w, h], yaw);
 }
-
-/** How far a folded belt's marks move toward the free end, in drawing units (about 7.5 cm). */
-const TO_TIP = 26;
 
 /** How far the camera looks down on a folded belt or a box, in degrees. */
 const SOLID_PITCH = 28;
