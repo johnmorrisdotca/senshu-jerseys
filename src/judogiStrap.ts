@@ -323,7 +323,7 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
     for (let k = 1; k <= n; k++) {
       const y = n2(y0 + (h * k) / (n + 1));
       s += fine
-        ? `<path d="M-40 ${y}H240" stroke="${thread}" stroke-width="0.17" stroke-opacity="0.85" stroke-dasharray="1.3 1.1"/>`
+        ? `<path d="M-40 ${y}H240" stroke="${thread}" stroke-width="0.15" stroke-opacity="0.9" stroke-dasharray="1.05 0.5" stroke-dashoffset="${n2((k * 0.97) % 1.55)}"/>`
         : `<path d="M-40 ${y}H240" stroke="${p.stitch}" stroke-width="0.32" stroke-opacity="0.7"/>`;
     }
     return s;

@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  BASE_TURN, BOX_HEADROOM, BOX_MAX_BELT, FOLDED_LAYERS, BOX_SIZES, BOX_TAKES, FOLD_LAYERS, beltCmOfSize, boxBeltRoom, boxDims, boxInnerCm, boxSizeFor, foldPath, foldedLayersFor, gapAt, lidLength, regionsOf, sceneOf, solidBounds, solidCells, stackHeight,
+  BASE_TURN, BOX_MAX_BELT, SPRING_PROUD, SQUASH_MAX, GAP_CLOSED, bundleHeight, closedBundle, openBundle, FOLDED_LAYERS, BOX_SIZES, BOX_TAKES, FOLD_LAYERS, beltCmOfSize, boxBeltRoom, boxDims, boxInnerCm, boxSizeFor, foldPath, foldedLayersFor, gapAt, lidLength, regionsOf, sceneOf, solidBounds, solidCells, stackHeight,
   type BoxState, type BoxType, type SolidDesc,
 } from "../src/beltBox.ts";
 import { BELT_SIZES } from "../src/beltSpecs.ts";
 import { lidTextLayout } from "../src/beltBoxFace.ts";
 import { judogiCheck, renderJudogi } from "../src/judogi.ts";
+import { foldedPanels, kohakuSection } from "../src/judogiBelt.ts";
 import { UNITS_PER_CM } from "../src/judogiStrap.ts";
 import type { Cell } from "../src/volume.ts";
 
@@ -54,7 +55,7 @@ test("box dimensions: about 7 cm wide for a 4.5 cm belt (kiri) and 5.5 cm (silve
     const s = boxDims(size, "silver");
     assert.ok(Math.abs(s.baseW - 5) <= 0.8 && Math.abs(s.w - 5) <= 1, `silver width ${s.baseW}/${s.w}`);
     // The height is the folded belt's, not a fixed figure: the same box of a thicker belt is taller.
-    assert.ok(boxDims(size, "kiri", { w: 4.5, t: 0.9 }).h > k.h + 1);
+    assert.ok(boxDims(size, "kiri", { w: 4.5, t: 1.3 }).h > k.h + 0.5);
   }
   const inner = BOX_SIZES.map((s) => boxInnerCm(s));
   assert.deepEqual([...inner].sort((a, b) => a - b), inner);
@@ -78,7 +79,7 @@ test("every belt that fits a box lies inside it: along, across and in height", (
       for (const p of points) {
         assert.ok(Math.abs(p.p[0]) <= d.inner / 2 + 1e-6, `${type} ${size}: x ${p.p[0]} beyond ${d.inner / 2}`);
         assert.ok(Math.abs(p.p[2] - s.belt.z) + hw <= d.baseW / 2 - d.wall + 1e-6, `${type} ${size}: z ${p.p[2]}`);
-        assert.ok(p.p[1] + s.belt.t / 2 <= floor + 1e-6 && p.p[1] - s.belt.t / 2 >= rim, `${type} ${size}: y ${p.p[1]}`);
+        assert.ok(p.p[1] + s.belt.t / 2 <= floor + 1e-6 && p.p[1] - s.belt.t / 2 >= rim - 0.8, `${type} ${size}: y ${p.p[1]}`);
       }
     }
   }
@@ -156,8 +157,8 @@ test("no picture is mirrored: on every cell of every box, state and belt, the pi
   for (const desc of cases) {
     const cells = solidCells({ ...desc, rot: BASE_TURN });
     assert.ok(cells.length > 100);
-    // (A sliver of a rounded edge, less than a unit across, may twist: its picture is too small to be seen either way round.)
-    cells.forEach((c, i) => assert.ok(handed(c) > 0 || Math.abs((c.tex[2]! - c.tex[0]!) * (c.tex[5]! - c.tex[1]!) - (c.tex[4]! - c.tex[0]!) * (c.tex[3]! - c.tex[1]!)) < 0.6, `a mirrored cell ${i} at tex ${c.tex.slice(0, 2).map((v) => v.toFixed(1))} (${desc.box?.type ?? "belt"} ${desc.box?.state ?? ""})`));
+    // (A sliver of a rounded edge or of a cut step, less than a unit across or along, may twist: its picture is too small to be seen either way round.)
+    cells.forEach((c, i) => assert.ok(handed(c) > 0 || Math.abs((c.tex[2]! - c.tex[0]!) * (c.tex[5]! - c.tex[1]!) - (c.tex[4]! - c.tex[0]!) * (c.tex[3]! - c.tex[1]!)) < 0.6 || Math.max(Math.abs(c.tex[2]! - c.tex[0]!), Math.abs(c.tex[4]! - c.tex[0]!)) < 1, `a mirrored cell ${i} at tex ${c.tex.slice(0, 2).map((v) => v.toFixed(1))} (${desc.box?.type ?? "belt"} ${desc.box?.state ?? ""})`));
   }
 });
 
@@ -248,27 +249,29 @@ test("the check says when a belt does not fit a box", () => {
   assert.ok(!judogiCheck({ mode: "belt" }).notes.some((n) => n.id === "belt-box-fit"));
 });
 
-test("the layers of a folded kohaku belt change colour at the same place across the bundle, so its side is a clean stack", () => {
-  const period = 78.9;
-  const desc = sceneOf({ beltSize: 4, widthCm: 4.5, thickCm: 0.49, belt: true, band: false, period, rot: 0 });
-  const cells = solidCells(desc).filter((c) => c.tex[1] === 0 && c.tex[3] === 0);
-  const offsets: number[] = [];
-  const layers = new Set<number>();
-  for (const c of cells) {
-    const xs = [c.p[0]!, c.p[3]!, c.p[6]!].map((v) => v / UNITS_PER_CM);
-    const wx = (xs[0]! + xs[1]! + xs[2]!) / 3;
-    const tx = (c.tex[0]! + c.tex[2]! + c.tex[4]!) / 3;
-    // Straight stretches of the plain part of the strip only: not the free ends' own stretches, not a fold.
-    if (Math.max(...xs) - Math.min(...xs) < 1 || tx >= 58 || tx < -40) continue;
-    const sx = (c.tex[2]! - c.tex[0]!) * (xs[1]! - xs[0]!) >= 0 ? 1 : -1;
-    offsets.push((((tx - sx * UNITS_PER_CM * wx) % period) + period) % period);
-    layers.add(Math.round((c.p[1]! / UNITS_PER_CM) * 20));
+test("a folded kohaku belt's sections are laid by the belt's real length: an odd number of them, 12 to 18 cm, red at both tips", () => {
+  for (const cm of [235, 245, 265, 275, 295, 315, 355]) {
+    for (const nominal of [12, 15, 18]) {
+      const s = kohakuSection(cm, nominal);
+      const k = cm / s;
+      assert.ok(s >= 12 - 1e-9 && s <= 18 + 1e-9, `${cm} cm: section ${s.toFixed(2)}`);
+      assert.ok(Math.abs(k - Math.round(k)) < 1e-9 && Math.round(k) % 2 === 1, `${cm} cm: ${k} sections`);
+    }
   }
-  assert.ok(offsets.length > 40 && layers.size >= 4, `${offsets.length} cells on ${layers.size} heights`);
-  // The picture's x less its place across the bundle is one number for every layer (a few units of slack for the cells' own width).
-  const spread = (a: number[]): number => Math.max(...a) - Math.min(...a);
-  const near = offsets.map((o) => (o > period / 2 ? o - period : o));
-  assert.ok(spread(near) < 6 || spread(offsets) < 6, `the layers' pictures are not aligned (${spread(offsets).toFixed(1)} units)`);
+  // On the strip: from each cut end the first section is red (the first colour) and the next white, for the whole section, as far as the end's own stretch runs.
+  const S = 16 * UNITS_PER_CM;
+  const svg = foldedPanels("t", "#f00", "#fff", 16).defs;
+  const rects = [...svg.matchAll(/<rect x="(-?[\d.]+)" width="([\d.]+)" height="80" fill="(#\w+)"/g)].map((m) => ({ x: Number(m[1]), w: Number(m[2]), fill: m[3] }));
+  const colourAt = (x: number): string => rects.filter((r) => x >= r.x && x < r.x + r.w).pop()!.fill;
+  for (const [tip, lo] of [[196, 130], [118.52, 58]] as const) {
+    assert.equal(colourAt(tip - 0.5), "#f00", "red at the cut end");
+    assert.equal(colourAt(tip - S + 0.5), "#f00", "red for the first section");
+    assert.equal(colourAt(tip - S - 0.5), "#fff", "then white");
+    if (tip - 2 * S >= lo) assert.equal(colourAt(tip - 2 * S - 0.5), "#f00", "then red again");
+  }
+  // The plain stretch is one period of two sections, red first.
+  assert.equal(colourAt(-40 + 1), "#f00");
+  assert.equal(colourAt(-40 + S + 1), "#fff");
 });
 
 test("the view box holds every state of every box and the folded belt at every turn and tip", () => {
@@ -304,36 +307,58 @@ test("a stiff band springs: layers lie close in the middle of the bundle and ope
   const ys = points.map((p) => p.p[1]);
   const height = Math.max(...ys) - Math.min(...ys) + f.t;
   assert.ok(height > f.n * f.t + 0.5, `the stack is taller than its layers (${height.toFixed(2)} cm of ${(f.n * f.t).toFixed(2)})`);
-  assert.ok(height <= stackHeight(f.n, f.t, f.loose) + 1e-6);
+  // (The gaps waver along the bundle and the lower layers droop, so it may stand a little over the even stack.)
+  assert.ok(height <= stackHeight(f.n, f.t, f.loose) * 1.2, `${height.toFixed(2)} cm`);
   // A thicker belt gives a taller, thicker bundle: its own thickness drives it.
   const thick = sceneOf({ beltSize: 4, widthCm: 4.5, thickCm: 0.7, belt: true, band: false }).belt!;
   assert.ok(thick.t > f.t && stackHeight(thick.n, thick.t, 1) > stackHeight(f.n, f.t, 1));
 });
 
-test("a box is as tall as the folded belt in it, for every belt width, thickness and size: the lid closes over it and nothing pokes through", () => {
+test("a box keeps the maker's outside size: the wooden one 7 x 7 cm with a standard 4.5 cm belt, whatever the box's length", () => {
+  for (const size of BOX_SIZES) {
+    const d = boxDims(size, "kiri");
+    assert.ok(Math.abs(d.w - 7) <= 0.05 && Math.abs(d.h - 7) <= 0.05, `kiri box ${size}: ${d.w.toFixed(2)} x ${d.h.toFixed(2)} cm`);
+    // The same box for the thick grades of the same belt (a kohaku or a black one): the belt is pressed, the box is not made taller.
+    for (const thickCm of [0.49, 0.61, 0.7]) {
+      const t = boxDims(size, "kiri", { w: 4.5, t: thickCm * 1.3 });
+      assert.ok(Math.abs(t.w - 7) <= 0.05 && t.h >= 7 - 0.05 && t.h <= 7.6, `kiri box ${size} thick ${thickCm}: ${t.w.toFixed(2)} x ${t.h.toFixed(2)} cm`);
+    }
+    const s = boxDims(size, "silver");
+    assert.ok(Math.abs(s.baseW - 5) <= 0.35, `silver box ${size}: ${s.baseW.toFixed(2)} cm wide`);
+  }
+});
+
+test("lid on, the bundle is pressed to the box's inside height to a millimetre; lid off, it springs back and stands proud of the rim by a few millimetres", () => {
   const widths = [3.5, 4.2, 4.5, 4.7, 5, 6];
   const thicks = [0.49, 0.61, 0.7];
   for (const type of ["kiri", "silver"] as const) {
     for (const size of [2, 3.5, 4, 5, 6]) {
       for (const widthCm of widths) {
         for (const thickCm of thicks) {
+          const tag = `${type} size ${size} width ${widthCm} thick ${thickCm}`;
           const s = sceneOf({ beltSize: size, widthCm, thickCm, belt: true, band: false, box: { type, state: "open" }, rot: 0 });
           if (!s.fits) continue;
           const belt = s.belt!;
           const d = s.box!.d;
+          const fit = { w: Math.min(widthCm, 6), t: thickCm * 1.3 };
+          // Closed: the pressed bundle is exactly as high as the inside, with its layers no thinner than a squash of SQUASH_MAX and the gaps shut.
+          const closed = closedBundle(d.innerH, fit);
+          assert.ok(Math.abs(closed.height - d.innerH) <= 0.1, `${tag}: closed bundle ${closed.height.toFixed(3)} in ${d.innerH.toFixed(3)} cm`);
+          assert.ok(closed.t >= fit.t * (1 - SQUASH_MAX) - 1e-9 && closed.t <= fit.t + 1e-9 && closed.gap >= GAP_CLOSED - 1e-9, `${tag}: pressed layers ${closed.t.toFixed(3)} of ${fit.t.toFixed(3)}`);
+          assert.ok(Math.abs(bundleHeight(fit, type) - d.innerH) <= 0.1, `${tag}: bundleHeight`);
+          // The box's own inside: floor to rim.
+          const floor = s.box!.y - d.wall * (type === "kiri" ? 1 : 0.6);
+          const rim = s.box!.y - d.baseH;
+          assert.ok(Math.abs(floor - rim - d.innerH) <= 1e-9, `${tag}: inside height`);
+          // Open: the belt stands on the floor and above the rim by a spring of a few millimetres that follows the belt's own thickness.
           const { points } = foldPath(belt);
           const top = Math.min(...points.map((p) => p.p[1] - belt.t / 2));
           const bottom = Math.max(...points.map((p) => p.p[1] + belt.t / 2));
-          const floor = s.box!.y - d.wall * (type === "kiri" ? 1 : 0.6);
-          const rim = s.box!.y - d.baseH;
-          const tag = `${type} size ${size} width ${widthCm} thick ${thickCm}`;
-          // The inside height is the bundle's height, to a millimetre.
-          const inner = floor - rim;
-          assert.ok(Math.abs(inner - (bottom - top)) <= 0.1 + 1e-6, `${tag}: inside ${inner.toFixed(3)} cm, bundle ${(bottom - top).toFixed(3)} cm`);
-          assert.ok(Math.abs(inner - (stackHeight(belt.n, belt.t, belt.spring ?? belt.loose) + BOX_HEADROOM)) < 1e-6, `${tag}: inside height is the stack's`);
-          // The lid closes over it: the bundle's top is under the rim the lid rests on, and its bottom on the floor.
-          assert.ok(top >= rim - 1e-6 && bottom <= floor + 1e-6, `${tag}: bundle outside the tray`);
-          // Every cell of the belt lies inside the tray: along, across and in height.
+          assert.ok(Math.abs(bottom - floor) <= 1e-6, `${tag}: on the floor`);
+          const proud = rim - top;
+          assert.ok(proud > 0.15 && proud <= 0.8, `${tag}: stands ${(proud * 10).toFixed(1)} mm proud of the rim`);
+          assert.ok(Math.abs(proud - SPRING_PROUD * fit.t) <= 0.15, `${tag}: spring ${(proud * 10).toFixed(1)} mm for a layer of ${(fit.t * 10).toFixed(1)} mm`);
+          // Every cell of the belt lies inside the tray along and across; in height, from the floor up to that spring.
           const cells = solidCells({ ...s, belt });
           const U = UNITS_PER_CM;
           for (const c of cells) {
@@ -343,7 +368,7 @@ test("a box is as tall as the folded belt in it, for every belt width, thickness
               const y = c.p[3 * k + 1]! / U;
               const z = c.p[3 * k + 2]! / U;
               assert.ok(Math.abs(x) <= d.inner / 2 + 1e-6, `${tag}: pokes out along (${x.toFixed(2)})`);
-              assert.ok(y >= rim - 1e-6 && y <= floor + 1e-6, `${tag}: pokes out above or below (${y.toFixed(2)} of ${rim.toFixed(2)}..${floor.toFixed(2)})`);
+              assert.ok(y >= rim - proud - 0.1 && y <= floor + 1e-6, `${tag}: pokes out above or below (${y.toFixed(2)} of ${rim.toFixed(2)}..${floor.toFixed(2)})`);
               assert.ok(Math.abs(z - s.box!.z) <= d.baseW / 2 - d.wall + 1e-6, `${tag}: pokes out across (${z.toFixed(2)})`);
             }
           }
@@ -351,4 +376,18 @@ test("a box is as tall as the folded belt in it, for every belt width, thickness
       }
     }
   }
+});
+
+test("lid on, nothing pokes through: the open bundle is the pressed one sprung back by a modest, thickness-led amount", () => {
+  for (const thickCm of [0.49, 0.61, 0.7]) {
+    const fit = { w: 4.5, t: thickCm * 1.3 };
+    const d = boxDims(4, "kiri", fit);
+    const up = openBundle(d.innerH, fit);
+    const closed = closedBundle(d.innerH, fit);
+    assert.ok(up.t >= closed.t - 1e-9 && up.t <= fit.t + 1e-9, "layers take back some of the squash, never more");
+    assert.ok(up.proud >= 0.25 && up.proud <= 0.7, `spring ${(up.proud * 10).toFixed(1)} mm`);
+    assert.ok(up.proudMid > 0 && up.proudMid <= up.proud + 1e-9, "stands proud in the middle too, a little less than at the ends");
+  }
+  // A thicker belt springs further.
+  assert.ok(openBundle(5.4, { w: 4.5, t: 0.9 }).proud > openBundle(5.4, { w: 4.5, t: 0.64 }).proud);
 });

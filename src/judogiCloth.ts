@@ -11,6 +11,8 @@ export interface BeltPaint {
   fill: string;
   /** The fill on a strap's strip, where it differs from the flat drawing's (a kohaku belt's sections are put to end in red at the strip's cut ends). */
   stripFill?: string;
+  /** The two colours of a belt of sections that take turns (a kohaku belt's red and white), for laying them by the belt's length when it is folded. */
+  panels?: { a: string; b: string };
   edge: string;
   stitch: string;
   defs: string;

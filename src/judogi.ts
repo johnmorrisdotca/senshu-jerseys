@@ -3,10 +3,10 @@
 // positions cite the IJF Judogi Rules (09 03 2022) as facts; that document's pictures and wording are not copied.
 
 import { BELT_COVERS, BELT_STITCH_LINES, BELT_THICKNESSES, beltThicknessesFor, beltWidthIsReal, beltDefaultWidthCm, type BeltCover, type BeltStitchLines, type BeltThickness } from "./beltSpecs.ts";
-import { BOX_STATES, BOX_TEXT_DEFAULT, BOX_TYPES, KIRI_WOODS, boxSizeFor, sceneOf, solidBounds, type BoxSize, type BoxState, type BoxType, type KiriWood } from "./beltBox.ts";
+import { BOX_STATES, BOX_TEXT_DEFAULT, BOX_TYPES, KIRI_WOODS, beltCmOfSize, boxSizeFor, sceneOf, solidBounds, type BoxSize, type BoxState, type BoxType, type KiriWood } from "./beltBox.ts";
 import { solidFace } from "./beltBoxFace.ts";
 import { hashOf, type Rgb } from "./colour.ts";
-import { beltFace, beltPaint } from "./judogiBelt.ts";
+import { beltFace, beltPaint, foldedPanels, kohakuSection } from "./judogiBelt.ts";
 import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
 import { collarPiece } from "./judogiCollar.ts";
 import { BACK_COLLAR_FOOT, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
@@ -263,7 +263,7 @@ function read(options?: JudogiOptions): Ready {
   // Folded, a belt shows its tags on the top layer's tip, as a shop does.
   const beltSize = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[size];
   const folded = mode === "folded" || mode === "box";
-  const tags = readEndTags(o.beltTags, folded ? String(beltSize) : size);
+  const tags = readEndTags(o.beltTags, folded ? String(beltSize) : size, folded);
   const endTags = tags !== undefined && folded ? { ...tags, end: 0 as const } : tags;
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
@@ -324,9 +324,9 @@ function pantsMarks(o: Ready): GiInk["marks"] | undefined {
 }
 
 /** A belt's paint with what is sewn on its ends, and the defs those marks need. */
-function paintOf(o: Ready, belt: string): BeltPaint | undefined {
+function paintOf(o: Ready, belt: string, sectionCm?: number): BeltPaint | undefined {
   // A kohaku belt's red and white sections are 12 to 18 cm, longer with the size of the belt (a longer belt for a taller wearer).
-  const section = 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50;
+  const section = sectionCm ?? 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50;
   const base = beltPaint(o.uid, belt, section, o.style?.base, o.style?.alternate);
   if (base === undefined) return undefined;
   const bands = bandsOf(o.style);
@@ -401,7 +401,10 @@ function compose(o: Ready): Sheet {
 /** The folded belt, or the belt's gift box (with the belt folded in it): one piece of cells, see beltBox.ts. */
 function solidSheet(o: Ready, yaw: number): Sheet {
   const box = o.mode === "box";
-  const plain = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
+  // A folded belt's red and white sections are laid by its real length: an odd number of them, so that it is red at both ends.
+  // (About 16 cm, as in the maker's photographs of a size 4: red for the first stretch of the top layer from the tip, and white to its fold.)
+  const section = kohakuSection(beltCmOfSize(o.beltSize), 16);
+  const plain = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt, section);
   // Folded, a belt shows its label at the free end, as a shop shows it: what is sewn on a hanging end sits well up from its tip, so it is moved toward the tip until the tip-most of it is
   // a few centimetres from the cut (the label, with its size tag under it). Close up, the rows of stitching are dashed stitches (white thread on a kohaku) and the cloth shows its twill.
   const toTip = (m: Mark | undefined, end: 0 | 1): Mark | undefined => {
@@ -411,12 +414,13 @@ function solidSheet(o: Ready, yaw: number): Sheet {
     const shift = Math.max(0, (END_LENGTH[end] as number) - 2 * UNITS_PER_CM - reach);
     return shift === 0 ? m : { ...m, body: `<g transform="translate(${n2(shift)} 0)">${m.body}</g>` };
   };
-  const fine = plain === undefined ? undefined : { ...plain, rows: plain.rows ?? 15, fine: { thread: o.belt === "red-white" ? "#ffffff" : plain.stitch } };
-  const paint: BeltPaint | undefined = fine?.ends === undefined ? fine : { ...fine, ends: { ...(fine.ends.left === undefined ? {} : { left: toTip(fine.ends.left, 0) as Mark }), ...(fine.ends.right === undefined ? {} : { right: toTip(fine.ends.right, 1) as Mark }) } };
-  const sectionCm = Math.max(12, Math.min(18, 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50));
+  const fine = plain === undefined ? undefined : { ...plain, rows: plain.rows ?? 16, fine: { thread: o.belt === "red-white" ? "#ffffff" : o.belt === "white" ? "#cfccc2" : plain.stitch } };
+  const sections = fine?.panels === undefined ? undefined : foldedPanels(o.uid, fine.panels.a, fine.panels.b, section);
+  const laid: BeltPaint | undefined = fine === undefined || sections === undefined ? fine : { ...fine, stripFill: sections.fill, defs: fine.defs + sections.defs };
+  const paint: BeltPaint | undefined = laid?.ends === undefined ? laid : { ...laid, ends: { ...(laid.ends.left === undefined ? {} : { left: toTip(laid.ends.left, 0) as Mark }), ...(laid.ends.right === undefined ? {} : { right: toTip(laid.ends.right, 1) as Mark }) } };
   const widthCm = o.beltCm ?? beltDefaultWidthCm(o.belt === "none" ? "white" : o.belt);
   const { fits, boxSize, ...desc } = sceneOf({
-    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band, period: 2 * sectionCm * UNITS_PER_CM, seed: [...o.uid].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7),
+    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band, period: 2 * section * UNITS_PER_CM, seed: [...o.uid].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7),
     ...(box ? { box: { type: o.boxType, state: o.boxState, ...(o.boxSize === undefined ? {} : { size: o.boxSize }) } } : {}),
   });
   void fits;

@@ -47,9 +47,44 @@ function kohakuPhase(section: number, cuts: readonly number[]): number {
 }
 
 /** The sections of two colours that take turns along a belt, `a` first and at both cut ends, each `section` long: its fill for the flat drawing and for a strap's strip. */
-function panels(id: string, a: Rgb, b: Rgb, section: number): { fill: string; stripFill: string; defs: string } {
+function panels(id: string, a: Rgb, b: Rgb, section: number): { fill: string; stripFill: string; defs: string; panels: { a: string; b: string } } {
   const pattern = (pid: string, phase: number): string => `<pattern id="${pid}" width="${n2(2 * section)}" height="80" patternUnits="userSpaceOnUse" patternTransform="translate(${n2(-phase)} 0)"><rect width="${n2(2 * section)}" height="80" fill="${hexOf(b)}"/><rect width="${n2(section)}" height="80" fill="${hexOf(a)}"/></pattern>`;
-  return { fill: `url(#${id})`, stripFill: `url(#${id}s)`, defs: pattern(id, kohakuPhase(section, END_CUTS)) + pattern(`${id}s`, kohakuPhase(section, STRIP_CUTS)) };
+  return { fill: `url(#${id})`, stripFill: `url(#${id}s)`, defs: pattern(id, kohakuPhase(section, END_CUTS)) + pattern(`${id}s`, kohakuPhase(section, STRIP_CUTS)), panels: { a: hexOf(a), b: hexOf(b) } };
+}
+
+/**
+ * The red and white sections of a belt that is folded, laid on the strip by the belt's real length: from the cut end of each hanging end the first section is the first colour
+ * and they take turns every `sectionCm`, so a belt of an odd number of sections is that colour at both ends (`kohakuSection` finds the length). The strip is one picture of
+ * 280 units: the stretch from -40 to 58 is the plain belt (laid by `bulkAt` in beltBox.ts, by the distance from the first end, repeating every two sections), the end stretches
+ * 58 to 118.5 and 130 to 196 are each laid from their own cut end, so the sections come out at the same distance from the tips as on the belt.
+ */
+export function foldedPanels(id: string, a: string, b: string, sectionCm: number): { fill: string; defs: string } {
+  const U = 2.63;
+  const S = sectionCm * U;
+  const P = 2 * S;
+  const rect = (x0: number, x1: number, fill: string): string => (x1 > x0 ? `<rect x="${n2(x0)}" width="${n2(x1 - x0)}" height="80" fill="${fill}"/>` : "");
+  let body = rect(-40, 240, b);
+  // The plain stretch, -40 to 56 (a section is at most 18 cm, a period 95 units): the first colour for a section, then the other, repeating.
+  for (let x = -40; x < 56; x += P) body += rect(x, Math.min(56, x + S), a);
+  // An end stretch from `lo` to its cut end `tip`: the sections counted from the cut end toward smaller x, red (the first colour) at the end. A cell's corners are drawn a hair
+  // beyond it, so the strip from `from` to `lo` carries on the colour the stretch starts with (a seam would show there otherwise), and the strip past the cut end is the first colour.
+  const end = (from: number, lo: number, tip: number, to: number): string => {
+    let t = rect(from, lo, Math.floor((tip - lo) / S) % 2 === 0 ? a : b) + rect(lo, tip, b);
+    for (let d = 0; d < tip - lo; d += P) t += rect(Math.max(lo, tip - d - S), tip - d, a);
+    return t + rect(tip, to, a);
+  };
+  body += end(56, 58, STRIP_CUTS[1], STRIP_CUTS[1]) + end(STRIP_CUTS[1], 130, STRIP_CUTS[0], 240);
+  return { fill: `url(#${id}f)`, defs: `<pattern id="${id}f" x="-40" y="0" width="280" height="80" patternUnits="userSpaceOnUse"><g transform="translate(40 0)">${body}</g></pattern>` };
+}
+
+/** The length of one section of a folded belt `cm` long: the nearest odd number of sections of about `nominalCm` (12 to 18), so that it is the first colour at both ends. */
+export function kohakuSection(cm: number, nominalCm: number): number {
+  const nominal = Math.max(12, Math.min(18, nominalCm));
+  let k = Math.max(1, 2 * Math.round((cm / nominal - 1) / 2) + 1);
+  // Keep a section between 12 and 18 cm.
+  while (cm / k > 18) k += 2;
+  while (cm / k < 12 && k > 1) k -= 2;
+  return cm / k;
 }
 
 const rgbOfHex = (hex: string): Rgb => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
