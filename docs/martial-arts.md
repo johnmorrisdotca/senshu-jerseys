@@ -10,6 +10,8 @@ beltSystem("bjj-ibjjf-kids")?.grades.map((grade) => grade.name);
 
 ## Judo: IJF and Kodokan colours, with Judo Canada's half grades
 
+![Every grade of Judo: IJF and Kodokan colours, with Judo Canada's half grades, drawn from its data](images/belts/judo-ijf.webp)
+
 Status: sourced. Worn at the waist; width 4 to 5 cm (usually 4.5); ends hang 20 to 30 cm from the knot (usually 25).
 
 | Grade | Colours | Marks | Ages |
@@ -48,6 +50,8 @@ Sources:
 - [John's reference: 'Martial arts belt ranks' chart (picture, Dropbox belt-stripes)](dropbox:/Projects/Resources/senshu-jerseys/belt-stripes/2026-10-28-martial-arts-belt-ranks-by-art.png), read 2026-10-27 (lead): Aikido, BJJ, capoeira, ju-jutsu, ITF taekwondo, shotokan karate, krav maga and judo belt orders as an infographic; a lead, unsourced.
 
 ## Judo: British Judo Association mon grades (juniors, 8 to 17)
+
+![Every grade of Judo: British Judo Association mon grades (juniors, 8 to 17), drawn from its data](images/belts/judo-bja-mon.webp)
 
 Status: sourced. Worn at the waist; width 3.5 to 5 cm (usually 4); ends hang 20 to 30 cm from the knot (usually 25).
 
@@ -88,6 +92,8 @@ Sources:
 
 ## Brazilian jiu-jitsu: IBJJF belts for ages 4 to 15
 
+![Every grade of Brazilian jiu-jitsu: IBJJF belts for ages 4 to 15, drawn from its data](images/belts/bjj-ibjjf-kids.webp)
+
 Status: sourced. Worn at the waist; width 2.5 to 3.5 cm (usually 3); ends hang 20 to 30 cm from the knot (usually 25).
 
 | Grade | Colours | Marks | Ages |
@@ -124,6 +130,8 @@ Sources:
 
 ## Brazilian jiu-jitsu: IBJJF belts for 16 and over
 
+![Every grade of Brazilian jiu-jitsu: IBJJF belts for 16 and over, drawn from its data](images/belts/bjj-ibjjf-adult.webp)
+
 Status: sourced. Worn at the waist; width 3.5 to 4.5 cm (usually 4); ends hang 20 to 30 cm from the knot (usually 25).
 
 | Grade | Colours | Marks | Ages |
@@ -152,6 +160,8 @@ Sources:
 - [John's references: black belt with tip bars (pictures)](dropbox:/Projects/Resources/senshu-jerseys/belt-stripes/2026-10-28-black-tip-red-bars-degrees.png), read 2026-10-27 (lead): Black belts sold with red or white bars across them (martial-arts supplier); a lead.
 
 ## Taekwon-do: ITF colour belts with tips
+
+![Every grade of Taekwon-do: ITF colour belts with tips, drawn from its data](images/belts/taekwondo-itf.webp)
 
 Status: partly. Worn at the hips; width 4 to 5 cm (usually 4.5); ends hang 20 to 40 cm from the knot (usually 30).
 
@@ -187,6 +197,8 @@ Sources:
 
 ## Karate: WKF competition belts (aka red, ao blue)
 
+![Every grade of Karate: WKF competition belts (aka red, ao blue), drawn from its data](images/belts/karate-competition.webp)
+
 Status: sourced. Worn at the waist; width 4.5 to 5.5 cm (usually 5); ends hang 15 to 40 cm from the knot (usually 15).
 
 | Grade | Colours | Marks | Ages |
@@ -209,6 +221,8 @@ Sources:
 - [JKA, DAN Ranking](https://jka.or.jp/en/about-jka/dan-ranking/), read 2026-10-27 (primary): 10 kyu and 10 dan; the page was unavailable when read (HTTP 503): the figures are from a search result's summary of it, to confirm.
 
 ## Karate: common kyu and dan belts with bars (a lead, style by style)
+
+![Every grade of Karate: common kyu and dan belts with bars (a lead, style by style), drawn from its data](images/belts/karate-kyu-dan.webp)
 
 Status: lead. Worn at the waist; width 4 to 5 cm (usually 4.5); ends hang 20 to 45 cm from the knot (usually 30).
 
@@ -247,6 +261,8 @@ Sources:
 - [JKA, DAN Ranking](https://jka.or.jp/en/about-jka/dan-ranking/), read 2026-10-27 (primary): 10 kyu and 10 dan; the page was unavailable when read (HTTP 503): the figures are from a search result's summary of it, to confirm.
 
 ## Aikido, ju-jutsu, capoeira, krav maga (leads only)
+
+![Every grade of Aikido, ju-jutsu, capoeira, krav maga (leads only), drawn from its data](images/belts/other-arts-leads.webp)
 
 Status: lead. Worn at the waist; width 4 to 5 cm (usually 4.5); ends hang 20 to 30 cm from the knot (usually 25).
 

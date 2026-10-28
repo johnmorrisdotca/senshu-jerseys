@@ -24,7 +24,7 @@ beltSystem("bjj-ibjjf-kids")?.grades.map((grade) => grade.name);
 
 `;
 for (const s of BELT_SYSTEMS) {
-  md += `## ${s.name}\n\nStatus: ${s.status}. Worn at the ${s.ends.worn}; width ${s.ends.widthCm.min} to ${s.ends.widthCm.max} cm (usually ${s.ends.widthCm.usual}); ends hang ${s.ends.hangCm.min} to ${s.ends.hangCm.max} cm from the knot (usually ${s.ends.hangCm.usual}).\n\n`;
+  md += `## ${s.name}\n\n![Every grade of ${cell(s.name)}, drawn from its data](images/belts/${s.id}.webp)\n\nStatus: ${s.status}. Worn at the ${s.ends.worn}; width ${s.ends.widthCm.min} to ${s.ends.widthCm.max} cm (usually ${s.ends.widthCm.usual}); ends hang ${s.ends.hangCm.min} to ${s.ends.hangCm.max} cm from the knot (usually ${s.ends.hangCm.usual}).\n\n`;
   md += `| Grade | Colours | Marks | Ages |\n|---|---|---|---|\n`;
   for (const g of s.grades) md += `| ${cell(g.name)} | ${cell(colours(g))} | ${cell(look(g))}${g.note ? `. ${cell(g.note)}` : ""} | ${cell(g.ages ?? "")} |\n`;
   if (s.customary.length) {

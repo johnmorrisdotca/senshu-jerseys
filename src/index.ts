@@ -11,6 +11,7 @@ export {
 export type { JudogiBelt, JudogiCheck, JudogiColour, JudogiMode, JudogiOptions, JudogiSize, JudogiView } from "./judogi.ts";
 export { BELT_RGB as JUDOGI_BELT_RGB } from "./judogiBelt.ts";
 export { BELT_PRESETS, STRIPE_COLOURS, beltPreset } from "./judogiStripes.ts";
+export { gradeBelt } from "./beltGrade.ts";
 export type { BeltAlong, BeltBars, BeltPreset, BeltTipStyle, JudogiBeltStyle, StripeColour } from "./judogiStripes.ts";
 export { PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_FACTS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS } from "./judogiPatch.ts";
 export type { JudogiBackPatch, PatchColour, PatchStyle, ZekkenInk } from "./judogiPatch.ts";

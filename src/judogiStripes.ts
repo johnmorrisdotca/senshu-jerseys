@@ -14,10 +14,10 @@ const CM = 2.63;
 export const END_LENGTH = [65.97, 60.52] as const;
 
 /** The colours a stripe may be: the belt colours and a few more, or any `#rrggbb`. */
-export const STRIPE_COLOURS = ["white", "yellow", "orange", "green", "blue", "brown", "black", "red", "grey", "purple", "gold"] as const;
+export const STRIPE_COLOURS = ["white", "yellow", "orange", "green", "blue", "brown", "black", "red", "grey", "purple", "gold", "silver"] as const;
 export type StripeColour = (typeof STRIPE_COLOURS)[number];
 
-const EXTRA_RGB: Record<string, Rgb> = { grey: [138, 140, 146], purple: [104, 52, 140], gold: [201, 160, 48] };
+const EXTRA_RGB: Record<string, Rgb> = { grey: [138, 140, 146], purple: [104, 52, 140], gold: [201, 160, 48], silver: [196, 199, 206] };
 
 /** A stripe or bar colour as `#rrggbb`, or undefined if it is neither a name nor a hex colour. */
 export function stripeHex(colour: unknown): string | undefined {
@@ -65,6 +65,10 @@ export interface BeltTipStyle {
 
 /** Everything that can be drawn on a belt's cloth besides its colour and the embroidery. Every part is optional and they combine. */
 export interface JudogiBeltStyle {
+  /** The belt's own colour where it is none of the grade colours (a jiu-jitsu kid's grey, a purple belt): a colour name or `#rrggbb`, taking the place of `belt`'s. */
+  base?: string;
+  /** The belt's colour takes turns with this one in panels along its length, as a kohaku belt's red and white do (the coral belt of jiu-jitsu: red and black). */
+  alternate?: string;
   /** A second colour: the belt is split lengthwise, `split` on the lower half and the belt's colour above it (a half grade). */
   split?: string;
   along?: BeltAlong[];
@@ -81,6 +85,8 @@ export interface Band {
 
 /** What a belt's style comes to once checked: only colours that exist, counts and lengths kept to what a belt can carry. */
 export interface ReadStyle {
+  base: string | undefined;
+  alternate: string | undefined;
   split: string | undefined;
   along: { fill: string; from: number; to: number }[];
   bars: { fill: string; ends: [boolean, boolean]; count: number; widthCm: number; gapCm: number; fromEndCm: number }[];
@@ -97,6 +103,8 @@ const BELT_CM = 4.5;
 export function readStyle(style: JudogiBeltStyle | undefined): ReadStyle | undefined {
   if (style === null || typeof style !== "object") return undefined;
   const split = stripeHex(style.split);
+  const base = stripeHex(style.base);
+  const alternate = stripeHex(style.alternate);
   const along: ReadStyle["along"] = [];
   for (const a of Array.isArray(style.along) ? style.along : []) {
     const fill = stripeHex(a?.colour);
@@ -128,8 +136,8 @@ export function readStyle(style: JudogiBeltStyle | undefined): ReadStyle | undef
       bars: barFill === undefined || t.bars === undefined ? undefined : { fill: barFill, count: Math.round(num(t.bars.count, 1, 1, 6)), widthCm: num(t.bars.widthCm, 0.8, 0.2, 2), gapCm: num(t.bars.gapCm, 0.7, 0.2, 2) },
     };
   }
-  if (split === undefined && along.length === 0 && bars.length === 0 && tip === undefined) return undefined;
-  return { split, along, bars, tip };
+  if (base === undefined && alternate === undefined && split === undefined && along.length === 0 && bars.length === 0 && tip === undefined) return undefined;
+  return { base, alternate, split, along, bars, tip };
 }
 
 /** The bands along the whole belt, in the order they are laid: the split colour's half first, then each stripe over it. */

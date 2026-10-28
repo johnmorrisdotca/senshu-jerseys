@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { judogiFrame, renderJudogi } from "../src/judogi.ts";
 import { wellFormed } from "./helpers.ts";
 import { beltPaint, END_CUTS, STRIP_CUTS } from "../src/judogiBelt.ts";
 import { END_X, strapFace, type StrapDesc } from "../src/judogiStrap.ts";
-import { END_LENGTH } from "../src/judogiStripes.ts";
+import { END_LENGTH, readStyle, stripeHex } from "../src/judogiStripes.ts";
+import { gradeBelt } from "../src/beltGrade.ts";
+import { BELT_SYSTEMS, beltSystem } from "../src/beltSystems.ts";
 import type { VolumeDesc } from "../src/volume.ts";
 
 const RING: StrapDesc = { y: 28, sag: 3, w: 12.5, t: 1.3, a: 66, b: 30, full: 2, side: 0, worn: false };
@@ -96,4 +99,45 @@ test("text on a belt's two hanging ends reads down the end, top to bottom, on bo
   const strip = strapFace({ fill: "#222", edge: "#000", stitch: "#444", defs: "", ends: { left: { defs: "", body: '<text id="L">SENSHU</text>' }, right: { defs: "", body: '<text id="R">JOHN</text>' } } }, RING.w);
   assert.ok(!/rotate\(/.test(strip.body.slice(strip.body.indexOf('id="L"') - 60, strip.body.indexOf('id="L"'))), "the left end's text is not turned");
   assert.ok(!/rotate\(/.test(strip.body.slice(strip.body.indexOf('id="R"') - 60, strip.body.indexOf('id="R"'))), "the right end's text is not turned");
+});
+
+test("every grade of every belt system draws as a belt: its colours, stripe, tip and tags carried over", () => {
+  let n = 0;
+  for (const system of BELT_SYSTEMS) {
+    for (const grade of system.grades) {
+      const { belt, beltStyle } = gradeBelt(grade);
+      const read = readStyle(beltStyle);
+      const svg = judogiFrame({ mode: "belt", belt, beltStyle, yaw: 20 });
+      assert.equal(wellFormed(svg), null, `${system.id} ${grade.id}`);
+      assert.equal(wellFormed(judogiFrame({ mode: "jacket", belt, beltStyle })), null);
+      n++;
+      // Two colours lengthwise are a second colour in the split; a stripe along is one along; a tip is a tip; tags are bars.
+      if (grade.body.length === 2 && grade.split === "lengthwise") assert.equal(read?.split, stripeHex(grade.body[1]), `${grade.id} split`);
+      if (grade.centreStripe !== undefined) assert.equal(read?.along.length, 1, `${grade.id} stripe`);
+      if (grade.tip !== undefined) assert.ok(read?.tip !== undefined, `${grade.id} tip`);
+      if (grade.tags?.form === "tag") assert.equal(read?.bars[0]?.count, grade.tags.count, `${grade.id} tags`);
+      if (grade.body.length === 2 && grade.split === "alternating") assert.ok(belt === "red-white" || read?.alternate !== undefined, `${grade.id} panels`);
+      // A colour the belt does not come in is its own base colour.
+      if (grade.body.length === 1 && !(["white", "yellow", "orange", "green", "blue", "brown", "black", "red"] as string[]).includes(grade.body[0])) assert.equal(read?.base, stripeHex(grade.body[0]), `${grade.id} base`);
+    }
+  }
+  assert.ok(n > 60, `${n} grades drawn`);
+  // The jiu-jitsu coral belt: red and black in panels.
+  const coral = beltSystem("bjj-ibjjf-adult")?.grades.find((g) => g.id === "red-black");
+  assert.ok(coral !== undefined);
+  const drawn = gradeBelt(coral);
+  assert.equal(readStyle(drawn.beltStyle)?.alternate, stripeHex("black"));
+  assert.match(judogiFrame({ mode: "belt", ...drawn }), /<pattern id="[^"]*alt" /);
+});
+
+test("every belt system has its picture, drawn from its data, and the page shows it", () => {
+  const page = readFileSync(new URL("../docs/martial-arts.md", import.meta.url), "utf8");
+  for (const system of BELT_SYSTEMS) {
+    const file = new URL(`../docs/images/belts/${system.id}.webp`, import.meta.url);
+    assert.ok(existsSync(file), `${system.id}: run pnpm belt-sheets`);
+    const bytes = readFileSync(file);
+    assert.equal(bytes.subarray(0, 4).toString(), "RIFF");
+    assert.ok(bytes.length > 3000 && bytes.length < 200000, `${system.id}: ${bytes.length} bytes`);
+    assert.ok(page.includes(`](images/belts/${system.id}.webp)`), `${system.id} is on the page`);
+  }
 });

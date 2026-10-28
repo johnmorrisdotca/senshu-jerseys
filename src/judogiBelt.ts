@@ -46,25 +46,33 @@ function kohakuPhase(section: number, cuts: readonly number[]): number {
   return best;
 }
 
-/** The paint of a belt colour, or of the red and white sections of a kohaku belt (each `sectionCm` long, 12 to 18 cm by the size of the belt, red at both ends). */
-export function beltPaint(uid: string, belt: string, sectionCm = 15): BeltPaint | undefined {
+/** The sections of two colours that take turns along a belt, `a` first and at both cut ends, each `section` long: its fill for the flat drawing and for a strap's strip. */
+function panels(id: string, a: Rgb, b: Rgb, section: number): { fill: string; stripFill: string; defs: string } {
+  const pattern = (pid: string, phase: number): string => `<pattern id="${pid}" width="${n2(2 * section)}" height="80" patternUnits="userSpaceOnUse" patternTransform="translate(${n2(-phase)} 0)"><rect width="${n2(2 * section)}" height="80" fill="${hexOf(b)}"/><rect width="${n2(section)}" height="80" fill="${hexOf(a)}"/></pattern>`;
+  return { fill: `url(#${id})`, stripFill: `url(#${id}s)`, defs: pattern(id, kohakuPhase(section, END_CUTS)) + pattern(`${id}s`, kohakuPhase(section, STRIP_CUTS)) };
+}
+
+const rgbOfHex = (hex: string): Rgb => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+
+/**
+ * The paint of a belt colour, or of the red and white sections of a kohaku belt (each `sectionCm` long, 12 to 18 cm by the size of the belt, red at both ends).
+ * `base` is a colour of its own (`#rrggbb`) in place of the belt's, and `alternate` a second colour that takes turns with it in sections of the same length.
+ */
+export function beltPaint(uid: string, belt: string, sectionCm = 15, base?: string, alternate?: string): BeltPaint | undefined {
   if (belt === "none") return undefined;
+  const section = Math.max(12, Math.min(18, sectionCm)) * 2.63;
+  if (alternate !== undefined) {
+    const a = base === undefined ? (BELT_RGB[belt] ?? (BELT_RGB.white as Rgb)) : rgbOfHex(base);
+    const edge = rgbOfHex(alternate);
+    const dark = a[0] + a[1] + a[2] < 160;
+    return { ...panels(`${uid}alt`, a, edge, section), edge: hexOf(dark ? blend(a, [0, 0, 0], 0.5) : shade(a, -0.38)), stitch: hexOf(dark ? shade(a, 0.22) : shade(a, -0.24)) };
+  }
   if (belt === "red-white") {
-    const id = `${uid}kohaku`;
     const red = BELT_RGB.red as Rgb;
     const white = BELT_RGB.white as Rgb;
-    // The sections, each 12 to 18 cm (2.63 units to the centimetre), then the pattern put where both cut ends are red: one offset for a strap's strip and another for an end drawn flat.
-    const section = Math.max(12, Math.min(18, sectionCm)) * 2.63;
-    const pattern = (pid: string, phase: number): string => `<pattern id="${pid}" width="${n2(2 * section)}" height="80" patternUnits="userSpaceOnUse" patternTransform="translate(${n2(-phase)} 0)"><rect width="${n2(2 * section)}" height="80" fill="${hexOf(white)}"/><rect width="${n2(section)}" height="80" fill="${hexOf(red)}"/></pattern>`;
-    return {
-      fill: `url(#${id})`,
-      stripFill: `url(#${id}s)`,
-      edge: hexOf(shade(red, -0.4)),
-      stitch: hexOf(shade(red, -0.25)),
-      defs: pattern(id, kohakuPhase(section, END_CUTS)) + pattern(`${id}s`, kohakuPhase(section, STRIP_CUTS)),
-    };
+    return { ...panels(`${uid}kohaku`, red, white, section), edge: hexOf(shade(red, -0.4)), stitch: hexOf(shade(red, -0.25)) };
   }
-  const rgb = BELT_RGB[belt] ?? (BELT_RGB.white as Rgb);
+  const rgb = base !== undefined ? rgbOfHex(base) : (BELT_RGB[belt] ?? (BELT_RGB.white as Rgb));
   const dark = rgb[0] + rgb[1] + rgb[2] < 160;
   return {
     fill: hexOf(rgb),

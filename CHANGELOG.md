@@ -23,6 +23,13 @@ All notable changes to this project are written here. The format follows
 - **Woven labels show a twill** (diagonal ribs, a lit one and a dark one in turn) over their weave, and the Senshu S has a thin outline stitch in a lighter second colour round its satin.
 - **A belt's width is one a belt of its grade is made in**: 4.2 cm for white and the rank colours, 4.5 cm for black, red-white and red (they were 4, 4.75 and 5); the designer's Belt width control lists only the widths that exist for the chosen belt (white 4.2 or 4.5, black 4.2, 4.5 or 4.7), and `judogiCheck`'s `belt-width` note fails a width the grade is not made in. The IJF rules' text gives no belt width, so the old "4 to 5 cm" claim is gone.
 
+## [0.21.0] - 2026-10-28
+
+### Added
+
+- **`gradeBelt(grade)`**: a grade of any belt system (`BELT_SYSTEMS`) as the `belt` and `beltStyle` that draw it: its colour or two colours (split lengthwise, or in panels that take turns: the jiu-jitsu coral belt), a stripe along it, a tip block with bars, tags. `beltStyle` takes a `base` colour (grey, purple, silver, gold) and an `alternate` colour for such belts, and `silver` joins `STRIPE_COLOURS`.
+- **A picture of every belt system** (`docs/images/belts/<system id>.webp`, made by `pnpm belt-sheets`) with all its grades drawn from its data, on `docs/martial-arts.md`. A test draws every grade of every system and checks the page and the pictures.
+
 ## [0.20.1] - 2026-10-28
 
 ### Changed
