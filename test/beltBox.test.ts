@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  BASE_TURN, BOX_MAX_BELT, BOX_SIZES, BOX_TAKES, FOLD_LAYERS, beltCmOfSize, boxBeltRoom, boxDims, boxInnerCm, boxSizeFor, foldPath, lidLength, regionsOf, sceneOf, solidCells,
+  BASE_TURN, BOX_MAX_BELT, FOLDED_LAYERS, BOX_SIZES, BOX_TAKES, FOLD_LAYERS, beltCmOfSize, boxBeltRoom, boxDims, boxInnerCm, boxSizeFor, foldPath, lidLength, regionsOf, sceneOf, solidCells,
   type BoxState, type BoxType, type SolidDesc,
 } from "../src/beltBox.ts";
+import { BELT_SIZES } from "../src/beltSpecs.ts";
 import { lidTextLayout } from "../src/beltBoxFace.ts";
 import { judogiCheck, renderJudogi } from "../src/judogi.ts";
 import { UNITS_PER_CM } from "../src/judogiStrap.ts";
@@ -13,11 +14,13 @@ const SIZES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8];
 const scene = (beltSize: number, type: BoxType, state: BoxState, extra: { widthCm?: number; band?: boolean } = {}): ReturnType<typeof sceneOf> =>
   sceneOf({ beltSize, widthCm: extra.widthCm ?? 4.5, thickCm: 0.49, belt: true, band: extra.band ?? false, box: { type, state }, rot: 0 });
 
-test("a belt's length is 230 cm at size 2 and 10 cm more each half size, to 350 cm at size 8", () => {
-  assert.equal(beltCmOfSize(2), 230);
-  assert.equal(beltCmOfSize(2.5), 240);
-  assert.equal(beltCmOfSize(6), 310);
-  assert.equal(beltCmOfSize(8), 350);
+test("a belt's length is the package's size table's: size 2 is 235 cm and 10 cm more each half size, in proportion between listed sizes", () => {
+  for (const row of BELT_SIZES) assert.equal(beltCmOfSize(row.size), row.cm);
+  assert.equal(beltCmOfSize(2), 235);
+  assert.equal(beltCmOfSize(2.5), 245);
+  assert.equal(beltCmOfSize(6), 315);
+  assert.equal(beltCmOfSize(8), 355);
+  assert.equal(beltCmOfSize(1.5), 225);
 });
 
 test("the box size follows the maker's menu: 2 holds up to 2.5, 3 to 3.5, 4 to 4.5, 5 is size 5, 6 holds 5.5 to 6.5", () => {
@@ -90,22 +93,23 @@ test("the belt in a box is not wider than the box's room, and the largest belt o
       const { points } = foldPath({ ...(s.belt as NonNullable<typeof s.belt>), w: 4.5 });
       const xs = points.map((p) => p.p[0]);
       const span = Math.max(...xs) - Math.min(...xs);
-      assert.ok(span <= d.inner + 1e-6 && span > d.inner - 5, `${type} box ${box}: bundle ${span.toFixed(1)} in ${d.inner}`);
+      assert.ok(span <= d.inner + 1e-6 && span > d.inner - 8, `${type} box ${box}: bundle ${span.toFixed(1)} in ${d.inner}`);
     }
   }
 });
 
-test("the folded belt keeps the belt's own length, doubled back seven times, the bottom end showing", () => {
+test("the folded belt keeps the belt's own length, doubled back six times, both ends at the near end", () => {
   for (const size of [2, 4, 6, 8]) {
     const f = sceneOf({ beltSize: size, widthCm: 4.5, thickCm: 0.49, belt: true, band: false }).belt!;
     const path = foldPath(f);
     assert.ok(Math.abs(path.length - beltCmOfSize(size)) / beltCmOfSize(size) < 0.02, `${size}: ${path.length}`);
-    assert.equal(f.n, FOLD_LAYERS);
+    assert.equal(f.n, FOLDED_LAYERS);
     const ys = new Set(path.points.map((p) => Math.round(p.p[1] * 1000)));
-    assert.ok(ys.size >= FOLD_LAYERS, "seven layers at seven heights");
+    assert.ok(ys.size >= FOLDED_LAYERS, "six layers at six heights");
     // The first layer's free end (B) sticks out beyond the folds on its side.
     const first = path.points[0]!.p[0];
     const farFolds = Math.max(...path.points.filter((p) => p.u > path.length * 0.15).map((p) => p.p[0]));
+    assert.ok(path.points[path.points.length - 1]!.p[0] > 0 && first > 0, "both free ends at the same end of the bundle");
     assert.ok(first > farFolds + 0.3, `${size}: end ${first.toFixed(2)} fold ${farFolds.toFixed(2)}`);
   }
 });

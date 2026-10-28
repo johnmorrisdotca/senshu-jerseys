@@ -4,6 +4,7 @@
 // the boxes' faces on regions of the same picture (beltBoxFace.ts). The numbers here are centimetres until the very end, where a centimetre becomes `UNITS_PER_CM` units.
 // Box sizes, the 7 x 7 cm kiri and the 5 cm silver widths are from KuSakura's gift-box pages (read 2026-10-28; see docs/judogi.md); the box length per size is derived here.
 
+import { BELT_SIZES } from "./beltSpecs.ts";
 import { END_LENGTH } from "./judogiStripes.ts";
 import { BACK_Y, EDGE1_Y, EDGE_H, END_X, FACE_Y, quad, UNITS_PER_CM } from "./judogiStrap.ts";
 import type { Cell } from "./volume.ts";
@@ -23,13 +24,26 @@ export const BOX_TEXT_DEFAULT = "御帯";
 export const BOX_SIZES = [2, 3, 4, 5, 6] as const;
 export type BoxSize = (typeof BOX_SIZES)[number];
 
-/** How many layers the folded belt is doubled into: fixed, so a box's length follows from the longest belt it holds. */
+/** How many layers a belt is doubled into in a box: fixed, so a box's length follows from the longest belt it holds. On its own a belt is folded in six, so that both its free ends lie at the same end of the bundle, the label end on top. */
 export const FOLD_LAYERS = 7;
+export const FOLDED_LAYERS = 6;
 /** Room left at each end of the box, in centimetres. */
 export const BOX_SLACK_CM = 2.5;
 
-/** The length of a belt by its size number, as the maker's product pages list it: size 2 is 230 cm and every half size 10 cm more, to size 8 at 350 cm. */
-export const beltCmOfSize = (size: number): number => Math.round(230 + (size - 2) * 20);
+/** The length of a belt by its size number, men's and mixed, from the package's own size table (`BELT_SIZES`: size 2 is 235 cm and every half size 10 cm more, to size 8 at 355 cm); between two listed sizes, in proportion. */
+export function beltCmOfSize(size: number): number {
+  const list = BELT_SIZES;
+  const exact = list.find((s) => s.size === size);
+  if (exact !== undefined) return exact.cm;
+  const first = list[0]!;
+  const last = list[list.length - 1]!;
+  if (size <= first.size) return first.cm;
+  if (size >= last.size) return last.cm;
+  const hi = list.findIndex((s) => s.size > size);
+  const a = list[hi - 1]!;
+  const b = list[hi]!;
+  return Math.round(a.cm + ((b.cm - a.cm) * (size - a.size)) / (b.size - a.size));
+}
 
 /** The largest belt each box size holds (the maker's box menu: box 2 takes belts up to 2.5, box 3 up to 3.5, box 4 up to 4.5, box 5 size 5, box 6 up to 6.5). */
 export const BOX_TAKES: Record<BoxSize, number> = { 2: 2.5, 3: 3.5, 4: 4.5, 5: 5, 6: 6.5 };
@@ -85,6 +99,8 @@ export interface FoldDesc {
   z: number;
   /** A paper band round the middle of the bundle (the shop's wrap), as its width along the bundle, or 0 for none. */
   band: number;
+  /** The length, in drawing units, after which a kohaku belt's red and white sections repeat (two sections), so the plain stretch of the strip wraps without a seam. */
+  period: number;
 }
 
 /** A box laid out in the scene: its figures, its state, and where the lid lies. */
@@ -371,9 +387,8 @@ export interface Along {
   k?: number;
 }
 
-/** Where the belt's plain stretch is laid on its strip, and after what length it repeats (a kohaku belt's panels). */
+/** Where the belt's plain stretch is laid on its strip. */
 const X0 = -30;
-const PERIOD = 80;
 
 /**
  * The belt's path in the scene: its layers from the bottom one (free end B, on the right) up to the top one (free end A, on the left, face up), joined by folds,
@@ -381,13 +396,13 @@ const PERIOD = 80;
  */
 export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent: [number, number] } {
   const n = f.n;
-  const pitch = f.t + 0.03;
+  const pitch = f.t + LAYER_GAP;
   const bulge = 1.15 * pitch;
   const arc = Math.PI * Math.sqrt((pitch * pitch / 4 + bulge * bulge) / 2);
   const total = f.cm - (n - 1) * arc;
   const base = total / n;
-  const ext = Math.min(2.2, base / 6);
-  const jit = [0, 0.12, -0.08, 0.14, -0.1, 0.07, -0.05, 0.1];
+  const ext = Math.min(1.6, base / 8);
+  const jit = [0, 0, 0, 0, 0, 0, 0, 0];
   const len = Array.from({ length: n }, (_, i) => (i === 0 ? base + ext : base - ext / (n - 1)) + (jit[i % jit.length] ?? 0));
   len[n - 1] = (len[n - 1] as number) - (len.reduce((a, c) => a + c, 0) - total);
   const xs: number[] = [];
@@ -402,6 +417,8 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
   const hi = Math.max(...xs, ...xe) + bulge;
   const shift = f.x - (lo + hi) / 2;
   const yAt = (i: number): number => f.y - (i + 0.5) * pitch;
+  // The top layer's face looks up; with an odd number of layers the face is on the right of the way the belt runs, with an even number on its left.
+  const side = n % 2 === 1 ? 1 : -1;
   const pts: Along[] = [];
   let u = 0;
   const push = (p: Vec, d: Vec, out: Vec, k = 1): void => {
@@ -416,7 +433,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
     const y = yAt(i);
     const z = f.z + (((i * 37) % 5) - 2) * 0.02;
     const nn = Math.max(2, Math.ceil(Math.abs(b - a) / 2.4));
-    for (let j = 0; j <= nn; j++) push([lerp(a, b, j / nn), y, z], [dir, 0, 0], [0, i % 2 === 0 ? -1 : 1, 0]);
+    for (let j = 0; j <= nn; j++) push([lerp(a, b, j / nn), y, z], [dir, 0, 0], [0, side * dir, 0]);
     if (i < n - 1) {
       const left = i % 2 === 0;
       const yc = (yAt(i) + yAt(i + 1)) / 2;
@@ -429,7 +446,7 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
         const dy = -Math.sin(th) * (yAt(i) - yc);
         const dl = Math.hypot(dx, dy) || 1;
         // The face looks to the right of the way the belt runs (the same side all along it).
-        push([b + sgn * Math.sin(th) * bulge, yc + Math.cos(th) * (yAt(i) - yc), lerp(z, zn, j / m)], [dx / dl, dy / dl, 0], [-dy / dl, dx / dl, 0], 1 - 0.5 * Math.sin(th));
+        push([b + sgn * Math.sin(th) * bulge, yc + Math.cos(th) * (yAt(i) - yc), lerp(z, zn, j / m)], [dx / dl, dy / dl, 0], [(-side * dy) / dl, (side * dx) / dl, 0], 1 - 0.5 * Math.sin(th));
       }
     }
   }
@@ -437,15 +454,15 @@ export function foldPath(f: FoldDesc): { points: Along[]; length: number; extent
 }
 
 /** The strip's x for a place `u` centimetres along a belt `total` long, and which way x runs there (+1 with the belt, -1 against it). */
-function stripX(u: number, total: number): { x: number; dir: 1 | -1 } {
+function stripX(u: number, total: number, period: number): { x: number; dir: 1 | -1 } {
   const uu = u * U;
   const tot = total * U;
   // Each free end lies on its own stretch of the strip, as long as the tied belt's hanging end (what is sewn on an end is laid out for that length).
   const [endA, endB] = END_LENGTH;
   if (uu < endB) return { x: (END_X[1] as number) + endB - uu, dir: -1 };
   if (tot - uu < endA) return { x: (END_X[0] as number) + (uu - (tot - endA)), dir: 1 };
-  if (u < total / 2) return { x: (END_X[1] as number) - ((uu - endB) % PERIOD), dir: -1 };
-  return { x: X0 + (uu % PERIOD), dir: 1 };
+  if (u < total / 2) return { x: (END_X[1] as number) - ((uu - endB) % period), dir: -1 };
+  return { x: X0 - 10 + (uu % period), dir: 1 };
 }
 
 function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
@@ -459,10 +476,10 @@ function foldedCells(k: Sink, f: FoldDesc, r: Regions): void {
     for (const c of cuts.filter((q) => q > a.u + 1e-6 && q < b.u - 1e-6).sort((p, q) => p - q)) {
       const q = (c - a.u) / (b.u - a.u);
       const mid: Along = { p: [lerp(a.p[0], b.p[0], q), lerp(a.p[1], b.p[1], q), lerp(a.p[2], b.p[2], q)], d: a.d, out: a.out, u: c, k: a.k ?? 1 };
-      step(k, a, mid, hw, f.t, length);
+      step(k, a, mid, hw, f.t, length, f.period);
       a = mid;
     }
-    step(k, a, b, hw, f.t, length);
+    step(k, a, b, hw, f.t, length, f.period);
   }
   const first = points[0] as Along;
   const last = points[points.length - 1] as Along;
@@ -478,9 +495,9 @@ const FACE_INSET = 0.2;
 const corner = (p: Along, across: Vec, side: number, hw: number, face: number, T: number): Vec => add(p.p, add(scale(across, side * hw), scale(p.out, face * (T / 2) * (p.k ?? 1))));
 
 /** One step of the belt between two samples: its face, its back, its two long edges, each on its part of the strip. */
-function step(k: Sink, a: Along, b: Along, hw: number, T: number, total: number): void {
-  const here = stripX((a.u + b.u) / 2, total);
-  const start = stripX(a.u + 1e-6, total);
+function step(k: Sink, a: Along, b: Along, hw: number, T: number, total: number, period: number): void {
+  const here = stripX((a.u + b.u) / 2, total, period);
+  const start = stripX(a.u + 1e-6, total, period);
   const x0 = start.x;
   const x1 = x0 + here.dir * (b.u - a.u) * U;
   // The belt's width runs along out x (the way the strip's x runs), so the picture of its face reads right from the outside.
@@ -512,7 +529,7 @@ function endCap(k: Sink, e: Along, hw: number, T: number, way: 1 | -1): void {
 
 /** The width of the bundle's stack and the height it reaches, for the band that wraps it. */
 export function bundleSize(f: FoldDesc): { height: number; width: number } {
-  return { height: f.n * (f.t + 0.03), width: f.w };
+  return { height: f.n * (f.t + LAYER_GAP), width: f.w };
 }
 
 /** The shop's paper band round the middle of the bundle: four faces, the top carrying the picture (a mark and the size), the rest plain paper. */
@@ -550,7 +567,15 @@ export interface SceneOptions {
   band: boolean;
   /** The scene's base turn in degrees. */
   rot?: number;
+  /** After what length (drawing units) a kohaku belt's two sections repeat. */
+  period?: number;
 }
+
+/** How much thicker a belt looks folded than stitched, and the gap between two layers, in centimetres. */
+const PUFF = 1.4;
+const LAYER_GAP = 0.005;
+/** The folded belt on its own lies the other way round (its free ends at the near end), turned by this many degrees. */
+export const FOLDED_TURN = -118;
 
 /** Degrees the folded belt and the boxes are turned by before the viewer's own turn: they lie at an angle, as in a shop's photograph. */
 export const BASE_TURN = 62;
@@ -561,12 +586,17 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
   const boxSize = o.box === undefined ? undefined : o.box.size ?? boxSizeFor(o.beltSize, type) ?? 6;
   const fits = o.box === undefined || (boxSizeFor(o.beltSize, type) !== undefined && (o.box.size === undefined || BOX_TAKES[o.box.size] >= o.beltSize));
   const cm = o.beltCm ?? beltCmOfSize(o.beltSize);
-  const rot = o.rot ?? BASE_TURN;
-  const belt: Omit<FoldDesc, "x" | "y" | "z"> = { cm, w: o.widthCm, t: o.thickCm, n: FOLD_LAYERS, band: o.band ? 4 : 0 };
+  // A folded belt is a little puffier than its stitched thickness says (the core is padded and the layers lie snug).
+  const t0 = o.thickCm * PUFF;
+  const period = o.period ?? 78.9;
   if (o.box === undefined || boxSize === undefined) {
-    const h = belt.n * (belt.t + 0.03);
-    return { rot, belt: { ...belt, x: 0, y: h / 2, z: 0 }, fits, boxSize };
+    // On its own: six layers, so that both free ends lie at the same end of the bundle, the label end on top, and that end toward the viewer.
+    const belt: FoldDesc = { cm, w: o.widthCm, t: t0, n: FOLDED_LAYERS, band: o.band ? 4 : 0, period, x: 0, y: 0, z: 0 };
+    belt.y = (belt.n * (belt.t + LAYER_GAP)) / 2;
+    return { rot: o.rot ?? FOLDED_TURN, belt, fits, boxSize };
   }
+  const rot = o.rot ?? BASE_TURN;
+  const belt: Omit<FoldDesc, "x" | "y" | "z"> = { cm, w: o.widthCm, t: t0, n: FOLD_LAYERS, band: 0, period };
   const d = boxDims(boxSize, type);
   const open = o.box.state === "open";
   const wid = Math.min(o.widthCm, boxBeltRoom(d));
@@ -581,8 +611,8 @@ export function sceneOf(o: SceneOptions): SolidDesc & { fits: boolean; boxSize: 
   };
   // A thick belt is no thicker folded in a box than the box has room for.
   const floor = d.wall * (type === "kiri" ? 1 : 0.6);
-  const t = Math.min(o.thickCm, (d.baseH - floor - 0.15) / FOLD_LAYERS - 0.03);
-  if (o.belt && open && fits) scene.belt = { ...belt, w: wid, t, x: 0, y: d.h / 2 - d.wall * (type === "kiri" ? 1 : 0.6), z, band: 0 };
+  const t = Math.min(t0, (d.baseH - floor - 0.15) / FOLD_LAYERS - LAYER_GAP);
+  if (o.belt && open && fits) scene.belt = { ...belt, w: wid, t, x: 0, y: d.h / 2 - d.wall * (type === "kiri" ? 1 : 0.6), z };
   return scene;
 }
 

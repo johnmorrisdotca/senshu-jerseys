@@ -5,7 +5,7 @@
 
 import type { BeltPaint, Face } from "./judogiCloth.ts";
 import { esc } from "./colour.ts";
-import { strapFace } from "./judogiStrap.ts";
+import { EDGE1_Y, EDGE_H, strapFace } from "./judogiStrap.ts";
 import { regionsOf, type KiriWood, type Rect, type SolidDesc } from "./beltBox.ts";
 import { n2 } from "./path.ts";
 
@@ -177,7 +177,8 @@ function bandPicture(w: number, h: number, size: string): string {
 export function solidFace(desc: SolidDesc, paint: BeltPaint | undefined, look: BoxLook, uid: string, rows?: number): Face {
   const r = regionsOf(desc);
   const belt = paint !== undefined && desc.belt !== undefined ? strapFace(paint, desc.belt.w * 2.63, rows) : undefined;
-  let body = belt?.body ?? "";
+  // The belt's edges are drawn dark (the rows seen end on); folded, the whole side of the bundle is edges, so they are lifted toward the cloth's own colour.
+  let body = (belt?.body ?? "") + (belt === undefined ? "" : `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" fill="#fff" fill-opacity="0.24"/>`);
   const clip = [...(belt?.clip ?? [])];
   const put = (rect: Rect, inner: string): void => {
     body += group(rect, inner);

@@ -221,6 +221,8 @@ interface Ready {
   boxWood: KiriWood;
   boxSize: BoxSize | undefined;
   band: boolean;
+  /** Whether each end of the belt carries an embroidery of its own (the label and logo then keep the places they have). */
+  beltEmb: { left: boolean; right: boolean };
 }
 
 interface Sheet {
@@ -266,6 +268,7 @@ function read(options?: JudogiOptions): Ready {
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
     colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band,
+    beltEmb: { left: (o.embroidery ?? []).some((e) => e?.place === "belt-end-left"), right: (o.embroidery ?? []).some((e) => e?.place === "belt-end-right") },
     description: language === "ja"
       ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
       : "A judogi: jacket, trousers and belt. No maker or federation marks.",
@@ -382,10 +385,14 @@ function compose(o: Ready): Sheet {
 /** The folded belt, or the belt's gift box (with the belt folded in it): one piece of cells, see beltBox.ts. */
 function solidSheet(o: Ready, yaw: number): Sheet {
   const box = o.mode === "box";
-  const paint = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
+  const plain = o.belt === "none" && box ? undefined : paintOf(o, o.belt === "none" ? "white" : o.belt);
+  // Folded, a belt shows its label at the free end, as a shop shows it: what is sewn on a hanging end sits well up from its tip, so it is moved toward the tip (an embroidery keeps its place).
+  const toTip = (m: Mark | undefined, keep: boolean): Mark | undefined => (m === undefined || keep ? m : { ...m, body: `<g transform="translate(${TO_TIP} 0)">${m.body}</g>` });
+  const paint: BeltPaint | undefined = plain?.ends === undefined ? plain : { ...plain, ends: { ...(plain.ends.left === undefined ? {} : { left: toTip(plain.ends.left, o.beltEmb.left) as Mark }), ...(plain.ends.right === undefined ? {} : { right: toTip(plain.ends.right, o.beltEmb.right) as Mark }) } };
+  const sectionCm = Math.max(12, Math.min(18, 12 + (6 * (HEIGHT_OF[o.size] - 150)) / 50));
   const widthCm = o.beltCm ?? beltDefaultWidthCm(o.belt === "none" ? "white" : o.belt);
   const { fits, boxSize, ...desc } = sceneOf({
-    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band,
+    beltSize: o.beltSize, widthCm, thickCm: o.beltT / UNITS_PER_CM, belt: paint !== undefined, band: !box && o.band, period: 2 * sectionCm * UNITS_PER_CM,
     ...(box ? { box: { type: o.boxType, state: o.boxState, ...(o.boxSize === undefined ? {} : { size: o.boxSize }) } } : {}),
   });
   void fits;
@@ -400,6 +407,9 @@ function solidSheet(o: Ready, yaw: number): Sheet {
   const h = Math.ceil(2 * (reach.radius * 0.88 + reach.half) + 16);
   return box_(`${paint?.defs ?? ""}${v.defs}`, v.body, [100 - w / 2, -h / 2, w, h], yaw);
 }
+
+/** How far a folded belt's marks move toward the free end, in drawing units (about 7.5 cm). */
+const TO_TIP = 26;
 
 /** How far the camera looks down on a folded belt or a box, in degrees. */
 const SOLID_PITCH = 28;
