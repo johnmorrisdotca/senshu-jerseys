@@ -58,7 +58,10 @@ const state = {
     [`e${n}t`, (params.get(`e${n}t`) ?? "").slice(0, 24)],
     [`e${n}c`, THREAD_COLOURS.includes(params.get(`e${n}c`)) ? params.get(`e${n}c`) : n === 1 ? "navy" : "gold"],
     [`e${n}f`, EMBROIDERY_FONTS.includes(params.get(`e${n}f`)) ? params.get(`e${n}f`) : "block"],
+    // Thread the cloth's own colour (a tonal mark).
+    [`e${n}n`, params.get(`e${n}n`) === "1" ? "1" : "0"],
   ])),
+  logon: params.get("logon") === "1" ? "1" : "0",
   // The maker's logo places, none to many (the rules allow one to a garment): a comma list in the address.
   logo: (params.get("logo") ?? "").split(",").filter((p) => LOGO_PLACES.includes(p)).join(","),
   emblem: ["placeholder", "flag"].includes(params.get("emblem")) ? params.get("emblem") : "none",
@@ -120,10 +123,10 @@ function options() {
     else o.backPatch.ink = state.pink;
   }
   const embroidery = [1, 2].filter((n) => state[`e${n}p`] !== "none").map((n) => ({
-    place: state[`e${n}p`], text: state[`e${n}t`] || (state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU"), thread: state[`e${n}c`], font: state[`e${n}f`],
+    place: state[`e${n}p`], text: state[`e${n}t`] || (state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU"), thread: state[`e${n}c`], font: state[`e${n}f`], ...(state[`e${n}n`] === "1" ? { tonal: true } : {}),
   }));
   if (embroidery.length > 0) o.embroidery = embroidery;
-  if (logoList().length > 0) o.logos = logoList().map((place) => ({ place }));
+  if (logoList().length > 0) o.logos = logoList().map((place) => ({ place, ...(state.logon === "1" ? { tonal: true } : {}) }));
   if (state.emblem === "placeholder") o.emblem = {};
   else if (state.emblem === "flag" && flags.get(state.flag) !== undefined) o.emblem = { svg: flags.get(state.flag) };
   if (state.bw !== "auto" && widthsFor(state.belt).includes(state.bw)) o.beltWidthCm = Number(state.bw);
@@ -141,7 +144,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e2c: "gold", e2f: "block", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -203,7 +206,11 @@ async function draw() {
 /** What the size check found, in the page's language: the facts themselves are English, so the Japanese page says only whether the size meets them. */
 function checkText(check) {
   const head = `${say("judoOk")}: ${check.heightCm} cm.`;
-  if (lang() === "ja") return check.ok ? head : "";
+  if (lang() === "ja") {
+    // The facts are English; the one thing a Japanese page must say is that a mark was left out for want of room.
+    const left = check.notes.filter((n) => !n.met && n.id.startsWith("skipped-")).length;
+    return check.ok ? head : left > 0 ? say("judoSkipped") : "";
+  }
   // Each fact carries its own source: the IJF's rules for the garment, and the rules a patch follows.
   return check.ok ? `${head} ${check.notes.map((n) => n.fact).join(" ")}` : check.notes.filter((n) => !n.met).map((n) => n.fact).join(" ");
 }
@@ -293,6 +300,24 @@ function select(id, values, labels) {
     opt.textContent = labels(value);
     if (state[id.replace("judo-", "")] === value) opt.selected = true;
     el.append(opt);
+  }
+  return el;
+}
+
+/** A list of places grouped by garment: `groups` is `[title, [value, ...]]`, and the first value ("none") stands alone above them. */
+function groupedSelect(id, first, groups, labels) {
+  const el = select(id, [first], labels);
+  for (const [title, values] of groups) {
+    const g = document.createElement("optgroup");
+    g.label = title;
+    for (const value of values) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = labels(value);
+      if (state[id.replace("judo-", "")] === value) opt.selected = true;
+      g.append(opt);
+    }
+    el.append(g);
   }
   return el;
 }
@@ -416,10 +441,11 @@ function rows() {
     const here = state[`e${n}p`];
     const shown = here !== "none" && places.includes(here);
     if (n === 2 && !(state.e1p !== "none" && places.includes(state.e1p))) continue;
-    out.push(field(E, `judo-e${n}p`, `${say("judoEmb")} ${n}`, select(`judo-e${n}p`, ["none", ...places], (v) => say(`judoPlace_${v}`))));
+    out.push(field(E, `judo-e${n}p`, `${say("judoEmb")} ${n}`, groupedSelect(`judo-e${n}p`, "none", ["jacket", "pants", "belt"].filter(has).map((g) => [say(`judoMode_${g}`), places.filter((p) => garmentOf(p) === g)]), (v) => say(`judoPlace_${v}`))));
     if (!shown) continue;
     out.push(field(E, `judo-e${n}t`, say("judoEmbText"), text(`judo-e${n}t`, 24, here === "jacket-chest" ? "柔道" : "SENSHU")));
-    out.push(field(E, `judo-e${n}c`, say("judoThread"), swatches({ id: `judo-e${n}c`, label: say("judoThread"), values: THREAD_COLOURS, current: state[`e${n}c`], css: (v) => rgb(THREAD_RGB[v]), name: pair(THREAD_LABELS), onPick: set(`e${n}c`) })));
+    out.push(field(E, `judo-e${n}n`, say("judoTonal"), toggle({ id: `judo-e${n}n`, label: say("judoTonal"), on: state[`e${n}n`] === "1", words: { on: say("judoTonal_on"), off: say("judoTonal_off") }, onChange: (on) => change(`e${n}n`, on ? "1" : "0", true) })));
+    if (state[`e${n}n`] !== "1") out.push(field(E, `judo-e${n}c`, say("judoThread"), swatches({ id: `judo-e${n}c`, label: say("judoThread"), values: THREAD_COLOURS, current: state[`e${n}c`], css: (v) => rgb(THREAD_RGB[v]), name: pair(THREAD_LABELS), onPick: set(`e${n}c`) })));
     out.push(field(E, `judo-e${n}f`, say("judoFont"), segmented({ id: `judo-e${n}f`, label: say("judoFont"), values: EMBROIDERY_FONTS, current: state[`e${n}f`], name: (v) => say(`judoFont_${v}`), onPick: set(`e${n}f`) })));
   }
 
@@ -433,6 +459,7 @@ function rows() {
   note.dataset.testid = "judo-logo-note";
   note.textContent = say("judoLogoNote");
   logoBox.append(note);
+  logoBox.append(toggle({ id: "judo-logon", label: say("judoLogoTonal"), on: state.logon === "1", words: { on: say("judoLogoTonal_on"), off: say("judoLogoTonal_off") }, onChange: (on) => change("logon", on ? "1" : "0") }));
   out.push(field(M, "judo-logos", say("judoLogo"), logoBox));
   if (jacket) {
     out.push(field(M, "judo-emblem", say("judoEmblem"), tiles({ id: "judo-emblem", label: say("judoEmblem"), values: ["none", "placeholder", "flag"], current: state.emblem, picture: (v) => PICTURES.emblem[v], name: (v) => say(`judoEmblem_${v}`), onPick: set("emblem", true) })));

@@ -12,21 +12,24 @@ import type { Mark } from "./judogiCloth.ts";
 import { HEM_X } from "./judogiCollar.ts";
 import { EMBLEM_ROOM, jacketSpots } from "./judogiJacket.ts";
 import { neckLabel, readBranding, sizeTag, sLogo, type ReadBranding } from "./judogiBrand.ts";
-import { labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
-import { CM, cloth } from "./judogiPatch.ts";
+import { LABEL_ASPECT, labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
+import { cloth } from "./judogiPatch.ts";
 import { pantsSpots } from "./judogiPants.ts";
 import type { EmbroideryStitching } from "./beltSpecs.ts";
 import { readThread, satinDefs, satinRun, satinShape, satinStroke, type ThreadColour } from "./judogiThread.ts";
 import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
+import { areasFor, CM, obstaclesFor, pack, type Area, type Item, type Obstacle, type Placed, type Skipped } from "./judogiPlaces.ts";
+import { END_LENGTH, type ReadStyle } from "./judogiStripes.ts";
+import { onLeg } from "./judogiPants.ts";
 
 export const EMBROIDERY_PLACES = [
   "jacket-hem", "jacket-chest", "sleeve-left", "sleeve-right", "shoulder-left", "shoulder-right",
-  "belt-end-left", "belt-end-right", "pants-left", "pants-right",
+  "belt-end-left", "belt-end-right", "pants-left", "pants-right", "pants-thigh-left", "pants-thigh-right",
 ] as const;
 export type EmbroideryPlace = (typeof EMBROIDERY_PLACES)[number];
 
-export const LOGO_PLACES = ["jacket-hem", "jacket-shoulder-left", "jacket-shoulder-right", "belt-end-left", "belt-end-right", "pants-waist-left", "pants-waist-right", "pants-leg-left", "pants-leg-right"] as const;
+export const LOGO_PLACES = ["jacket-hem", "jacket-shoulder-left", "jacket-shoulder-right", "belt-end-left", "belt-end-right", "pants-waist-left", "pants-waist-right", "pants-thigh-left", "pants-thigh-right", "pants-leg-left", "pants-leg-right"] as const;
 export type LogoPlace = (typeof LOGO_PLACES)[number];
 
 export const EMBROIDERY_FONTS = ["block", "gothic", "kaisho", "gyosho", "cursive"] as const;
@@ -58,6 +61,8 @@ export interface JudogiEmbroidery {
   /** Letter height and the most the text may run to, in centimetres; each has the place's own value when not given. */
   heightCm?: number;
   lengthCm?: number;
+  /** Thread the colour of the cloth (white on white, blue on blue), seen only by its sheen and relief, as a maker's tonal logo is. `thread` is then ignored. */
+  tonal?: boolean;
   /** `applied` (the default) is sewn on afterwards: raised, and reversed on the other face; `integrated` is worked in as the belt or cloth is made: flatter, with nothing on the other face. Both work on every garment; a maker may offer one only on some. */
   stitching?: EmbroideryStitching;
 }
@@ -70,6 +75,8 @@ export interface JudogiLogo {
   thread?: ThreadColour | string;
   widthCm?: number;
   heightCm?: number;
+  /** Thread the colour of the cloth, for the placeholder (artwork you give is drawn as it is). */
+  tonal?: boolean;
 }
 
 export type { JudogiLabel };
@@ -120,6 +127,9 @@ const PLACE_FACTS: Record<EmbroideryPlace, PlaceFact> = {
   "belt-end-right": { piece: "belt", dir: "along", ijf: { len: 20, h: 4 }, ajjf: { len: 20, h: 4 }, len: 20, h: 3 },
   "pants-left": { piece: "pants", dir: "along", ijf: { len: 20, h: 4 }, ajjf: { len: 20, h: 4 }, len: 20, h: 3.5 },
   "pants-right": { piece: "pants", dir: "along", ijf: { len: 20, h: 4 }, ajjf: { len: 20, h: 4 }, len: 20, h: 3.5 },
+  // The upper front of the leg: a maker's tonal logo (KuSakura product photographs); neither rule names it for a text.
+  "pants-thigh-left": { piece: "pants", dir: "across", ijf: null, ajjf: null, len: 14, h: 3.5 },
+  "pants-thigh-right": { piece: "pants", dir: "across", ijf: null, ajjf: null, len: 14, h: 3.5 },
 };
 
 /** The most a manufacturer's logo may cover, in cm2, by the rules' named spots (the AJJF's maker mark is smaller than the IJF's on the jacket and trousers). */
@@ -146,6 +156,7 @@ export interface ReadEmbroidery {
   heightCm: number;
   lengthCm: number;
   stitching: EmbroideryStitching;
+  tonal: boolean;
 }
 
 export interface ReadLogo {
@@ -155,6 +166,7 @@ export interface ReadLogo {
   thread: { name: string; rgb: Rgb } | undefined;
   widthCm: number;
   heightCm: number;
+  tonal: boolean;
   /** Put by the branding: the Senshu S unless artwork is given. */
   brand?: true;
 }
@@ -233,6 +245,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
         heightCm: num(e.heightCm, 0.5, 30, f.h),
         lengthCm: num(e.lengthCm, 1, 40, f.len),
         stitching: e.stitching === "integrated" ? "integrated" : "applied",
+        tonal: e.tonal === true,
       });
     }
   }
@@ -258,6 +271,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
         thread: l.thread === undefined ? undefined : readThread(l.thread, "navy"),
         widthCm: num(l.widthCm, 0.5, 40, Math.round(h0 * aspect * 10) / 10),
         heightCm: num(l.heightCm, 0.5, 40, Math.round(h0 * 10) / 10),
+        tonal: l.tonal === true,
       });
     }
   }
@@ -277,7 +291,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
       const h0 = Math.sqrt((LOGO_AREA[rules][piece] * 0.97) / aspect);
       logos.push({
         place: spot[piece], image: img?.src, aspect, thread: branding.thread === undefined ? undefined : readThread(branding.thread, "gold"),
-        widthCm: Math.round(h0 * aspect * 10) / 10, heightCm: Math.round(h0 * 10) / 10, brand: true,
+        widthCm: Math.round(h0 * aspect * 10) / 10, heightCm: Math.round(h0 * 10) / 10, tonal: false, brand: true,
       });
     }
   }
@@ -306,7 +320,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
 }
 
 /** What the rules say of each mark asked for: met or not, with the source. A mark outside its limit is drawn at the limit, and reported here. */
-export function markNotes(m: MarkSpec): { id: string; met: boolean; fact: string }[] {
+export function markNotes(m: MarkSpec, skipped: readonly { item: Item; reason: string }[] = []): { id: string; met: boolean; fact: string }[] {
   const notes: { id: string; met: boolean; fact: string }[] = [];
   const src = m.rules === "ajjf" ? AJJF : IJF;
   for (const e of m.embroidery) {
@@ -323,6 +337,12 @@ export function markNotes(m: MarkSpec): { id: string; met: boolean; fact: string
     const piece = l.place.startsWith("pants") ? "pants" : l.place.startsWith("belt") ? "belt" : "jacket";
     const max = LOGO_AREA[m.rules][piece];
     notes.push({ id: `logo-${piece}`, met: l.widthCm * l.heightCm <= max + 1e-6, fact: `One manufacturer's logo to a garment, at most ${max} cm2 on the ${piece} (${src}).` });
+  }
+  for (const l of m.logos) {
+    if (l.place.startsWith("pants-thigh")) notes.push({ id: `logo-place-${l.place}`, met: false, fact: `A maker's logo on the upper front of the leg is a place makers sell (KuSakura product photographs); the ${m.rules === "ajjf" ? "All Japan Judo Federation" : "IJF"} rules do not name it (${src}).` });
+  }
+  for (const k of skipped) {
+    notes.push({ id: `skipped-${k.item.id.replace(":", "-")}`, met: false, fact: `The ${k.item.kind === "brand" ? "brand's logo" : k.item.kind} at the ${k.item.place.replace(/-/g, " ")} is not drawn: ${k.reason}. The marks laid out first keep their places, and each mark keeps 1 cm clear of the next.` });
   }
   if (m.label !== undefined) {
     notes.push({ id: "label", met: true, fact: `The approval label goes on the bottom of the jacket on the front left near the reinforced edge, on the top front of the trousers close to the centre and at one of the two edges of the belt (${IJF}). This package's label is its own and certifies nothing.` });
@@ -347,36 +367,37 @@ interface Out {
 
 const fontFamily = (f: EmbroideryFontName | EmbroideryFontFace): string => (typeof f === "string" ? (f === "block" ? FONT_STACKS.gothic : FONT_STACKS[f]) : `'${f.family}',${FONT_STACKS.gothic}`);
 
-/** One embroidered text, centred on the origin and no larger than its place allows, in thread. */
-function textOf(m: MarkSpec, e: ReadEmbroidery, id: string): Out {
+/** One embroidered text at a share `k` of its size: how big its box is, and how to draw it, centred on the origin and no larger than its place allows, in thread. */
+function textPlan(m: MarkSpec, e: ReadEmbroidery, k: number): { w: number; h: number; render: (id: string, rgb: Rgb) => Out } {
   const lim = limitOf(m, e.place);
-  const hU = Math.min(e.heightCm, lim.h) * CM;
+  const hU = Math.min(e.heightCm, lim.h) * CM * k;
   const sleeveAcross = (e.place === "sleeve-left" || e.place === "sleeve-right") && e.direction !== "along";
-  const lU = Math.min(e.lengthCm, lim.len, sleeveAcross ? 7.5 : 99) * CM;
-  const rgb = e.thread.rgb;
-  const defs = satinDefs(`${id}S`, rgb) + (typeof e.font === "object" && e.font.css !== undefined ? `<style>${e.font.css}</style>` : "");
+  const lU = Math.min(e.lengthCm, lim.len, sleeveAcross ? 7.5 : 99) * CM * k;
+  const defsOf = (id: string, rgb: Rgb): string => satinDefs(`${id}S`, rgb) + (typeof e.font === "object" && e.font.css !== undefined ? `<style>${e.font.css}</style>` : "");
   if (e.text === "") {
     const p = e.path as { d: string; width: number; height: number };
-    const k = Math.min(hU / p.height, lU / p.width);
-    return { defs, body: satinShape(p.d, rgb, `${id}S`, `scale(${n2(k)}) translate(${n2(-p.width / 2)} ${n2(-p.height / 2)})`) };
+    const kk = Math.min(hU / p.height, lU / p.width);
+    return { w: p.width * kk, h: p.height * kk, render: (id, rgb) => ({ defs: defsOf(id, rgb), body: satinShape(p.d, rgb, `${id}S`, `scale(${n2(kk)}) translate(${n2(-p.width / 2)} ${n2(-p.height / 2)})`) }) };
   }
   const asText = e.font !== "block";
   const family = fontFamily(e.font);
   const weight = e.weight;
+  const integrated = e.stitching === "integrated";
   if (e.direction === "down") {
     // A column: every character upright, one under the next, as a vertical Japanese line stands.
     const chars = graphemes(e.text).filter((c) => c !== " ");
     const step = Math.min(hU * 1.12, lU / Math.max(1, chars.length));
     const size = Math.min(hU, step / 1.05);
-    let body = "";
-    chars.forEach((c, i) => {
-      const run = layout(c, 0, (i - (chars.length - 1) / 2) * step, { height: size, maxWidth: size * 1.3, weight, asText });
-      body += satinRun(run, rgb, `${id}S`, family, undefined, e.text, e.stitching === "integrated");
-    });
-    return { defs, body };
+    const runs = chars.map((c, i) => layout(c, 0, (i - (chars.length - 1) / 2) * step, { height: size, maxWidth: size * 1.3, weight, asText }));
+    const sw = Math.max(0, ...runs.map((r) => r.sw));
+    return {
+      w: Math.max(size, ...runs.map((r) => r.width)) + sw,
+      h: (chars.length - 1) * step + size + sw,
+      render: (id, rgb) => ({ defs: defsOf(id, rgb), body: runs.map((run) => satinRun(run, rgb, `${id}S`, family, undefined, e.text, integrated)).join("") }),
+    };
   }
   const run = layout(e.text, 0, 0, { height: hU, maxWidth: lU, weight, asText });
-  return { defs, body: satinRun(run, rgb, `${id}S`, family, undefined, undefined, e.stitching === "integrated") };
+  return { w: run.width + run.sw, h: run.height + run.sw, render: (id, rgb) => ({ defs: defsOf(id, rgb), body: satinRun(run, rgb, `${id}S`, family, undefined, undefined, integrated) }) };
 }
 
 /** A neutral placeholder logo: a diamond with a smaller one inside it, in thread. Nobody's mark. */
@@ -403,25 +424,32 @@ function placeholderEmblem(rgb: Rgb, w: number, h: number): string {
 const imageIn = (src: string, w: number, h: number): string =>
   `<image href="${esc(src)}" x="${n2(-w / 2)}" y="${n2(-h / 2)}" width="${n2(w)}" height="${n2(h)}" preserveAspectRatio="xMidYMid meet"/>`;
 
-/** The logo, centred on the origin, at the size asked for and no larger than the rules' area. */
-function logoOf(m: MarkSpec, l: ReadLogo, cloth: Rgb, id: string): Out {
-  const piece = l.place.startsWith("pants") ? "pants" : l.place.startsWith("belt") ? "belt" : "jacket";
-  const area = LOGO_AREA[m.rules][piece] * CM * CM;
-  let w = l.widthCm * CM;
-  let h = l.heightCm * CM;
-  if (w * h > area) {
-    const k = Math.sqrt(area / (w * h));
-    w *= k;
-    h *= k;
-  }
-  const rgb = l.thread?.rgb ?? (piece === "belt" ? readThread("gold", "gold").rgb : lum(cloth) > 0.4 ? readThread("navy", "navy").rgb : readThread("white", "white").rgb);
+const pieceOf = (place: string): "jacket" | "pants" | "belt" => (place.startsWith("pants") ? "pants" : place.startsWith("belt") ? "belt" : "jacket");
+
+/** The logo's size at full scale: the size asked for and no larger than the rules' area. */
+function logoSize(m: MarkSpec, l: ReadLogo): { w: number; h: number } {
+  const area = LOGO_AREA[m.rules][pieceOf(l.place)] * CM * CM;
+  const w = l.widthCm * CM;
+  const h = l.heightCm * CM;
+  if (w * h <= area) return { w, h };
+  const k = Math.sqrt(area / (w * h));
+  return { w: w * k, h: h * k };
+}
+
+/** The logo, centred on the origin, at a share `k` of its size. */
+function logoOf(m: MarkSpec, l: ReadLogo, cloth: Rgb, id: string, k: number): Out {
+  const piece = pieceOf(l.place);
+  const full = logoSize(m, l);
+  const w = full.w * k;
+  const h = full.h * k;
+  const rgb = l.tonal ? cloth : (l.thread?.rgb ?? (piece === "belt" ? readThread("gold", "gold").rgb : lum(cloth) > 0.4 ? readThread("navy", "navy").rgb : readThread("white", "white").rgb));
   if (l.image !== undefined) return { defs: "", body: imageIn(l.image, w, h) };
   if (l.brand === true) return sLogo(rgb, w, h, `${id}S`);
   return { defs: satinDefs(`${id}S`, rgb), body: placeholderLogo(rgb, w, h) };
 }
 
-/** The national emblem as a sewn patch with a stitched border, centred on the origin, no larger than 100 cm2. */
-function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string): Out {
+/** The emblem's size at full scale: no larger than 100 cm2, and inside the room the chest has between the lapel and the sleeve's head, so it never runs onto the sleeve. */
+function emblemSize(e: ReadEmblem): { w: number; h: number } {
   let w = e.widthCm * CM;
   let h = e.heightCm * CM;
   if (w * h > EMBLEM_AREA * CM * CM) {
@@ -429,14 +457,19 @@ function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string): Out {
     w *= k;
     h *= k;
   }
-  // And inside the room the chest has between the lapel and the sleeve's head, so it never runs onto the sleeve.
   const room = Math.min(1, EMBLEM_ROOM.w / w, EMBLEM_ROOM.h / h);
-  w *= room;
-  h *= room;
+  return { w: w * room, h: h * room };
+}
+
+/** The national emblem as a sewn patch with a stitched border, centred on the origin, at a share `k` of its size. */
+function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string, k: number): Out {
+  const full = emblemSize(e);
+  const w = full.w * k;
+  const h = full.h * k;
   const rgb = e.thread?.rgb ?? readThread("navy", "navy").rgb;
   if (e.frame === "none") return e.image !== undefined ? { defs: "", body: imageIn(e.image, w, h) } : { defs: satinDefs(`${id}S`, rgb), body: placeholderEmblem(rgb, w, h) };
   const patch = cloth(`${id}P`, -w / 2, -h / 2, w, h, e.image !== undefined ? [255, 255, 255] : lum(clothRgb) > 0.4 ? [252, 251, 248] : [236, 238, 242], [120, 126, 140]);
-  const inner = e.image !== undefined ? imageIn(e.image, w - 7, h - 7) : placeholderEmblem(rgb, w, h);
+  const inner = e.image !== undefined ? imageIn(e.image, w - 7 * k, h - 7 * k) : placeholderEmblem(rgb, w, h);
   return { defs: patch.defs + satinDefs(`${id}S`, rgb), body: patch.under + inner + patch.over };
 }
 
@@ -449,84 +482,142 @@ export interface MarkSet {
   pants: { front?: Mark };
   /** The marks on the belt's two hanging ends, drawn in each end's own frame: along its length from the knot, across its width from the middle. */
   belt: { left?: Mark; right?: Mark };
+  /** Where each mark went, and which were left out for want of room. */
+  layout: MarkLayout;
+}
+
+/** A mark to place, with how to draw it at the share of its size it is given. */
+export interface MarkItem extends Item {
+  draw: (scale: number, id: string, cloth: Rgb) => Out;
+  /** Which of the garment's faces (and which hanging belt end) it is sewn on. */
+  target: "jacket-front" | "jacket-back" | "pants-front" | "belt-left" | "belt-right";
+}
+
+export interface MarkLayout {
+  placed: Placed<MarkItem>[];
+  skipped: Skipped<MarkItem>[];
+  areas: Record<string, Area>;
+  obstacles: Obstacle[];
+}
+
+const side = (place: string): 1 | -1 => (place.endsWith("left") ? 1 : -1);
+
+/** Every mark of the spec as an item to place, in the order they claim room: the emblem, the logos, the embroidery, the label, then the branding's own S. */
+function itemsOf(m: MarkSpec): MarkItem[] {
+  const js = jacketSpots();
+  const ps = pantsSpots();
+  const items: MarkItem[] = [];
+  if (m.emblem !== undefined) {
+    const e = m.emblem;
+    const { w, h } = emblemSize(e);
+    items.push({ id: "emblem", kind: "emblem", place: "emblem", area: "chest", target: "jacket-front", w, h, rot: 0, pref: [js.emblem.x, js.emblem.y], minScale: 0.7, draw: (k, id, cloth) => emblemOf(e, cloth, id, k) });
+  }
+  const logoItem = (l: ReadLogo): MarkItem => {
+    const { w, h } = logoSize(m, l);
+    const place = l.place;
+    const kind = l.brand === true ? "brand" : "logo";
+    const common = { id: `${kind}:${place}`, kind, place, w, h, rot: 0, minScale: 0.6, draw: (k: number, id: string, cloth: Rgb): Out => logoOf(m, l, cloth, id, k) } as const;
+    if (place === "jacket-hem") return { ...common, area: "hem-left", target: "jacket-front", pref: [136.6, 183] };
+    if (place === "jacket-shoulder-left" || place === "jacket-shoulder-right") {
+      const w2 = place.endsWith("left") ? "left" : "right";
+      const sp = js.shoulder(w2);
+      return { ...common, area: `shoulder-${w2}`, target: "jacket-back", pref: [sp.x, sp.y] };
+    }
+    if (place === "belt-end-left" || place === "belt-end-right") {
+      const k = place.endsWith("left") ? "left" : "right";
+      return { ...common, area: `belt-${k}`, target: `belt-${k}`, pref: [22, 0] };
+    }
+    const w2 = place.endsWith("left") ? "left" : "right";
+    if (place.startsWith("pants-waist")) return { ...common, area: `waist-${w2}`, target: "pants-front", pref: [100 + side(place) * 21, 36] };
+    if (place.startsWith("pants-thigh")) { const p = onLegAt(side(place), 0.105, 0.5); return { ...common, area: `thigh-${w2}`, target: "pants-front", pref: p }; }
+    const leg = ps.leg(w2);
+    return { ...common, area: `leg-${w2}`, target: "pants-front", pref: [leg.x, leg.y] };
+  };
+  for (const l of m.logos) items.push(logoItem(l));
+  for (const e of m.embroidery) {
+    const place = e.place;
+    const w2 = place.endsWith("left") ? "left" : "right";
+    const plan = (k: number): { w: number; h: number } => textPlan(m, e, k);
+    const full = plan(1);
+    const common = { id: `embroidery:${place}`, kind: "embroidery", place, w: full.w, h: full.h, size: plan, minScale: 0.6, draw: (k: number, id: string, cloth: Rgb): Out => textPlan(m, e, k).render(id, e.tonal ? cloth : e.thread.rgb) } as const;
+    if (place === "jacket-hem") items.push({ ...common, area: "lapel-hem", target: "jacket-front", rot: e.direction === "down" ? js.lapelHem.rot - 90 : js.lapelHem.rot, pref: [js.lapelHem.x, js.lapelHem.y] });
+    else if (place === "jacket-chest") items.push({ ...common, area: "chest", target: "jacket-front", rot: 0, pref: [js.chest.x, js.chest.y] });
+    else if (place === "sleeve-left" || place === "sleeve-right") {
+      const sp = js.sleeve(w2);
+      items.push({ ...common, area: `sleeve-${w2}`, target: "jacket-front", rot: e.direction === "along" ? (sp.rot > 0 === (place === "sleeve-left") ? 75 : 105) : sp.rot, pref: [sp.x, sp.y] });
+    } else if (place === "shoulder-left" || place === "shoulder-right") {
+      const sp = js.shoulder(w2);
+      items.push({ ...common, area: `shoulder-${w2}`, target: "jacket-back", rot: sp.rot, pref: [sp.x, sp.y] });
+    } else if (place === "pants-left" || place === "pants-right") items.push({ ...common, area: `waist-${w2}`, target: "pants-front", rot: e.direction === "along" ? 90 : 0, pref: [100 + side(place) * 31, 49] });
+    else if (place === "pants-thigh-left" || place === "pants-thigh-right") items.push({ ...common, area: `thigh-${w2}`, target: "pants-front", rot: e.direction === "along" ? 90 : 0, pref: onLegAt(side(place), 0.105, 0.5) });
+    else items.push({ ...common, area: `belt-${w2}`, target: `belt-${w2}`, rot: 0, pref: [(END_LENGTH[w2 === "left" ? 0 : 1] as number) * 0.62, 0] });
+  }
+  if (m.label !== undefined) {
+    const l = m.label;
+    const label = (key: "jacket" | "pants" | "belt", w: number, area: string, target: MarkItem["target"], rot: number, pref: [number, number]): MarkItem => ({
+      id: `label:${key}`, kind: "label", place: key, area, target, w, h: w / LABEL_ASPECT, rot, pref, minScale: 0.7, draw: (k, id) => labelMark(id, l, w * k),
+    });
+    // On the jacket at the bottom front on the wearer's left, on the trousers under the waistband near the middle, and on the belt's left end near the knot, turned to read across the belt.
+    items.push(label("jacket", 12.5, "hem-left", "jacket-front", 0, [136.6, 152]), label("pants", 9, "waist-left", "pants-front", 0, [118.5, 30]), label("belt", 7.6, "belt-left", "belt-left", -90, [16, 0]));
+  }
+  const order = (i: MarkItem): number => ({ emblem: 0, logo: 1, embroidery: 2, label: 3, brand: 4 })[i.kind];
+  return items.sort((a, b) => order(a) - order(b));
+}
+
+/** The offset between the wearer's left or right leg's own coordinates and the picture's. */
+function onLegAt(sd: 1 | -1, f: number, u: number): [number, number] {
+  const [x, y] = onLeg(sd, f, u);
+  return [x, y];
+}
+
+/** Where every mark goes: each at its preferred spot, or moved (and made smaller down to 60 per cent) to the nearest free place in its area; left out when there is none. */
+export function layoutMarks(m: MarkSpec, beltWidthU: number, style?: ReadStyle): MarkLayout {
+  // The same marks are laid out again at every angle of a turn, so the answer is kept (it is a pure function of its inputs).
+  const key = JSON.stringify([m, beltWidthU, style]);
+  const kept = LAYOUTS.get(key);
+  if (kept !== undefined) return kept;
+  const made = layoutNow(m, beltWidthU, style);
+  if (LAYOUTS.size >= 48) LAYOUTS.delete(LAYOUTS.keys().next().value as string);
+  LAYOUTS.set(key, made);
+  return made;
+}
+
+const LAYOUTS = new Map<string, MarkLayout>();
+
+function layoutNow(m: MarkSpec, beltWidthU: number, style?: ReadStyle): MarkLayout {
+  const js = jacketSpots();
+  const areas = areasFor(beltWidthU / 2, js.lapelHem);
+  const obstacles = obstaclesFor(beltWidthU / 2, style, m.branding !== undefined && m.brandLabel !== undefined);
+  const { placed, skipped } = pack(itemsOf(m), areas, obstacles);
+  return { placed, skipped, areas, obstacles };
 }
 
 /** The marks of one drawing, each on its face. `cloth` is the cloth's colour, which picks the thread of a placeholder. */
-export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltLen: number): MarkSet {
-  const set: MarkSet = { jacket: {}, pants: {}, belt: {} };
+export function buildMarks(uid: string, m: MarkSpec, clothRgb: Rgb, beltWidthU: number, style?: ReadStyle): MarkSet {
+  const layoutOfMarks = layoutMarks(m, beltWidthU, style);
+  const set: MarkSet = { jacket: {}, pants: {}, belt: {}, layout: layoutOfMarks };
   const add = (target: Mark | undefined, o: Out, body: string): Mark => ({ defs: (target?.defs ?? "") + o.defs, body: (target?.body ?? "") + body });
   const js = jacketSpots();
-  const ps = pantsSpots();
   const id = (k: string): string => `${uid}${k}${hashOf(JSON.stringify(m))}`;
-  m.embroidery.forEach((e, i) => {
-    const o = textOf(m, e, id(`e${i}`));
-    switch (e.place) {
-      case "jacket-hem": {
-        set.jacket.front = add(set.jacket.front, o, at(js.lapelHem, o.body));
-        // On the band itself the text runs up the strip from the hem, so it is turned half round to read downward.
-        set.collar = add(set.collar, o, at({ x: HEM_X + js.lapelRun.run, y: js.lapelRun.w / 2, rot: 180 }, o.body));
-        break;
-      }
-      case "jacket-chest": set.jacket.front = add(set.jacket.front, o, at(js.chest, o.body)); break;
-      case "sleeve-left": case "sleeve-right": {
-        // Down the sleeve (its own direction), or across it; the sleeve is a band some 8 cm wide, so a line across is held to that.
-        const sp = js.sleeve(e.place === "sleeve-left" ? "left" : "right");
-        set.jacket.front = add(set.jacket.front, o, at(e.direction === "along" ? { ...sp, rot: sp.rot > 0 === (e.place === "sleeve-left") ? 75 : 105 } : sp, o.body));
-        break;
-      }
-      case "shoulder-left": case "shoulder-right": set.jacket.back = add(set.jacket.back, o, at(js.shoulder(e.place === "shoulder-left" ? "left" : "right"), o.body)); break;
-      case "pants-left": case "pants-right": {
-        const s = ps.waist(e.place === "pants-left" ? "left" : "right");
-        // Down the front beside the waistband (reading downward), as a name stands on the trousers' top in the rules' pictures.
-        set.pants.front = add(set.pants.front, o, at({ x: s.x, y: s.y + 20, rot: e.direction === "along" ? 90 : 0 }, o.body));
-        break;
-      }
-      case "belt-end-left": case "belt-end-right": {
-        const key = e.place === "belt-end-left" ? "left" : "right";
-        set.belt[key] = add(set.belt[key], o, at({ x: beltLen * 0.66, y: 0 }, o.body));
-        break;
-      }
+  layoutOfMarks.placed.forEach((p, i) => {
+    const it = p.item;
+    const o = it.draw(p.scale, id(`${it.kind[0]}${i}`), clothRgb);
+    const body = at(p.box, o.body);
+    switch (it.target) {
+      case "jacket-front": set.jacket.front = add(set.jacket.front, o, body); break;
+      case "jacket-back": set.jacket.back = add(set.jacket.back, o, body); break;
+      case "pants-front": set.pants.front = add(set.pants.front, o, body); break;
+      case "belt-left": set.belt.left = add(set.belt.left, o, body); break;
+      case "belt-right": set.belt.right = add(set.belt.right, o, body); break;
     }
-  });
-  m.logos.forEach((l, i) => {
-    const o = logoOf(m, l, clothRgb, id(`l${i}`));
-    switch (l.place) {
-      case "jacket-hem": set.jacket.front = add(set.jacket.front, o, at(js.hemLogo, o.body)); break;
-      case "jacket-shoulder-left": case "jacket-shoulder-right": set.jacket.back = add(set.jacket.back, o, at({ ...js.shoulder(l.place === "jacket-shoulder-left" ? "left" : "right"), rot: 0 }, o.body)); break;
-      case "pants-waist-left": case "pants-waist-right": {
-        const s = ps.waist(l.place === "pants-waist-left" ? "left" : "right");
-        set.pants.front = add(set.pants.front, o, at({ x: s.x + (l.place === "pants-waist-left" ? 6 : -6), y: s.y - 2 }, o.body));
-        break;
-      }
-      case "pants-leg-left": case "pants-leg-right": set.pants.front = add(set.pants.front, o, at(ps.leg(l.place === "pants-leg-left" ? "left" : "right"), o.body)); break;
-      case "belt-end-left": case "belt-end-right": {
-        const key = l.place === "belt-end-left" ? "left" : "right";
-        set.belt[key] = add(set.belt[key], o, at({ x: beltLen * (m.label !== undefined ? 0.52 : 0.3), y: 0 }, o.body));
-        break;
-      }
-    }
+    // On the collar band itself the lapel's text runs up the strip from the hem, so it is turned half round to read downward.
+    if (it.kind === "embroidery" && it.place === "jacket-hem") set.collar = add(set.collar, o, at({ x: HEM_X + js.lapelRun.run, y: js.lapelRun.w / 2, rot: 180 }, o.body));
   });
   if (m.branding !== undefined && m.brandLabel !== undefined) {
     // Inside the back of the neck, seen through the opening of the jacket below the collar: the neck label, and the size tag sewn under it.
     const nl = neckLabel(id("Bn"), m.branding, m.brandLabel, 11);
     const tag = sizeTag(id("Bt"), m.branding.sizeTag, m.brandLabel, 4.6);
     set.jacket.front = add(add(set.jacket.front, nl, at({ x: 100, y: 25 }, nl.body)), tag, at({ x: 100, y: 33.6 }, tag.body));
-  }
-  if (m.label !== undefined) {
-    // On the jacket beside the maker's logo spot, on the trousers under the waistband near the middle, and on the belt's left end near the knot, upright.
-    const put = (key: "jacket" | "pants" | "belt", w: number, spot: { x: number; y: number; rot?: number }): void => {
-      const o = labelMark(id(`L${key}`), m.label as ReadLabel, w);
-      if (key === "jacket") set.jacket.front = add(set.jacket.front, o, at(spot, o.body));
-      else if (key === "pants") set.pants.front = add(set.pants.front, o, at(spot, o.body));
-      else set.belt.left = add(set.belt.left, o, at(spot, o.body));
-    };
-    put("jacket", 12.5, { x: 119, y: 180 });
-    put("pants", 9, { x: 121, y: 40 });
-    put("belt", 7.6, { x: beltLen * 0.27, y: 0, rot: -90 });
-  }
-  if (m.emblem !== undefined) {
-    const o = emblemOf(m.emblem, clothRgb, id("m"));
-    set.jacket.front = add(set.jacket.front, o, at(js.emblem, o.body));
   }
   return set;
 }

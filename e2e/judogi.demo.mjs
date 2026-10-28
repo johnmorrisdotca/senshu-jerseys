@@ -289,7 +289,7 @@ test("only the options that change the current display mode are shown, and the o
   // Trousers only: no belt, no back patch, no emblem, no neck label words; the places are the trousers'.
   for (const id of ["judo-belt", "judo-patch", "judo-emblem", "judo-bk", "judo-pname"]) await expect(shown(id)).toHaveCount(0);
   await expect(shown("judo-colour")).toHaveCount(1);
-  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(4);
+  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(6);
   await expect(page.locator('[data-testid="judo-e1p"] option, #judo-e1p option').first()).toBeAttached();
   const places = await page.locator("#judo-e1p option").evaluateAll((nodes) => nodes.map((n) => n.value));
   expect(places.every((p) => p === "none" || p.startsWith("pants"))).toBe(true);
@@ -313,7 +313,7 @@ test("only the options that change the current display mode are shown, and the o
   // A suit and the pieces show everything.
   await pick(page, "judo-mode", "suit");
   await expect(shown("judo-patch")).toHaveCount(1);
-  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(9);
+  await expect(page.locator('[data-testid="judo-logo"] input')).toHaveCount(11);
 });
 
 test("the maker's logo places are none to many, with no raw key in any label, in either language", async ({ page }) => {
@@ -322,7 +322,7 @@ test("the maker's logo places are none to many, with no raw key in any label, in
     await page.goto(`/judogi.html?mode=suit&lang=${lang}`);
     await expect(page.locator("#judo-stage canvas")).toBeVisible();
     const boxes = page.locator('[data-testid="judo-logo"] input');
-    await expect(boxes).toHaveCount(9);
+    await expect(boxes).toHaveCount(11);
     // Every label is words, not the key it is looked up by.
     const labels = await page.locator("#judo-controls").evaluate((root) => [...root.querySelectorAll("label, button, option, h3, .judo-cap, .judo-label")].map((n) => n.textContent ?? "").concat([...root.querySelectorAll("[aria-label]")].map((n) => n.getAttribute("aria-label") ?? "")));
     for (const text of labels) expect(text, text).not.toMatch(/judo[A-Z_]|judo[A-Za-z]*_|shoulder-left|shoulder-right/);
@@ -420,4 +420,26 @@ test("a belt's stripes, halves, tips and tags are chosen in the page, start from
   await expect(shown("judo-preset")).toHaveCount(0);
   await pick(page, "judo-colour", "blue");
   await expect(page).toHaveURL(/sb=red/);
+});
+
+test("the trousers' thigh and hip places, a tonal mark, and a note when marks cannot all fit", async ({ page }) => {
+  await page.goto("/judogi.html?mode=pants&e1p=pants-thigh-left&e1t=SENSHU&e1n=1&logo=pants-thigh-right&logon=1");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  // The places are grouped by garment, the thigh among them, and each has words in both languages.
+  const groups = await page.locator("#judo-e1p optgroup").evaluateAll((nodes) => nodes.map((n) => n.label));
+  expect(groups).toEqual(["Trousers"]);
+  const places = await page.locator("#judo-e1p option").evaluateAll((nodes) => nodes.map((n) => n.value));
+  expect(places).toEqual(expect.arrayContaining(["pants-left", "pants-right", "pants-thigh-left", "pants-thigh-right"]));
+  // Tonal: the thread colours are put away while the switch is on, and come back with it off.
+  await expect(page.locator('[data-testid="judo-e1n"]')).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator('[data-testid="judo-e1c"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-e1n"]').click();
+  await expect(page).not.toHaveURL(/e1n=1/);
+  await expect(page.locator('[data-testid="judo-e1c"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-logo"] input[data-value="pants-thigh-right"]')).toBeChecked();
+  await expect(page.locator('[data-testid="judo-logon"]')).toHaveAttribute("aria-checked", "true");
+  // Marks that cannot all fit say so in the check.
+  await page.goto("/judogi.html?mode=belt&belt=black&bw=4.2&e1p=belt-end-left&e1t=TANAKA%20KENICHI%20SENSEI&e2p=belt-end-left&e2t=SENSEI&logo=belt-end-left&label=navy");
+  await expect(page.locator("#judo-stage canvas, #judo-stage svg").first()).toBeVisible();
+  await expect(page.locator("#judo-check")).toContainText(/is not drawn/);
 });

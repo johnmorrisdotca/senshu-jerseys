@@ -20,7 +20,7 @@ const H = [50, 51, 53, 51, 50.2];
  * out flat, the trousers keep their full width.
  */
 const H_WORN = [39, 40.5, 45, 49, 50.2];
-const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
+export const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
 /** Half depths: a person's hips, some 24 cm deep with the cloth, going over to the two legs. */
 const D = [26, 28, 30, 28, 24];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
@@ -49,12 +49,12 @@ function hipOutline(h: readonly number[]): Pt[] {
   return [...left, ...[...left].reverse().map(mirror)];
 }
 
-function legOutline(side: -1 | 1): Pt[] {
+export function legOutline(side: -1 | 1): Pt[] {
   const pts: Pt[] = [S, P, Q, A];
   return side === -1 ? pts : pts.map(mirror);
 }
 
-function onLeg(side: -1 | 1, f: number, u: number): Pt {
+export function onLeg(side: -1 | 1, f: number, u: number): Pt {
   const [s, p, q, a] = legOutline(side) as [Pt, Pt, Pt, Pt];
   const o: Pt = [s[0] + (p[0] - s[0]) * f, s[1] + (p[1] - s[1]) * f];
   const i: Pt = [a[0] + (q[0] - a[0]) * f, a[1] + (q[1] - a[1]) * f];

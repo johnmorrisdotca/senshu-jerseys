@@ -9,7 +9,7 @@ import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judo
 import { collarPiece } from "./judogiCollar.ts";
 import { BACK_COLLAR_FOOT, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
 import type { JudogiBranding } from "./judogiBrand.ts";
-import { buildMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
+import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
@@ -132,7 +132,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
     { id: "belt-ends", met: beltHang >= 20 && beltHang <= 30, fact: "Belt hanging ends are 20–30 cm (IJF Judogi Rules, 09 03 2022)." },
     { id: "contest-colour", met: true, fact: "Contest judogi is white or blue (IJF Judogi Rules, 09 03 2022)." },
     ...(patch === undefined ? [] : patchNotes(patch)),
-    ...(marked === undefined ? [] : markNotes(marked)),
+    ...(marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped)),
   ];
   return { ok: notes.every((n) => n.met), size, heightCm: h, notes };
 }
@@ -202,7 +202,7 @@ function read(options?: JudogiOptions): Ready {
   const patch = readPatch(o.backPatch);
   const spec = readMarks(o);
   const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, patch, spec]))}`;
-  const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, BELT_END);
+  const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
   const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
   return {
     colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, cloth, uid, patch, marks,
@@ -227,9 +227,6 @@ function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiM
 function inkOf(o: Ready, part: string, belt?: BeltPaint, marks?: GiInk["marks"]): GiInk {
   return { uid: `${o.uid}${part}`, cloth: o.cloth, ...(belt === undefined ? {} : { belt }), ...(marks === undefined ? {} : { marks }) };
 }
-
-/** The length of a belt's hanging end the marks are laid out along, in drawing units (the ends hang 60 to 66 of them). */
-const BELT_END = 60;
 
 const join = (a: Mark | undefined, b: Mark | undefined): Mark | undefined => (a === undefined ? b : b === undefined ? a : { defs: a.defs + b.defs, body: a.body + b.body });
 
