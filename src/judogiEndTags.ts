@@ -121,10 +121,10 @@ export function endTagsMark(t: ReadEndTags | undefined, end: 0 | 1, half: number
         const mark = sLogo(l.thread, w * 0.5, h * 0.7, `${id}L`);
         return { defs: base.defs + mark.defs, body: base.under + mark.body + base.over };
       }
-      // The Senshu S over the name and the fibre line (綿 100%: cotton 100 percent), as the maker's label reads: mark, name, content.
+      // The Senshu S over the name and the fibre line (綿100%: cotton 100 percent), as the maker's label reads: mark, name, content.
       const mark = sLogo(l.thread, h * 0.5, h * 0.5, `${id}L`);
       const name = satinRun(layout("SENSHU", 0, h * 0.2, { height: h * 0.15, maxWidth: w * 0.78, weight: "bold" }), l.thread, `${id}S`, "system-ui");
-      const fibre = satinRun(layout("綿 100%", 0, h * 0.37, { height: h * 0.12, maxWidth: w * 0.6, weight: "regular", asText: true }), l.thread, `${id}S`, "'Hiragino Mincho ProN','Yu Mincho',serif");
+      const fibre = satinRun(layout("綿100%", 0, h * 0.37, { height: h * 0.12, maxWidth: w * 0.6, weight: "regular", asText: true }), l.thread, `${id}S`, "'Hiragino Mincho ProN','Yu Mincho',serif");
       return { defs: base.defs + mark.defs, body: base.under + `<g transform="translate(0 ${n2(-h * 0.2)})">${mark.body}</g>` + name + fibre + base.over };
     }, `${uid}Tm`);
   }
