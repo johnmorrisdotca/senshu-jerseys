@@ -5,7 +5,7 @@
 // A maker's logo is one to a garment, so the S is not added to a garment that has a logo of the person's own. Never a real maker's or federation's mark.
 // Original drawing.
 
-import { clean, type Rgb } from "./colour.ts";
+import { blend, clean, type Rgb } from "./colour.ts";
 import { woven, type ReadLabel } from "./judogiLabel.ts";
 import { satinDefs, satinRun, satinShape } from "./judogiThread.ts";
 import { n2, type Pt } from "./path.ts";
@@ -213,5 +213,5 @@ export function sizeTag(id: string, text: string, l: ReadLabel, w: number): { de
 /** The Senshu S as a maker's logo in thread, centred on the origin in a box `w` by `h`; `id` names the thread pattern it defines. */
 export function sLogo(rgb: Rgb, w: number, h: number, id: string): { defs: string; body: string } {
   const k = Math.min(w, h) / 100;
-  return { defs: satinDefs(id, rgb), body: satinShape(sPath(), rgb, id, `translate(${n2(-50 * k)} ${n2(-50 * k)}) scale(${n2(k)})`) };
+  return { defs: satinDefs(id, rgb), body: satinShape(sPath(), rgb, id, `translate(${n2(-50 * k)} ${n2(-50 * k)}) scale(${n2(k)})`, blend(rgb, [255, 255, 255], 0.62)) };
 }

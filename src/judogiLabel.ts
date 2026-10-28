@@ -96,12 +96,14 @@ export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: s
   const t = side / 40;
   const defs = satinDefs(`${id}S`, l.thread) +
     `<pattern id="${id}W" width="${n2(t * 2)}" height="${n2(t * 2)}" patternUnits="userSpaceOnUse"><rect width="${n2(t)}" height="${n2(t)}" fill="${deep}" fill-opacity="${light ? 0.12 : 0.26}"/><rect x="${n2(t)}" y="${n2(t)}" width="${n2(t)}" height="${n2(t)}" fill="${deep}" fill-opacity="${light ? 0.12 : 0.26}"/><rect x="${n2(t)}" width="${n2(t)}" height="${n2(t)}" fill="${lit}" fill-opacity="${light ? 0.5 : 0.16}"/></pattern>` +
+    // The twill: diagonal ribs across the cloth, a lit rib and a dark one in turn, the way a woven label's cloth reads close up.
+    `<pattern id="${id}T" width="${n2(t * 1.5)}" height="${n2(t * 1.5)}" patternUnits="userSpaceOnUse" patternTransform="rotate(48)"><rect width="${n2(t * 1.5)}" height="${n2(t * 0.55)}" fill="${deep}" fill-opacity="${light ? 0.16 : 0.3}"/><rect y="${n2(t * 0.75)}" width="${n2(t * 1.5)}" height="${n2(t * 0.3)}" fill="${lit}" fill-opacity="${light ? 0.35 : 0.14}"/></pattern>` +
     `<linearGradient id="${id}G" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.2"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#101620" stop-opacity="0.22"/></linearGradient>` +
     `<clipPath id="${id}C"><rect x="${n2(-w / 2)}" y="${n2(-h / 2)}" width="${n2(w)}" height="${n2(h)}" rx="${n2(side * 0.05)}"/></clipPath>`;
   const rect = (grow = 0, dx = 0, dy = 0): string => `x="${n2(-w / 2 - grow + dx)}" y="${n2(-h / 2 - grow + dy)}" width="${n2(w + grow * 2)}" height="${n2(h + grow * 2)}" rx="${n2(side * 0.05 + grow)}"`;
   let under = "";
   for (const [k, o] of [[side * 0.11, 0.04], [side * 0.07, 0.06], [side * 0.04, 0.09], [side * 0.016, 0.12]] as const) under += `<rect ${rect(k, side * 0.03, side * 0.055)} fill="#1a2230" fill-opacity="${o}"/>`;
-  under += `<rect ${rect()} fill="${cloth}"/><g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}W)"/></g>`;
+  under += `<rect ${rect()} fill="${cloth}"/><g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}W)"/><rect ${rect()} fill="url(#${id}T)"/></g>`;
   // A woven border (two lines of thread with the cloth between them), inset from the edge.
   const edge = side * 0.075;
   let over = `<rect x="${n2(-w / 2 + edge)}" y="${n2(-h / 2 + edge)}" width="${n2(w - 2 * edge)}" height="${n2(h - 2 * edge)}" rx="${n2(side * 0.025)}" fill="none" stroke="${thread}" stroke-width="${n2(side * 0.022)}"/>`;

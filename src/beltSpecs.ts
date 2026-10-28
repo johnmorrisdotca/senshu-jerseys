@@ -9,6 +9,7 @@ export const BELT_SPEC_SOURCES = {
   jrwk: { title: "KuSakura, Kohaku Obi Kata Official Kata, red and white (JRWK)", url: "https://www.kusakurashop.com/products/judo-belts-white-red-jrwk", read: "2026-10-27" },
   jgsrw: { title: "KuSakura, 'Japanese Silk' Kohaku Obi (JGSRW)", url: "https://www.kusakurashop.com/products/judo-belts-white-red-jgsrw", read: "2026-10-27" },
   jc: { title: "KuSakura, Classic Iroobi, colour belts (JC)", url: "https://www.kusakurashop.com/products/judo-belts-color-men-jc", read: "2026-10-27" },
+  joib: { title: "KuSakura, IJF approved judo black belt (JOIB)", url: "https://www.kusakurashop.com/products/judo-belts-black-ijf-joib", read: "2026-10-27" },
   joxb: { title: "KuSakura, Deluxe IJF Kuroobi (JOXB)", url: "https://www.kusakurashop.com/products/judo-belts-black-ijf-joxb", read: "2026-10-27" },
   jgrk: { title: "KuSakura, Kodokan black belt for women (JGRK)", url: "https://www.kusakurashop.com/products/judo-kodokan-belts-black-jgrk", read: "2026-10-27" },
   embroidery: { title: "KuSakura, Services: belt embroidery (table on the product pages)", url: "https://www.kusakurashop.com/products/judo-belts-white-red-jrwz", read: "2026-10-27" },
@@ -32,7 +33,13 @@ export const BELT_THICKNESSES: readonly BeltThickness[] = ["standard", "thick", 
 /** The thickness a model's rigidity rating says: 1 to 3 standard, 4 thick, 5 extra thick (a silk kohaku is 4, so thick). */
 export const beltThicknessOf = (rigidity: 1 | 2 | 3 | 4 | 5): BeltThickness => (rigidity >= 5 ? "extra-thick" : rigidity === 4 ? "thick" : "standard");
 
+/** What covers the belt: plain cotton, shusu (satin-covered cotton, glossy, finer and flatter stitch rows) or silk. */
+export type BeltCover = "cotton" | "shusu" | "silk";
+export const BELT_COVERS: readonly BeltCover[] = ["cotton", "shusu", "silk"];
+
 export interface BeltModel {
+  /** The cover of the outer layer. */
+  cover: BeltCover;
   /** The maker's code. */
   code: string;
   name: string;
@@ -52,28 +59,29 @@ export interface BeltModel {
   note?: string;
 }
 
-const m = (code: string, name: string, belts: BeltModel["belts"], widthCm: number, stitchLines: BeltStitchLines, rigidity: BeltModel["rigidity"], material: string, ijf: BeltModel["ijf"], makerEmbroidery: BeltModel["makerEmbroidery"], womenLine: boolean, source: BeltModel["source"], note?: string): BeltModel =>
-  ({ code, name, belts, widthCm, stitchLines, rigidity, material, ijf, makerEmbroidery, womenLine, source, ...(note === undefined ? {} : { note }) });
+const m = (cover: BeltCover, code: string, name: string, belts: BeltModel["belts"], widthCm: number, stitchLines: BeltStitchLines, rigidity: BeltModel["rigidity"], material: string, ijf: BeltModel["ijf"], makerEmbroidery: BeltModel["makerEmbroidery"], womenLine: boolean, source: BeltModel["source"], note?: string): BeltModel =>
+  ({ cover, code, name, belts, widthCm, stitchLines, rigidity, material, ijf, makerEmbroidery, womenLine, source, ...(note === undefined ? {} : { note }) });
 
 const COLOURED = ["yellow", "orange", "green", "blue", "brown"] as const;
 
 /** The models of the maker's comparison table (belt guide). */
 export const BELT_MODELS: readonly BeltModel[] = [
-  m("JWB", "Classic white belt", ["white"], 4.2, 8, 2, "white cotton, semi-rigid soft core", "no", ["applied"], false, "guide"),
-  m("JOWIB", "Deluxe white belt (follows the IJF rules)", ["white"], 4.5, 10, 2, "white cotton, felt-like core", "approved", ["applied"], false, "guide"),
-  m("JC", "Classic colour belt", [...COLOURED, "black"], 4.2, 10, 2, "coloured cotton, semi-rigid soft core", "no", ["applied"], true, "jc", "Yellow, orange, green, violet, brown, blue, light blue, black. Sizes S0 (205 cm) to 6."),
-  m("JE", "Classic shusu black belt", ["black"], 4.5, 15, 3, "black cotton, semi-rigid core", "no", ["applied", "integrated"], false, "guide"),
-  m("JOG", "Deluxe shusu black belt", ["black"], 4.5, 16, 4, "black cotton, semi-rigid thick core", "no", ["applied", "integrated"], true, "guide"),
-  m("JOGS", "Deluxe shusu black belt, extra thick", ["black"], 4.7, 14, 5, "black cotton, semi-rigid extra-thick core", "no", ["integrated"], false, "guide", "The comparison table says 4.7 cm and 14 rows; no product page of its own was read, so these two figures are to confirm. Choose a half size longer (bigger knot)."),
-  m("JGS", "'Japanese silk' black belt", ["black"], 4.5, 16, 4, "black silk, semi-rigid thick cotton core", "no", ["applied", "integrated"], false, "guide"),
-  m("JOIB", "Classic IJF black belt", ["black"], 4.5, 10, 2, "black cotton, felt-like core", "approved", ["applied"], false, "joxb", "More flexible, a smaller knot, less strength than the 13-row JOXB."),
-  m("JOXB", "Deluxe IJF black belt", ["black"], 4.5, 13, 3, "black cotton, felt-like core", "approved", ["applied"], true, "joxb", "Approved under the IJF rules of 2022; 13 rows for strength and a large knot."),
-  m("JOVB", "Deluxe taisho IJF black belt", ["black"], 4.5, 13, 3, "black cotton, felt-like core", "approved", ["applied", "integrated"], false, "guide"),
-  m("JRWZ", "Kohaku belt, official kata", ["red-white"], 4.5, 13, 3, "red and white cotton over a felted cotton core", "not-listed", ["applied", "integrated"], false, "jrwz"),
-  m("JRWK", "Kohaku belt, official kata (same belt, JRWK listing)", ["red-white"], 4.5, 13, 3, "red and white cotton over a felted cotton core", "not-listed", ["applied", "integrated"], false, "jrwk", "Rigidity said to be comparable to the JOXB."),
-  m("JGSRW", "'Japanese silk' kohaku belt", ["red-white"], 4.5, 16, 4, "red and white silk over a semi-rigid thick cotton core", "no", ["applied", "integrated"], false, "jgsrw", "Sold as the official Kodokan belt; the comparison table marks IJF as no."),
-  m("JGSR", "'Japanese silk' red belt (aka obi)", ["red"], 4.5, 16, 4, "red cotton, semi-rigid thick core", "no", ["applied", "integrated"], false, "guide"),
-  m("JGRK", "Kodokan black belt for women", ["black"], 4.5, 16, 4, "black shusu cotton over a cotton core, white line down the middle", "no", ["applied", "integrated"], true, "jgrk", "Marketed as a Kodokan belt with the Kodokan mark on one side."),
+  m("cotton", "JWB", "Classic white belt", ["white"], 4.2, 8, 2, "white cotton, semi-rigid soft core", "no", ["applied"], false, "guide"),
+  m("cotton", "JOWIB", "Deluxe white belt (follows the IJF rules)", ["white"], 4.5, 10, 2, "white cotton, felt-like core", "approved", ["applied"], false, "guide"),
+  m("cotton", "JC", "Classic colour belt", [...COLOURED, "black"], 4.2, 10, 2, "coloured cotton, semi-rigid soft core", "no", ["applied"], true, "jc", "Yellow, orange, green, violet, brown, blue, light blue, black. Sizes S0 (205 cm) to 6."),
+  m("shusu", "JE", "Classic shusu black belt", ["black"], 4.5, 15, 3, "black cotton, semi-rigid core", "no", ["applied", "integrated"], false, "guide"),
+  m("shusu", "JOG", "Deluxe shusu black belt", ["black"], 4.5, 16, 4, "black cotton, semi-rigid thick core", "no", ["applied", "integrated"], true, "guide"),
+  m("shusu", "JOGS", "Deluxe shusu black belt, extra thick", ["black"], 4.7, 14, 5, "black cotton, semi-rigid extra-thick core", "no", ["integrated"], false, "guide", "The comparison table says 4.7 cm and 14 rows; no product page of its own was read, so these two figures are to confirm. Choose a half size longer (bigger knot)."),
+  m("silk", "JGS", "'Japanese silk' black belt", ["black"], 4.5, 16, 4, "black silk, semi-rigid thick cotton core", "no", ["applied", "integrated"], false, "guide"),
+  m("cotton", "JOIB", "Classic IJF black belt", ["black"], 4.5, 10, 2, "black cotton, felt-like core", "approved", ["applied"], false, "joib", "4.5 cm and 10 rows, IJF logo on one end and the maker's on the other (page summary and John's photo; the page itself was seen only through a search result). More flexible, a smaller knot, less strength than the 13-row JOXB."),
+  m("cotton", "JOXB", "Deluxe IJF black belt", ["black"], 4.5, 13, 3, "black cotton, felt-like core", "approved", ["applied"], true, "joxb", "Approved under the IJF rules of 2022; 13 rows for strength and a large knot."),
+  m("cotton", "JOVB", "Deluxe taisho IJF black belt", ["black"], 4.5, 13, 3, "black cotton, felt-like core", "approved", ["applied", "integrated"], false, "guide"),
+  m("cotton", "JRWZ", "Kohaku belt, official kata", ["red-white"], 4.5, 13, 3, "red and white cotton over a felted cotton core", "not-listed", ["applied", "integrated"], false, "jrwz"),
+  m("cotton", "JRWK", "Kohaku belt, official kata (same belt, JRWK listing)", ["red-white"], 4.5, 13, 3, "red and white cotton over a felted cotton core", "not-listed", ["applied", "integrated"], false, "jrwk", "Rigidity said to be comparable to the JOXB."),
+  m("silk", "JGSRW", "'Japanese silk' kohaku belt", ["red-white"], 4.5, 16, 4, "red and white silk over a semi-rigid thick cotton core", "no", ["applied", "integrated"], false, "jgsrw", "Sold as the official Kodokan belt; the comparison table marks IJF as no."),
+  m("cotton", "JGSR", "'Japanese silk' red belt (aka obi)", ["red"], 4.5, 16, 4, "red cotton, semi-rigid thick core", "no", ["applied", "integrated"], false, "guide"),
+  m("shusu", "JGK", "Kodokan black belt", ["black"], 4.5, 16, 4, "black shusu cotton, thicker core", "no", ["applied", "integrated"], false, "guide", "From John's photo of the maker's black belt list (4.5 cm, 16 rows, thicker core); not in the comparison table of the guide."),
+  m("shusu", "JGRK", "Kodokan black belt for women", ["black"], 4.5, 16, 4, "black shusu cotton over a cotton core, white line down the middle", "no", ["applied", "integrated"], true, "jgrk", "Marketed as a Kodokan belt with the Kodokan mark on one side."),
 ];
 
 /** The widths a belt colour is made in, narrowest first. */
@@ -163,3 +171,6 @@ export type BeltEndTag = (typeof BELT_END_TAGS)[number];
 export const BELT_SIZE_TAG_LINE = "日本製";
 /** A tag that needs another: the white tag goes with the size tag. */
 export const BELT_TAG_NEEDS: Readonly<Record<BeltEndTag, BeltEndTag | undefined>> = { "maker-label": undefined, "size-tag": "maker-label", "white-tag": "size-tag" };
+
+/** The covers a belt colour is made with. */
+export const beltCoversFor = (belt: string): BeltCover[] => BELT_COVERS.filter((c) => BELT_MODELS.some((x) => x.cover === c && (x.belts as readonly string[]).includes(belt)));

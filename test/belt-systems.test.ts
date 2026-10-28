@@ -103,3 +103,11 @@ test("the size tag's default line is the three kanji for made in Japan", async (
   const { BELT_SIZE_TAG_LINE } = await import("../src/index.ts");
   assert.equal([...BELT_SIZE_TAG_LINE].length, 3);
 });
+
+test("each belt model has a cover: silk for the silk belts, shusu for the satin-covered black ones", async () => {
+  const { BELT_MODELS, beltCoversFor } = await import("../src/index.ts");
+  assert.ok(BELT_MODELS.every((m) => ["cotton", "shusu", "silk"].includes(m.cover)));
+  assert.equal(BELT_MODELS.find((m) => m.code === "JGSRW")?.cover, "silk");
+  assert.equal(BELT_MODELS.find((m) => m.code === "JOG")?.cover, "shusu");
+  assert.deepEqual(beltCoversFor("red-white"), ["cotton", "silk"]);
+});

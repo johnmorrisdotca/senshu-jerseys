@@ -151,7 +151,9 @@ export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: 
 }
 
 /** A shape given as an outline path (an outline a person made from a font) filled with thread. */
-export function satinShape(d: string, rgb: Rgb, id: string, transform: string): string {
+export function satinShape(d: string, rgb: Rgb, id: string, transform: string, outline?: Rgb): string {
   const t = threadOf(rgb);
-  return `<g transform="${transform}"><path d="${d}" fill="${t.shadow}" fill-opacity="0.3" transform="translate(0.35 0.5)"/><path d="${d}" fill="${t.fill}" stroke="${t.gap}" stroke-opacity="0.5" stroke-width="0.25" stroke-linejoin="round"/><path d="${d}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.16" stroke-linejoin="round" transform="translate(0.12 0.16)"/></g>`;
+  // A thin outline stitch in a second colour round the satin (the cover stitch a logo has), drawn under the fill so only its outer half shows.
+  const ring = outline === undefined ? "" : `<path d="${d}" fill="none" stroke="${hexOf(outline)}" stroke-width="1.1" stroke-linejoin="round"/>`;
+  return `<g transform="${transform}"><path d="${d}" fill="${t.shadow}" fill-opacity="0.3" transform="translate(0.35 0.5)"/>${ring}<path d="${d}" fill="${t.fill}" stroke="${t.gap}" stroke-opacity="0.5" stroke-width="0.25" stroke-linejoin="round"/><path d="${d}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.16" stroke-linejoin="round" transform="translate(0.12 0.16)"/></g>`;
 }
