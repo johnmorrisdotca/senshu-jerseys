@@ -4,6 +4,7 @@ import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
   beltWidthsFor, beltStitchLinesFor, beltThicknessesFor, beltCoversFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
+  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -94,6 +95,14 @@ const state = {
   sb: stripeColour(params.get("sb")),
   sbn: String(clamp(Number.parseInt(params.get("sbn") ?? "1", 10) || 1, 1, 6)),
   se: ["both", "left", "right"].includes(params.get("se")) ? params.get("se") : "both",
+  // The folded belt and the belt's gift box: the belt's size ("auto" goes with the judogi's), the box (kiri or silver), its state, the words on its lid, the wood's tone, a box size of its own and the shop's paper band.
+  bsz: BELT_SIZES.some((s) => String(s.size) === params.get("bsz")) ? params.get("bsz") : "auto",
+  bxt: BOX_TYPES.includes(params.get("bxt")) ? params.get("bxt") : "kiri",
+  bxs: BOX_STATES.includes(params.get("bxs")) ? params.get("bxs") : "closed",
+  bxx: (params.get("bxx") ?? "").slice(0, 6),
+  bxw: KIRI_WOODS.includes(params.get("bxw")) ? params.get("bxw") : "natural",
+  bxz: ["2", "3", "4", "5", "6"].includes(params.get("bxz")) ? params.get("bxz") : "auto",
+  bnd: params.get("bnd") === "1" ? "1" : "0",
 };
 // A named real-world arrangement in the address (`bp=half-yellow-orange`) fills the belt and its stripes, unless the address names them itself.
 const named = beltPreset(params.get("bp") ?? "");
@@ -151,11 +160,19 @@ function options() {
   if (state.brand === "1") {
     o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
   }
+  if (solid()) {
+    if (state.bsz !== "auto") o.beltSize = Number(state.bsz);
+    if (state.mode === "box") {
+      Object.assign(o, { boxType: state.bxt, boxState: state.bxs, boxWood: state.bxw });
+      if (state.bxx !== "") o.boxText = state.bxx;
+      if (state.bxz !== "auto") o.boxSize = Number(state.bxz);
+    } else if (state.bnd === "1") o.band = true;
+  }
   if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined || o.label !== undefined || o.branding !== undefined) o.rules = state.rules;
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -378,7 +395,9 @@ function applyPreset(id) {
 }
 
 /** Which garments each display mode draws: a control is shown only where it changes what is on the stage. */
-const GARMENTS = { pieces: ["jacket", "pants", "belt"], suit: ["jacket", "pants", "belt"], jacket: ["jacket", "belt"], pants: ["pants"], belt: ["belt"] };
+const GARMENTS = { pieces: ["jacket", "pants", "belt"], suit: ["jacket", "pants", "belt"], jacket: ["jacket", "belt"], pants: ["pants"], belt: ["belt"], folded: ["belt"], box: ["belt"] };
+/** The folded belt and the gift box are objects of their own: no cloth colour, patches or neck label apply. */
+const solid = () => state.mode === "folded" || state.mode === "box";
 const has = (garment) => GARMENTS[state.mode].includes(garment);
 const garmentOf = (place) => (place.startsWith("pants") ? "pants" : place.startsWith("belt") ? "belt" : "jacket");
 
@@ -439,7 +458,25 @@ function rows() {
     if (state.sb !== "none") out.push(field(S, "judo-sbn", say("judoStripe_sbn"), segmented({ id: "judo-sbn", label: say("judoStripe_sbn"), values: ["1", "2", "3", "4", "5", "6"], current: state.sbn, name: (v) => v, onPick: set("sbn") })));
     if (state.st !== "none" || state.sb !== "none") out.push(field(S, "judo-se", say("judoStripe_se"), segmented({ id: "judo-se", label: say("judoStripe_se"), values: ["both", "left", "right"], current: state.se, name: (v) => say(`judoStripe_se_${v}`), onPick: set("se") })));
   }
-  out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
+  if (solid()) out.push(field(G, "judo-bsz", say("judoBeltSize"), select("judo-bsz", ["auto", ...BELT_SIZES.map((s) => String(s.size))], (v) => (v === "auto" ? say("judoBeltSize_auto") : v))));
+  else out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
+  if (state.mode === "folded") out.push(field(G, "judo-bnd", say("judoBand"), toggle({ id: "judo-bnd", label: say("judoBand"), on: state.bnd === "1", words: { on: say("judoBand_on"), off: say("judoBand_off") }, onChange: (on) => change("bnd", on ? "1" : "0") })));
+  if (state.mode === "box") {
+    const X = "judoG_box";
+    out.push(field(X, "judo-bxt", say("judoBoxType"), segmented({ id: "judo-bxt", label: say("judoBoxType"), values: BOX_TYPES, current: state.bxt, name: (v) => say(`judoBoxType_${v}`), onPick: set("bxt", true) })));
+    out.push(field(X, "judo-bxs", say("judoBoxState"), segmented({ id: "judo-bxs", label: say("judoBoxState"), values: BOX_STATES, current: state.bxs, name: (v) => say(`judoBoxState_${v}`), onPick: set("bxs") })));
+    out.push(field(X, "judo-bxx", say("judoBoxText"), text("judo-bxx", 6, "御帯")));
+    if (state.bxt === "kiri") out.push(field(X, "judo-bxw", say("judoBoxWood"), segmented({ id: "judo-bxw", label: say("judoBoxWood"), values: KIRI_WOODS, current: state.bxw, name: (v) => say(`judoBoxWood_${v}`), onPick: set("bxw") })));
+    out.push(field(X, "judo-bxz", say("judoBoxSize"), select("judo-bxz", ["auto", "2", "3", "4", "5", "6"], (v) => (v === "auto" ? say("judoBoxSize_auto") : v))));
+    const size = state.bsz === "auto" ? beltSizeForJudogi(state.size) : Number(state.bsz);
+    if (boxSizeFor(size, state.bxt) === undefined) {
+      const note = document.createElement("p");
+      note.className = "fam-fine judo-note";
+      note.dataset.testid = "judo-box-nofit";
+      note.textContent = say("judoBoxNoFit");
+      out.push(field(X, "judo-box-nofit", "", note));
+    }
+  }
 
   if (jacket) {
     const P = "judoPatch";
@@ -544,7 +581,7 @@ function controls() {
         syncUrl();
         if (node.tagName === "SELECT") {
           // Embroidery's place changes which controls apply.
-          if (/^judo-e[12]p$/.test(id)) controls();
+          if (/^judo-e[12]p$/.test(id) || id === "judo-bsz") controls();
           draw();
         } else {
           globalThis.clearTimeout(typing);

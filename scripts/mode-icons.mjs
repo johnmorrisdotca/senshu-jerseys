@@ -17,13 +17,13 @@ if (spawnSync("cwebp", ["-version"], { stdio: "ignore" }).status === null) throw
 const W = 64;
 const H = 56;
 const SCALE = 3;
-const MODES = ["pieces", "suit", "jacket", "pants", "belt"];
+const MODES = ["pieces", "suit", "jacket", "pants", "belt", "folded", "box"];
 const work = mkdtempSync(join(tmpdir(), "senshu-icons-"));
 const browser = await chromium.launch();
 const icons = {};
 try {
   for (const mode of MODES) {
-    const svg = S.renderJudogi({ mode, colour: "blue", belt: mode === "belt" ? "red-white" : "black", size: "170", view: "front", yaw: 0, width: 400 });
+    const svg = S.renderJudogi({ mode, colour: "blue", belt: mode === "belt" || mode === "folded" ? "red-white" : "black", ...(mode === "box" ? { boxState: "open" } : {}), size: "170", view: "front", yaw: 0, width: 400 });
     const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: SCALE });
     await page.setContent(`<!doctype html><body style="margin:0;background:transparent;width:${W}px;height:${H}px;display:flex;align-items:center;justify-content:center"><div style="width:${W}px;height:${H}px;display:flex;align-items:center;justify-content:center">${svg.replace("<svg ", `<svg style="max-width:${W}px;max-height:${H}px;width:auto;height:auto" `)}</div>`);
     // The drawing's own width sets its size: scale it to the box.
