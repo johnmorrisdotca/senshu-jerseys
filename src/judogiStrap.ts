@@ -27,6 +27,8 @@ export interface StrapDesc {
   side: number;
   /** Tied on a jacket: no inside to show, and what lies behind the jacket is not drawn. */
   worn: boolean;
+  /** Worn: the jacket's rows from the belt's top down to the hem, as `y, half width, half depth` in turn, so the hanging ends lie on the skirt. */
+  skirt?: number[];
 }
 
 /**
@@ -53,7 +55,7 @@ const PERIOD = 80;
 /** How far the cloth gaps from the jacket. */
 const GAP = 0.3;
 /** Cells round the ring and down each end. */
-const ROUND = 72;
+export const ROUND = 72;
 const DOWN = 8;
 /** Where each hanging end's own stretch of the face strip starts, so a mark on one end does not repeat on the turns (which use the strip's first 60 units) or on the other end. */
 export const END_X = [130, 58] as const;
@@ -152,7 +154,7 @@ export function strapCells(s: StrapDesc): Cell[] {
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
   cells.push(...knotCells(s, cy, zFront, front));
-  endsOf(cy).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number)));
+  endsOf(cy).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number, cy + s.w / 2)));
   return cells;
 }
 
@@ -263,8 +265,26 @@ function endsOf(cy: number): [[number, number], [number, number]][] {
   return [[[96, cy + 6], [80, cy + 6 + HANG]], [[105, cy + 5], [119, cy + 5 + HANG * 0.92]]];
 }
 
-/** A hanging end: its front and back faces, its two long edges and its cut end, from under the knot (`z` deep) hanging a little away. */
-function endCells(from: [number, number], to: [number, number], z: number, s: StrapDesc, also: Vec | undefined, xs: number): Cell[] {
+/** The depth of a round of half width `a` and half depth `b` at `x` across it, as the body's volume draws it (never less than its side wall). */
+const roundAt = (s: StrapDesc, a: number, b: number, x: number): number => Math.max(s.side * b, b * Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, Math.abs(x) / a), s.full)), 1 / s.full));
+
+/** The depth of the jacket's cloth below the belt at `y`, `x` across from its middle (the rows of `StrapDesc.skirt`). */
+function skirtAt(s: StrapDesc, y: number, x: number): number {
+  const r = s.skirt as number[];
+  let k = 0;
+  while (k + 3 < r.length - 3 && (r[k + 3] as number) < y) k += 3;
+  const f = Math.max(0, Math.min(1, (y - (r[k] as number)) / ((r[k + 3] as number) - (r[k] as number) || 1)));
+  const lerp = (o: number): number => (r[k + o] as number) + ((r[k + 3 + o] as number) - (r[k + o] as number)) * f;
+  return roundAt(s, lerp(1), lerp(2), x);
+}
+
+/** How far down (units) a hanging end takes to go from lying on the belt's lower edge to lying on the skirt. */
+const SETTLE = 12;
+/** How far off the cloth a hanging end rests: over the lapel's band, which is a thickness of cloth (judogiCollar.ts) thick there. */
+const REST = 1.8;
+
+/** A hanging end: its front and back faces, its two long edges and its cut end, from under the knot (`z` deep). Worn, it lies on the belt, then on the skirt below it. */
+function endCells(from: [number, number], to: [number, number], z: number, s: StrapDesc, also: Vec | undefined, xs: number, below = 0): Cell[] {
   const dx = to[0] - from[0];
   const dy = to[1] - from[1];
   const l = Math.hypot(dx, dy) || 1;
@@ -279,7 +299,14 @@ function endCells(from: [number, number], to: [number, number], z: number, s: St
     const w0 = (1 - f) * (1 - 2 * f);
     const w1 = 4 * f * (1 - f);
     const w2 = f * (2 * f - 1);
-    return [w0 * p0[0]! + w1 * p1[0]! + w2 * p2[0]! - 100, w0 * p0[1]! + w1 * p1[1]! + w2 * p2[1]!, z + 2.5 * f * f];
+    const x = w0 * p0[0]! + w1 * p1[0]! + w2 * p2[0]! - 100;
+    const y = w0 * p0[1]! + w1 * p1[1]! + w2 * p2[1]!;
+    if (s.skirt === undefined) return [x, y, z + 2.5 * f * f];
+    // The back of the end rests on the belt where it hangs from it, and on the cloth below, a gap's width off it.
+    const u = Math.max(0, Math.min(1, (y - below) / SETTLE));
+    const e = u * u * (3 - 2 * u);
+    const onBelt = roundAt(s, s.a, s.b, x) + GAP + 2 * s.t;
+    return [x, y, onBelt + (skirtAt(s, y, x) + REST - onBelt) * e + s.t];
   };
   const back = (p: Vec): Vec => [p[0], p[1], p[2] - s.t];
   const cells: Cell[] = [];

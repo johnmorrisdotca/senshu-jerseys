@@ -9,7 +9,7 @@ import { hashOf, type Rgb } from "./colour.ts";
 import { beltFace, beltPaint, foldedPanels, kohakuSection } from "./judogiBelt.ts";
 import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judogiCloth.ts";
 import { collarPiece } from "./judogiCollar.ts";
-import { BACK_COLLAR_FOOT, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
+import { BACK_COLLAR_FOOT, BELT_TOP, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
 import type { JudogiBranding } from "./judogiBrand.ts";
 import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
@@ -388,7 +388,7 @@ function compose(o: Ready): Sheet {
   const tone = toneOf(o.cloth);
   const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw, drawOf(o));
   // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
-  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true }, body.pitch), strapFace(tied, width), NO_FACE, yaw, drawOf(o));
+  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true, skirt: body.y.flatMap((y, j) => (y >= BELT_TOP ? [y, body.a[j] as number, body.b[j] as number] : [])) }, body.pitch), strapFace(tied, width), NO_FACE, yaw, drawOf(o));
   const belted = `${collar?.body ?? ""}${strap?.body ?? ""}${jacket?.tail ?? ""}`;
   const beltDefs = `${collar?.defs ?? ""}${strap?.defs ?? ""}`;
   // Worn, the trousers are gathered at the waist and sit inside the jacket; laid out, they keep their full width.

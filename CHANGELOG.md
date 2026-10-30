@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **The worn belt's hanging ends lie on the jacket's skirt** (SPX-744). They hung straight down in front of it, so seen from the side (turns of 60 to 105 and 255 to 285 degrees) they stood 2 to 3 cm clear of the body's outline, and over the lapel they were hidden by it. Each end now rests on the belt's lower edge where it hangs from the knot and settles onto the cloth below (the jacket's rows ride in the belt's description, `StrapDesc.skirt`, about 0.2 kB a drawing), a lapel's thickness off the cloth. The belt ring wrapping the side walls, the sleeve in front of the belt and the knot's cells were already right since 0.21.3. `test/beltWrap.test.ts` holds the ends and the knot within reach of the body's outline at 60, 90, 105, 120, 240, 255, 270 and 285 degrees, the belt behind the near sleeve where it covers it, and the painter's order.
+
 ## [0.23.2] - 2026-10-30
 
 ### Added
