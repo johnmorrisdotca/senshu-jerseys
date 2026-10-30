@@ -53,7 +53,7 @@ async function shoot(options, width, scale) {
   const holder = document.createElement("div");
   holder.innerHTML = judogiFrame({ ...options, bare: true, width });
   const svg = holder.firstElementChild;
-  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale });
+  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale, webgl: false });
   if (made === undefined) return undefined;
   made.turn(0, 0);
   const { canvas } = made;
