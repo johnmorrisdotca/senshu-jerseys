@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A taekwondo dobok** (SPX-786): `dobok` on `renderJudogi` and `judogiFrame` draws the judogi's jacket, trousers and belt as a dobok in a lighter, plainer cloth, cut one of two ways (`cut`). `wt`: World Taekwondo's pullover with a V-neck 4 cm wide and about 18.6 cm deep, its two bands crossing at the V and running round the back of the neck as a band of their own in the turning view, sleeves that narrow to the wrist, a longer top with 20 cm side slits. `itf`: the ITF's jacket that wraps left over right, with a narrower plain lapel and its outer ties knotted at the wearer's right side. `grade` (`kup`, `poom`, `dan`) sets the trim: the V-neck is the cloth's white, black and red (the red along the neck's edge) or black; the ITF jacket of a black belt has a black band along its hem, front and back. The back is printed with black lettering (`lettering`, "TAEKWONDO" or "TAEKWON-DO" by default, up to 16 characters) in the box the rules give, and the flag's neutral placeholder is sewn at each cut's own spot (`flag`): the right upper arm (WT, 10 by 7 cm) or the right chest (ITF, 5 by 3 cm). The judogi's emblem has a new place for that, `chest-right`. The trousers have no reinforced knee. `judogiCheck` reports World Taekwondo's or the ITF's facts in place of the IJF's. Exports `DOBOK_CUTS`, `DOBOK_GRADES` and the types `DobokCut`, `DobokGrade`, `JudogiDobok`. The Uniforms page has five dobok tiles. Sources, read 2026-10-30: the World Taekwondo Guidelines on Logo, MI, CE and Technical Requirements (as of March 1, 2022), the ITF Tournament Rules 2023, and the ITF Umpire Rules, Appendices 2 and 8 (in force January 1st, 2015) (docs/judogi.md, "The taekwondo dobok"). The belt is worn as it is; long dobok belt ends, the poomsae divisions' coloured trousers and the ITF's 4th to 6th Dan stripes are not drawn.
+
 ## [0.24.1] - 2026-10-30
 
 ### Fixed

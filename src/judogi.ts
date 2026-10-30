@@ -18,7 +18,8 @@ import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc
 import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "./judogiEndTags.ts";
 import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { JUDO_CUT, type GiCut } from "./giCut.ts";
-import { karateMarks, karateNotes, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
+import { karateMarks, karateNotes, plainKnees, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
+import { dobokFlag, dobokMarks, dobokNotes, readDobok, type JudogiDobok, type ReadDobok } from "./dobok.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup, type Draw } from "./pieceVolume.ts";
@@ -100,6 +101,12 @@ export interface JudogiOptions {
    * cut, kanji down the wearer's left chest, a round patch on the left sleeve and left leg, (see `JudogiKarate`). `true` for the defaults. The check then reports the WKF's measures, not the IJF's.
    */
   karate?: boolean | JudogiKarate;
+  /**
+   * A taekwondo dobok instead of a judogi: the same drawing with a lighter cloth, cut as World Taekwondo's V-neck pullover (`wt`) or as the ITF's jacket that wraps and ties
+   * (`itf`), its trim by grade (a black or black-and-red V-neck, or a black band along the ITF jacket's hem), lettering printed across the back and the flag's spot of each
+   * cut (see `JudogiDobok`). `true` for the defaults. The check then reports World Taekwondo's or the ITF's facts. A karate gi asked for at the same time wins.
+   */
+  dobok?: boolean | JudogiDobok;
   /** The belt's size number as the maker lists it (1 to 8, halves too), which sets the folded belt's length and the box that holds it. By default the one that goes with the judogi's size. */
   beltSize?: number;
   /** The gift box of mode `box`: `kiri` (wood, the default) or `silver` (cardboard); its state (`closed`, `open` with the lid beside it and the belt in it, `empty`); the words on the lid (御帯 by default); the wood's tone; a box size to use instead of the one the belt needs. */
@@ -164,8 +171,14 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const beltHang = 25;
   const patch = readPatch(options?.backPatch);
   const beltCm = readBeltCm(options?.beltWidthCm);
-  const marked = options === undefined ? undefined : readMarks(options);
   const karate = readKarate(options?.karate);
+  const dobok = karate === undefined ? readDobok(options?.dobok) : undefined;
+  const marked = options === undefined ? undefined : readMarks(withFlag(options, dobok));
+  if (dobok !== undefined) {
+    const skipped = marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped).filter((n) => n.id.startsWith("skipped-"));
+    const gi = dobokNotes(dobok, pick(JUDOGI_COLOURS, options?.colour, "white") === "white" ? "white" : BLUE_GI);
+    return { ok: [...gi, ...skipped].every((n) => n.met), size, heightCm: h, notes: [...gi, ...skipped] };
+  }
   if (karate !== undefined) {
     const skipped = marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped).filter((n) => n.id.startsWith("skipped-"));
     const gi = karateNotes(karate, h, pick(JUDOGI_COLOURS, options?.colour, "white"));
@@ -185,6 +198,11 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
     ...(marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped)),
   ];
   return { ok: notes.every((n) => n.met), size, heightCm: h, notes };
+}
+
+/** The options with the dobok's flag placeholder at its cut's own spot, when the dobok asks for one and no emblem is given. */
+function withFlag(o: JudogiOptions, dobok: ReadDobok | undefined): JudogiOptions {
+  return dobok === undefined || !dobok.flag || o.emblem !== undefined ? o : { ...o, emblem: dobokFlag(dobok) };
 }
 
 /** Whether the belt of this size goes in the box asked for: the maker's wooden box fits a belt of size 6 at most and the silver one 6.5. */
@@ -236,7 +254,8 @@ interface Ready {
   cloth: Rgb;
   uid: string;
   karate: ReadKarate | undefined;
-  /** The jacket's cut: the judogi's, or the karate gi's. */
+  dobok: ReadDobok | undefined;
+  /** The jacket's cut: the judogi's, the karate gi's or the dobok's. */
   cut: GiCut;
   patch: PatchSpec | undefined;
   marks: MarkSet | undefined;
@@ -288,7 +307,9 @@ function read(options?: JudogiOptions): Ready {
   const tags = readEndTags(o.beltTags, folded ? String(beltSize) : size, folded);
   const endTags = tags !== undefined && folded ? { ...tags, end: 0 as const } : tags;
   const patch = readPatch(o.backPatch);
-  const spec = readMarks(o);
+  const karate = readKarate(o.karate);
+  const dobok = karate === undefined ? readDobok(o.dobok) : undefined;
+  const spec = readMarks(withFlag(o, dobok));
   const boxType = pick(BOX_TYPES, o.boxType, "kiri");
   const boxState = pick(BOX_STATES, o.boxState, "closed");
   const boxWood = pick(KIRI_WOODS, o.boxWood, "natural");
@@ -297,31 +318,32 @@ function read(options?: JudogiOptions): Ready {
   const band = o.band === true;
   const bare = o.bare === true;
   const solid = mode === "folded" || mode === "box" ? [beltSize, boxType, boxState, boxText, boxWood, boxSize, band] : undefined;
-  const karate = readKarate(o.karate);
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid, karate]))}`;
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid, karate, dobok]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
-  const title = o.title?.trim() || defaultTitle(language, colour, mode, view, karate !== undefined);
+  const title = o.title?.trim() || defaultTitle(language, colour, mode, view, karate !== undefined ? "karate" : dobok !== undefined ? "dobok" : "judo");
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, karate, cut: karate?.gi ?? JUDO_CUT, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band, bare,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, karate, dobok, cut: karate?.gi ?? dobok?.gi ?? JUDO_CUT, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band, bare,
     beltEmb: { left: (o.embroidery ?? []).some((e) => e?.place === "belt-end-left"), right: (o.embroidery ?? []).some((e) => e?.place === "belt-end-right") },
     description: karate !== undefined
       ? language === "ja" ? "空手着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。" : "A karate gi: jacket, trousers and belt. No maker or federation marks."
+      : dobok !== undefined
+        ? language === "ja" ? "テコンドーの道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。" : "A taekwondo dobok: jacket, trousers and belt. No maker or federation marks."
       : language === "ja"
         ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
         : "A judogi: jacket, trousers and belt. No maker or federation marks.",
   };
 }
 
-function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiMode, view: JudogiView, karate = false): string {
+function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiMode, view: JudogiView, kind: "judo" | "karate" | "dobok" = "judo"): string {
   if (language === "ja") {
     const c = colour === "blue" ? "青" : "白";
     const m = { pieces: "上衣とズボン", suit: "着用", jacket: "上衣", pants: "ズボン", belt: "帯", folded: "畳んだ帯", box: "帯の箱" }[mode];
     const v = { front: "前", back: "後ろ", flat: "平置き", "flat-back": "平置き（後ろ）" }[view];
-    return `${c}の${karate ? "空手着" : "柔道着"}、${m}、${v}`;
+    return `${c}の${{ judo: "柔道着", karate: "空手着", dobok: "テコンドーの道着" }[kind]}、${m}、${v}`;
   }
   const c = colour === "blue" ? "Blue" : "White";
   const m = { pieces: "jacket and trousers", suit: "suit", jacket: "jacket", pants: "trousers", belt: "belt", folded: "belt folded flat", box: "belt gift box" }[mode];
-  return `${c} ${karate ? "karate gi" : "judogi"}, ${m}, ${view}`;
+  return `${c} ${{ judo: "judogi", karate: "karate gi", dobok: "dobok" }[kind]}, ${m}, ${view}`;
 }
 
 function inkOf(o: Ready, part: string, belt?: BeltPaint, marks?: GiInk["marks"]): GiInk {
@@ -336,8 +358,9 @@ const join = (a: Mark | undefined, b: Mark | undefined): Mark | undefined => (a 
 /** What is sewn on the jacket's faces: the back patch and the marks on either face. */
 function jacketMarks(o: Ready): GiInk["marks"] | undefined {
   const patch: Mark | undefined = o.patch === undefined ? undefined : backPatch(`${o.uid}j`, o.patch, BACK_COLLAR_FOOT);
-  const front = join(o.marks?.jacket.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).jacket);
-  const back = join(patch, o.marks?.jacket.back);
+  const own = o.dobok === undefined ? undefined : dobokMarks(o.dobok, toneOf(o.cloth));
+  const front = join(join(o.marks?.jacket.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).jacket), own?.front);
+  const back = join(join(patch, own?.back), o.marks?.jacket.back);
   const backInner = o.marks?.jacket.backInner;
   if (front === undefined && back === undefined && backInner === undefined) return undefined;
   return { ...(front === undefined ? {} : { front }), ...(back === undefined ? {} : { back }), ...(backInner === undefined ? {} : { backInner }) };
@@ -345,7 +368,9 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
 
 /** What is sewn on the trousers' front. */
 function pantsMarks(o: Ready): GiInk["marks"] | undefined {
-  const front = join(o.marks?.pants.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).pants);
+  // A dobok's trousers, like a karate gi's, have no reinforced knee.
+  const plain = o.dobok === undefined ? undefined : plainKnees(`${o.uid}pf`, o.cloth);
+  const front = join(plain, join(o.marks?.pants.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).pants));
   return front === undefined ? undefined : { front };
 }
 
@@ -405,7 +430,11 @@ function compose(o: Ready): Sheet {
   const jacketVolume: VolumeDesc = { ...body, worn: tied === undefined ? 1 : 2 };
   const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front", o.cut), jacketFace(ink, "back", o.cut), yaw, drawOf(o));
   const tone = toneOf(o.cloth);
-  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body, o.cut), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw, drawOf(o));
+  const trim = o.cut.band;
+  const collarPaint: BeltPaint = trim === undefined
+    ? { fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }
+    : { fill: trim.fill, edge: trim.edge, stitch: trim.stitch, defs: "", ...(trim.bands === undefined ? {} : { bands: trim.bands }), ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) };
+  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body, o.cut), body.pitch), strapFace(collarPaint, LAPEL_BAND, o.dobok === undefined ? 6 : 2), NO_FACE, yaw, drawOf(o));
   // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
   const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true, skirt: body.y.flatMap((y, j) => (y >= BELT_TOP ? [y, body.a[j] as number, body.b[j] as number] : [])) }, body.pitch), strapFace(tied, width), NO_FACE, yaw, drawOf(o));
   const belted = `${collar?.body ?? ""}${strap?.body ?? ""}${jacket?.tail ?? ""}`;

@@ -12,6 +12,8 @@ export type { JudogiBelt, JudogiCheck, JudogiColour, JudogiMode, JudogiOptions, 
 export { BELT_RGB as JUDOGI_BELT_RGB } from "./judogiBelt.ts";
 export { KARATE_CUTS, KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TEXT } from "./karategi.ts";
 export type { JudogiKarate, KarateCut, KarateSleeve } from "./karategi.ts";
+export { DOBOK_CUTS, DOBOK_GRADES } from "./dobok.ts";
+export type { DobokCut, DobokGrade, JudogiDobok } from "./dobok.ts";
 export { BELT_PRESETS, STRIPE_COLOURS, beltPreset } from "./judogiStripes.ts";
 export { gradeBelt } from "./beltGrade.ts";
 export type { BeltAlong, BeltBars, BeltPreset, BeltTipStyle, JudogiBeltStyle, StripeColour } from "./judogiStripes.ts";

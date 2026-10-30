@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // The Uniforms page: every garment and belt is a picture tile, the chosen garment turns, every choice is in the address, and no control is left in the browser's own style.
 const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
+const DOBOK_TILES = ["dobok-wt", "dobok-wt-poom", "dobok-wt-dan", "dobok-itf", "dobok-itf-dan"];
 const yawOf = (page) => page.locator("#uni-stage canvas").getAttribute("data-yaw").then(Number);
 
 test("the page loads, the large view is drawn and every tile has its picture", async ({ page }) => {
@@ -12,11 +13,13 @@ test("the page loads, the large view is drawn and every tile has its picture", a
   await page.goto("/uniforms.html");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   const tiles = page.locator(".uni-tiles .judo-tile");
-  expect(await tiles.count()).toBeGreaterThanOrEqual(7 + 9 + 20);
+  expect(await tiles.count()).toBeGreaterThanOrEqual(12 + 9 + 20);
   await expect(page.locator('.uni-garments .judo-tile[data-value="judogi-white"]')).toBeVisible();
   await expect(page.locator('.uni-garments .judo-tile[data-value="judogi-blue"]')).toBeVisible();
   // The karate gi: a tile for each sleeve, and the kumite and kata cuts.
   for (const id of ["karate-full", "karate-three-quarter", "karate-short", "karate-kumite", "karate-kata"]) await expect(page.locator(`.uni-garments .judo-tile[data-value="${id}"]`)).toBeVisible();
+  // The dobok: the V-neck with each collar, and the ITF wrap plain and with a black belt's hem.
+  for (const id of DOBOK_TILES) await expect(page.locator(`.uni-garments .judo-tile[data-value="${id}"]`)).toBeVisible();
   // A tile is drawn when it comes near the screen: bring each one there and wait for its picture.
   test.setTimeout(240000);
   for (const tile of await tiles.all()) {
@@ -109,5 +112,30 @@ test("every karate tile is drawn, and the sleeve choice is kept in the address a
   await expect(page).toHaveURL(/garment=karate-three-quarter/);
   await page.goto(page.url());
   await expect(page.locator('[data-testid="uni-garment"] [data-value="karate-three-quarter"]')).toHaveAttribute("aria-pressed", "true");
+  expect(errors.filter((e) => !/GL Driver|ReadPixels|WebGL/.test(e))).toEqual([]);
+});
+
+test("every dobok tile is drawn, each its own picture, and the choice is kept in the address and survives a reload", async ({ page }) => {
+  test.slow();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/uniforms.html");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  for (const id of DOBOK_TILES) {
+    const tile = page.locator(`[data-testid="uni-garment"] [data-value="${id}"]`);
+    await tile.scrollIntoViewIfNeeded();
+    await expect(tile).toHaveAttribute("data-ready", "1", { timeout: 60000 });
+    expect(await tile.locator("img").evaluate((i) => i.complete && i.naturalWidth > 8)).toBe(true);
+  }
+  // The collars and the hem are each a picture of their own.
+  const srcs = await page.locator('[data-testid="uni-garment"] [data-value^="dobok-"] img').evaluateAll((imgs) => imgs.map((i) => i.src));
+  expect(new Set(srcs).size).toBe(DOBOK_TILES.length);
+  for (const id of ["dobok-wt-dan", "dobok-itf-dan"]) {
+    await pick(page, "uni-garment", id);
+    await expect(page).toHaveURL(new RegExp(`garment=${id}`));
+    await page.goto(page.url());
+    await expect(page.locator(`[data-testid="uni-garment"] [data-value="${id}"]`)).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  }
   expect(errors.filter((e) => !/GL Driver|ReadPixels|WebGL/.test(e))).toEqual([]);
 });

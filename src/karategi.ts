@@ -161,7 +161,7 @@ export function karateMarks(uid: string, k: ReadKarate, cloth: Rgb, pantsUid: st
  * A karate gi's trousers have no reinforced knee: the judogi's knee panel is covered with the leg's own twill and the legs' long folds are drawn again across it (the judogi's
  * trousers, judogiPants.ts, carry the panel, so the karate gi draws over it). `uid` is the trousers' front face's, whose twill pattern the cover uses.
  */
-function plainKnees(uid: string, cloth: Rgb): Mark {
+export function plainKnees(uid: string, cloth: Rgb): Mark {
   const t = toneOf(cloth);
   const f0 = 0.205;
   const f1 = 0.605;

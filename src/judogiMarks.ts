@@ -98,8 +98,8 @@ export interface JudogiEmblem {
   thread?: ThreadColour | string;
   widthCm?: number;
   heightCm?: number;
-  /** Where it is sewn: the left `chest` (the default), or the outer upper arm just under the shoulder seam of the wearer's `sleeve-left` or `sleeve-right` (a flag patch on the shoulder), turned with the sleeve. */
-  place?: "chest" | "sleeve-left" | "sleeve-right";
+  /** Where it is sewn: the left `chest` (the default), the right chest (`chest-right`, where an ITF dobok's flag goes), or the outer upper arm just under the shoulder seam of the wearer's `sleeve-left` or `sleeve-right` (a flag patch on the shoulder), turned with the sleeve. */
+  place?: "chest" | "chest-right" | "sleeve-left" | "sleeve-right";
   /** A word under the artwork, in thread: the country's name ("CANADA"), or with `style: "square"` a word in script ("Nippon"). Up to 16 characters. */
   caption?: string;
   /** `flag` (the default): the artwork alone, in a patch with a stitched border. `named`: the artwork with the caption under it (the default when a caption is given). `square`: a white woven square with the artwork above a caption in script, thread gold by default. */
@@ -188,7 +188,7 @@ export interface ReadLogo {
 export interface ReadEmblem {
   caption: string;
   style: "flag" | "named" | "square";
-  place: "chest" | "sleeve-left" | "sleeve-right";
+  place: "chest" | "chest-right" | "sleeve-left" | "sleeve-right";
   image: string | undefined;
   frame: "patch" | "bordered" | "none";
   /** The package's own round badge (the Kodokan's), not a flag. */
@@ -327,7 +327,7 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
     emblem = {
       caption,
       style: e.style === "square" && caption !== "" ? "square" : caption !== "" ? "named" : "flag",
-      place: e.place === "sleeve-left" || e.place === "sleeve-right" ? e.place : "chest",
+      place: e.place === "sleeve-left" || e.place === "sleeve-right" || e.place === "chest-right" ? e.place : "chest",
       image: img?.src,
       // The Kodokan's emblem is a round badge of its own, so it is sewn on without a patch border unless one is asked for.
       // The Kodokan's badge is round: a patch asked for round it is a bordered one, as a flag patch's edge to edge would show the corners of its box.
@@ -522,7 +522,7 @@ function emblemBox(e: ReadEmblem): { w: number; h: number; art: { w: number; h: 
     const fit = Math.min(1, ((side - 8) / aw), ((side * 0.58) / ah));
     box = { w: side, h: side, art: { w: aw * fit, h: ah * fit, y: -side / 2 + side * 0.08 + (ah * fit) / 2 }, cap: { y: side / 2 - side * 0.19, h: side * 0.17, w: side * 0.8 } };
   } else box = { w: aw, h: ah, art: { w: aw, h: ah, y: 0 } };
-  const room = e.place === "chest" ? Math.min(1, EMBLEM_ROOM.w / box.w, EMBLEM_ROOM.h / box.h) : Math.min(1, 22 / box.w, 22 / box.h);
+  const room = e.place === "chest" || e.place === "chest-right" ? Math.min(1, EMBLEM_ROOM.w / box.w, EMBLEM_ROOM.h / box.h) : Math.min(1, 22 / box.w, 22 / box.h);
   if (room === 1) return box;
   return { w: box.w * room, h: box.h * room, art: { w: box.art.w * room, h: box.art.h * room, y: box.art.y * room }, ...(box.cap === undefined ? {} : { cap: { y: box.cap.y * room, h: box.cap.h * room, w: box.cap.w * room } }) };
 }
@@ -602,9 +602,11 @@ function itemsOf(m: MarkSpec): MarkItem[] {
   if (m.emblem !== undefined) {
     const e = m.emblem;
     const { w, h } = emblemSize(e);
-    const sw = e.place === "chest" ? undefined : e.place.slice(7) as "left" | "right";
+    const sw = e.place === "chest" || e.place === "chest-right" ? undefined : e.place.slice(7) as "left" | "right";
     const us = sw === undefined ? undefined : js.upperSleeve(sw);
-    items.push({ id: "emblem", kind: "emblem", place: "emblem", area: sw === undefined ? "chest" : `sleeve-${sw}`, target: "jacket-front", w, h, rot: us?.rot ?? 0, pref: us === undefined ? [js.emblem.x, js.emblem.y] : [us.x, us.y], minScale: 0.7, draw: (k, id, cloth) => emblemOf(e, cloth, id, k) });
+    // The right chest is the left's mirror, on the panel that wraps over it.
+    const chest: [number, number] = e.place === "chest-right" ? [200 - js.emblem.x, js.emblem.y] : [js.emblem.x, js.emblem.y];
+    items.push({ id: "emblem", kind: "emblem", place: "emblem", area: sw === undefined ? (e.place === "chest-right" ? "chest-right" : "chest") : `sleeve-${sw}`, target: "jacket-front", w, h, rot: us?.rot ?? 0, pref: us === undefined ? chest : [us.x, us.y], minScale: 0.7, draw: (k, id, cloth) => emblemOf(e, cloth, id, k) });
   }
   const logoItem = (l: ReadLogo): MarkItem => {
     const { w, h } = logoSize(m, l);

@@ -8,4 +8,9 @@ export const GARMENTS = [
   { id: "karate-short", options: { karate: { sleeve: "short" } } },
   { id: "karate-kumite", options: { karate: { cut: "kumite" } } },
   { id: "karate-kata", options: { karate: { cut: "kata" } } },
+  { id: "dobok-wt", options: { dobok: { cut: "wt" } } },
+  { id: "dobok-wt-poom", options: { dobok: { cut: "wt", grade: "poom" } } },
+  { id: "dobok-wt-dan", options: { dobok: { cut: "wt", grade: "dan" } } },
+  { id: "dobok-itf", options: { dobok: { cut: "itf" } } },
+  { id: "dobok-itf-dan", options: { dobok: { cut: "itf", grade: "dan" } } },
 ];

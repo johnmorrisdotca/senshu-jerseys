@@ -205,6 +205,9 @@ export function areasFor(half: number, lapel: { x: number; y: number; rot: numbe
   const [cl0, cr0] = chestSpan(CHEST_TOP);
   const [cl1, cr1] = chestSpan(CHEST_BOTTOM);
   add("chest", "jacket-front", [[cl0, CHEST_TOP], [cr0, CHEST_TOP], [cr1, CHEST_BOTTOM], [cl1, CHEST_BOTTOM]], EDGE_MARGIN);
+  // The right chest (the picture's left): the left's mirror, from the sleeve's seam to the top panel's free edge, which crosses it going down.
+  const free = (y: number): number => Math.min(200 - chestSpan(y)[0], chestSpan(y)[0] - 12.6 - 2);
+  add("chest-right", "jacket-front", [[200 - cr0, CHEST_TOP], [free(CHEST_TOP), CHEST_TOP], [free(CHEST_BOTTOM), CHEST_BOTTOM], [200 - cr1, CHEST_BOTTOM]], EDGE_MARGIN);
   // The lapel hem: along the middle of the top lapel's band (14.5 wide), clear of its edges by a margin and between the belt and the hem's stitching.
   const c = Math.cos((lapel.rot * Math.PI) / 180);
   const s = Math.sin((lapel.rot * Math.PI) / 180);

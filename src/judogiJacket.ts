@@ -10,7 +10,7 @@ import { beltOnJacket, beltShadow } from "./judogiBelt.ts";
 import { n2, poly, type Pt } from "./path.ts";
 import type { CollarDesc } from "./judogiCollar.ts";
 import { INNER_DY, RIM_FROM, RIM_TO } from "./judogiInner.ts";
-import { JUDO_CUT, type GiCut } from "./giCut.ts";
+import { JUDO_CUT, type CollarBand, type GiCut } from "./giCut.ts";
 import { sleeveAt, type VolumeDesc } from "./volume.ts";
 
 /**
@@ -110,13 +110,18 @@ const ARM = 0.5;
  * A sleeve cut short: the same sleeve, ending a share `len` of the way down the full one (mid-forearm at 0.76, the elbow at 0.52), the cuff keeping its width and slant.
  * The outer edge stops at `len` of its length; the inner edge starts at the armpit as before and ends the cuff's width away from it.
  */
-function sleeveGeo(len: number): { q: number[]; c: number[] } {
-  if (len >= 1) return { q: SLEEVE_Q, c: CAP };
+function sleeveGeo(len: number, cuff = 1): { q: number[]; c: number[] } {
+  if (len >= 1 && cuff === 1) return { q: SLEEVE_Q, c: CAP };
+  if (len >= 1) {
+    // A sleeve that narrows to the wrist (a dobok's): the cuff's inner corner drawn in toward the outer along the cuff, the armpit where it was.
+    const q: Pt = [P[0] + (Q[0] - P[0]) * cuff, P[1] + (Q[1] - P[1]) * cuff];
+    return { q: [S[0], S[1], P[0], P[1], A[0], A[1], q[0], q[1]], c: CAP };
+  }
   const p: Pt = [S[0] + (P[0] - S[0]) * len, S[1] + (P[1] - S[1]) * len];
   // The cuff is square to the arm: as wide as the full sleeve's, across the line from shoulder to wrist.
   const [dx, dy] = [P[0] - S[0], P[1] - S[1]];
   const along = Math.hypot(dx, dy);
-  const wide = Math.hypot(Q[0] - P[0], Q[1] - P[1]);
+  const wide = Math.hypot(Q[0] - P[0], Q[1] - P[1]) * cuff;
   const q: Pt = [p[0] + (dy / along) * wide, p[1] - (dx / along) * wide];
   return { q: [S[0], S[1], p[0], p[1], A[0], A[1], q[0], q[1]], c: [S[0] + (p[0] - S[0]) / 3, S[1] + (p[1] - S[1]) / 3, S[0] + (2 * (p[0] - S[0])) / 3, S[1] + (2 * (p[1] - S[1])) / 3, S[0] + 8, S[1] - 5] };
 }
@@ -125,13 +130,25 @@ function sleeveGeo(len: number): { q: number[]; c: number[] } {
 const TOP_EDGE: Pt[] = [[110, 9], [106, 30], [100, 50], [92, 78], [84, 110], [78, 150], [74, 205]];
 /** The lapel underneath (the wearer's right), by its free edge, from the collar until it passes under the other. */
 const UNDER_EDGE: Pt[] = [[90, 9], [94, 30], [99, 46], [104, 60], [110, 76]];
+/**
+ * A dobok's V-neck (dobok.ts): the two bands' free edges, the neck's own edge, from the back of the neck down to the V, each running a little past the other so the
+ * one on the wearer's left lies over the other's end where they meet. The V's foot is some 19 cm under the neck's point at the shoulder seam (World Taekwondo: a neck
+ * depth of 18 to 20 cm, the V-neck collar 4 cm wide).
+ */
+const V_TOP: Pt[] = [[110, 9], [108.6, 22.8], [106.2, 36.5], [103.2, 50.3], [100, 63], [97.2, 72.5]];
+const V_UNDER: Pt[] = [[90, 9], [91.4, 22.8], [93.8, 36.5], [96.8, 50.3], [100, 63], [102.8, 72.5]];
+/** Where the V's two free edges cross. */
+const V_FOOT: Pt = [100, 63];
+/** The free edge of the band on top and of the one under it, for a cut: the judogi's lapels, or the dobok's V-neck. */
+export const topEdge = (cut: GiCut = JUDO_CUT): Pt[] => (cut.neck === "v" ? V_TOP : TOP_EDGE);
+export const underEdge = (cut: GiCut = JUDO_CUT): Pt[] => (cut.neck === "v" ? V_UNDER : UNDER_EDGE);
 /** The lapel band's width on the drawing: 4.7 cm at this scale, which with its roll and its shadow reads as the 4-5 cm band of the rules. */
 const LAPEL = 12.6;
 /** The collar's band in the turning view, a little inside the drawn lapel so none of the drawing shows past its edges. */
 export const LAPEL_BAND = LAPEL - 1;
 
 export function jacketDesc(depth = 1, tied = false, cut: GiCut = JUDO_CUT): VolumeDesc {
-  const g = sleeveGeo(cut.sleeve);
+  const g = sleeveGeo(cut.sleeve, cut.cuff);
   const p: Pt = [g.q[2] as number, g.q[3] as number];
   const q: Pt = [g.q[6] as number, g.q[7] as number];
   const sl: VolumeDesc["sl"] = [
@@ -148,8 +165,8 @@ export function jacketDesc(depth = 1, tied = false, cut: GiCut = JUDO_CUT): Volu
  * thickness 9 mm at the neck (IJF: up to 1 cm), and its middle at the back a little below the top of the collar there.
  */
 export function collarDesc(jd: VolumeDesc, cut: GiCut = JUDO_CUT): CollarDesc {
-  const top = offset(TOP_EDGE, -cut.lapel / 2).reverse();
-  const under = offset(UNDER_EDGE, cut.lapel / 2);
+  const top = offset(topEdge(cut), -cut.lapel / 2).reverse();
+  const under = offset(underEdge(cut), cut.lapel / 2);
   // The under lapel ends where its middle line meets the top one's, under the middle of the top lapel.
   const topAt = (y: number): number => atY([...top].reverse(), y)[0];
   let end = under.length - 1;
@@ -165,7 +182,7 @@ export function collarDesc(jd: VolumeDesc, cut: GiCut = JUDO_CUT): CollarDesc {
       break;
     }
   }
-  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, side: SIDE, top: top.flat(), under: under.slice(0, end + 1).flat(), w: cut.lapel - 1, t: cut.collar, neck: 8.5 };
+  return { y: jd.y, a: jd.a, b: jd.b, full: FULL, side: SIDE, top: top.flat(), under: under.slice(0, end + 1).flat(), w: cut.lapel - 1, t: cut.collar, neck: cut.neck === "v" ? 10.5 : 8.5 };
 }
 
 /** The jacket's cross-section: rounder than a jersey's square body, as cloth hangs. */
@@ -182,8 +199,8 @@ export function bodyOutline(tied: boolean, cut: GiCut = JUDO_CUT): Pt[] {
 }
 
 /** A sleeve's outline: down its outer edge from the shoulder to the cuff, across the cuff and up its inner edge to the armpit. */
-export function sleeveOutline(side: -1 | 1, len = 1): Pt[] {
-  const g = sleeveGeo(len);
+export function sleeveOutline(side: -1 | 1, len = 1, cuff = 1): Pt[] {
+  const g = sleeveGeo(len, cuff);
   const pts: Pt[] = [];
   for (let k = 0; k <= 24; k++) pts.push(sleeveAt(g.q, g.c, k / 24)[0]);
   pts.push([g.q[6]!, g.q[7]!], A, [CAP[4]!, CAP[5]!]);
@@ -191,24 +208,25 @@ export function sleeveOutline(side: -1 | 1, len = 1): Pt[] {
 }
 
 /** A point `f` of the way down a sleeve, `u` of the way across from its outer edge to its inner. */
-export function onSleeve(side: -1 | 1, f: number, u: number, len = 1): Pt {
-  const g = sleeveGeo(len);
+export function onSleeve(side: -1 | 1, f: number, u: number, len = 1, cuff = 1): Pt {
+  const g = sleeveGeo(len, cuff);
   const [o, i] = sleeveAt(g.q, g.c, f);
   const p: Pt = [o[0] + (i[0] - o[0]) * u, o[1] + (i[1] - o[1]) * u];
   return side === -1 ? p : mirror(p);
 }
 
-function sleeveLine(side: -1 | 1, f: number, len = 1): string {
-  return smooth([onSleeve(side, f, 0, len), onSleeve(side, f, 0.5, len), onSleeve(side, f, 1, len)]);
+function sleeveLine(side: -1 | 1, f: number, len = 1, cuff = 1): string {
+  return smooth([onSleeve(side, f, 0, len, cuff), onSleeve(side, f, 0.5, len, cuff), onSleeve(side, f, 1, len, cuff)]);
 }
 
 /** A sleeve: its cloth, the soft folds of a heavy sleeve hanging, the armhole seam and the hemmed cuff. */
 function sleeve(uid: string, t: Tone, side: -1 | 1, back: boolean, cut: GiCut): string {
   const fold = softly(cut);
   const len = cut.sleeve;
-  const out = poly(sleeveOutline(side, len));
-  const on = (f: number, u: number): Pt => onSleeve(side, f, u, len);
-  const line = (f: number): string => sleeveLine(side, f, len);
+  const cuff = cut.cuff ?? 1;
+  const out = poly(sleeveOutline(side, len, cuff));
+  const on = (f: number, u: number): Pt => onSleeve(side, f, u, len, cuff);
+  const line = (f: number): string => sleeveLine(side, f, len, cuff);
   // The folds run down the arm below the head, where the sleeve is a tube: `f` of the way from the armpit's level to the cuff (the armpit is higher on a sleeve cut short).
   const head = Math.min(0.9, ARM / len);
   const arm = (f: number): number => head + (1 - head) * f;
@@ -252,7 +270,7 @@ function bodyCloth(uid: string, t: Tone, outline: string, tied: boolean, cut: Gi
 function edges(t: Tone, tied: boolean, cut: GiCut): string {
   const fold = softly(cut);
   const hem = cut.hem;
-  const vent = hem - (HEM - 182);
+  const vent = hem - (cut.vent ?? HEM - 182);
   let s = "";
   for (const side of [-1, 1] as const) {
     // The vent sits a little in from the side seam, so the side wall of the volume shows plain cloth and the slit from the front.
@@ -265,6 +283,8 @@ function edges(t: Tone, tied: boolean, cut: GiCut): string {
     s += seam(`M${n2(neck[0])} ${neck[1] + 0.8}L${n2(tip[0] - side * 1)} ${tip[1] + 0.6}`, t, 0.45);
   }
   const wide = halfAt(tied, hem, cut);
+  // A band of its own colour along the hem has its own stitching (`hemTrim`, drawn over the lapel).
+  if (cut.hemBand !== undefined) return s;
   if (cut.plain) {
     s += seam(`M${100 - wide} ${hem - 5}L${100 + wide} ${hem - 5}`, t, 0.5);
     s += stitch(`M${100 - wide} ${hem - 3}L${100 + wide} ${hem - 3}`, t);
@@ -276,8 +296,31 @@ function edges(t: Tone, tied: boolean, cut: GiCut): string {
   return s;
 }
 
+/** A band of its own colour sewn along the lower edge, up to `h` above it (giCut's `hemBand`): the body's width at each height, cut at the slits, its two rows of top-stitching, and a soft line where it meets the cloth. Drawn over the lapel's foot. */
+function hemTrim(t: Tone, tied: boolean, cut: GiCut): string {
+  const trim = cut.hemBand;
+  if (trim === undefined) return "";
+  const hem = cut.hem;
+  const top = hem - trim.h;
+  const xs = (y: number): [number, number] => [100 - halfAt(tied, y, cut) - 0.6, 100 + halfAt(tied, y, cut) + 0.6];
+  const [l0, r0] = xs(top);
+  const [l1, r1] = xs(hem + 0.6);
+  let s = fold(`M${n2(l0)} ${n2(top - 1)}L${n2(r0)} ${n2(top - 1)}`, 2.2, t.light ? 0.16 : 0.26);
+  s += `<path d="M${n2(l0)} ${n2(top)}L${n2(r0)} ${n2(top)}L${n2(r1)} ${n2(hem + 0.6)}L${n2(l1)} ${n2(hem + 0.6)}Z" fill="${trim.fill}"/>`;
+  s += fold(`M${n2(l0)} ${n2(top + 1.2)}L${n2(r0)} ${n2(top + 1.2)}`, 1.6, 0.18, true);
+  for (const y of [top + 1.1, hem - 1.1]) s += `<path d="M${n2(l0)} ${n2(y)}L${n2(r0)} ${n2(y)}" stroke="${trim.stitch}" stroke-width="0.34" stroke-dasharray="1.3 0.8" stroke-opacity="0.9"/>`;
+  s += `<path d="M${n2(l0)} ${n2(top + 0.3)}L${n2(r0)} ${n2(top + 0.3)}" stroke="${trim.edge}" stroke-width="0.6" stroke-opacity="0.7"/>`;
+  // The slits run up through the band.
+  for (const side of [-1, 1] as const) {
+    const x = (y: number): number => 100 + side * (halfAt(tied, y, cut) - 4.1);
+    s += `<path d="M${n2(x(top))} ${n2(top)}L${n2(x(hem))} ${hem}" stroke="${trim.edge}" stroke-width="0.9" stroke-opacity="0.9"/>`;
+  }
+  return s;
+}
+
 /** A lapel band between its free edge and the line where it is sewn to the jacket: its cloth, its ridge in the light and its rows of stitching. */
 function lapelBand(uid: string, t: Tone, edge: readonly Pt[], sign: 1 | -1, shadeTo: number, cut: GiCut): string {
+  if (cut.band !== undefined) return trimBand(uid, t, edge, sign, shadeTo, cut, cut.band);
   const fold = softly(cut);
   const lapel = cut.lapel;
   const sewn = offset(edge, -sign * lapel);
@@ -293,17 +336,46 @@ function lapelBand(uid: string, t: Tone, edge: readonly Pt[], sign: 1 | -1, shad
 }
 
 /**
+ * A collar band in a colour of its own (a dobok's black V-neck, or its black and red): a band of a lighter cloth sewn over the neck's edge, its colours laid along it, a
+ * soft ridge where it turns over the edge, two rows of top-stitching in a thread that matches it, and the jacket's cloth in its shadow beside it.
+ */
+function trimBand(uid: string, t: Tone, from: readonly Pt[], sign: 1 | -1, shadeTo: number, cut: GiCut, c: CollarBand): string {
+  const fold = softly(cut);
+  // The band's top is under the collar's ring round the neck: drawn from a little below the neck's edge, so its square-cut end never shows past the ring.
+  const edge: Pt[] = [atY(from, 14), ...from.filter((p) => p[1] > 14)];
+  const w = cut.lapel;
+  const line = (k: number): Pt[] => offset(edge, -sign * w * k);
+  const shape = band(edge, line(1));
+  let s = fold(smooth(offset(edge, -sign * (w + 1.2))), 3, shadeTo * 0.7);
+  s += `<path d="${shape}" fill="${c.fill}"/>`;
+  for (const b of c.bands ?? []) s += `<path d="${band(line(b.from), line(b.to))}" fill="${b.fill}"/>`;
+  // Where the band turns over the neck's edge it catches the light; where it lies on the jacket it is in a soft shadow of its own.
+  s += fold(smooth(offset(edge, -sign * 1.6)), 2.2, 0.22, true);
+  s += fold(smooth(offset(edge, -sign * (w - 1.6))), 2.4, 0.2);
+  for (const k of [1.3 / w, 1 - 1.3 / w]) s += `<path d="${smooth(line(k))}" fill="none" stroke="${c.stitch}" stroke-width="0.34" stroke-dasharray="1.3 0.8" stroke-opacity="0.9" stroke-linecap="round"/>`;
+  s += `<path d="${smooth(edge)}" fill="none" stroke="${c.edge}" stroke-width="0.7" stroke-opacity="0.7"/>`;
+  s += `<path d="${smooth(line(1))}" fill="none" stroke="${c.edge}" stroke-width="0.6" stroke-opacity="0.65"/>`;
+  return s;
+}
+
+/**
  * The V between the two lapels' free edges, from the neck down to where they cross, as the front panel's own cut: the cloth is not there, so the
  * turning view shows what is behind it (the inside of the back, judogiInner.ts). It runs 2 units under each lapel's band so no seam shows.
  */
-export function jacketOpening(): Pt[] {
+export function jacketOpening(cut: GiCut = JUDO_CUT): Pt[] {
+  if (cut.neck === "v") {
+    // Run 2 units under each band, as the lapels' opening does, so no cloth shows between a band's edge and the gap.
+    const u = offset(V_UNDER, 2).slice(0, 4);
+    const tp = offset(V_TOP, -2).slice(0, 4);
+    return [[u[0]![0], 6], ...u, [V_FOOT[0], V_FOOT[1] + 4], ...[...tp].reverse(), [tp[0]![0], 6]];
+  }
   const cross = atY(TOP_EDGE, 48);
   return [[UNDER_EDGE[0]![0] - 2, 6], ...UNDER_EDGE.slice(0, 3), cross, ...TOP_EDGE.slice(0, 2).reverse(), [TOP_EDGE[0]![0] + 2, 6]];
 }
 
 /** The outline of a face's body: the front's has the V cut out of its top edge. */
 function faceOutline(tied: boolean, face: "front" | "back", cut: GiCut): Pt[] {
-  return face === "front" ? [...bodyOutline(tied, cut), ...[...jacketOpening()].reverse()] : bodyOutline(tied, cut);
+  return face === "front" ? [...bodyOutline(tied, cut), ...[...jacketOpening(cut)].reverse()] : bodyOutline(tied, cut);
 }
 
 /** The front: the under panel with the V cut at the neck, the lapel underneath, then the one on top. */
@@ -311,11 +383,16 @@ function front(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   const fold = softly(cut);
   const tied = ink.belt !== undefined;
   const outline = poly(faceOutline(tied, "front", cut));
+  const v = cut.neck === "v";
   let s = sleeve(uid, t, -1, false, cut) + sleeve(uid, t, 1, false, cut) + bodyCloth(uid, t, outline, tied, cut);
   // The lapel underneath, as far as the top one lets it show, with the top one's shadow on it.
-  s += `<g clip-path="url(#${uid}under)">${lapelBand(uid, t, UNDER_EDGE, -1, t.light ? 0.16 : 0.26, cut)}</g>`;
-  // The top panel's free edge throws a shadow on the panel under it, down to the hem.
-  s += `<g clip-path="url(#${uid}under)">${fold(smooth(offset(TOP_EDGE.slice(2), 2.2)), 5, t.light ? 0.26 : 0.36)}</g>`;
+  s += `<g clip-path="url(#${uid}under)">${lapelBand(uid, t, underEdge(cut), -1, t.light ? 0.16 : 0.26, cut)}</g>`;
+  // The top panel's free edge throws a shadow on the panel under it, down to the hem (a V-neck's top band only on the other band's end).
+  s += v
+    ? `<g clip-path="url(#${uid}under)">${fold(smooth(offset(V_TOP.slice(3), 1.6)), 3.4, t.light ? 0.3 : 0.4)}</g>`
+    : `<g clip-path="url(#${uid}under)">${fold(smooth(offset(TOP_EDGE.slice(2), 2.2)), 5, t.light ? 0.26 : 0.36)}</g>`;
+  // A pullover's front is one panel: the cloth pulls a little toward the V's foot from each side of the chest.
+  if (v) s += fold(smooth([[84, 80], [91, 86], [97, 92]]), 9, t.light ? 0.035 : 0.08) + fold(smooth([[116, 80], [109, 86], [103, 92]]), 9, t.light ? 0.035 : 0.08) + fold(smooth([[100, 74], [100, 98], [100, 122]]), 10, 0.1, true);
   // Soft folds of the skirt and of the body hanging from the shoulders.
   s += fold(smooth([[66, 124], [64, 160], [63, 200]]), 6, t.light ? 0.1 : 0.18);
   s += fold(smooth([[132, 122], [135, 160], [137, 200]]), 7, t.light ? 0.1 : 0.18);
@@ -325,7 +402,8 @@ function front(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   s += fold(smooth([[142, 90], [134, 102], [124, 113]]), 10, t.light ? 0.07 : 0.14);
   s += fold(smooth([[128, 40], [124, 70], [126, 104]]), 9, t.light ? 0.2 : 0.1, true);
   s += edges(t, tied, cut);
-  s += lapelBand(uid, t, TOP_EDGE, 1, t.light ? 0.2 : 0.3, cut);
+  s += lapelBand(uid, t, topEdge(cut), 1, t.light ? 0.2 : 0.3, cut);
+  s += hemTrim(t, tied, cut);
   s += ink.marks?.front?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
   if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
@@ -343,8 +421,15 @@ function back(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   const wide = (cut.lapel - 1) / (LAPEL - 1);
   const foot: Pt[] = ([[75, 16], [100, 19.5], [125, 16]] as Pt[]).map((p, i) => [p[0], (top[i] as Pt)[1] + (p[1] - (top[i] as Pt)[1]) * wide] as Pt);
   const shape = band(top, foot);
-  s += `<path d="${shape}" fill="${t.fill}"/><path d="${shape}" fill="url(#${uid}S)"/>`;
-  for (const k of [0.18, 0.34, 0.5, 0.66, 0.82]) s += stitch(smooth(top.map((p, i) => [p[0] + (foot[i]![0] - p[0]) * k, p[1] + (foot[i]![1] - p[1]) * k] as Pt)), t, 0.4, 0.85);
+  const between = (k: number): Pt[] => top.map((p, i) => [p[0] + (foot[i]![0] - p[0]) * k, p[1] + (foot[i]![1] - p[1]) * k] as Pt);
+  const c = cut.band;
+  s += `<path d="${shape}" fill="${c?.fill ?? t.fill}"/>`;
+  // The colours laid along a coloured collar: from the neck's edge (the top here) toward where it is sewn on.
+  for (const b of c?.bands ?? []) s += `<path d="${band(between(b.from), between(b.to))}" fill="${b.fill}"/>`;
+  // The weave's light grains belong to white cloth: a coloured band is drawn plain, its stitching and its edges giving it its texture.
+  if (c === undefined) s += `<path d="${shape}" fill="url(#${uid}S)"/>`;
+  if (c !== undefined) for (const k of [0.14, 0.86]) s += `<path d="${smooth(between(k))}" fill="none" stroke="${c.stitch}" stroke-width="0.34" stroke-dasharray="1.3 0.8" stroke-opacity="0.9"/>`;
+  else for (const k of [0.18, 0.34, 0.5, 0.66, 0.82]) s += stitch(smooth(between(k)), t, 0.4, 0.85);
   s += fold(smooth(foot.map((p) => [p[0], p[1] + 1.6] as Pt)), 3.2, t.light ? 0.22 : 0.32);
   s += seam(smooth(foot), t, 0.6);
   s += fold(smooth([[100, 24], [100, 70], [100, 110]]), 10, 0.14, true);
@@ -353,6 +438,7 @@ function back(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   s += fold(smooth([[58, 90], [66, 102], [77, 113]]), 10, t.light ? 0.06 : 0.12);
   s += fold(smooth([[142, 90], [134, 102], [123, 113]]), 10, t.light ? 0.06 : 0.12);
   s += edges(t, tied, cut);
+  s += hemTrim(t, tied, cut);
   s += ink.marks?.back?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
   if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
@@ -364,13 +450,13 @@ function back(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
  * the body at its own height there. The same cloth and weave, darker where it is turned from the light and in the collar's shadow at the neck, the collar's
  * seam on the back panel, and the rim's strip above. The neck label and its size tag are sewn on the back panel just under the collar.
  */
-function inside(uid: string, ink: GiInk, t: Tone, face: "front" | "back"): string {
+function inside(uid: string, ink: GiInk, t: Tone, face: "front" | "back", cutOf: GiCut = JUDO_CUT): string {
   const x0 = 14;
   const w = 172;
   const flip = (p: Pt): Pt => [200 - p[0], p[1]];
   // The front's V is cut through the cloth whichever side is seen: the inner faces are cut where the outer are, in the drawing turned over as the inner cells sample it.
   // (The V runs up past the top of the cloth, so a cell grown a little over its edge finds nothing there.)
-  const cut = face === "front" ? poly(jacketOpening().map((p): Pt => flip(p[1] <= 6 ? [p[0], -4] : p))) : "";
+  const cut = face === "front" ? poly(jacketOpening(cutOf).map((p): Pt => flip(p[1] <= 6 ? [p[0], -4] : p))) : "";
   const cloth = `<path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="${t.fill}"/><path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="url(#${uid}G)"/>` +
     `<path fill-rule="evenodd" d="M${x0} ${RIM_TO + 1}h${w}v96h${-w}Z${cut}" fill="${t.shadow}" fill-opacity="0.6"/>`;
   // The rim: the cut edge of the neck's cloth, a plain strip with its turned hem (the front's has the V's gap in it).
@@ -391,12 +477,12 @@ export function jacketFace(ink: GiInk, face: "front" | "back", cut: GiCut = JUDO
   const uid = `${ink.uid}${face === "front" ? "f" : "b"}`;
   const outline = poly(faceOutline(tied, face, cut));
   const room = `M14 ${INNER_DY + RIM_FROM - 1}H186V${INNER_DY + 96}H14Z`;
-  const clip = [outline, poly(sleeveOutline(-1, cut.sleeve)), poly(sleeveOutline(1, cut.sleeve)), room];
+  const clip = [outline, poly(sleeveOutline(-1, cut.sleeve, cut.cuff)), poly(sleeveOutline(1, cut.sleeve, cut.cuff)), room];
   const defs = weaves(uid, t, cut.plain) + lightDefs(uid, t) +
     `<clipPath id="${uid}body"><path d="${outline}"/></clipPath>` +
-    `<clipPath id="${uid}under"><path d="${leftOf(TOP_EDGE)}"/></clipPath>` +
+    `<clipPath id="${uid}under"><path d="${leftOf(topEdge(cut))}"/></clipPath>` +
     (ink.marks?.[face]?.defs ?? "") + (face === "back" ? ink.marks?.backInner?.defs ?? "" : "");
-  return { defs, body: face === "front" ? front(uid, ink, t, cut) : back(uid, ink, t, cut), clip, extra: inside(uid, ink, t, face) };
+  return { defs, body: face === "front" ? front(uid, ink, t, cut) : back(uid, ink, t, cut), clip, extra: inside(uid, ink, t, face, cut) };
 }
 
 /** The bottom of a tied belt's band at the front: a mark on the jacket's front stays below it (the band is 15.5 units from its top). */
@@ -411,7 +497,7 @@ export const SLEEVE_ANGLE = (Math.atan((S[0] - P[0]) / (P[1] - S[1])) * 180) / M
  * 100 cm2 on the left chest) are put inside it, so none runs onto the lapel or the sleeve, whatever shape the body is cut to.
  */
 export function chestSpan(y: number, cut: GiCut = JUDO_CUT): [number, number] {
-  const band = offset(TOP_EDGE, -cut.lapel);
+  const band = offset(topEdge(cut), -cut.lapel);
   const left = atY(band, y)[0];
   const [hx, hy] = [200 - CAP[4]!, CAP[5]!];
   const [ax, ay] = mirror(A);
