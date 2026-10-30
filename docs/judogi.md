@@ -221,6 +221,8 @@ The package's own sizes are inside both. The small print of the retailer's chart
 
 `label: true` (or `{ colour, thread }`) sews the package's own woven label on all three pieces: at the jacket's bottom front on the wearer's left beside the maker's logo spot, on the front of the trousers just under the waistband near the middle, and on the belt's left hanging end, upright, near the knot, with the rest of the end left for embroidery. These are the places the IJF Judogi Rules (09 03 2022) give for its approval label.
 
+**Thickness and edge.** A woven label is 3 mm thick by default, kept to 2 to 4 mm (`thicknessMm`; `LABEL_MM` holds the range). Its cut edge stands off the garment and shows when the piece turns, and it is sewn on with a running stitch just inside its edge. The neck label and its size tag take the same thickness. A belt's end tags are drawn flat, as before.
+
 ```js
 import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
 

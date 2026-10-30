@@ -184,7 +184,7 @@ const FONT = "'Yuji Syuku','Klee One','Klee','Hiragino Mincho ProN','Yu Mincho',
  */
 export function neckLabel(id: string, b: ReadBranding, l: ReadLabel, w: number): { defs: string; body: string } {
   const h = w / 1.4;
-  const base = woven(id, l, w, h);
+  const base = woven(id, l, w, h, { mm: l.mm });
   let s = base.under;
   const font = "system-ui";
   s += satinRun(layout(b.name, 0, -h * 0.34, { height: h * 0.1, maxWidth: w * 0.6, weight: "bold", tracking: 1.1 }), l.thread, `${id}S`, font);
@@ -205,7 +205,7 @@ export function neckLabel(id: string, b: ReadBranding, l: ReadLabel, w: number):
 /** The size tag sewn under the neck label: a small dark tag with the size in thread, `w` units wide and about 0.6 as high. */
 export function sizeTag(id: string, text: string, l: ReadLabel, w: number): { defs: string; body: string } {
   const h = w * 0.62;
-  const base = woven(id, l, w, h);
+  const base = woven(id, l, w, h, { mm: l.mm });
   const body = base.under + satinRun(layout(text, 0, 0, { height: h * 0.46, maxWidth: w * 0.74, weight: "bold" }), l.thread, `${id}S`, "system-ui") + base.over;
   return { defs: base.defs, body };
 }

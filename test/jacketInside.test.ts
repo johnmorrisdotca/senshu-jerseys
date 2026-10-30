@@ -155,8 +155,10 @@ test("the neck label and the size tag are on the inside of the back panel, below
   const marks = buildMarks("t", readMarks({ branding: true })!, cloth, 12);
   const without = buildMarks("t", readMarks({ branding: { neckLabel: false } })!, cloth, 12);
   assert.ok(marks.jacket.backInner !== undefined && without.jacket.backInner === undefined, "the label is a mark of the inner face");
-  assert.equal(marks.jacket.front?.body.length, without.jacket.front?.body.length, "none of it is on the front's drawing (it used to sit on a flat card there)");
-  assert.equal(marks.jacket.back?.body.length, without.jacket.back?.body.length, "nor on the outside of the back");
+  // The ids are hashed from the whole spec, so a changed label changes them; the drawing is compared without them.
+  const drawn = (body: string | undefined): number => (body ?? "").replace(/(url\(#|id=")[^)"]*/g, "$1").length;
+  assert.equal(drawn(marks.jacket.front?.body), drawn(without.jacket.front?.body), "none of it is on the front's drawing (it used to sit on a flat card there)");
+  assert.equal(drawn(marks.jacket.back?.body), drawn(without.jacket.back?.body), "nor on the outside of the back");
   // The inner face of the back panel: back cells whose drawing is the inner one.
   // The cells under the label, at the middle of the back panel.
   const innerBack = bodyCells.filter((c) => c.back && c.tex[1]! >= INNER_DY && c.g === 3 && Math.abs((c.p[0]! + c.p[3]! + c.p[6]!) / 3) < 12);

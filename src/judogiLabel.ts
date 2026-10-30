@@ -8,8 +8,14 @@
 
 import { blend, graphemes, hexOf, lum, readColour, type Rgb } from "./colour.ts";
 import { n2 } from "./path.ts";
+import { patchEdge } from "./judogiPatch.ts";
 import { layout } from "./text.ts";
 import { readThread, satinDefs, satinRun, satinStroke, type ThreadColour } from "./judogiThread.ts";
+
+/** A woven label's thickness in millimetres: 2 to 4, 3 by default (a woven label is thinner than a sewn patch, `PATCH_MM`). */
+export const LABEL_MM = { min: 2, max: 4, default: 3 } as const;
+/** A label's thickness kept to `LABEL_MM`; the default when none is given. */
+export const labelMm = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(LABEL_MM.min, Math.min(LABEL_MM.max, v)) : LABEL_MM.default);
 
 export const LABEL_COLOURS = ["navy", "forest", "black", "wine", "cream"] as const;
 export type LabelColour = (typeof LABEL_COLOURS)[number];
@@ -36,12 +42,15 @@ export interface JudogiLabel {
   colour?: LabelColour | string;
   /** The thread: a preset or `#rrggbb`; the variant's own by default. */
   thread?: ThreadColour | string;
+  /** The thickness in millimetres, 2 to 4 (`LABEL_MM`; 3 by default): the cut edge stands off the garment and the sewn edge is stitched. */
+  thicknessMm?: number;
 }
 
 export interface ReadLabel {
   cloth: Rgb;
   thread: Rgb;
   name: string;
+  mm: number;
 }
 
 /** The label from outside: `true` (or an empty object) for the navy label on all three pieces; `undefined` for none. */
@@ -55,7 +64,7 @@ export function readLabel(raw: unknown): ReadLabel | undefined {
   const cloth = custom ?? v.cloth;
   // A custom cloth takes a thread that reads on it.
   const fallback: ThreadColour = custom === undefined ? v.thread : lum(custom) > 0.4 ? "navy" : "gold";
-  return { cloth, thread: readThread(o.thread, fallback).rgb, name: named ?? (custom === undefined ? "navy" : "custom") };
+  return { cloth, thread: readThread(o.thread, fallback).rgb, name: named ?? (custom === undefined ? "navy" : "custom"), mm: labelMm(o.thicknessMm) };
 }
 
 /** The label's proportions: 3.5 by 5 cm, upright. */
@@ -84,8 +93,12 @@ function judogiIcon(thread: Rgb, ground: Rgb, id: string, light: boolean): strin
  * The label, centred on the origin and `w` units wide (`w / 0.7` high). `id` names its own patterns. Letters follow a circle clockwise over the top and
  * counter-clockwise under the bottom so that both read upright.
  */
-/** The woven base every label shares, centred on the origin, `w` by `h`: its shadow and cloth with the weave, then (to draw after the lettering) its woven border, sheen and curled corner. */
-export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: string; under: string; over: string; thread: string } {
+/**
+ * The woven base every label shares, centred on the origin, `w` by `h`: its shadow and cloth with the weave, then (to draw after the lettering) its woven border,
+ * sheen and curled corner. `sewn` (a sewn-on label: the jacket's, the neck's, the size tag's) adds the cut edge's thickness under the cloth and a running stitch
+ * just inside the edge; without it the cloth lies flat.
+ */
+export function woven(id: string, l: ReadLabel, w: number, h: number, sewn?: { mm: number }): { defs: string; under: string; over: string; thread: string } {
   const light = lum(l.cloth) > 0.4;
   const cloth = hexOf(l.cloth);
   const deep = hexOf(blend(l.cloth, [0, 0, 0], 0.5));
@@ -104,6 +117,7 @@ export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: s
   let under = "";
   // A soft contact shadow all round, nearly level (a label is a thin cloth: it throws a hair of shadow, not a slab down one side).
   for (const [k, o] of [[side * 0.06, 0.03], [side * 0.036, 0.05], [side * 0.02, 0.07], [side * 0.008, 0.09]] as const) under += `<rect ${rect(k, side * 0.008, side * 0.016)} fill="#1a2230" fill-opacity="${o}"/>`;
+  if (sewn !== undefined) under += patchEdge(-w / 2, -h / 2, w, h, sewn.mm, l.cloth);
   under += `<rect ${rect()} fill="${cloth}"/><g clip-path="url(#${id}C)"><rect ${rect()} fill="url(#${id}W)"/><rect ${rect()} fill="url(#${id}T)"/></g>`;
   // A woven border (two lines of thread with the cloth between them), inset from the edge.
   const edge = side * 0.075;
@@ -115,6 +129,14 @@ export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: s
     `<path d="M${n2(w / 2)} ${n2(h / 2 - c)}L${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2)}Z" fill="#fff" fill-opacity="${light ? 0.2 : 0.1}"/>` +
     `<path d="M${n2(w / 2 - c)} ${n2(h / 2)}L${n2(w / 2)} ${n2(h / 2 - c)}" stroke="#101620" stroke-opacity="0.3" stroke-width="0.5"/></g>`;
   over += `<rect ${rect()} fill="none" stroke="${deep}" stroke-width="0.6" stroke-opacity="0.8"/>`;
+  if (sewn !== undefined) {
+    // The sewn-on edge: a running stitch a hair inside the cut edge, in the thread, with a shadow under each stitch.
+    const s = side * 0.03;
+    const box = `x="${n2(-w / 2 + s)}" y="${n2(-h / 2 + s)}" width="${n2(w - 2 * s)}" height="${n2(h - 2 * s)}" rx="0.5" fill="none"`;
+    const dash = `stroke-dasharray="${n2(side * 0.07)} ${n2(side * 0.035)}" stroke-linecap="round"`;
+    over += `<g data-edge="running"><rect ${box} stroke="#10141c" stroke-opacity="0.35" stroke-width="${n2(side * 0.016)}" transform="translate(${n2(side * 0.008)} ${n2(side * 0.012)})" ${dash}/>` +
+      `<rect ${box} stroke="${thread}" stroke-width="${n2(side * 0.012)}" ${dash}/></g>`;
+  }
   return { defs, under, over, thread };
 }
 
@@ -125,11 +147,11 @@ export function woven(id: string, l: ReadLabel, w: number, h: number): { defs: s
 export function labelMark(id: string, l: ReadLabel, w: number): { defs: string; body: string } {
   const h = w / LABEL_ASPECT;
   const light = lum(l.cloth) > 0.4;
-  const base = woven(id, l, w, h);
+  const base = woven(id, l, w, h, { mm: l.mm });
   const thread = base.thread;
   const font = "system-ui";
   let s = base.under;
-  const word = (text: string, cy: number, hh: number): string => satinRun(layout(text, 0, cy, { height: hh, maxWidth: w * 0.74, weight: "black", tracking: 0.3 }), l.thread, `${id}S`, font);
+  const word =(text: string, cy: number, hh: number): string => satinRun(layout(text, 0, cy, { height: hh, maxWidth: w * 0.74, weight: "black", tracking: 0.3 }), l.thread, `${id}S`, font);
   s += word("APPROVED", -h * 0.375, h * 0.065) + word("JUDOGI", h * 0.375, h * 0.065);
   // The circle: an outer ring, the ring of words, an inner ring and the judogi.
   const R = w * 0.385;
