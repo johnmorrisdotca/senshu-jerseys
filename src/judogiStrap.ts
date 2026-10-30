@@ -29,8 +29,6 @@ export interface StrapDesc {
   worn: boolean;
   /** Worn: the jacket's rows from the belt's top down to the hem, as `y, half width, half depth` in turn, so the hanging ends lie on the skirt. */
   skirt?: number[];
-  /** How long the hanging ends are, as a multiple of the usual 25 cm. */
-  tail?: number;
 }
 
 /**
@@ -156,7 +154,7 @@ export function strapCells(s: StrapDesc): Cell[] {
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
   cells.push(...knotCells(s, cy, zFront, front));
-  endsOf(cy, s.tail).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number, cy + s.w / 2)));
+  endsOf(cy).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number, cy + s.w / 2)));
   return cells;
 }
 
@@ -263,9 +261,8 @@ function knotCells(s: StrapDesc, cy: number, z0: number, also?: Vec): Cell[] {
 }
 
 /** The two hanging ends, each from under the knot to its cut end, on the picture's 200-wide drawing (the belt's middle at x 100). */
-function endsOf(cy: number, tail = 1): [[number, number], [number, number]][] {
-  const lean = 1 + (tail - 1) * 0.35;
-  return [[[96, cy + 6], [96 - 16 * lean, cy + 6 + HANG * tail]], [[105, cy + 5], [105 + 14 * lean, cy + 5 + HANG * 0.92 * tail]]];
+function endsOf(cy: number): [[number, number], [number, number]][] {
+  return [[[96, cy + 6], [80, cy + 6 + HANG]], [[105, cy + 5], [119, cy + 5 + HANG * 0.92]]];
 }
 
 /** The depth of a round of half width `a` and half depth `b` at `x` across it, as the body's volume draws it (never less than its side wall). */
@@ -383,8 +380,5 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
   const sewn = (m: { body: string } | undefined, x: number): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(w / 2)})">${m.body}</g>`);
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
   const twillDefs = fine ? `<pattern id="jgtwill" width="0.62" height="0.62" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="0.62" height="0.24" fill="#000" fill-opacity="0.09"/><rect y="0.31" width="0.62" height="0.14" fill="#fff" fill-opacity="0.07"/></pattern>` : "";
-  // Longer ends run on past the strip's usual 240 units, so the strips are drawn longer (the usual drawing is unchanged).
-  const reach = (t: string): string => ((p.tail ?? 1) > 1 ? t.replaceAll('width="280"', 'width="480"').replaceAll("H240", "H440") : t);
-  const done = { defs: twillDefs + (p.strip?.defs ?? ""), body: faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
-  return { ...done, body: reach(done.body), clip: done.clip.map(reach) };
+  return { defs: twillDefs + (p.strip?.defs ?? ""), body: faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

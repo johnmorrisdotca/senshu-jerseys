@@ -10,7 +10,7 @@ export {
 } from "./judogi.ts";
 export type { JudogiBelt, JudogiCheck, JudogiColour, JudogiMode, JudogiOptions, JudogiSize, JudogiView } from "./judogi.ts";
 export { BELT_RGB as JUDOGI_BELT_RGB } from "./judogiBelt.ts";
-export { KARATE_CUTS, KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TAIL_CM, KARATE_TEXT } from "./karategi.ts";
+export { KARATE_CUTS, KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TEXT } from "./karategi.ts";
 export type { JudogiKarate, KarateCut, KarateSleeve } from "./karategi.ts";
 export { BELT_PRESETS, STRIPE_COLOURS, beltPreset } from "./judogiStripes.ts";
 export { gradeBelt } from "./beltGrade.ts";

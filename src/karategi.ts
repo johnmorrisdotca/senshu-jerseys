@@ -1,7 +1,7 @@
 // The karate gi (karategi), a variant of the judogi drawing: the same jacket, trousers and belt on the same volumes, cut and cloth changed. A karate gi's cloth is lighter
 // and plainer (one fine weave, no quilted skirt, no waist seam, a single hem, softer folds), its lapel narrower, its sleeves cut to the wrist, to mid-forearm or to the
-// elbow, its belt ends longer. Kanji are stitched down the wearer's left chest beside the lapel, and a round patch sits on the left sleeve and the left leg (neutral
-// placeholder art, no style's or federation's badge).
+// elbow. Kanji are stitched down the wearer's left chest beside the lapel, and a round patch sits on the left sleeve and the left leg (neutral
+// placeholder art, no style's or federation's badge). The belt is the judogi's, its ends 25 cm.
 //
 // Sources, read 2026-10-30. The World Karate Federation's Kumite Competition Rules (valid from 1.1.2024, Article 2, 2.2.1) and its Karate Competition Rules (effective from
 // 1.1.2020, Article 2, Competitors) give the same measures for a competition gi: the jacket, tightened with the belt, covers the hips and is no longer than three-quarters of the
@@ -38,16 +38,13 @@ export const KARATE_SLEEVE_SHARE: Record<KarateSleeve, number> = { full: 1, "thr
 
 /**
  * What each cut changes, in the drawing's units (2.63 to the centimetre): the jacket's hem (a kumite jacket just covers the hips, a kata one hangs nearer three-quarters of the
- * thigh), how soft its folds are (a lighter cloth hangs in softer ones), and how long the belt's ends are by default.
+ * thigh) and how soft its folds are (a lighter cloth hangs in softer ones).
  */
-const CUTS: Record<KarateCut, { hem: number; soft: number; tailCm: number }> = {
-  training: { hem: 200, soft: 0.6, tailCm: 50 },
-  kumite: { hem: 193, soft: 0.42, tailCm: 20 },
-  kata: { hem: 211, soft: 0.85, tailCm: 20 },
+const CUTS: Record<KarateCut, { hem: number; soft: number }> = {
+  training: { hem: 200, soft: 0.6 },
+  kumite: { hem: 193, soft: 0.42 },
+  kata: { hem: 211, soft: 0.85 },
 };
-
-/** The belt's free ends: at least the 15 cm the WKF names, and as far as the usual 25 cm drawing can be stretched. */
-export const KARATE_TAIL_CM = { min: 15, max: 70 } as const;
 
 /** What is stitched down the lapel when none is asked for: "karate" in two characters. */
 export const KARATE_TEXT = "空手";
@@ -67,8 +64,6 @@ export interface JudogiKarate {
   thread?: ThreadColour | string;
   /** The round patches on the wearer's left sleeve and left leg: `true` for both, `false` for none, or an object that leaves one out with `sleeve: false` or `leg: false`; the training cut has both by default. */
   patches?: boolean | { sleeve?: boolean; leg?: boolean; colour?: ThreadColour | string };
-  /** How far the belt's ends hang from the knot, in centimetres, 15 to 70: 50 on the training cut, 20 on the competition cuts. */
-  tailCm?: number;
 }
 
 export interface ReadKarate {
@@ -80,7 +75,6 @@ export interface ReadKarate {
   sleevePatch: boolean;
   legPatch: boolean;
   patchColour: { name: string; rgb: Rgb };
-  tailCm: number;
   /** Whether the text, the patches or the belt's length were asked for rather than being the cut's own. */
   asked: { text: boolean; patches: boolean };
 }
@@ -101,7 +95,6 @@ export function readKarate(raw: unknown): ReadKarate | undefined {
   const set = p !== null && typeof p === "object" ? p : undefined;
   const sleevePatch = p === true || (set !== undefined ? set.sleeve !== false : p === undefined && training);
   const legPatch = p === true || (set !== undefined ? set.leg !== false : p === undefined && training);
-  const tail = typeof o.tailCm === "number" && Number.isFinite(o.tailCm) ? Math.max(KARATE_TAIL_CM.min, Math.min(KARATE_TAIL_CM.max, o.tailCm)) : c.tailCm;
   return {
     sleeve, cut,
     gi: { sleeve: KARATE_SLEEVE_SHARE[sleeve], hem: c.hem, lapel: 9.2, collar: 1.6, plain: true, soft: c.soft },
@@ -109,13 +102,9 @@ export function readKarate(raw: unknown): ReadKarate | undefined {
     thread: readThread(o.thread, "navy"),
     sleevePatch, legPatch,
     patchColour: readThread(set?.colour, "red"),
-    tailCm: tail,
     asked: { text: o.text !== undefined, patches: p !== undefined },
   };
 }
-
-/** The belt's ends as a multiple of the usual 25 cm. */
-export const karateTail = (k: ReadKarate): number => (k.tailCm === 25 ? 1 : k.tailCm / 25);
 
 /** What the competition rules say of this gi, as checks: each is met or not, and the fact is cited. */
 export function karateNotes(k: ReadKarate, heightCm: number, colour: "white" | "blue"): { id: string; met: boolean; fact: string }[] {
@@ -126,7 +115,7 @@ export function karateNotes(k: ReadKarate, heightCm: number, colour: "white" | "
     { id: "karate-jacket", met: true, fact: `The jacket, tightened with the belt, covers the hips and is no longer than three-quarters of the thigh (${wkf}).` },
     { id: "karate-sleeve", met: k.sleeve !== "short", fact: `The sleeves are no longer than the bend of the wrist and no shorter than halfway down the forearm, and are not rolled up (${wkf}); the short sleeve ends at the elbow, outside that range.` },
     { id: "karate-trouser", met: true, fact: `The trousers cover at least two thirds of the shin and do not reach below the anklebone (${wkf}).` },
-    { id: "karate-belt-ends", met: k.tailCm >= 15 && (!competition || k.tailCm <= thigh), fact: `The belt leaves at least 15 cm free on each side of the knot and is no longer than three-quarters of the thigh, about ${thigh} cm at this height (${wkf}); a karateka's belt in training is often much longer (Wikipedia, Karate gi).` },
+    { id: "karate-belt-ends", met: thigh >= 25, fact: `The belt leaves at least 15 cm free on each side of the knot and is no longer than three-quarters of the thigh, about ${thigh} cm at this height (${wkf}); its ends are drawn 25 cm. A karateka's belt in training is often much longer (Wikipedia, Karate gi), which is not drawn yet.` },
     { id: "karate-plain", met: !competition || (colour === "white" && k.text === "" && !k.sleevePatch && !k.legPatch), fact: `A competition gi is white, without stripes, piping or personal embroidery; only the national emblem or flag on the left breast and the maker's original labels may show (${wkf}).` },
   ];
 }

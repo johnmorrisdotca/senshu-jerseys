@@ -29,8 +29,6 @@ export interface BeltPaint {
   fine?: { thread?: string };
   /** Marks laid straight on a strap's face strip, in the strip's own units (the collar's lapel hem). */
   strip?: Mark;
-  /** How long the hanging ends are, as a multiple of the usual 25 cm (a karate belt's are longer). */
-  tail?: number;
 }
 
 /** Marks sewn or woven on one face of a piece (patches, labels, embroidery): their defs and their drawing, in the face's own box. */

@@ -1,5 +1,5 @@
 // The karate gi: a variant of the judogi drawing with its own options. The sleeve is cut to the wrist, mid-forearm or the elbow, the cut sets the jacket's hem, the competition cuts
-// carry nothing unasked, the belt's ends hang as far as asked, and the check reports the WKF's measures (WKF Kumite Competition Rules 2024 and Karate Competition Rules 2020, Article 2).
+// carry nothing unasked, and the check reports the WKF's measures (WKF Kumite Competition Rules 2024 and Karate Competition Rules 2020, Article 2).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -8,7 +8,7 @@ import { JUDO_CUT } from "../src/giCut.ts";
 import { jacketDesc, chestSpan, sleeveOutline } from "../src/judogiJacket.ts";
 import { legOutline } from "../src/judogiPants.ts";
 import { corners } from "../src/judogiPlaces.ts";
-import { KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TAIL_CM, karateSpots, karateTail, readKarate } from "../src/karategi.ts";
+import { KARATE_SLEEVES, KARATE_SLEEVE_SHARE, karateSpots, readKarate } from "../src/karategi.ts";
 import type { Pt } from "../src/path.ts";
 
 const inside = (p: Pt, poly: readonly Pt[]): boolean => {
@@ -30,31 +30,24 @@ test("no karate option is a judogi, unchanged", () => {
   assert.equal(renderJudogi({ mode: "suit", belt: "black", karate: false as never }), plain);
 });
 
-test("the training cut is the default: full sleeve, the text and both patches, long belt ends", () => {
+test("the training cut is the default: full sleeve, the text and both patches", () => {
   const k = readKarate(true)!;
-  assert.deepEqual([k.sleeve, k.cut, k.text, k.sleevePatch, k.legPatch, k.tailCm], ["full", "training", "空手", true, true, 50]);
+  assert.deepEqual([k.sleeve, k.cut, k.text, k.sleevePatch, k.legPatch], ["full", "training", "空手", true, true]);
   const kumite = readKarate({ cut: "kumite" })!;
-  assert.deepEqual([kumite.text, kumite.sleevePatch, kumite.legPatch, kumite.tailCm], ["", false, false, 20]);
+  assert.deepEqual([kumite.text, kumite.sleevePatch, kumite.legPatch], ["", false, false]);
   const kata = readKarate({ cut: "kata" })!;
-  assert.deepEqual([kata.text, kata.sleevePatch, kata.legPatch, kata.tailCm], ["", false, false, 20]);
+  assert.deepEqual([kata.text, kata.sleevePatch, kata.legPatch], ["", false, false]);
 });
 
 test("each thing asked for is taken, anything else is the default", () => {
-  const k = readKarate({ sleeve: "short", cut: "kata", text: "極真 空手道 x", thread: "red", patches: { leg: false, colour: "navy" }, tailCm: 30 })!;
-  assert.deepEqual([k.sleeve, k.cut, k.text, k.thread.name, k.sleevePatch, k.legPatch, k.patchColour.name, k.tailCm], ["short", "kata", "極真空手", "red", true, false, "navy", 30]);
-  const odd = readKarate({ sleeve: "long" as never, cut: "x" as never, text: 5 as never, tailCm: Number.NaN })!;
-  assert.deepEqual([odd.sleeve, odd.cut, odd.text, odd.tailCm], ["full", "training", "空手", 50]);
+  const k = readKarate({ sleeve: "short", cut: "kata", text: "極真 空手道 x", thread: "red", patches: { leg: false, colour: "navy" } })!;
+  assert.deepEqual([k.sleeve, k.cut, k.text, k.thread.name, k.sleevePatch, k.legPatch, k.patchColour.name], ["short", "kata", "極真空手", "red", true, false, "navy"]);
+  const odd = readKarate({ sleeve: "long" as never, cut: "x" as never, text: 5 as never })!;
+  assert.deepEqual([odd.sleeve, odd.cut, odd.text], ["full", "training", "空手"]);
   assert.equal(readKarate({ text: false })!.text, "");
   assert.equal(readKarate({ cut: "kumite", text: "空手" })!.text, "空手");
   assert.equal(readKarate({ patches: false })!.sleevePatch, false);
   assert.equal(readKarate({ cut: "kumite", patches: true })!.legPatch, true);
-});
-
-test("the belt's ends are 15 to 70 cm, and a multiple of the usual 25 cm", () => {
-  assert.equal(readKarate({ tailCm: 3 })!.tailCm, KARATE_TAIL_CM.min);
-  assert.equal(readKarate({ tailCm: 400 })!.tailCm, KARATE_TAIL_CM.max);
-  assert.equal(karateTail(readKarate({ tailCm: 25 })!), 1);
-  assert.equal(karateTail(readKarate({ tailCm: 50 })!), 2);
 });
 
 test("a sleeve is cut shorter and shorter, the cuff keeping its width", () => {
@@ -126,19 +119,6 @@ test("the text lies on the chest, beside the lapel and under the collar, and the
   }
 });
 
-test("the belt's ends hang as far as asked, in the flat drawing and in the turning view's description", () => {
-  const ends = (tailCm: number): number => {
-    const svg = renderJudogi({ mode: "suit", belt: "black", karate: { tailCm }, bare: true });
-    const [, , , h] = /viewBox="([-\d. ]+)"/.exec(svg)![1]!.split(" ").map(Number);
-    return h!;
-  };
-  assert.ok(ends(50) >= ends(25));
-  const flat = (tailCm: number): string => renderJudogi({ mode: "jacket", view: "flat", belt: "black", karate: { tailCm } });
-  assert.notEqual(flat(25), flat(60));
-  const height = (svg: string): number => Number(/viewBox="[-\d. ]+ ([\d.]+)"/.exec(svg)![1]);
-  assert.ok(height(flat(60)) > height(flat(25)), "a jacket with long ends has a taller box so they are not cut off");
-});
-
 test("the check reports the competition's measures, and a competition gi carries nothing personal", () => {
   const check = (karate: object): ReturnType<typeof judogiCheck> => judogiCheck({ karate: karate as never });
   const training = check({});
@@ -149,15 +129,14 @@ test("the check reports the competition's measures, and a competition gi carries
   assert.ok(check({ cut: "kata" }).ok);
   assert.equal(check({ cut: "kumite", text: "空手" }).ok, false);
   assert.equal(check({ cut: "kata", patches: true }).ok, false);
-  assert.equal(check({ cut: "kumite", tailCm: 70 }).notes.find((n) => n.id === "karate-belt-ends")!.met, false);
-  assert.equal(check({ tailCm: 70 }).notes.find((n) => n.id === "karate-belt-ends")!.met, true);
+  assert.ok(check({}).notes.find((n) => n.id === "karate-belt-ends")!.met);
   // The judogi's own check is untouched.
   assert.ok(judogiCheck().notes.some((n) => n.id === "jacket-cover"));
   assert.ok(!judogiCheck().notes.some((n) => n.id.startsWith("karate")));
 });
 
 test("every garment of the karate gi draws, every 30 degrees, with nothing undefined or not a number in it", () => {
-  for (const karate of [true, { sleeve: "three-quarter" }, { sleeve: "short", tailCm: 70 }, { cut: "kumite" }, { cut: "kata", text: "形" }]) {
+  for (const karate of [true, { sleeve: "three-quarter" }, { sleeve: "short" }, { cut: "kumite" }, { cut: "kata", text: "形" }]) {
     for (const mode of ["suit", "jacket", "pants", "belt", "pieces"] as const) {
       for (let yaw = 0; yaw < 360; yaw += 90) {
         const svg = renderJudogi({ mode, belt: "brown", karate: karate as never, yaw, bare: true });
