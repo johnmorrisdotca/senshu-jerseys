@@ -12,9 +12,11 @@ test("the page loads, the large view is drawn and every tile has its picture", a
   await page.goto("/uniforms.html");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   const tiles = page.locator(".uni-tiles .judo-tile");
-  expect(await tiles.count()).toBeGreaterThanOrEqual(2 + 9 + 20);
+  expect(await tiles.count()).toBeGreaterThanOrEqual(7 + 9 + 20);
   await expect(page.locator('.uni-garments .judo-tile[data-value="judogi-white"]')).toBeVisible();
   await expect(page.locator('.uni-garments .judo-tile[data-value="judogi-blue"]')).toBeVisible();
+  // The karate gi: a tile for each sleeve, and the kumite and kata cuts.
+  for (const id of ["karate-full", "karate-three-quarter", "karate-short", "karate-kumite", "karate-kata"]) await expect(page.locator(`.uni-garments .judo-tile[data-value="${id}"]`)).toBeVisible();
   // A tile is drawn when it comes near the screen: bring each one there and wait for its picture.
   test.setTimeout(240000);
   for (const tile of await tiles.all()) {
@@ -81,4 +83,31 @@ test("no visible control is in the browser's own style, and each is a finger wid
     return s.borderRadius === "0px" && s.backgroundColor === "rgb(239, 239, 239)";
   }).length);
   expect(buttons).toBe(0);
+});
+
+test("every karate tile is drawn, and the sleeve choice is kept in the address and survives a reload", async ({ page }) => {
+  test.slow();
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/uniforms.html");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  for (const id of ["karate-full", "karate-three-quarter", "karate-short", "karate-kumite", "karate-kata"]) {
+    const tile = page.locator(`[data-testid="uni-garment"] [data-value="${id}"]`);
+    await tile.scrollIntoViewIfNeeded();
+    await expect(tile).toHaveAttribute("data-ready", "1", { timeout: 60000 });
+    expect(await tile.locator("img").evaluate((i) => i.complete && i.naturalWidth > 8)).toBe(true);
+  }
+  // Each sleeve is its own picture.
+  const srcs = await page.locator('[data-testid="uni-garment"] [data-value^="karate-"] img').evaluateAll((imgs) => imgs.map((i) => i.src.length));
+  expect(new Set(srcs).size).toBeGreaterThan(2);
+  await pick(page, "uni-garment", "karate-short");
+  await expect(page).toHaveURL(/garment=karate-short/);
+  await page.goto(page.url());
+  await expect(page.locator('[data-testid="uni-garment"] [data-value="karate-short"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  await pick(page, "uni-garment", "karate-three-quarter");
+  await expect(page).toHaveURL(/garment=karate-three-quarter/);
+  await page.goto(page.url());
+  await expect(page.locator('[data-testid="uni-garment"] [data-value="karate-three-quarter"]')).toHaveAttribute("aria-pressed", "true");
+  expect(errors.filter((e) => !/GL Driver|ReadPixels|WebGL/.test(e))).toEqual([]);
 });

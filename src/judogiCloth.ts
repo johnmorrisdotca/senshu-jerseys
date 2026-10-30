@@ -29,6 +29,8 @@ export interface BeltPaint {
   fine?: { thread?: string };
   /** Marks laid straight on a strap's face strip, in the strip's own units (the collar's lapel hem). */
   strip?: Mark;
+  /** How long the hanging ends are, as a multiple of the usual 25 cm (a karate belt's are longer). */
+  tail?: number;
 }
 
 /** Marks sewn or woven on one face of a piece (patches, labels, embroidery): their defs and their drawing, in the face's own box. */
@@ -95,11 +97,18 @@ export function toneOf(cloth: Rgb): Tone {
 /**
  * The weaves, each a pattern in the drawing's own units so it bends with the cloth when the drawing is wrapped:
  * `G` the jacket's upper body (a rice-grain double weave, small offset grains), `Q` the skirt's quilting (diamonds of stitched ridges),
- * `S` the sleeves (a plainer weave), `T` the trousers (a fine diagonal twill).
+ * `S` the sleeves (a plainer weave), `T` the trousers (a fine diagonal twill). A `plain` cloth (a karate gi's) has one fine, faint plain weave
+ * for the body, the skirt and the sleeves: no rice grain, no quilting.
  */
-export function weaves(uid: string, t: Tone): string {
+export function weaves(uid: string, t: Tone, plain = false): string {
   // On a dark cloth the same light lines stand out far more, so they are kept faint.
   const o = t.light ? 1 : 0.45;
+  if (plain) {
+    const fine = (id: string, a: number): string => `<pattern id="${uid}${id}" width="1.8" height="1.8" patternUnits="userSpaceOnUse">` +
+      `<rect width="0.9" height="0.9" fill="${t.seam}" fill-opacity="${n2(a * o)}"/><rect x="0.9" y="0.9" width="0.9" height="0.9" fill="${t.seam}" fill-opacity="${n2(a * o)}"/><rect x="0.9" width="0.9" height="0.45" fill="${t.hi}" fill-opacity="${n2(0.35 * o)}"/></pattern>`;
+    const twill = `<pattern id="${uid}T" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)"><rect width="2.2" height="0.8" fill="${t.seam}" fill-opacity="${n2(0.09 * o)}"/></pattern>`;
+    return fine("G", 0.07) + fine("Q", 0.07) + fine("S", 0.05) + twill;
+  }
   const grain = `<pattern id="${uid}G" width="3.2" height="2.6" patternUnits="userSpaceOnUse">` +
     `<ellipse cx="0.8" cy="0.65" rx="0.62" ry="0.42" fill="${t.seam}" fill-opacity="${n2(0.2 * o)}"/>` +
     `<ellipse cx="2.4" cy="1.95" rx="0.62" ry="0.42" fill="${t.seam}" fill-opacity="${n2(0.2 * o)}"/>` +

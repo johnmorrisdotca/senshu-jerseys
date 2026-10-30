@@ -246,3 +246,35 @@ renderJudogi({ mode: "jacket", branding: { name: "KAZE", kanji: "chikara", line:
 ```
 
 **The brush mark** is drawn here as tapered strokes (no font): `te` `手` (hand, as in `選手`, an athlete; the default), `chikara` `力` (strength) or `kokoro` `心` (heart, spirit). Give `kanji` any other text and it is set in a system font instead (the same `font` rules as embroidery apply: the font has to be on the computer or in the drawing). **Swapping:** `name`, `line` and `sizeTag` are your words; `colour` is a cloth variant (`navy`, `forest`, `black`, `wine`, `cream`) or `#rrggbb` and `thread` a thread preset or `#rrggbb`; `logo` is your artwork (SVG text or a `data:image/` address) in place of the S; `neckLabel: false` and `logos: false` turn a part off. Nothing here is a real maker's or federation's mark, and the package ships no other brand.
+
+## The karate gi
+
+`karate` turns the judogi into a karate gi (karategi) on the same jacket, trousers and belt volumes: `renderJudogi({ mode: "suit", belt: "black", karate: true })`. Open it in the [designer](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?kg=1&ks=three-quarter&mode=suit&belt=black) (the Karate gi switch) or as a [tile on the Uniforms page](https://johnmorrisdotca.github.io/senshu-jerseys/uniforms.html?garment=karate-three-quarter&belt=black), which has a tile for each sleeve and for the kumite and kata cuts. The belt is the judogi's: every colour, stripe and width works, and `judogiCheck` reports the karate gi's own measures in place of the IJF's.
+
+```js
+import { renderJudogi, judogiCheck } from "@johnmorrisdotca/senshu-jerseys";
+
+renderJudogi({ mode: "suit", belt: "black", karate: { sleeve: "three-quarter" } });
+renderJudogi({ mode: "suit", belt: "red", karate: { cut: "kumite" } });
+renderJudogi({ mode: "jacket", belt: "brown", karate: { text: "極真", thread: "dark-navy", patches: { leg: false }, tailCm: 60 } });
+judogiCheck({ karate: { cut: "kata", sleeve: "short" } });
+```
+
+| Option | Values | What it does |
+| --- | --- | --- |
+| `sleeve` | `full` (the default), `three-quarter`, `short` | How far down the arm the sleeve goes: to the bend of the wrist, halfway down the forearm (the shortest the WKF allows), or the elbow. The cuff keeps its width and is square to the arm. |
+| `cut` | `training` (the default), `kumite`, `kata` | The jacket's hem and the cloth's softness (below), and what the gi carries unasked. |
+| `text` | up to four characters, or `false` | Stitched down the wearer's left chest beside the lapel, one character over the next, each upright, the column leaning with the lapel and made smaller to fit when it has four. `空手` (karate) on the training cut, none on the competition cuts. |
+| `thread` | a thread preset or `#rrggbb` | The text's thread: navy by default. |
+| `patches` | `true`, `false`, or `{ sleeve, leg, colour }` | A round patch on the wearer's left sleeve and left leg (each can be left out with `false`), in a ring of the given thread (red by default). Neutral placeholder art: a ring, an inner ring and an eight-point star. The training cut has both; the competition cuts have none. |
+| `tailCm` | 15 to 70 | How far the belt's ends hang from the knot, in centimetres: 50 on the training cut, 20 on the competition cuts. |
+
+**What differs from the judogi.** The cloth is lighter and plainer: one fine plain weave instead of the rice-grain upper body and the quilted skirt, no waist seam, a single hem and a hem on the sleeve with two rows instead of three, folds drawn softer (the training cut at 0.6 of the judogi's, kumite 0.42, kata 0.85). The lapel and collar are narrower (3.5 cm and 6 mm against 4.7 cm and 9 mm), and the jacket has no quilting. The trousers have no reinforced knee (the judogi's panel is covered over). The belt's ends are longer.
+
+**The cuts.** What the rules fix is the same for a kumite and a kata gi: the jacket, tightened with the belt, covers the hips and is no longer than three-quarters of the thigh; the sleeves are no longer than the bend of the wrist and no shorter than halfway down the forearm, and are never rolled up; the trousers cover at least two thirds of the shin and do not reach below the anklebone; the belt is about 5 cm wide and leaves at least 15 cm free each side of the knot, no longer than three-quarters of the thigh; the gi is white, with no stripes, piping or personal embroidery, only the national emblem or flag on the left breast (at most 12 by 8 cm) and the maker's original labels; in kumite the belt is red or blue by the draw (the `red` and `blue` belts) and an official event's gi carries embroidered brands on the shoulders in that colour (not drawn). Beyond those limits the cuts here are the package's reading of how makers describe them, not a standard: `kumite` is the lightest cloth with the jacket just covering the hips (hem 193 units against the judogi's 205, about 4.5 cm shorter), `kata` a crisper cloth with the jacket hanging longer (211, about 2.3 cm longer), `training` in between (200). A training gi may carry whatever its wearer likes, which is why it alone has the kanji, the patches and the long belt by default; `judogiCheck` marks a competition cut that is given text or patches as not met.
+
+**Styles.** Wikipedia says the styles of karate have slightly different uniforms on one basic design, differing in the lengths of the sleeves, the legs and the jacket's skirt. The Shotokan and Kyokushin styles are commonly seen in a gi like the training cut here (a kanji down the chest, round patches, a belt worn long), but which sleeve, cut and belt a style wears is custom, not a published rule: the options let you choose, and no style's name, badge or trademark is used. The round patch is neutral art, never a style's or federation's emblem.
+
+**Not done here.** A tail longer than 25 cm moves the belt's hanging ends and the strips the cells sample, but the tip block, bars and tags that a belt style puts near an end still sit at the usual 25 cm from the knot. The belt's tail length for judo belts and the belt variants are a separate piece of work. The shoulder brands of an official kumite gi and the kata cut's shorter sleeve in Wikipedia's account are not drawn.
+
+**Sources, read 2026-10-30.** [WKF Kumite Competition Rules, valid from 1.1.2024](https://karateliitto.fi/app/uploads/2024/02/WKF_Kumite_Competition_Rules_2024.pdf), Article 2, 2.2.1 (the kumite attire); [WKF Karate Competition Rules, effective from 1.1.2020](https://archive.teamusa.com/usa-karate/officials-and-coaches/-/media/wkf_competition%20rules_2020_en.pdf), Article 2, Competitors (the kata attire, the same measures); [Wikipedia, Karate gi](https://en.wikipedia.org/wiki/Karate_gi) (the Japanese, European and Kata cuts, the cloth weights, karateka wearing the belt longer than judoka). The rules' wording and pictures are not copied; the drawing is original and shows no federation, brand, team or sponsor mark.

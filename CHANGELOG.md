@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A karate gi** (SPX-724): `karate` on `renderJudogi` and `judogiFrame` draws the judogi's jacket, trousers and belt as a karate gi: a lighter, plainer cloth (one fine weave, no quilted skirt, no waist seam, a single hem, softer folds), a narrower lapel and collar, no reinforced knee, a sleeve to the wrist, mid-forearm or the elbow (`sleeve: "full" | "three-quarter" | "short"`), a `training`, `kumite` or `kata` cut (`cut`; the hem and the softness of the cloth, and what is carried unasked), kanji stitched down the wearer's left chest (`text`, `thread`; `空手` by default on the training cut), a round patch on the left sleeve and left leg in neutral placeholder art (`patches`), and longer belt ends (`tailCm`, 15 to 70 cm, 50 on the training cut and 20 on the competition cuts). `judogiCheck` reports the WKF's measures (sleeves between halfway down the forearm and the bend of the wrist, the jacket covering the hips, the trousers covering two thirds of the shin, the belt leaving 15 cm free each side of the knot, no personal embroidery on a competition gi) in place of the IJF's. Exports `KARATE_CUTS`, `KARATE_SLEEVES`, `KARATE_SLEEVE_SHARE`, `KARATE_TAIL_CM`, `KARATE_TEXT` and the types `JudogiKarate`, `KarateCut`, `KarateSleeve`. The Uniforms page has a tile for each sleeve and for the kumite and kata cuts, and the designer a Karate gi switch with its controls. Sources, read 2026-10-30: the WKF Kumite Competition Rules (valid from 1.1.2024) and Karate Competition Rules (effective from 1.1.2020), Article 2, and Wikipedia's Karate gi (docs/judogi.md, "The karate gi"). A belt end's tip block, bars and tags still sit at the usual 25 cm from the knot.
+
 ## [0.23.3] - 2026-10-30
 
 ### Fixed

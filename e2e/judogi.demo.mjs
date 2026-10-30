@@ -705,3 +705,36 @@ test("a belt's end tags are a switch with the end they are on and the grade line
   await expect(shown("judo-gl").locator('[data-value="3"]')).toHaveAttribute("aria-pressed", "true");
   await expect(shown("judo-te")).toHaveCount(1);
 });
+
+// The karate gi in the designer: a switch brings its controls, each choice is in the address and survives a reload, and the controls are in the page's style.
+test("the designer's karate gi: sleeve, cut, text, patches and belt ends are kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=suit&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-ks"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-kg"]').click();
+  await expect(page).toHaveURL(/kg=1/);
+  await pick(page, "judo-ks", "three-quarter");
+  await pick(page, "judo-kc", "kumite");
+  await pick(page, "judo-kp", "leg");
+  await pick(page, "judo-kl", "35");
+  await page.locator('[data-testid="judo-kt"]').fill("組手");
+  await expect(page).toHaveURL(/ks=three-quarter/);
+  await expect(page).toHaveURL(/kc=kumite/);
+  await expect(page).toHaveURL(/kp=leg/);
+  await expect(page).toHaveURL(/kl=35/);
+  await expect(page).toHaveURL(/kt=/);
+  // The check speaks of the WKF's measures, not the IJF's.
+  await expect(page.locator("#judo-check")).toContainText(/WKF/);
+  await page.goto(page.url());
+  for (const [id, value] of [["judo-ks", "three-quarter"], ["judo-kc", "kumite"], ["judo-kp", "leg"], ["judo-kl", "35"]]) await expect(page.locator(`[data-testid="${id}"] [data-value="${value}"]`)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="judo-kt"]')).toHaveValue("組手");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const bad = await page.evaluate(() => [...document.querySelectorAll("#judo-controls button, #judo-controls input:not([type=range]):not([type=checkbox]), #judo-controls select")]
+    .filter((el) => !el.hidden && el.getBoundingClientRect().width > 0)
+    .filter((el) => el.closest('[data-testid^="judo-k"]') !== null && (el.tagName === "BUTTON" ? el.getBoundingClientRect().height < 47 : false))
+    .map((el) => el.dataset.value || el.id));
+  expect(bad).toEqual([]);
+  expect(errors).toEqual([]);
+});

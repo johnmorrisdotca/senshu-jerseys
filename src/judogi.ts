@@ -17,6 +17,8 @@ import { pantsDesc, pantsFace } from "./judogiPants.ts";
 import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
 import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "./judogiEndTags.ts";
 import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
+import { JUDO_CUT, type GiCut } from "./giCut.ts";
+import { karateMarks, karateNotes, karateTail, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup, type Draw } from "./pieceVolume.ts";
@@ -93,6 +95,11 @@ export interface JudogiOptions {
   branding?: boolean | JudogiBranding;
   /** Whose limits the check holds marks to: the IJF's (default) or the All Japan Judo Federation's. */
   rules?: MarkRules;
+  /**
+   * A karate gi instead of a judogi: the same drawing with a lighter, plainer cloth, a narrower lapel, a sleeve cut to the wrist, mid-forearm or the elbow, a training, kumite or kata
+   * cut, kanji down the wearer's left chest, a round patch on the left sleeve and left leg, and longer belt ends (see `JudogiKarate`). `true` for the defaults. The check then reports the WKF's measures, not the IJF's.
+   */
+  karate?: boolean | JudogiKarate;
   /** The belt's size number as the maker lists it (1 to 8, halves too), which sets the folded belt's length and the box that holds it. By default the one that goes with the judogi's size. */
   beltSize?: number;
   /** The gift box of mode `box`: `kiri` (wood, the default) or `silver` (cardboard); its state (`closed`, `open` with the lid beside it and the belt in it, `empty`); the words on the lid (御帯 by default); the wood's tone; a box size to use instead of the one the belt needs. */
@@ -158,6 +165,12 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const patch = readPatch(options?.backPatch);
   const beltCm = readBeltCm(options?.beltWidthCm);
   const marked = options === undefined ? undefined : readMarks(options);
+  const karate = readKarate(options?.karate);
+  if (karate !== undefined) {
+    const skipped = marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped).filter((n) => n.id.startsWith("skipped-"));
+    const gi = karateNotes(karate, h, pick(JUDOGI_COLOURS, options?.colour, "white"));
+    return { ok: [...gi, ...skipped].every((n) => n.met), size, heightCm: h, notes: [...gi, ...skipped] };
+  }
   const notes = [
     { id: "jacket-cover", met: jacket >= h * 0.38 && jacket <= h * 0.48, fact: "Jacket reaches mid-thigh and covers the buttocks (IJF Judogi Rules, 09 03 2022)." },
     { id: "sleeve-wrist", met: sleeve >= h * 0.28 && sleeve <= h * 0.36, fact: "Sleeves cover the arm and leave about 5 cm to the wrist (IJF Judogi Rules, 09 03 2022)." },
@@ -222,6 +235,9 @@ interface Ready {
   endTags: ReadEndTags | undefined;
   cloth: Rgb;
   uid: string;
+  karate: ReadKarate | undefined;
+  /** The jacket's cut: the judogi's, or the karate gi's. */
+  cut: GiCut;
   patch: PatchSpec | undefined;
   marks: MarkSet | undefined;
   beltSize: number;
@@ -281,28 +297,31 @@ function read(options?: JudogiOptions): Ready {
   const band = o.band === true;
   const bare = o.bare === true;
   const solid = mode === "folded" || mode === "box" ? [beltSize, boxType, boxState, boxText, boxWood, boxSize, band] : undefined;
-  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid]))}`;
+  const karate = readKarate(o.karate);
+  const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid, karate]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);
-  const title = o.title?.trim() || defaultTitle(language, colour, mode, view);
+  const title = o.title?.trim() || defaultTitle(language, colour, mode, view, karate !== undefined);
   return {
-    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band, bare,
+    colour, belt, size, mode, view, language, title, width, yaw, thickness, beltCm, style, beltRows, beltT: BELT_T[beltThickness], beltCover, endTags, cloth, uid, karate, cut: karate?.gi ?? JUDO_CUT, patch, marks, beltSize, boxType, boxState, boxText, boxWood, boxSize, band, bare,
     beltEmb: { left: (o.embroidery ?? []).some((e) => e?.place === "belt-end-left"), right: (o.embroidery ?? []).some((e) => e?.place === "belt-end-right") },
-    description: language === "ja"
-      ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
-      : "A judogi: jacket, trousers and belt. No maker or federation marks.",
+    description: karate !== undefined
+      ? language === "ja" ? "空手着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。" : "A karate gi: jacket, trousers and belt. No maker or federation marks."
+      : language === "ja"
+        ? "柔道着。上衣、ズボン、帯。メーカーや連盟のマークは描いていません。"
+        : "A judogi: jacket, trousers and belt. No maker or federation marks.",
   };
 }
 
-function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiMode, view: JudogiView): string {
+function defaultTitle(language: "en" | "ja", colour: JudogiColour, mode: JudogiMode, view: JudogiView, karate = false): string {
   if (language === "ja") {
     const c = colour === "blue" ? "青" : "白";
     const m = { pieces: "上衣とズボン", suit: "着用", jacket: "上衣", pants: "ズボン", belt: "帯", folded: "畳んだ帯", box: "帯の箱" }[mode];
     const v = { front: "前", back: "後ろ", flat: "平置き", "flat-back": "平置き（後ろ）" }[view];
-    return `${c}の柔道着、${m}、${v}`;
+    return `${c}の${karate ? "空手着" : "柔道着"}、${m}、${v}`;
   }
   const c = colour === "blue" ? "Blue" : "White";
   const m = { pieces: "jacket and trousers", suit: "suit", jacket: "jacket", pants: "trousers", belt: "belt", folded: "belt folded flat", box: "belt gift box" }[mode];
-  return `${c} judogi, ${m}, ${view}`;
+  return `${c} ${karate ? "karate gi" : "judogi"}, ${m}, ${view}`;
 }
 
 function inkOf(o: Ready, part: string, belt?: BeltPaint, marks?: GiInk["marks"]): GiInk {
@@ -317,7 +336,7 @@ const join = (a: Mark | undefined, b: Mark | undefined): Mark | undefined => (a 
 /** What is sewn on the jacket's faces: the back patch and the marks on either face. */
 function jacketMarks(o: Ready): GiInk["marks"] | undefined {
   const patch: Mark | undefined = o.patch === undefined ? undefined : backPatch(`${o.uid}j`, o.patch, BACK_COLLAR_FOOT);
-  const front = o.marks?.jacket.front;
+  const front = join(o.marks?.jacket.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).jacket);
   const back = join(patch, o.marks?.jacket.back);
   const backInner = o.marks?.jacket.backInner;
   if (front === undefined && back === undefined && backInner === undefined) return undefined;
@@ -326,7 +345,7 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
 
 /** What is sewn on the trousers' front. */
 function pantsMarks(o: Ready): GiInk["marks"] | undefined {
-  const front = o.marks?.pants.front;
+  const front = join(o.marks?.pants.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).pants);
   return front === undefined ? undefined : { front };
 }
 
@@ -342,8 +361,10 @@ function paintOf(o: Ready, belt: string, sectionCm?: number): BeltPaint | undefi
   const tagL = endTagsMark(o.endTags, 0, half, o.uid, margin);
   const tagR = endTagsMark(o.endTags, 1, half, o.uid, margin);
   const stripes = { left: endMark(o.style, 0, half) + tagL.body, right: endMark(o.style, 1, half) + tagR.body, half };
+  const long = o.karate !== undefined && o.mode !== "folded" && o.mode !== "box" ? karateTail(o.karate) : 1;
   const p: BeltPaint = {
     ...base,
+    ...(long === 1 ? {} : { tail: long }),
     defs: base.defs + tagL.defs + tagR.defs,
     ...(bands.length === 0 ? {} : { bands }),
     ...(o.beltRows === undefined ? {} : { rows: o.beltRows }),
@@ -359,6 +380,9 @@ function paintOf(o: Ready, belt: string, sectionCm?: number): BeltPaint | undefi
 const JACKET_BOX = [-30, -2, 260, 216] as const;
 const PANTS_BOX = [8, 0, 184, 270] as const;
 const BELT_BOX = [16, 6, 168, 124] as const;
+/** What the belt's ends add to the boxes when they hang longer than the usual 25 cm: the jacket's box and the belt's own. */
+const longerBy = (paint: BeltPaint | undefined): number => Math.ceil(((paint?.tail ?? 1) - 1) * HANG_UNITS);
+const HANG_UNITS = 64;
 /** Product pictures show the trousers beside the jacket and a little lower; worn, their waistband sits under the belt. */
 const PIECES_AT = [206, 28] as const;
 const WORN_AT = 102;
@@ -375,26 +399,26 @@ function compose(o: Ready): Sheet {
   if (o.mode === "belt") {
     const p = paint ?? (paintOf(o, "white") as BeltPaint);
     // A tied ring seen a little from above: its far half shows its inside, its edges their thickness.
-    const ring: StrapDesc = { y: 28, sag: 3, w: width, t: o.beltT, a: 66, b: Math.round(30 * Math.max(0.35, Math.min(1.6, depth)) * 10) / 10, full: 2, side: 0, worn: false };
+    const ring: StrapDesc = { y: 28, sag: 3, w: width, t: o.beltT, a: 66, b: Math.round(30 * Math.max(0.35, Math.min(1.6, depth)) * 10) / 10, full: 2, side: 0, worn: false, ...(p.tail === undefined ? {} : { tail: p.tail }) };
     const belt = volumeOf(`${o.uid}b`, strapDesc(ring, 14), strapFace(p, width), NO_FACE, yaw, drawOf(o));
-    return box(p.defs + belt.defs, belt.body, BELT_BOX, yaw);
+    return box(p.defs + belt.defs, belt.body, [BELT_BOX[0], BELT_BOX[1], BELT_BOX[2], BELT_BOX[3] + longerBy(p)], yaw);
   }
   const tied = o.mode === "pants" ? undefined : paint;
   const ink = { ...inkOf(o, "j", tied, jacketMarks(o)), beltApart: true as const };
-  const body = jacketDesc(depth, tied !== undefined);
+  const body = jacketDesc(depth, tied !== undefined, o.cut);
   // The collar and a tied belt are pieces of their own worn on the jacket: drawn after its body and before the sleeve nearest the eye.
   const jacketVolume: VolumeDesc = { ...body, worn: tied === undefined ? 1 : 2 };
-  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front"), jacketFace(ink, "back"), yaw, drawOf(o));
+  const jacket = o.mode === "pants" ? undefined : volumeOf(`${o.uid}j`, jacketVolume, jacketFace(ink, "front", o.cut), jacketFace(ink, "back", o.cut), yaw, drawOf(o));
   const tone = toneOf(o.cloth);
-  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw, drawOf(o));
+  const collar = jacket === undefined ? undefined : volumeOf(`${o.uid}c`, collarPiece(collarDesc(body, o.cut), body.pitch), strapFace({ fill: tone.fill, edge: tone.seam, stitch: tone.stitch, defs: "", ...(o.marks?.collar === undefined ? {} : { strip: o.marks.collar }) }, LAPEL_BAND, 6), NO_FACE, yaw, drawOf(o));
   // A tied belt is a strap of its own over the jacket, so it has thickness and its knot and ends stand off the cloth when it turns.
-  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true, skirt: body.y.flatMap((y, j) => (y >= BELT_TOP ? [y, body.a[j] as number, body.b[j] as number] : [])) }, body.pitch), strapFace(tied, width), NO_FACE, yaw, drawOf(o));
+  const strap = jacket === undefined || tied === undefined ? undefined : volumeOf(`${o.uid}s`, strapDesc({ ...beltRound(depth, width), sag: 2.5, w: width, t: o.beltT, worn: true, ...(tied.tail === undefined ? {} : { tail: tied.tail }), skirt: body.y.flatMap((y, j) => (y >= BELT_TOP ? [y, body.a[j] as number, body.b[j] as number] : [])) }, body.pitch), strapFace(tied, width), NO_FACE, yaw, drawOf(o));
   const belted = `${collar?.body ?? ""}${strap?.body ?? ""}${jacket?.tail ?? ""}`;
   const beltDefs = `${collar?.defs ?? ""}${strap?.defs ?? ""}`;
   // Worn, the trousers are gathered at the waist and sit inside the jacket; laid out, they keep their full width.
   const worn = o.mode === "suit";
   const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth, worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "front", worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "back", worn), yaw, drawOf(o));
-  if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs + beltDefs, jacket.body + belted, JACKET_BOX, yaw);
+  if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs + beltDefs, jacket.body + belted, [JACKET_BOX[0], JACKET_BOX[1], JACKET_BOX[2], JACKET_BOX[3] + longerBy(tied)], yaw);
   if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);
   if (jacket === undefined || pants === undefined) return box("", "", JACKET_BOX, yaw);
   if (o.mode === "suit") {
@@ -464,12 +488,12 @@ function flatSheet(o: Ready): Sheet {
   if (o.mode === "belt") {
     const p = paint ?? (paintOf(o, "white") as BeltPaint);
     const b = beltFace(p, side);
-    return box(p.defs + flat(b), b.body, BELT_BOX, 0);
+    return box(p.defs + flat(b), b.body, [BELT_BOX[0], BELT_BOX[1], BELT_BOX[2], BELT_BOX[3] + longerBy(p)], 0);
   }
   const tied = o.mode === "suit" || o.mode === "jacket" ? paint : undefined;
-  const j = jacketFace(inkOf(o, "j", tied, jacketMarks(o)), side);
+  const j = jacketFace(inkOf(o, "j", tied, jacketMarks(o)), side, o.cut);
   const p = pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), side, o.mode === "suit");
-  if (o.mode === "jacket") return box(defs + flat(j), j.body, JACKET_BOX, 0);
+  if (o.mode === "jacket") return box(defs + flat(j), j.body, [JACKET_BOX[0], JACKET_BOX[1], JACKET_BOX[2], JACKET_BOX[3] + longerBy(tied)], 0);
   if (o.mode === "pants") return box(flat(p), p.body, PANTS_BOX, 0);
   if (o.mode === "suit") {
     const [x, y, w] = JACKET_BOX;
@@ -477,7 +501,7 @@ function flatSheet(o: Ready): Sheet {
   }
   const [px, py] = PIECES_AT;
   const laid = paint === undefined ? "" : `<g transform="translate(0 ${JACKET_BOX[3] - 6})">${beltFace(paint, side).body}</g>`;
-  const extra = paint === undefined ? 0 : BELT_BOX[3];
+  const extra = paint === undefined ? 0 : BELT_BOX[3] + longerBy(paint);
   return box(defs + flat(j) + flat(p), `${j.body}${laid}<g transform="translate(${px} ${py})">${p.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], Math.max(py + PANTS_BOX[3], JACKET_BOX[3] + extra) - JACKET_BOX[1]], 0);
 }
 

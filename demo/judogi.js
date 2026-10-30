@@ -4,7 +4,7 @@ import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
   beltWidthsFor, beltStitchLinesFor, beltThicknessesFor, beltCoversFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
-  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor,
+  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor, KARATE_CUTS, KARATE_SLEEVES,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -15,6 +15,8 @@ const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 /** The belt's width: its grade's own, or one of the widths that grade is made in (4.2, 4.5 or 4.7 cm; a maker's catalogue, see docs/judogi.md). */
 const BELT_WIDTHS = ["auto", "4.2", "4.5", "4.7"];
+/** How far the karate belt's ends hang, in centimetres ("auto" is the cut's own: 50 for training, 20 for the competition cuts). */
+const KARATE_TAILS = ["auto", "20", "35", "50", "70"];
 /** The rows of stitching, thicknesses and covers a belt of this colour is made with, each with "auto" (the package's own) first. */
 const rowsFor = (belt) => ["auto", ...beltStitchLinesFor(belt).map(String)];
 const thicknessFor = (belt) => ["auto", ...beltThicknessesFor(belt)];
@@ -111,6 +113,13 @@ const state = {
   bxw: KIRI_WOODS.includes(params.get("bxw")) ? params.get("bxw") : "natural",
   bxz: ["2", "3", "4", "5", "6"].includes(params.get("bxz")) ? params.get("bxz") : "auto",
   bnd: params.get("bnd") === "1" ? "1" : "0",
+  // The karate gi: on or off, how far down the arm the sleeve goes, the cut, the characters down the chest ("" is the cut's own), which round patches, and how far the belt's ends hang ("auto" is the cut's own).
+  kg: params.get("kg") === "1" ? "1" : "0",
+  ks: KARATE_SLEEVES.includes(params.get("ks")) ? params.get("ks") : "full",
+  kc: KARATE_CUTS.includes(params.get("kc")) ? params.get("kc") : "training",
+  kt: (params.get("kt") ?? "").slice(0, 4),
+  kp: ["both", "sleeve", "leg", "none"].includes(params.get("kp")) ? params.get("kp") : "auto",
+  kl: KARATE_TAILS.includes(params.get("kl")) ? params.get("kl") : "auto",
 };
 // A named real-world arrangement in the address (`bp=half-yellow-orange`) fills the belt and its stripes, unless the address names them itself.
 const named = beltPreset(params.get("bp") ?? "");
@@ -173,6 +182,13 @@ function options() {
   if (state.st !== "none") style.tip = { colour: state.st, ends: state.se, ...(Number(state.stn) > 0 ? { bars: { colour: state.stc, count: Number(state.stn) } } : {}) };
   if (state.sb !== "none") style.bars = [{ colour: state.sb, count: Number(state.sbn), ends: state.se }];
   if (Object.keys(style).length > 0) o.beltStyle = style;
+  if (state.kg === "1") {
+    o.karate = { sleeve: state.ks, cut: state.kc };
+    if (state.kt !== "") o.karate.text = state.kt;
+    if (state.kp === "both" || state.kp === "none") o.karate.patches = state.kp === "both";
+    else if (state.kp !== "auto") o.karate.patches = { [state.kp === "sleeve" ? "leg" : "sleeve"]: false };
+    if (state.kl !== "auto") o.karate.tailCm = Number(state.kl);
+  }
   if (state.label !== "none") o.label = { colour: state.label };
   if (state.brand === "1") {
     o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
@@ -189,7 +205,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", kl: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -262,7 +278,7 @@ async function draw() {
 
 /** What the size check found, in the page's language: the facts themselves are English, so the Japanese page says only whether the size meets them. */
 function checkText(check) {
-  const head = `${say("judoOk")}: ${check.heightCm} cm.`;
+  const head = `${say(state.kg === "1" ? "judoOkKarate" : "judoOk")}: ${check.heightCm} cm.`;
   if (lang() === "ja") {
     // The facts are English; the one thing a Japanese page must say is that a mark was left out for want of room.
     const left = check.notes.filter((n) => !n.met && n.id.startsWith("skipped-")).length;
@@ -510,6 +526,18 @@ function rows() {
       note.dataset.testid = "judo-box-nofit";
       note.textContent = say("judoBoxNoFit");
       out.push(field(X, "judo-box-nofit", "", note));
+    }
+  }
+
+  if (has("jacket") || has("pants")) {
+    const K = "judoKarate";
+    out.push(field(K, "judo-kg", say("judoKarate"), toggle({ id: "judo-kg", label: say("judoKarate"), on: state.kg === "1", words: { on: say("judoKarate_on"), off: say("judoKarate_off") }, onChange: (on) => change("kg", on ? "1" : "0", true) })));
+    if (state.kg === "1") {
+      out.push(field(K, "judo-ks", say("judoKarateSleeve"), segmented({ id: "judo-ks", label: say("judoKarateSleeve"), values: KARATE_SLEEVES, current: state.ks, name: (v) => say(`judoKarateSleeve_${v}`), onPick: set("ks") })));
+      out.push(field(K, "judo-kc", say("judoKarateCut"), segmented({ id: "judo-kc", label: say("judoKarateCut"), values: KARATE_CUTS, current: state.kc, name: (v) => say(`judoKarateCut_${v}`), onPick: set("kc") })));
+      out.push(field(K, "judo-kt", say("judoKarateText"), text("judo-kt", 4, "空手")));
+      out.push(field(K, "judo-kp", say("judoKaratePatches"), segmented({ id: "judo-kp", label: say("judoKaratePatches"), values: ["auto", "both", "sleeve", "leg", "none"], current: state.kp, name: (v) => say(`judoKaratePatches_${v}`), onPick: set("kp") })));
+      if (has("belt")) out.push(field(K, "judo-kl", say("judoKarateTail"), segmented({ id: "judo-kl", label: say("judoKarateTail"), values: KARATE_TAILS, current: state.kl, name: (v) => (v === "auto" ? say("judoKarateTail_auto") : `${v} cm`), onPick: set("kl") })));
     }
   }
 
