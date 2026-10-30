@@ -138,22 +138,24 @@ function waistband(h: readonly number[], t: Tone): string {
   return s;
 }
 
+/** The drawstring's flat braided cord, 1 cm wide and 4 mm thick at 2.63 units to the centimetre (3 to 5 mm is the range makers use). */
+const CM = 2.63;
+export const CORD_W = CM;
+export const CORD_T = 0.4 * CM;
+
 /**
- * A round cord along `d`, `w` units thick: the contact shadow it throws on the cloth (down and to the right, as the light falls), a dark
- * edge, the cord's own colour, the shade on its far side, the light along its near side, and the twist of its strands as fine ticks across
- * it. Painted as strokes, so it turns with the cloth it lies on.
+ * A flat braided cord along `d`, 1 cm wide and about 4 mm thick (2.63 units to the centimetre): its lower and right edge stand up as the
+ * thickness, the top is shaded across (darker under, a light along the top third), and the braid shows as fine ticks across it. Painted
+ * as strokes, so it turns with the cloth it lies on.
  */
-function cord(d: string, w: number, base: string, edge: string, light: boolean): string {
+function cord(d: string, base: string, edge: string, light: boolean): string {
   const s = (width: number, stroke: string, extra = ""): string => `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${n2(width)}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
-  const dx = n2(w * 0.2);
-  const dy = n2(w * 0.26);
-  return s(w + 1.5, "#1a2230", ` stroke-opacity="0.1" transform="translate(${n2(w * 0.5)} ${n2(w * 0.7)})"`) +
-    s(w + 0.8, "#1a2230", ` stroke-opacity="0.2" transform="translate(${n2(w * 0.3)} ${n2(w * 0.4)})"`) +
-    s(w + 0.7, edge, ' stroke-opacity="0.55"') +
-    s(w, base) +
-    s(w * 0.55, light ? "#b4bccb" : "#05070d", ` stroke-opacity="${light ? 0.3 : 0.4}" transform="translate(${dx} ${dy})"`) +
-    s(w * 0.9, edge, ` stroke-opacity="${light ? 0.3 : 0.34}" stroke-linecap="butt" stroke-dasharray="0.35 0.95"`) +
-    s(w * 0.26, "#fff", ` stroke-opacity="${light ? 0.95 : 0.5}" transform="translate(${n2(-w * 0.2)} ${n2(-w * 0.26)})"`);
+  return s(CORD_W + 1, "#1a2230", ` stroke-opacity="0.12" transform="translate(${n2(CORD_T * 0.8)} ${n2(CORD_T * 1.3)})"`) +
+    s(CORD_W, edge, ` transform="translate(${n2(CORD_T * 0.5)} ${n2(CORD_T * 0.9)})"`) +
+    s(CORD_W, base) +
+    s(CORD_W * 0.3, "#05070d", ` stroke-opacity="0.22" transform="translate(0 ${n2(CORD_W * 0.36)})"`) +
+    s(CORD_W * 0.22, "#fff", ` stroke-opacity="${light ? 0.9 : 0.45}" transform="translate(0 ${n2(-CORD_W * 0.26)})"`) +
+    s(CORD_W * 0.8, edge, ` stroke-opacity="${light ? 0.32 : 0.36}" stroke-linecap="butt" stroke-dasharray="0.45 0.7"`);
 }
 
 /** A knot or a bead of cord: a rounded lump with its wraps, shade and light, `rx` by `ry` units. */
@@ -166,7 +168,7 @@ function lump(cx: number, cy: number, rx: number, ry: number, base: string, edge
 }
 
 /**
- * The drawstring: a round cord (some 5 mm across) out of the waistband through two eyelets, tied in a bow at the front with two loops, a
+ * The drawstring: a flat braided cord, 1 cm wide, out of the waistband through two eyelets, tied in a bow at the front with two loops, a
  * knot between them and two ends that hang down over the trousers with a small knot at each tip. The cord has thickness (shadow, shading
  * across it, a light along it, the twist of its strands) and lies on the cloth, so it turns with the trousers.
  */
@@ -174,18 +176,18 @@ function drawstring(t: Tone): string {
   const base = t.light ? "#f7f4ec" : t.fill;
   const edge = t.seam;
   const light = t.light;
-  const c = (d: string, w = 2.4): string => cord(d, w, base, edge, light);
+  const c = (d: string): string => cord(d, base, edge, light);
   let s = "";
   for (const x of [88, 112]) s += `<ellipse cx="${x}" cy="12.5" rx="2.6" ry="1.9" fill="${t.deep}" fill-opacity="0.85"/><ellipse cx="${x}" cy="12.5" rx="2.6" ry="1.9" fill="none" stroke="${edge}" stroke-width="0.5" stroke-opacity="0.8"/>`;
-  s += c("M88 12.6Q93 15.4 98 14.8", 2.3) + c("M112 12.6Q107 15.4 102 14.8", 2.3);
+  s += c("M88 12.6Q93 15.4 98 14.8") + c("M112 12.6Q107 15.4 102 14.8");
   // The ends first, so the knot and the loops lie over where they start; each hangs in a long soft curve and ends in a small knot.
   const endL = "M99.2 16.2C96.4 23 96.6 31 93 41";
   const endR = "M100.9 16.2C103.8 23 102.4 30 108.6 40";
-  s += c(endL, 2.1) + c(endR, 2.1);
-  s += lump(93, 42, 2.3, 2.1, base, edge, light) + lump(108.7, 41, 2.3, 2.1, base, edge, light);
+  s += c(endL) + c(endR);
+  s += lump(93, 42, 1.7, 1.6, base, edge, light) + lump(108.7, 41, 1.7, 1.6, base, edge, light);
   // The bow: two loops drooping a little, each a cord with thickness, crossing at the knot.
-  s += c("M99 15.2C93.5 10.6 86 12.4 87.4 17.8C88.6 22 95 20.2 99.4 15.8", 2.2) + c("M101 15.2C106.5 10.6 114 12.4 112.6 17.8C111.4 22 105 20.2 100.6 15.8", 2.2);
-  s += lump(100, 15.6, 2.7, 2.3, base, edge, light);
+  s += c("M99 15.2C93.5 10.6 86 12.4 87.4 17.8C88.6 22 95 20.2 99.4 15.8") + c("M101 15.2C106.5 10.6 114 12.4 112.6 17.8C111.4 22 105 20.2 100.6 15.8");
+  s += lump(100, 15.6, 1.9, 1.7, base, edge, light);
   return s;
 }
 
