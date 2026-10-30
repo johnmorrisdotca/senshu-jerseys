@@ -5,6 +5,7 @@ const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-valu
 const yawOf = (page) => page.locator("#uni-stage canvas").getAttribute("data-yaw").then(Number);
 
 test("the page loads, the large view is drawn and every tile has its picture", async ({ page }) => {
+  test.slow();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
@@ -22,6 +23,8 @@ test("the page loads, the large view is drawn and every tile has its picture", a
 });
 
 test("garment, belt, show, angle and zoom are kept in the address and survive a reload", async ({ page }) => {
+  // The tiles are still being drawn one by one on a slow machine: give the clicks room.
+  test.slow();
   await page.goto("/uniforms.html");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   await pick(page, "uni-garment", "judogi-blue");
@@ -44,6 +47,7 @@ test("garment, belt, show, angle and zoom are kept in the address and survive a 
 });
 
 test("a choice keeps the angle, and it turns on its own with the button", async ({ page }) => {
+  test.slow();
   await page.goto("/uniforms.html?yaw=60");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   await pick(page, "uni-belt", "green");

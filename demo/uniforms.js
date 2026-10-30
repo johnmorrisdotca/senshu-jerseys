@@ -49,11 +49,11 @@ const beltName = (id) => {
 // ---- Still pictures for the tiles: the package's own drawing painted once, cropped to the cloth and kept as an image. One at a time, so a phone is not asked for many canvases at once. ----
 const pictures = new Map();
 let queue = Promise.resolve();
-async function shoot(options, width) {
+async function shoot(options, width, scale) {
   const holder = document.createElement("div");
   holder.innerHTML = judogiFrame({ ...options, bare: true, width });
   const svg = holder.firstElementChild;
-  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale: 3 });
+  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale });
   if (made === undefined) return undefined;
   made.turn(0, 0);
   const { canvas } = made;
@@ -74,7 +74,7 @@ async function shoot(options, width) {
   return out.toDataURL("image/png");
 }
 /** Put a tile's picture in when it is ready. `key` names the drawing, so one made before is not made again. */
-function picture(tile, key, options, width) {
+function picture(tile, key, options, width, scale) {
   const set = (url) => {
     const img = tile.querySelector("img");
     if (img === null || url === undefined) return;
@@ -83,7 +83,7 @@ function picture(tile, key, options, width) {
   };
   if (pictures.has(key)) return set(pictures.get(key));
   queue = queue.then(async () => {
-    if (!pictures.has(key)) pictures.set(key, await shoot(options, width).catch(() => undefined));
+    if (!pictures.has(key)) pictures.set(key, await shoot(options, width, scale).catch(() => undefined));
     set(pictures.get(key));
   });
 }
@@ -110,10 +110,10 @@ function beltTiles(id, label, values) {
 function paintTiles() {
   for (const tile of $("uni-garment").querySelectorAll("[data-value]")) {
     const g = garmentOf(tile.dataset.value);
-    picture(tile, `g:${g.id}:${state.belt}:${lang()}`, dressed(g, state.belt, "suit"), 220);
+    picture(tile, `g:${g.id}:${state.belt}:${lang()}`, dressed(g, state.belt, "suit"), 220, 3);
   }
   for (const tile of document.querySelectorAll(".uni-belts [data-value]")) {
-    picture(tile, `b:${tile.dataset.value}`, dressed(garmentOf(state.garment), tile.dataset.value, "folded"), 220);
+    picture(tile, `b:${tile.dataset.value}`, dressed(garmentOf(state.garment), tile.dataset.value, "folded"), 220, 2);
   }
 }
 
