@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-10-30
+
 ### Added
 
 - **A Uniforms page in the demo** (SPX-789): `uniforms.html` shows every garment side by side as picture tiles, each wearing the chosen belt (judogi white and blue now; a later garment is one more entry in `demo/uniformsList.js`), a row of belts folded (the grade colours and every real arrangement of `BELT_PRESETS`), and the chosen garment large and turnable (worn, belt alone or folded belt). Garment, belt, display, angle, tilt and zoom are kept in the address. It reuses the designer's view, tiles and styles. The package itself is unchanged.

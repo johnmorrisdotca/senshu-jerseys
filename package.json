@@ -1,6 +1,6 @@
 {
   "name": "@johnmorrisdotca/senshu-jerseys",
-  "version": "0.23.1",
+  "version": "0.23.2",
   "description": "Senshu Jerseys 選手, sports jerseys, sweaters, kits, caps, helmets, retired-number banners and judogi as SVG strings: hockey, baseball, basketball, football, soccer, rugby and handball cuts, front and back, in stripes, hoops, halves and pinstripes, with numbers and names drawn as vectors, optional 2.5D turning and a custom element. Zero dependencies.",
   "keywords": [
     "jersey",
