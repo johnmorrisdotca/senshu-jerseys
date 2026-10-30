@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-10-30
+
 ### Fixed
 
 - **The worn belt's knot is a solid square knot** (SPX-792). It stood about 3.4 cm out from the cloth and, seen edge on (turns of 255 to 285 degrees, worst at 3x), read as a fan of thin ribbons. It is now two closed lengths of the belt with their own thickness from every side (face, back, two edges and cut ends): the wrap across the front, sinking into the turns at each side, and the crossing end lying over it and running down to the right-hand end, with a slight swell at the middle for the light. It stands 2.7 cm out at the most and its edge-on width never breaks into strips (`src/judogiKnot.ts`, which replaces the knot in `judogiStrap.ts`). A belt strap's cells are also grown less at their corners (0.3 against 0.9 of the cloth's, `STRAP_GROW`), so a cell seen along its face no longer shows as a spike. `test/beltWrap.test.ts` holds the knot within 2.9 cm of the body's outline and its edge-on silhouette at least 4.5 units wide and in one piece at 75, 90, 270 and 285 degrees, at tilts of -20, 0 and 15.
