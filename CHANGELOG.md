@@ -10,6 +10,10 @@ All notable changes to this project are written here. The format follows
 
 - **A Uniforms page in the demo** (SPX-789): `uniforms.html` shows every garment side by side as picture tiles, each wearing the chosen belt (judogi white and blue now; a later garment is one more entry in `demo/uniformsList.js`), a row of belts folded (the grade colours and every real arrangement of `BELT_PRESETS`), and the chosen garment large and turnable (worn, belt alone or folded belt). Garment, belt, display, angle, tilt and zoom are kept in the address. It reuses the designer's view, tiles and styles. The package itself is unchanged.
 
+### Changed
+
+- **Sewn patches are 3 to 4 mm thick, 3.5 mm by default, with a stitched edge.** A back patch, an emblem and a flag patch stand off the cloth by their thickness (John's spec, 2026-10-30: an embroidered or woven patch on backing, stitched on, not bulky), and their cut edge shows in shade as the garment turns. The back patch's edge is a running stitch near the edge (`edge: "running"`, the default), and a woven square and a bordered emblem have a satin border. `backPatch.thicknessMm` and `backPatch.edge` set them; `PATCH_MM` and `PATCH_EDGES` are exported. The flag patch's merrowed edge stays 1.7 mm.
+
 ## [0.23.1] - 2026-10-30
 
 ### Changed

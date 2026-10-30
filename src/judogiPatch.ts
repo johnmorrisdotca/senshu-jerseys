@@ -59,6 +59,10 @@ export interface JudogiBackPatch {
   widthCm?: number;
   heightCm?: number;
   topCm?: number;
+  /** The patch's thickness in millimetres, 3 to 4 (an embroidered or woven patch on its backing, stitched on): 3.5 when not given. */
+  thicknessMm?: number;
+  /** The edge stitch: `running` (a stitch line near the edge, the default) or `satin` (a dense satin border). */
+  edge?: PatchEdge;
 }
 
 export interface PatchSpec {
@@ -73,6 +77,8 @@ export interface PatchSpec {
   widthCm: number;
   heightCm: number;
   topCm: number;
+  mm: number;
+  edge: PatchEdge;
 }
 
 const BAND: Record<PatchColour, Rgb> = {
@@ -117,6 +123,8 @@ export function readPatch(raw: unknown): PatchSpec | undefined {
     widthCm: num(o.widthCm, 10, 40, f.widthCm),
     heightCm: num(o.heightCm, 8, 40, f.heightCm),
     topCm: num(o.topCm, 0, 20, f.top),
+    mm: patchMm(o.thicknessMm),
+    edge: o.edge === "satin" ? "satin" : "running",
   };
 }
 
@@ -139,11 +147,54 @@ export function patchNotes(p: PatchSpec): { id: string; met: boolean; fact: stri
 /** The id of everything a patch's drawing needs, so two patches on one page never share one. */
 const idOf = (uid: string, p: PatchSpec): string => `${uid}pt${hashOf(JSON.stringify(p))}`;
 
+/** A sewn patch's thickness in millimetres: an embroidered or woven patch on its backing, stitched on (John's spec, 2026-10-30: 3 to 4 mm). */
+export const PATCH_MM = { min: 3, max: 4, default: 3.5 } as const;
+/** How a patch's edge is stitched: `running`, a stitch line near the edge (a back number, a zekken); `satin`, a dense satin border (a woven emblem). */
+export const PATCH_EDGES = ["running", "satin"] as const;
+export type PatchEdge = (typeof PATCH_EDGES)[number];
+/** What a sewn patch is made of. `cloth` takes it: the thickness and the edge stitch are set here and nowhere else. */
+export interface PatchBuild {
+  mm?: number;
+  edge?: PatchEdge;
+}
+
+/** A thickness in millimetres kept to the spec; the default when none is given. */
+export const patchMm = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(PATCH_MM.min, Math.min(PATCH_MM.max, v)) : PATCH_MM.default);
+
 /**
- * A piece of cloth sewn down: its own cloth and weave, a turned edge, a soft shadow on the garment beside it, and the stitching along its
- * edge. `x, y, w, h` are its box in the drawing; `lines` are further straight stitches (an X's two strokes, or three verticals) drawn over it.
+ * The cut edge of a patch `mm` thick, on the side away from the light: layers from the face down to the backing, stacked down and to the right so that
+ * a slant of the cloth shows them, and a faint lift of shadow beyond them. It is drawn under the face.
  */
-export function cloth(id: string, x: number, y: number, w: number, h: number, base: Rgb, thread: Rgb): { defs: string; under: string; over: string } {
+export function patchEdge(x: number, y: number, w: number, h: number, mm: number, base: Rgb): string {
+  const t = (mm * CM) / 10;
+  const light = lum(base) > 0.4;
+  const wall = hexOf(blend(base, [40, 46, 60], light ? 0.42 : 0.5));
+  const deep = hexOf(blend(base, [20, 24, 36], light ? 0.6 : 0.7));
+  const rect = (dx: number, dy: number, grow = 0): string => `x="${n2(x + dx - grow)}" y="${n2(y + dy - grow)}" width="${n2(w + grow * 2)}" height="${n2(h + grow * 2)}" rx="${n2(1.1 + grow)}"`;
+  let s = "";
+  for (const [k, o] of [[t * 1.6, 0.05], [t * 0.9, 0.09]] as const) s += `<rect ${rect(t * 0.5, t * 0.9, k)} fill="#1a2230" fill-opacity="${o}"/>`;
+  const layers = 4;
+  for (let i = layers; i >= 1; i--) {
+    const f = i / layers;
+    s += `<rect ${rect(t * 0.5 * f, t * 0.9 * f)} fill="${f > 0.5 ? deep : wall}"/>`;
+  }
+  return `<g data-thick="${mm.toFixed(1)}">${s}</g>`;
+}
+
+/** A satin-stitched border: a band of thread round the edge, its stitches as ribs across the band and a lit hair along the top. */
+function satinEdge(x: number, y: number, w: number, h: number, thread: string): string {
+  const b = 0.9;
+  const box = (g: number): string => `M${n2(x + g)} ${n2(y + g)}H${n2(x + w - g)}V${n2(y + h - g)}H${n2(x + g)}Z`;
+  return `<path d="${box(0)}${box(b)}" fill-rule="evenodd" fill="${thread}"/>` +
+    `<path d="${box(b / 2)}" fill="none" stroke="#10141c" stroke-width="${n2(b)}" stroke-opacity="0.22" stroke-dasharray="0.22 0.22"/>` +
+    `<path d="${box(0.3)}" fill="none" stroke="#fff" stroke-width="0.16" stroke-opacity="0.45"/>`;
+}
+
+/**
+ * A piece of cloth sewn down: its own cloth and weave, a turned edge, its thickness (`build.mm`, 3 to 4 mm) with a lift off the garment, and its edge
+ * stitched as `build.edge` says. `x, y, w, h` are its box in the drawing.
+ */
+export function cloth(id: string, x: number, y: number, w: number, h: number, base: Rgb, thread: Rgb, build: PatchBuild = {}): { defs: string; under: string; over: string } {
   const light = lum(base) > 0.4;
   const hi = hexOf(light ? blend(base, [255, 255, 255], 0.75) : shade(base, 0.22));
   const lo = hexOf(light ? blend(base, [70, 78, 96], 0.34) : blend(base, [0, 0, 0], 0.45));
@@ -159,20 +210,18 @@ export function cloth(id: string, x: number, y: number, w: number, h: number, ba
     // Each stitch is a short length of thread with a lit upper edge, and the hole it goes into is a dot of shadow between two stitches.
     `<path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="${n2(wd * 0.28)}" stroke-dasharray="1.7 1.1" stroke-linecap="round" transform="translate(-0.1 -0.14)"/>` +
     `<path d="${d}" fill="none" stroke="${hexOf(blend(thread, [0, 0, 0], 0.6))}" stroke-opacity="0.55" stroke-width="${n2(wd * 0.5)}" stroke-dasharray="0.01 2.79" stroke-dashoffset="-1.7" stroke-linecap="round"/>`;
-  const m = 3.1;
-  let under = "";
-  // A patch is 1 to 2 mm of cloth (0.4 of a unit): a hair of contact shadow under it, then its cut edge as a thin darker wall on the side away from the light
-  // (it shows as the face turns and the cloth is seen slantwise), and a lift of a fraction of a unit, not a soft cushion.
-  for (const [k, o] of [[0.9, 0.06], [0.5, 0.1]] as const) under += `<rect ${rect(0.35, 0.5, k)} fill="#1a2230" fill-opacity="${o}"/>`;
-  under += `<rect ${rect(0.42, 0.5)} fill="${hexOf(blend(base, [40, 46, 60], light ? 0.42 : 0.5))}"/>`;
-  under += `<rect ${rect(0, 0)} fill="${hexOf(base)}"/>`;
-  const over = `<g clip-path="url(#${id}C)"><rect ${rect(0, 0)} fill="url(#${id}W)"/><rect ${rect(0, 0)} fill="url(#${id}G)"/>` +
+  const m = 1.6;
+  const mm = patchMm(build.mm);
+  const edge = build.edge ?? "running";
+  // The thickness: the cut edge stands off the cloth as a wall of layers (see `patchEdge`), then the face lies on top of it.
+  const under = patchEdge(x, y, w, h, mm, base) + `<rect ${rect(0, 0)} fill="${hexOf(base)}"/>`;
+  const over = `<g clip-path="url(#${id}C)" data-edge="${edge}"><rect ${rect(0, 0)} fill="url(#${id}W)"/><rect ${rect(0, 0)} fill="url(#${id}G)"/>` +
     // The turned edge: a band of the hem folded under (a little darker, with its overlocking), then a lit line along the top and the left.
     `<rect ${rect(0.9, 0.9, -0.9)} fill="none" stroke="${lo}" stroke-width="1.8" stroke-opacity="0.32"/>` +
     `<rect ${rect(0.4, 0.4, -0.4)} fill="none" stroke="${lo}" stroke-width="0.8" stroke-opacity="0.7" stroke-dasharray="0.5 0.35"/></g>` +
     `<rect ${rect(0, 0)} fill="none" stroke="${lo}" stroke-width="0.9" stroke-opacity="0.8"/>` +
     `<path d="M${n2(x + 1.3)} ${n2(y + h - 1.4)}V${n2(y + 1.3)}H${n2(x + w - 1.4)}" fill="none" stroke="${hi}" stroke-width="0.6" stroke-opacity="0.9" transform="translate(0.2 0.2)"/>` +
-    stitched(`M${n2(x + m)} ${n2(y + m)}H${n2(x + w - m)}V${n2(y + h - m)}H${n2(x + m)}Z`);
+    (build.edge === "satin" ? satinEdge(x, y, w, h, tc) : stitched(`M${n2(x + m)} ${n2(y + m)}H${n2(x + w - m)}V${n2(y + h - m)}H${n2(x + m)}Z`));
   return { defs, under, over };
 }
 
@@ -198,7 +247,7 @@ export function backPatch(uid: string, p: PatchSpec, collarFootY: number): { def
   const x = 100 - w / 2;
   if (p.style === "ijf") {
     const white: Rgb = [250, 249, 246];
-    const base = cloth(id, x, y, w, h, white, [150, 156, 170]);
+    const base = cloth(id, x, y, w, h, white, [150, 156, 170], { mm: p.mm, edge: p.edge });
     const band = hexOf(p.band);
     const dark = p.bandName === "white" ? "#1c2230" : hexOf(blend(p.band, [8, 10, 20], 0.4));
     const onBand = lum(p.band) > 0.5 ? "#141a28" : "#fff";
@@ -220,7 +269,7 @@ export function backPatch(uid: string, p: PatchSpec, collarFootY: number): { def
     return { defs: base.defs + bandBox, body: s + base.over + stitchOver(id, x, y, w, h, p.sewing) };
   }
   const white: Rgb = [252, 251, 248];
-  const base = cloth(id, x, y, w, h, white, [120, 126, 140]);
+  const base = cloth(id, x, y, w, h, white, [120, 126, 140], { mm: p.mm, edge: p.edge });
   const ink = p.ink === "vermilion" ? "#c9361c" : "#15181f";
   const top = h * 0.66;
   const s = base.under +

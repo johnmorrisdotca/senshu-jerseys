@@ -15,7 +15,7 @@ import { EMBLEM_ROOM, jacketSpots } from "./judogiJacket.ts";
 import { kodokanEmblemSvg } from "./judogiKodokan.ts";
 import { neckLabel, readBranding, sizeTag, sLogo, type ReadBranding } from "./judogiBrand.ts";
 import { LABEL_ASPECT, labelMark, readLabel, type JudogiLabel, type ReadLabel } from "./judogiLabel.ts";
-import { cloth } from "./judogiPatch.ts";
+import { cloth, patchEdge, PATCH_MM } from "./judogiPatch.ts";
 import { pantsSpots } from "./judogiPants.ts";
 import type { EmbroideryStitching } from "./beltSpecs.ts";
 import { readThread, satinDefs, satinRun, satinShape, satinStroke, type ThreadColour } from "./judogiThread.ts";
@@ -461,7 +461,7 @@ function flagPatch(id: string, w: number, h: number, src: string): { defs: strin
   const sy = (h + 2 * e) / h;
   const box = (g: number): string => `M${n2(-w / 2 + g)} ${n2(-h / 2 + g)}H${n2(w / 2 - g)}V${n2(h / 2 - g)}H${n2(-w / 2 + g)}Z`;
   const defs = `<clipPath id="${id}E"><path clip-rule="evenodd" d="${box(0)}${box(e)}"/></clipPath>`;
-  const shadow = [[0.7, 0.07], [0.35, 0.12]].map(([k, o]) => `<rect x="${n2(-w / 2 - k! + 0.3)}" y="${n2(-h / 2 - k! + 0.45)}" width="${n2(w + 2 * k!)}" height="${n2(h + 2 * k!)}" rx="0.4" fill="#1a2230" fill-opacity="${o}"/>`).join("");
+  const shadow = patchEdge(-w / 2, -h / 2, w, h, PATCH_MM.default, [230, 231, 228]);
   const ring = `<g clip-path="url(#${id}E)"><g transform="scale(${sx.toFixed(4)} ${sy.toFixed(4)})">${imageIn(src, w, h)}</g>` +
     `<path d="${box(0)}${box(e)}" fill-rule="evenodd" fill="#1a2230" fill-opacity="0.2"/>` +
     // The ribbing of the overlock: short stitches across the edge, and a lit hair along the outside.
@@ -551,7 +551,7 @@ function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string, k: number): Out {
   const thread = satinDefs(`${id}S`, rgb);
   const white: Rgb = e.image !== undefined || script ? [255, 255, 255] : lum(clothRgb) > 0.4 ? [252, 251, 248] : [236, 238, 242];
   if (script) {
-    const patch = cloth(`${id}P`, -w / 2, -h / 2, w, h, [252, 251, 248], [120, 126, 140]);
+    const patch = cloth(`${id}P`, -w / 2, -h / 2, w, h, [252, 251, 248], [120, 126, 140], { edge: "satin" });
     return { defs: patch.defs + thread, body: patch.under + art(0) + caption() + patch.over };
   }
   if (e.frame === "none") return { defs: thread, body: art(0) + caption() };
@@ -561,7 +561,7 @@ function emblemOf(e: ReadEmblem, clothRgb: Rgb, id: string, k: number): Out {
     return { defs: flag.defs + thread, body: `<g transform="translate(0 ${n2(ay)})">${flag.under}${imageIn(e.image, aw, ah)}${flag.over}</g>` + caption() };
   }
   // A patch with a stitched border round the artwork; a caption stands under it on the cloth.
-  const patch = cloth(`${id}P`, -aw / 2, ay - ah / 2, aw, ah, white, [120, 126, 140]);
+  const patch = cloth(`${id}P`, -aw / 2, ay - ah / 2, aw, ah, white, [120, 126, 140], { edge: "satin" });
   return { defs: patch.defs + thread, body: patch.under + art(7 * k) + patch.over + caption() };
 }
 

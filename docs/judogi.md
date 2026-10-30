@@ -88,6 +88,8 @@ renderJudogi({ mode: "jacket", view: "back", backPatch: { style: "zekken", name:
 
 Words in the demo: `ゼッケン` (zekken, the numbered patch), `苗字` (surname), `所属` (affiliation), `黒` (black), `朱色` (vermilion).
 
+**Thickness and edge.** A patch is an embroidered or woven patch on its backing, stitched on: 3.5 mm thick by default, kept to 3 to 4 mm (`thicknessMm`; `PATCH_MM` holds the range), and its cut edge stands off the cloth in shade, a little lifted, as the garment turns. Its edge is stitched a stitch line in from the edge (`edge: "running"`, the default) or with a dense satin border (`edge: "satin"`). The 3 to 4 mm range is this package's own spec (2026-10-30), not a rule's figure.
+
 `judogiCheck({ backPatch })` adds the patch's rules to the size check, each with its source, and fails when a patch is outside them (a zekken 20 cm wide, a back number 6 cm below the collar). Nothing is clamped: the drawing shows what you asked for, and the check tells you where it leaves the rules.
 
 ## Belt stripes, halves, tips and tags
