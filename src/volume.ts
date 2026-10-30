@@ -630,6 +630,12 @@ export function groupOrder(yaw: number, hang = false): number[] {
 /** How far the cells of a folded belt or a box are grown at their corners (units of the picture): less than cloth's, which sticks out as spikes round a fold. */
 export const SOLID_GROW = 0.25;
 
+/** The same for a belt's strap, whose thin edges and bevelled lengths stick out as slivers when they are seen along the cloth. */
+export const STRAP_GROW = 0.3;
+
+/** How far the cells of a piece are grown at their corners, or undefined for the cloth's usual amount. */
+export const growOf = (d: VolumeDesc): number | undefined => (d.solid !== undefined ? SOLID_GROW : d.strap !== undefined ? STRAP_GROW : undefined);
+
 /** The triangle of a cell, grown a little on every side so neighbouring cells overlap and no hairline shows between them. */
 export function quadPath(tex: readonly number[], g = 0.9): string {
   const cx = (tex[0]! + tex[2]! + tex[4]!) / 3;
@@ -660,7 +666,7 @@ export function volumeMarkup(d: VolumeDesc, uid: string, frontId: string, backId
   let defs = details.map((svg, k) => `<g id="${uid}D${k}">${svg}</g>`).join("");
   const groups: [string, string, string, string] = ["", "", "", ""];
   cells.forEach((c, i) => {
-    defs += `<path id="${uid}q${i}" d="${quadPath(c.tex, d.solid === undefined ? undefined : SOLID_GROW)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
+    defs += `<path id="${uid}q${i}" d="${quadPath(c.tex, growOf(d))}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
     const pl = placeCell(c, yaw, d.pitch);
     const shadeEl = shaded && c.src === undefined ? `<use href="#${uid}q${i}" fill="#000" fill-opacity="${pl.shade}" clip-path="url(#${c.back ? backClip : frontClip})" data-vs=""/>` : "";
     groups[c.g] += `<g data-vc="${i}"${pl.visible ? ` transform="${pl.matrix}"` : ' display="none"'} clip-path="url(#${uid}k${i})"><use href="#${c.src !== undefined ? `${uid}D${c.src}` : c.back ? backId : frontId}"/>${shadeEl}</g>`;

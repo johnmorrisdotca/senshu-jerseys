@@ -8,6 +8,7 @@
 import type { BeltPaint, Face } from "./judogiCloth.ts";
 import { beltDefaultWidthCm } from "./beltSpecs.ts";
 import { n2 } from "./path.ts";
+import { knotCells } from "./judogiKnot.ts";
 import type { Cell, VolumeDesc } from "./volume.ts";
 
 type Vec = [number, number, number];
@@ -50,7 +51,7 @@ export const EDGE1_Y = 36;
 export const BACK_Y = 46;
 export const EDGE_H = 4;
 /** Along a strip: where it starts on the drawing, and the length after which a kohaku belt's panels repeat. */
-const X0 = -30;
+export const X0 = -30;
 const PERIOD = 80;
 /** How far the cloth gaps from the jacket. */
 const GAP = 0.3;
@@ -153,38 +154,8 @@ export function strapCells(s: StrapDesc): Cell[] {
   }
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
-  cells.push(...knotCells(s, cy, zFront, front));
+  cells.push(...knotCells(s, cy, zFront, (x) => roundAt(s, s.a, s.b, x) - roundAt(s, s.a, s.b, 0), front));
   endsOf(cy).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number, cy + s.w / 2)));
-  return cells;
-}
-
-/**
- * A length of strap along a line of middles `c`: its face, its back and its two edges, `across` the way its width runs at each middle
- * and `out` the way its face looks. Its drawing runs along the face strip from `x0`, so its rows and a kohaku belt's panels follow it.
- */
-function ribbon(c: readonly Vec[], across: readonly Vec[], out: readonly Vec[], s: StrapDesc, x0: number, also?: Vec): Cell[] {
-  const cells: Cell[] = [];
-  const at = (k: number, side: number, face: number): Vec => {
-    const p = c[k] as Vec;
-    const a = across[k] as Vec;
-    const o = out[k] as Vec;
-    return [p[0] + a[0] * side * (s.w / 2) + o[0] * face * (s.t / 2), p[1] + a[1] * side * (s.w / 2) + o[1] * face * (s.t / 2), p[2] + a[2] * side * (s.w / 2) + o[2] * face * (s.t / 2)];
-  };
-  let x = x0;
-  for (let k = 0; k + 1 < c.length; k++) {
-    const step = Math.hypot(...sub(c[k + 1] as Vec, c[k] as Vec));
-    const x1 = x + step;
-    const o = unit([out[k]![0] + out[k + 1]![0], out[k]![1] + out[k + 1]![1], out[k]![2] + out[k + 1]![2]]);
-    const a = unit([across[k]![0] + across[k + 1]![0], across[k]![1] + across[k + 1]![1], across[k]![2] + across[k + 1]![2]]);
-    const face: [number, number][] = [[x, FACE_Y], [x1, FACE_Y], [x, FACE_Y + s.w], [x1, FACE_Y + s.w]];
-    const edge: [number, number][] = [[x, EDGE1_Y], [x1, EDGE1_Y], [x, EDGE1_Y + EDGE_H], [x1, EDGE1_Y + EDGE_H]];
-    cells.push(...quad([at(k, -1, 1), at(k + 1, -1, 1), at(k, 1, 1), at(k + 1, 1, 1)], face, o, also));
-    const reverse: [number, number][] = [[x, BACK_Y], [x1, BACK_Y], [x, BACK_Y + s.w], [x1, BACK_Y + s.w]];
-    cells.push(...quad([at(k, -1, -1), at(k + 1, -1, -1), at(k, 1, -1), at(k + 1, 1, -1)], reverse, [-o[0], -o[1], -o[2]], also));
-    cells.push(...quad([at(k, -1, 1), at(k + 1, -1, 1), at(k, -1, -1), at(k + 1, -1, -1)], edge, [-a[0], -a[1], -a[2]], also));
-    cells.push(...quad([at(k, 1, 1), at(k + 1, 1, 1), at(k, 1, -1), at(k + 1, 1, -1)], edge, a, also));
-    x = x1;
-  }
   return cells;
 }
 
@@ -207,66 +178,13 @@ export function through(pts: readonly Vec[], n: number): Vec[] {
   return out;
 }
 
-/**
- * The square knot, as a belt is tied: two lengths of the strap itself, not a block. One wraps across the front of the turns and rolls back
- * into them at each side; the other comes up from behind the turns, folds over their top edge and runs down across the first to the
- * right-hand end. `cy` is the band's middle at the front and `z0` the front of its turns.
- */
-function knotCells(s: StrapDesc, cy: number, z0: number, also?: Vec): Cell[] {
-  const t = s.t;
-  const top = cy - s.w / 2;
-  // The wrap: across the front, standing off the turns by its own thickness and a little fuller in the middle, rolling back at its sides.
-  const wrap: Vec[] = [];
-  const half = 15;
-  for (let k = 0; k <= 10; k++) {
-    const u = -1 + k / 5;
-    const x = u * (half + 1.6);
-    const roll = Math.max(0, Math.abs(x) - half) / 1.6;
-    const z = z0 + t / 2 + (1.4 * Math.sqrt(Math.max(0, 1 - Math.min(1, Math.abs(x) / half) ** 2)) + 0.3) * (1 - roll) - 1.2 * t * roll;
-    wrap.push([x, cy + 1.5, z]);
-  }
-  const wrapOut = wrap.map((p, k): Vec => {
-    const q = wrap[Math.min(wrap.length - 1, k + 1)] as Vec;
-    const r = wrap[Math.max(0, k - 1)] as Vec;
-    return unit([-(q[2] - r[2]), 0, q[0] - r[0]]);
-  });
-  const cells = ribbon(wrap, wrap.map((): Vec => [0, 1, 0]), wrapOut, s, X0 + 20, also);
-  // The crossing end: from behind the turns, over their top edge (the round hump a tied knot shows at its top left), down across the wrap.
-  const front = z0 + t + 2.4;
-  const line = through([
-    [-11, top + 3, z0 - 1.5 * t],
-    [-10, top - 1.6, z0 + 0.2],
-    [-7, top + 1.4, front + 0.6],
-    [0, cy + 2, front + 1.1],
-    [6, cy + s.w / 2 + 2, front],
-    [7, cy + s.w / 2 + 6, z0 + t + 1],
-  ], 4);
-  // Its width runs square to the diagonal it makes on the front, kept square to the line where the line turns over the top.
-  const flat: Vec = unit([0.7, -0.71, 0]);
-  const across: Vec[] = [];
-  const out: Vec[] = [];
-  line.forEach((p, k) => {
-    const tan = unit(sub(line[Math.min(line.length - 1, k + 1)] as Vec, line[Math.max(0, k - 1)] as Vec));
-    const d = flat[0] * tan[0] + flat[1] * tan[1] + flat[2] * tan[2];
-    const a = unit([flat[0] - d * tan[0], flat[1] - d * tan[1], flat[2] - d * tan[2]]);
-    let o = unit(cross(tan, a));
-    // Over the fold the face turns from behind, through up, to the front: keep it turning one way.
-    const prev = out[k - 1];
-    if (prev === undefined ? o[2] < 0 && p[2] > z0 : o[0] * prev[0] + o[1] * prev[1] + o[2] * prev[2] < 0) o = [-o[0], -o[1], -o[2]];
-    across.push(a);
-    out.push(o);
-  });
-  if ((out[Math.floor(out.length / 2)] as Vec)[2] < 0) out.forEach((o, k) => (out[k] = [-o[0], -o[1], -o[2]]));
-  return [...cells, ...ribbon(line, across, out, s, X0, also)];
-}
-
 /** The two hanging ends, each from under the knot to its cut end, on the picture's 200-wide drawing (the belt's middle at x 100). */
 function endsOf(cy: number): [[number, number], [number, number]][] {
   return [[[96, cy + 6], [80, cy + 6 + HANG]], [[105, cy + 5], [119, cy + 5 + HANG * 0.92]]];
 }
 
 /** The depth of a round of half width `a` and half depth `b` at `x` across it, as the body's volume draws it (never less than its side wall). */
-const roundAt = (s: StrapDesc, a: number, b: number, x: number): number => Math.max(s.side * b, b * Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, Math.abs(x) / a), s.full)), 1 / s.full));
+export const roundAt = (s: StrapDesc, a: number, b: number, x: number): number => Math.max(s.side * b, b * Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, Math.abs(x) / a), s.full)), 1 / s.full));
 
 /** The depth of the jacket's cloth below the belt at `y`, `x` across from its middle (the rows of `StrapDesc.skirt`). */
 function skirtAt(s: StrapDesc, y: number, x: number): number {

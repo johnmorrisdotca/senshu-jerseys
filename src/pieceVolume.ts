@@ -10,7 +10,7 @@ import { collarCells } from "./judogiCollar.ts";
 import { innerCells } from "./judogiInner.ts";
 import { strapCells } from "./judogiStrap.ts";
 import { n2 } from "./path.ts";
-import { APART, cellsOf, groupOrder, LIGHT, nearSleeve, placeCell, quadPath, SOLID_GROW, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
+import { APART, cellsOf, groupOrder, LIGHT, nearSleeve, growOf, placeCell, quadPath, turn, type Cell, type Placed, type VolumeDesc, type VolumeMarkup } from "./volume.ts";
 
 /** Every cell of a piece: a belt's strap, a jacket's collar, or the garment's body and sleeves. */
 export function pieceCells(d: VolumeDesc): Cell[] {
@@ -316,7 +316,7 @@ export function pieceMarkup(d: VolumeDesc, uid: string, frontId: string, backId:
     if (shown !== undefined && !shown[i]) return;
     const c = cells[i] as Cell;
     const key = layerOf(d, c);
-    defs += `<path id="${uid}q${i}" d="${quadPath(c.tex, d.solid === undefined ? undefined : SOLID_GROW)}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
+    defs += `<path id="${uid}q${i}" d="${quadPath(c.tex, growOf(d))}"/><clipPath id="${uid}k${i}"><use href="#${uid}q${i}"/></clipPath>`;
     const pl = placed[i] as Placed;
     const at = pl.visible ? ` transform="${pl.matrix}"` : ' display="none"';
     let fill = `fill="${greyOf(shadeOf(c.n, yaw, d.pitch, c.inside === true))}"`;
