@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-10-30
+
 ### Changed
 
 - **The trousers' drawstring is a flat braided cord, 1 cm wide and about 4 mm thick** (it was a round cord drawn about 9 mm across). Its lower and right edges stand up as its thickness, the top is shaded across, and the braid shows as fine ticks; the bow's loops, the knots and the hanging ends turn with the trousers. The 1 cm width and the 3 to 5 mm thickness are John's spec for judogi cord (2026-10-30); the makers' published pages I could reach gave no drawstring width. `test/judogiDrawstring.test.ts` holds the width and thickness, face on and turned at 30, 60 and 90 degrees.
