@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!--family:head-->
+  <link rel="stylesheet" href="family.css" />
+  <link rel="stylesheet" href="demo.css" />
+  <link rel="stylesheet" href="judogi.css" />
+  <link rel="stylesheet" href="uniforms.css" />
+</head>
+<body>
+<main>
+  <!--family:header-->
+  <section class="more" aria-labelledby="uni-h">
+    <h2 id="uni-h" data-say="uniformsTitle"></h2>
+    <p data-say="uniformsIntro"></p>
+    <p class="fam-fine"><a href="./" data-say="judoBack"></a> · <a href="judogi.html" data-say="uniformsDesigner"></a></p>
+    <div class="fam-panels try judo-layout">
+      <div class="fam-panel controls" id="uni-controls"></div>
+      <div class="stagebox">
+        <div class="stagepin">
+          <div class="judo-view" id="uni-turntable" data-testid="uni-turntable" tabindex="0" role="group" aria-roledescription="turntable" data-say-label="judoViewLabel">
+            <div class="stage" id="uni-stage" data-testid="uni-stage"></div>
+          </div>
+          <div class="turnbar" id="uni-turnbar">
+            <label class="fam-label" for="uni-yaw" data-say="angle"></label>
+            <input class="range" type="range" id="uni-yaw" min="-180" max="180" step="1" value="0" data-testid="uni-yaw" />
+            <output id="uni-yaw-out" for="uni-yaw">0°</output>
+            <button type="button" class="fam-button" id="uni-play" data-testid="uni-play" aria-pressed="false" data-say="play"></button>
+            <button type="button" class="fam-button" id="uni-front" data-testid="uni-front" data-say="front"></button>
+          </div>
+          <div class="turnbar">
+            <span class="judo-tiltbar">
+              <label class="fam-label" for="uni-tilt" data-say="judoTilt"></label>
+              <input class="range" type="range" id="uni-tilt" min="-30" max="30" step="1" value="0" data-testid="uni-tilt" />
+              <output id="uni-tilt-out" for="uni-tilt">0°</output>
+            </span>
+            <span class="judo-zoom" role="group" data-say-label="judoZoom">
+              <button type="button" class="fam-button" id="uni-zoom-out" data-testid="uni-zoom-out" data-say-label="judoZoomOut">−</button>
+              <button type="button" class="fam-button" id="uni-zoom-reset" data-testid="uni-zoom-reset" data-say-label="judoZoomReset">1×</button>
+              <button type="button" class="fam-button" id="uni-zoom-in" data-testid="uni-zoom-in" data-say-label="judoZoomIn">+</button>
+              <button type="button" class="fam-button" id="uni-fit" data-testid="uni-fit" data-say="judoFit"></button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!--family:unreviewed-->
+  <!--family:footer-->
+</main>
+<!--family:scripts uniforms.js-->
+</body>
+</html>

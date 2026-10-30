@@ -37,6 +37,14 @@ export function renderJudogi() {
   });
 }
 
+/** demo/uniforms.html, every garment side by side. */
+export function renderUniforms() {
+  return withFamily(readFileSync(new URL("../demo/uniforms.html", import.meta.url), "utf8"), {
+    title: "Senshu Jerseys: uniforms",
+    description: "Every martial-arts garment side by side, each wearing a belt you choose: judogi and belts, turning in 3D.",
+  });
+}
+
 /** demo/embed.html, the frame a page puts in an iframe: plain, no family blocks. */
 export function renderEmbed() {
   return readFileSync(new URL("../demo/embed.html", import.meta.url), "utf8");
