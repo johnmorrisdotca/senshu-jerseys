@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-10-30
+
 ### Fixed
 
 - **Woven labels have thickness and a sewn edge** (SPX-793). The approval label (on the jacket, the trousers and the belt), the neck label and its size tag were flat cloth. They are now 3 mm thick by default, kept to 2 to 4 mm (`thicknessMm` on `label`; `LABEL_MM` holds the range, `{ min: 2, max: 4, default: 3 }`): the cut edge stands off the garment with a lift and shade when the piece turns, and a running stitch sits just inside the edge where the label is sewn on. Not bulky at small sizes, since the thickness scales with the drawing. A belt's end tags are unchanged. No published woven-label thickness was found; the figure is John's spec (2026-10-30). Tests in `test/judogiLabelBuild.test.ts` at yaw 0, 30, 70 and 150.
