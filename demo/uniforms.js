@@ -53,7 +53,7 @@ async function shoot(options, width, scale) {
   const holder = document.createElement("div");
   holder.innerHTML = judogiFrame({ ...options, bare: true, width });
   const svg = holder.firstElementChild;
-  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale, webgl: false });
+  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale });
   if (made === undefined) return undefined;
   made.turn(0, 0);
   const { canvas } = made;
@@ -73,7 +73,13 @@ async function shoot(options, width, scale) {
   out.getContext("2d").drawImage(copy, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
   return out.toDataURL("image/png");
 }
-/** Put a tile's picture in when it is ready. `key` names the drawing, so one made before is not made again. */
+/** Put a tile's picture in when it is ready, once the tile is near the screen (the others wait: a page of forty drawings is not drawn at once). `key` names the drawing, so one made before is not made again. */
+const near = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    e.target.dataset.near = e.isIntersecting ? "1" : "";
+    if (e.isIntersecting) e.target._make?.();
+  }
+}, { rootMargin: "300px" });
 function picture(tile, key, options, width, scale) {
   const set = (url) => {
     const img = tile.querySelector("img");
@@ -81,11 +87,17 @@ function picture(tile, key, options, width, scale) {
     img.src = url;
     tile.dataset.ready = "1";
   };
-  if (pictures.has(key)) return set(pictures.get(key));
-  queue = queue.then(async () => {
-    if (!pictures.has(key)) pictures.set(key, await shoot(options, width, scale).catch(() => undefined));
-    set(pictures.get(key));
-  });
+  tile._make = () => {
+    tile._make = undefined;
+    if (pictures.has(key)) return set(pictures.get(key));
+    queue = queue.then(async () => {
+      if (!pictures.has(key)) pictures.set(key, await shoot(options, width, scale).catch(() => undefined));
+      set(pictures.get(key));
+      await new Promise((done) => globalThis.setTimeout(done, 40));
+    });
+  };
+  if (tile.dataset.near === "1") tile._make();
+  else near.observe(tile);
 }
 
 function garmentTiles() {
