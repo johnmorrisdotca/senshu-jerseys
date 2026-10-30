@@ -127,13 +127,23 @@ export function satinStroke(d: string, sw: number, rgb: Rgb, flat = false): stri
 }
 
 /** A run of text as thread (`wholeText`: the full text it is a part of, when the language is told by the rest of it, as in a column set one character at a time): the stroke glyphs as satin strokes, or system text with the satin pattern over it. `id` names the pattern the caller defined. */
-export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: string, wholeText?: string, flat = false): string {
+export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: string, wholeText?: string, flat = false, heavy = 0): string {
   if (run.kind === "glyph") return run.d === "" ? "" : satinStroke(run.d, run.sw, rgb, flat);
   const t = threadOf(rgb);
   let out = "";
   const lang = langAttr(wholeText ?? run.chars.map((ch) => ch.c).join(""));
   for (const ch of run.chars) {
     const at = (dx = 0, dy = 0): string => `transform="translate(${n2(ch.x + dx)} ${n2(ch.y + dy)}) rotate(${n2(ch.r)})" font-size="${n2(ch.size)}" text-anchor="middle" font-weight="700" font-family="${esc(family)}"${lang}`;
+    if (heavy > 0 && !flat) {
+      // A heavy brush stroke: every layer is the glyph grown by `heavy` (a stroke of its own paint round it), so a thin face is laid as thick satin.
+      const w = (extra: number): string => n2(heavy + extra);
+      out += `<text ${at(0.35, 0.5)} fill="${t.shadow}" fill-opacity="0.3" stroke="${t.shadow}" stroke-opacity="0.3" stroke-width="${w(0.7)}" stroke-linejoin="round">${esc(ch.c)}</text>`;
+      out += `<text ${at(0.16, 0.22)} fill="${t.gap}" fill-opacity="0.7" stroke="${t.gap}" stroke-opacity="0.7" stroke-width="${w(0.3)}" stroke-linejoin="round">${esc(ch.c)}</text>`;
+      out += `<text ${at()} fill="${edge ?? t.gap}" fill-opacity="0.55" stroke="${edge ?? t.gap}" stroke-opacity="0.55" stroke-width="${w(0.5)}" stroke-linejoin="round">${esc(ch.c)}</text>`;
+      out += `<text ${at()} fill="${t.fill}" stroke="${t.fill}" stroke-width="${w(0)}" stroke-linejoin="round">${esc(ch.c)}</text>`;
+      out += `<text ${at()} fill="url(#${id})" stroke="url(#${id})" stroke-width="${w(0)}" stroke-linejoin="round">${esc(ch.c)}</text>`;
+      continue;
+    }
     if (flat) {
       out += `<text ${at(0.15, 0.2)} fill="${t.shadow}" fill-opacity="0.14" stroke="${t.shadow}" stroke-opacity="0.14" stroke-width="0.4">${esc(ch.c)}</text>`;
       out += `<text ${at()} fill="${hexOf(blend(rgb, [0, 0, 0], 0.12))}" stroke="${edge ?? t.gap}" stroke-opacity="0.4" stroke-width="0.2" stroke-linejoin="round">${esc(ch.c)}</text>`;

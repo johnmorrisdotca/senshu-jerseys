@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **The karate gi's look, checked against John's photograph.** The three-quarter sleeve ends clearly at mid-forearm and the short one just above the elbow (`KARATE_SLEEVE_SHARE` 0.88 and 0.68 of the sleeve, were 0.76 and 0.52, which both ended near the elbow). The round patches are 9 cm across (`SLEEVE_PATCH_CM`, `LEG_PATCH_CM`; they were 8.4 and 7.6 cm), the sleeve's a little lower on the upper arm where the sleeve is wide enough to hold it. The kanji down the chest are laid heavy, as a brush's strokes are stitched, the satin grown round each glyph (a new `heavy` width on the thread's text), with no font shipped. **No ghost of the knee panel on the karate gi's and the dobok's trousers**: the cover over the judogi's reinforced knee is now the leg exactly as drawn round it (cloth, twill and the trousers' own long folds, clipped to the cover), where its approximate folds left faint rectangles; a mark sewn on the thigh is drawn over it.
+
 ## [0.25.1] - 2026-10-30
 
 ### Fixed

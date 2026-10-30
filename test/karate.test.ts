@@ -58,7 +58,7 @@ test("a sleeve is cut shorter and shorter, the cuff keeping its width", () => {
   const [full, three, short] = KARATE_SLEEVES.map(cuff) as [ReturnType<typeof cuff>, ReturnType<typeof cuff>, ReturnType<typeof cuff>];
   assert.ok(full.y > three.y && three.y > short.y, `${full.y} ${three.y} ${short.y}`);
   assert.ok(Math.abs(full.width - three.width) < 1e-6 && Math.abs(full.width - short.width) < 1e-6);
-  assert.deepEqual(KARATE_SLEEVES.map((s) => KARATE_SLEEVE_SHARE[s]), [1, 0.76, 0.52]);
+  assert.deepEqual(KARATE_SLEEVES.map((s) => KARATE_SLEEVE_SHARE[s]), [1, 0.88, 0.68]);
   assert.deepEqual(jacketDesc(1, false, JUDO_CUT).sl[0]!.q, jacketDesc(1, false).sl[0]!.q);
   // Each length draws a different jacket.
   const drawn = new Set(KARATE_SLEEVES.map((sleeve) => renderJudogi({ mode: "jacket", karate: { sleeve } })));

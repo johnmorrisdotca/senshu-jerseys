@@ -21,7 +21,7 @@ import { chestSpan, onSleeve } from "./judogiJacket.ts";
 import { corners } from "./judogiPlaces.ts";
 import { FONT_STACKS } from "./judogiMarks.ts";
 import { patchMm, PATCH_MM } from "./judogiPatch.ts";
-import { onLeg } from "./judogiPants.ts";
+import { hipsOf, onLeg } from "./judogiPants.ts";
 import { readThread, satinDefs, satinRun, satinStroke, type ThreadColour } from "./judogiThread.ts";
 import { fold, smooth, toneOf, type Mark } from "./judogiCloth.ts";
 import { n2, poly, type Pt } from "./path.ts";
@@ -33,8 +33,11 @@ export type KarateSleeve = (typeof KARATE_SLEEVES)[number];
 export const KARATE_CUTS = ["training", "kumite", "kata"] as const;
 export type KarateCut = (typeof KARATE_CUTS)[number];
 
-/** How far down the full sleeve each length goes: to the bend of the wrist; halfway down the forearm, the shortest the WKF allows; the elbow. */
-export const KARATE_SLEEVE_SHARE: Record<KarateSleeve, number> = { full: 1, "three-quarter": 0.76, short: 0.52 };
+/**
+ * How far down the full sleeve each length goes: to the bend of the wrist; halfway down the forearm, the shortest the WKF allows; just above the elbow. The sleeve is drawn from
+ * where it leaves the body, so the elbow falls at about 0.76 of it and the middle of the forearm at about 0.88.
+ */
+export const KARATE_SLEEVE_SHARE: Record<KarateSleeve, number> = { full: 1, "three-quarter": 0.88, short: 0.68 };
 
 /**
  * What each cut changes, in the drawing's units (2.63 to the centimetre): the jacket's hem (a kumite jacket just covers the hips, a kata one hangs nearer three-quarters of the
@@ -45,6 +48,10 @@ const CUTS: Record<KarateCut, { hem: number; soft: number }> = {
   kumite: { hem: 193, soft: 0.42 },
   kata: { hem: 211, soft: 0.85 },
 };
+
+/** The round patches' size across, in centimetres: a sleeve badge as karate gis carry them, about 9 to 10 cm, and the leg's the same. */
+export const SLEEVE_PATCH_CM = 9;
+export const LEG_PATCH_CM = 9;
 
 /** What is stitched down the lapel when none is asked for: "karate" in two characters. */
 export const KARATE_TEXT = "空手";
@@ -136,19 +143,19 @@ export function karateSpots(k: ReadKarate): { text?: { x: number; y: number; w: 
     out.text = { ...box, x: shift, size, step };
   }
   if (k.sleevePatch) {
-    const [x, y] = onSleeve(1, Math.min(0.62, 0.3 / k.gi.sleeve), 0.5, k.gi.sleeve);
-    out.sleeve = { x, y, r: 4.2 * 2.63 };
+    const [x, y] = onSleeve(1, Math.min(0.62, 0.37 / k.gi.sleeve), 0.5, k.gi.sleeve);
+    out.sleeve = { x, y, r: SLEEVE_PATCH_CM * 1.315 };
   }
   if (k.legPatch) {
     const [x, y] = onLeg(1, 0.17, 0.42);
-    out.leg = { x, y, r: 3.8 * 2.63 };
+    out.leg = { x, y, r: LEG_PATCH_CM * 1.315 };
   }
   return out;
 }
 
 /** The marks the karate gi carries of its own: on the jacket's front and the trousers' front. */
-export function karateMarks(uid: string, k: ReadKarate, cloth: Rgb, pantsUid: string): { jacket?: Mark; pants?: Mark } {
-  const out: { jacket?: Mark; pants?: Mark } = { pants: plainKnees(pantsUid, cloth) };
+export function karateMarks(uid: string, k: ReadKarate, cloth: Rgb, pantsUid: string, worn = false): { jacket?: Mark; pants?: Mark } {
+  const out: { jacket?: Mark; pants?: Mark } = { pants: plainKnees(pantsUid, cloth, worn) };
   const join = (a: Mark | undefined, b: Mark): Mark => (a === undefined ? b : { defs: a.defs + b.defs, body: a.body + b.body });
   const at = karateSpots(k);
   if (at.text !== undefined) out.jacket = join(out.jacket, lapelText(`${uid}t`, k, at.text));
@@ -158,25 +165,42 @@ export function karateMarks(uid: string, k: ReadKarate, cloth: Rgb, pantsUid: st
 }
 
 /**
- * A karate gi's trousers have no reinforced knee: the judogi's knee panel is covered with the leg's own twill and the legs' long folds are drawn again across it (the judogi's
- * trousers, judogiPants.ts, carry the panel, so the karate gi draws over it). `uid` is the trousers' front face's, whose twill pattern the cover uses.
+ * A karate gi's trousers have no reinforced knee: the judogi's knee panel is covered with the leg exactly as it is drawn round it (judogiPants.ts carries the panel, so the karate
+ * gi draws over it): the leg's cloth and twill, and the trousers' long folds from the waistband to the hem, each the very curve the trousers draw, clipped to the cover, so
+ * nothing of the panel or of the cover's edge shows. `uid` is the trousers' front face's, whose twill pattern the cover uses; `worn` the trousers' gathered waist.
  */
-export function plainKnees(uid: string, cloth: Rgb): Mark {
+export function plainKnees(uid: string, cloth: Rgb, worn = false): Mark {
   const t = toneOf(cloth);
-  const f0 = 0.205;
-  const f1 = 0.605;
+  const h = hipsOf(worn);
+  const f0 = 0.19;
+  const f1 = 0.62;
   let body = "";
+  let defs = "";
   for (const side of [-1, 1] as const) {
-    const cover = poly([onLeg(side, f0, 0.045), onLeg(side, f0, 0.955), onLeg(side, f1, 0.955), onLeg(side, f1, 0.045)]);
-    body += `<path d="${cover}" fill="${t.fill}"/><path d="${cover}" fill="url(#${uid}T)"/>`;
-    // The long folds as the trousers draw them down the leg: where each lies across the leg, and how far it sways at the middle of the leg.
-    const run = (u: number, sway: number, w: number, o: number, light = false): string => {
-      const at = (f: number): Pt => onLeg(side, f, u + sway * (f < 0.5 ? 0.5 + ((f - 0.1) / 0.4) * 0.5 : 1 - (f - 0.5) / 0.48));
-      return fold(smooth([f0, (f0 * 2 + f1) / 3, (f0 + f1 * 2) / 3, f1].map(at)), w, o, light);
-    };
-    body += run(0.04, 0, 7, t.light ? 0.14 : 0.26) + run(0.93, 0, 5, t.light ? 0.12 : 0.22) + run(0.44, 0.03, 9, 0.16, true) + run(0.7, -0.02, 6, t.light ? 0.07 : 0.14) + run(0.26, 0.02, 6, t.light ? 0.06 : 0.12);
+    const cover = poly([onLeg(side, f0, 0.03), onLeg(side, f0, 0.97), onLeg(side, f1, 0.97), onLeg(side, f1, 0.03)]);
+    const clip = `${uid}kc${side < 0 ? "l" : "r"}`;
+    defs += `<clipPath id="${clip}"><path d="${cover}"/></clipPath>`;
+    body += `<g clip-path="url(#${clip})"><path d="${cover}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3"/><path d="${cover}" fill="url(#${uid}T)"/>${legFolds(h, t, side)}</g>`;
   }
-  return { defs: "", body };
+  return { defs, body };
+}
+
+/** The rows the trousers' hip block is drawn at, as judogiPants.ts has them (`Y`): the long folds start on the hips, so their curves need them. */
+const HIP_ROWS = [6, 19, 50, 80, 104];
+
+/** The trousers' long folds down one side, the curves judogiPants.ts draws (`fall`, `longFolds`): from the hips down the leg, the shadow at each edge, the light down the front. */
+function legFolds(hips: readonly number[], t: ReturnType<typeof toneOf>, side: -1 | 1): string {
+  const fall = (u: number, sway = 0): string => {
+    const hipAt = (y: number): Pt => {
+      let hw = hips[0] as number;
+      for (let j = 1; j < HIP_ROWS.length; j++) if (y >= (HIP_ROWS[j - 1] as number)) hw = (hips[j - 1] as number) + (((hips[j] as number) - (hips[j - 1] as number)) * (Math.min(y, HIP_ROWS[j] as number) - (HIP_ROWS[j - 1] as number))) / ((HIP_ROWS[j] as number) - (HIP_ROWS[j - 1] as number));
+      const outer = 100 + side * (hw + 1.2);
+      return [outer + (100 - outer) * u, y];
+    };
+    return smooth([hipAt(20), hipAt(56), onLeg(side, 0.1, u + sway / 2), onLeg(side, 0.5, u + sway), onLeg(side, 0.98, u)]);
+  };
+  return fold(fall(0.04), 7, t.light ? 0.14 : 0.26) + fold(fall(0.93), 5, t.light ? 0.12 : 0.22) + fold(fall(0.44, 0.03), 9, 0.16, true) +
+    fold(fall(0.7, -0.02), 6, t.light ? 0.07 : 0.14) + fold(fall(0.26, 0.02), 6, t.light ? 0.06 : 0.12);
 }
 
 /** The characters down the chest beside the lapel, in thread: the same column the embroidery's `down` direction sets, each character upright, one under the next. */
@@ -184,7 +208,8 @@ function lapelText(id: string, k: ReadKarate, at: NonNullable<ReturnType<typeof 
   const chars = graphemes(k.text);
   const rgb = k.thread.rgb;
   const runs = chars.map((c, i) => layout(c, 0, (i - (chars.length - 1) / 2) * at.step, { height: at.size, maxWidth: at.size * 1.3, weight: "bold", asText: true }));
-  const column = runs.map((run) => satinRun(run, rgb, `${id}S`, FONT_STACKS.gyosho, undefined, k.text)).join("");
+  // Laid heavy, as a brush's strokes are stitched on a gi: the glyph grown by about a fifteenth of its size all round.
+  const column = runs.map((run) => satinRun(run, rgb, `${id}S`, FONT_STACKS.gyosho, undefined, k.text, false, at.size * 0.065)).join("");
   return { defs: satinDefs(`${id}S`, rgb), body: `<g transform="translate(${n2(at.x)} ${n2(at.y)}) rotate(${at.rot})">${column}</g>` };
 }
 

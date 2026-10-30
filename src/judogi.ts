@@ -369,8 +369,10 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
 /** What is sewn on the trousers' front. */
 function pantsMarks(o: Ready): GiInk["marks"] | undefined {
   // A dobok's trousers, like a karate gi's, have no reinforced knee.
-  const plain = o.dobok === undefined ? undefined : plainKnees(`${o.uid}pf`, o.cloth);
-  const front = join(plain, join(o.marks?.pants.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).pants));
+  const worn = o.mode === "suit";
+  const plain = o.dobok === undefined ? undefined : plainKnees(`${o.uid}pf`, o.cloth, worn);
+  // The cover over the knee goes first, so nothing sewn on the thigh is hidden by it.
+  const front = join(join(plain, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`, worn).pants), o.marks?.pants.front);
   return front === undefined ? undefined : { front };
 }
 
