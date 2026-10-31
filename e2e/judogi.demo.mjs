@@ -4,8 +4,6 @@ import { expect, test } from "@playwright/test";
 // and has no control left in the browser's own style.
 /** Choose an option of a swatch, tile or segmented picker. */
 const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
-// A page that draws a heavy scene is asked for as soon as its document is there: WebKit on a slow runner held the load event for the whole test's time, and every check below waits for the canvas itself.
-const SOON = { waitUntil: "domcontentloaded" };
 const yawOf = (page) => page.locator("#judo-stage canvas").getAttribute("data-yaw").then(Number);
 
 test("the designer draws a judogi in pieces, with no errors and no sideways scroll", async ({ page }) => {
@@ -36,7 +34,10 @@ test("the angle slider turns the drawing in place, and a choice keeps the angle"
   await expect(page).toHaveURL(/colour=blue/);
   expect(await yawOf(page)).toBe(40);
   // The address is the whole state.
-  await page.goto(page.url());
+  // Through a blank page: the page has changed its own address with replaceState, and WebKit on the CI runner never finished a goto to that very address (twice, 30 s, the test's whole time).
+  const again = page.url();
+  await page.goto("about:blank");
+  await page.goto(again);
   await expect(page.locator('[data-testid="judo-colour"] [data-value="blue"]')).toHaveAttribute("aria-pressed", "true");
   expect(await yawOf(page)).toBe(40);
 });
@@ -501,7 +502,7 @@ test("the folded belt and the belt's gift box are Display choices with their own
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   const ctl = (id) => page.locator(`[data-testid="${id}"]`);
-  await page.goto("/judogi.html?mode=folded&belt=red-white", SOON);
+  await page.goto("/judogi.html?mode=folded&belt=red-white");
   const canvas = page.locator("#judo-stage canvas");
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute("data-painter", /^(webgl|2d)$/);
@@ -530,7 +531,7 @@ test("the belt's gift box is a Display choice with its own controls, keeps them 
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   const ctl = (id) => page.locator(`[data-testid="${id}"]`);
   const canvas = page.locator("#judo-stage canvas");
-  await page.goto("/judogi.html?mode=box&belt=red-white", SOON);
+  await page.goto("/judogi.html?mode=box&belt=red-white");
   await expect(canvas).toBeVisible();
   await expect(canvas).toHaveAttribute("data-painter", /^(webgl|2d)$/);
   // The box: its type, state, words and wood, each in the address.
@@ -547,16 +548,16 @@ test("the belt's gift box is a Display choice with its own controls, keeps them 
   // The wood's tone is a kiri choice only.
   await expect(ctl("judo-bxw")).toHaveCount(0);
   // The whole state comes back from the address.
-  await page.goto(page.url(), SOON);
+  await page.goto(page.url());
   await expect(ctl("judo-bxt").locator('[data-value="silver"]')).toHaveAttribute("aria-pressed", "true");
   await expect(ctl("judo-bxs").locator('[data-value="open"]')).toHaveAttribute("aria-pressed", "true");
   await expect(canvas).toBeVisible();
   // A belt too long for any box says so, in words, instead of being drawn in one.
   await expect(ctl("judo-box-nofit")).toHaveCount(0);
-  await page.goto("/judogi.html?mode=box&bsz=7&bxs=open", SOON);
+  await page.goto("/judogi.html?mode=box&bsz=7&bxs=open");
   await expect(ctl("judo-box-nofit")).toHaveCount(1);
   await expect(canvas).toBeVisible();
-  await page.goto("/judogi.html?mode=box&bsz=6.5&bxt=silver", SOON);
+  await page.goto("/judogi.html?mode=box&bsz=6.5&bxt=silver");
   await expect(ctl("judo-box-nofit")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
