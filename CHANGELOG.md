@@ -6,6 +6,11 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A trouser hem option** (SPX-832). `hemAboveAnkleCm` on `renderJudogi` and `judogiFrame` (and the fifth argument of `pantsFace`) sets how far above the outer ankle bone the trousers stop, 2 to 10 cm, 5 by default so today's drawing is unchanged byte for byte. The IJF's limit is 5 cm (Judogi Rules), the IBJJF's 2 cm (its uniform rules); `PANTS_HEM_CM` and `pantsHemCm` are exported, and `judogiCheck` adds `trouser-hem` when the option is given. The knee panel stays where the knee is.
+- **`shapedCloth`: a patch's cloth in any shape** (SPX-832). `cloth` cut to a rounded rectangle, circle, shield or a custom path, with the same thickness (`PATCH_MM`), edge (`PATCH_EDGES`), shade, lift and stitching; exported with `clothOutline`, `clothPath` and the `ClothShape` type. It draws what the jiu-jitsu gi's patches draw. See docs/judogi.md, "Back patches".
+
 ## [0.27.1] - 2026-10-31
 
 ### Fixed

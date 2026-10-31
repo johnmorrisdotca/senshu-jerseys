@@ -31,16 +31,28 @@ const D = [24, 26, 28.5, 27.5, 24];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.1, 0.3, 0.6, 1];
 const HEM = 262;
+/**
+ * How far above the outer ankle bone the trousers' hem stops, in centimetres. The IJF's rule is a limit: no more than 5 cm (the default, the drawing as it always was);
+ * the IBJJF's is no more than 2 cm. `min` and `max` bound what is drawn: 2 cm is the longest the drawing's box holds, 10 cm a cropped leg.
+ */
+export const PANTS_HEM_CM = { min: 2, max: 10, default: 5, ijf: 5, ibjjf: 2 } as const;
+
+/** A hem height from outside, brought into range; the default when it is not a number. */
+export const pantsHemCm = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(PANTS_HEM_CM.min, Math.min(PANTS_HEM_CM.max, v)) : PANTS_HEM_CM.default);
+
+/** The y of the hem for a hem `cm` above the ankle bone: the default's 262, a centimetre higher or lower moving it by one centimetre of the drawing. */
+const hemOf = (cm: number): number => HEM - (pantsHemCm(cm) - PANTS_HEM_CM.default) * CM;
 
 /** A leg on the picture's left: the outer top S, the outer hem P, the inner top at the crotch A, the inner hem Q. The other is its mirror. */
 /** The legs start a little above the crotch, under the hip block, so the two never meet edge to edge and leave a hairline. */
 const S: Pt = [48.6, 92];
-const P: Pt = [46.5, HEM];
 const A: Pt = [100, 92];
-const Q: Pt = [92.5, HEM];
 const mirror = (p: Pt): Pt => [200 - p[0], p[1]];
+/** The outer and the inner end of the hem at height `hem`. */
+const hemPoints = (hem: number): [Pt, Pt] => [[46.5, hem], [92.5, hem]];
 
-export function pantsDesc(depth = 1, worn = false): VolumeDesc {
+export function pantsDesc(depth = 1, worn = false, hemCm: number = PANTS_HEM_CM.default): VolumeDesc {
+  const [P, Q] = hemPoints(hemOf(hemCm));
   const sl: VolumeDesc["sl"] = [
     { s: -1, q: [S[0], S[1], P[0], P[1], A[0], A[1], Q[0], Q[1]] },
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)] },
@@ -54,69 +66,72 @@ export function hipOutline(h: readonly number[]): Pt[] {
   return [...left, ...[...left].reverse().map(mirror)];
 }
 
-export function legOutline(side: -1 | 1): Pt[] {
+export function legOutline(side: -1 | 1, hem: number = HEM): Pt[] {
+  const [P, Q] = hemPoints(hem);
   const pts: Pt[] = [S, P, Q, A];
   return side === -1 ? pts : pts.map(mirror);
 }
 
-export function onLeg(side: -1 | 1, f: number, u: number): Pt {
-  const [s, p, q, a] = legOutline(side) as [Pt, Pt, Pt, Pt];
+export function onLeg(side: -1 | 1, f: number, u: number, hem: number = HEM): Pt {
+  const [s, p, q, a] = legOutline(side, hem) as [Pt, Pt, Pt, Pt];
   const o: Pt = [s[0] + (p[0] - s[0]) * f, s[1] + (p[1] - s[1]) * f];
   const i: Pt = [a[0] + (q[0] - a[0]) * f, a[1] + (q[1] - a[1]) * f];
   return [o[0] + (i[0] - o[0]) * u, o[1] + (i[1] - o[1]) * u];
 }
 
-const across = (side: -1 | 1, f: number, u0 = 0, u1 = 1): string => smooth([onLeg(side, f, u0), onLeg(side, f, (u0 + u1) / 2), onLeg(side, f, u1)]);
-const down = (side: -1 | 1, u: number, f0: number, f1: number, sway = 0): string => smooth([onLeg(side, f0, u), onLeg(side, (f0 + f1) / 2, u + sway), onLeg(side, f1, u)]);
+const across = (hem: number, side: -1 | 1, f: number, u0 = 0, u1 = 1): string => smooth([onLeg(side, f, u0, hem), onLeg(side, f, (u0 + u1) / 2, hem), onLeg(side, f, u1, hem)]);
+const down = (hem: number, side: -1 | 1, u: number, f0: number, f1: number, sway = 0): string => smooth([onLeg(side, f0, u, hem), onLeg(side, (f0 + f1) / 2, u + sway, hem), onLeg(side, f1, u, hem)]);
 
 /**
  * A line down one side of the trousers, `u` of the way from the outer edge to the middle, from the waistband to the hem: across the hip
  * block first, then down the leg. The long folds follow these, so the shading runs on from the hips into the legs as the cloth does.
  */
-function fall(hips: readonly number[], side: -1 | 1, u: number, sway = 0): string {
+function fall(hem: number, hips: readonly number[], side: -1 | 1, u: number, sway = 0): string {
   const hipAt = (y: number): Pt => {
     let h = hips[0] as number;
     for (let j = 1; j < Y.length; j++) if (y >= (Y[j - 1] as number)) h = (hips[j - 1] as number) + (((hips[j] as number) - (hips[j - 1] as number)) * (Math.min(y, Y[j] as number) - (Y[j - 1] as number))) / ((Y[j] as number) - (Y[j - 1] as number));
     const outer = 100 + side * (h + 1.2);
     return [outer + (100 - outer) * u, y];
   };
-  return smooth([hipAt(20), hipAt(56), onLeg(side, 0.1, u + sway / 2), onLeg(side, 0.5, u + sway), onLeg(side, 0.98, u)]);
+  return smooth([hipAt(20), hipAt(56), onLeg(side, 0.1, u + sway / 2, hem), onLeg(side, 0.5, u + sway, hem), onLeg(side, 0.98, u, hem)]);
 }
 
 /** The long folds of one side, waistband to hem: shadow along the outer edge and the inside leg, the light down the front, and two softer folds. */
-function longFolds(h: readonly number[], t: Tone, side: -1 | 1): string {
+function longFolds(hem: number, h: readonly number[], t: Tone, side: -1 | 1): string {
   const outer = 0.04;
-  return fold(fall(h, side, outer), 7, t.light ? 0.14 : 0.26) +
-    fold(fall(h, side, 0.93), 5, t.light ? 0.12 : 0.22) +
-    fold(fall(h, side, 0.44, 0.03), 9, 0.16, true) +
-    fold(fall(h, side, 0.7, -0.02), 6, t.light ? 0.07 : 0.14) +
-    fold(fall(h, side, 0.26, 0.02), 6, t.light ? 0.06 : 0.12);
+  return fold(fall(hem, h, side, outer), 7, t.light ? 0.14 : 0.26) +
+    fold(fall(hem, h, side, 0.93), 5, t.light ? 0.12 : 0.22) +
+    fold(fall(hem, h, side, 0.44, 0.03), 9, 0.16, true) +
+    fold(fall(hem, h, side, 0.7, -0.02), 6, t.light ? 0.07 : 0.14) +
+    fold(fall(hem, h, side, 0.26, 0.02), 6, t.light ? 0.06 : 0.12);
 }
 
 /** A leg: twill cloth, its seams, the knee panel (front only) and the turned hem with a break where it would meet the foot. */
-function leg(uid: string, t: Tone, side: -1 | 1, front: boolean, knee: boolean): string {
-  const out = poly(legOutline(side));
+function leg(hem: number, uid: string, t: Tone, side: -1 | 1, front: boolean, knee: boolean): string {
+  const out = poly(legOutline(side, hem));
   let s = `<path d="${out}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${out}" fill="url(#${uid}T)"/>`;
-  s += seam(down(side, side === -1 ? 0.012 : 0.988, 0, 1), t, 0.3);
-  s += seam(down(side, side === -1 ? 0.988 : 0.012, 0.02, 1), t, 0.28);
+  s += seam(down(hem, side, side === -1 ? 0.012 : 0.988, 0, 1), t, 0.3);
+  s += seam(down(hem, side, side === -1 ? 0.988 : 0.012, 0.02, 1), t, 0.28);
   if (front && knee) {
     // The knee: a second layer from above the knee to below it, stitched round twice, standing a little proud of the leg.
-    const k0 = 0.22;
-    const k1 = 0.58;
-    const panel = poly([onLeg(side, k0, 0.06), onLeg(side, k0, 0.94), onLeg(side, k1, 0.94), onLeg(side, k1, 0.06)]);
+    // The knee stays where the knee is whatever the hem: its place is a share of the default leg, turned into a share of this one.
+    const keep = (HEM - S[1]) / (hem - S[1]);
+    const k0 = 0.22 * keep;
+    const k1 = 0.58 * keep;
+    const panel = poly([onLeg(side, k0, 0.06, hem), onLeg(side, k0, 0.94, hem), onLeg(side, k1, 0.94, hem), onLeg(side, k1, 0.06, hem)]);
     s += `<path d="${panel}" fill="#fff" fill-opacity="${t.light ? 0.18 : 0.06}"/>`;
-    s += fold(across(side, k1 + 0.006, 0.06, 0.94), 2.6, t.light ? 0.16 : 0.28);
-    s += fold(across(side, k0 - 0.004, 0.06, 0.94), 1.6, 0.4, true);
+    s += fold(across(hem, side, k1 + 0.006, 0.06, 0.94), 2.6, t.light ? 0.16 : 0.28);
+    s += fold(across(hem, side, k0 - 0.004, 0.06, 0.94), 1.6, 0.4, true);
     s += `<path d="${panel}" fill="none" stroke="${t.seam}" stroke-width="0.6" stroke-opacity="0.6"/>`;
-    s += stitch(`${across(side, k0 + 0.012, 0.09, 0.91)}`, t, 0.38, 0.7) + stitch(`${across(side, k1 - 0.012, 0.09, 0.91)}`, t, 0.38, 0.7);
-    s += stitch(down(side, 0.09, k0 + 0.012, k1 - 0.012), t, 0.38, 0.7) + stitch(down(side, 0.91, k0 + 0.012, k1 - 0.012), t, 0.38, 0.7);
+    s += stitch(`${across(hem, side, k0 + 0.012, 0.09, 0.91)}`, t, 0.38, 0.7) + stitch(`${across(hem, side, k1 - 0.012, 0.09, 0.91)}`, t, 0.38, 0.7);
+    s += stitch(down(hem, side, 0.09, k0 + 0.012, k1 - 0.012), t, 0.38, 0.7) + stitch(down(hem, side, 0.91, k0 + 0.012, k1 - 0.012), t, 0.38, 0.7);
   }
   // The break above the foot, and the turned hem.
-  s += fold(smooth([onLeg(side, 0.885, 0.12), onLeg(side, 0.9, 0.45), onLeg(side, 0.892, 0.8)]), 9, t.light ? 0.08 : 0.16);
-  s += fold(across(side, 0.965), 2.2, t.light ? 0.14 : 0.24);
-  s += seam(across(side, 0.968), t, 0.55);
-  s += stitch(across(side, 0.982), t);
-  s += fold(across(side, 0.997), 1.4, t.light ? 0.12 : 0.22);
+  s += fold(smooth([onLeg(side, 0.885, 0.12, hem), onLeg(side, 0.9, 0.45, hem), onLeg(side, 0.892, 0.8, hem)]), 9, t.light ? 0.08 : 0.16);
+  s += fold(across(hem, side, 0.965), 2.2, t.light ? 0.14 : 0.24);
+  s += seam(across(hem, side, 0.968), t, 0.55);
+  s += stitch(across(hem, side, 0.982), t);
+  s += fold(across(hem, side, 0.997), 1.4, t.light ? 0.12 : 0.22);
   return s;
 }
 
@@ -192,46 +207,47 @@ function drawstring(t: Tone): string {
 }
 
 /** The long folds of both sides, drawn over the hip block and the legs together. */
-function hipSides(h: readonly number[], t: Tone): string {
-  return longFolds(h, t, -1) + longFolds(h, t, 1);
+function hipSides(hem: number, h: readonly number[], t: Tone): string {
+  return longFolds(hem, h, t, -1) + longFolds(hem, h, t, 1);
 }
 
-function front(uid: string, t: Tone, h: readonly number[], marks = "", knee = true): string {
+function front(hem: number, uid: string, t: Tone, h: readonly number[], marks = "", knee = true): string {
   const hip = poly(hipOutline(h));
-  let s = leg(uid, t, -1, true, knee) + leg(uid, t, 1, true, knee);
-  s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
+  let s = leg(hem, uid, t, -1, true, knee) + leg(hem, uid, t, 1, true, knee);
+  s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(hem, h, t);
   s += waistband(h, t);
   s += seam("M100 19C100.5 48 100 78 100 106", t, 0.55);
   s += fold(smooth([[100, 48], [100, 80], [100, 104]]), 6, t.light ? 0.09 : 0.18);
   s += marks;
-  s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
+  s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${hem}" fill="url(#${uid}V)"/></g>`;
   s += drawstring(t);
   return s;
 }
 
-function back(uid: string, t: Tone, h: readonly number[], marks = ""): string {
+function back(hem: number, uid: string, t: Tone, h: readonly number[], marks = ""): string {
   const hip = poly(hipOutline(h));
-  let s = leg(uid, t, -1, false, true) + leg(uid, t, 1, false, true);
-  s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
+  let s = leg(hem, uid, t, -1, false, true) + leg(hem, uid, t, 1, false, true);
+  s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(hem, h, t);
   s += waistband(h, t);
   s += seam("M100 19C100 48 100.5 78 100 106", t, 0.6);
   // The seat: a soft curve of light over each side, and the cloth drawn in under it.
   s += fold(smooth([[64, 30], [76, 26], [92, 32]]), 10, 0.12, true) + fold(smooth([[136, 30], [124, 26], [108, 32]]), 10, 0.12, true);
   s += fold(smooth([[68, 90], [83, 97], [97, 101]]), 7, t.light ? 0.07 : 0.14) + fold(smooth([[132, 90], [117, 97], [103, 101]]), 7, t.light ? 0.07 : 0.14);
   s += marks;
-  s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${HEM}" fill="url(#${uid}V)"/></g>`;
+  s += `<g clip-path="url(#${uid}all)"><rect x="0" y="0" width="200" height="${hem}" fill="url(#${uid}V)"/></g>`;
   return s;
 }
 
-/** The trousers' front or back, in the 200-wide box the volume samples. `knee: false` leaves out the front's reinforced knee panel. */
-export function pantsFace(ink: GiInk, face: "front" | "back", worn = false, knee = true): Face {
+/** The trousers' front or back, in the 200-wide box the volume samples. `knee: false` leaves out the front's reinforced knee panel; `hemCm` is how far above the ankle bone the hem stops (`PANTS_HEM_CM`). */
+export function pantsFace(ink: GiInk, face: "front" | "back", worn = false, knee = true, hemCm: number = PANTS_HEM_CM.default): Face {
+  const hem = hemOf(hemCm);
   const t = toneOf(ink.cloth);
   const uid = `${ink.uid}${face === "front" ? "f" : "b"}`;
   const h = hipsOf(worn);
-  const clip = [poly(hipOutline(h)), poly(legOutline(-1)), poly(legOutline(1))];
+  const clip = [poly(hipOutline(h)), poly(legOutline(-1, hem)), poly(legOutline(1, hem))];
   const all = `<clipPath id="${uid}all">${clip.map((d) => `<path d="${d}"/>`).join("")}</clipPath>`;
   const mark = ink.marks?.[face];
-  return { defs: weaves(uid, t) + lightDefs(uid, t) + all + (mark?.defs ?? ""), body: face === "front" ? front(uid, t, h, mark?.body, knee) : back(uid, t, h, mark?.body), clip };
+  return { defs: weaves(uid, t) + lightDefs(uid, t) + all + (mark?.defs ?? ""), body: face === "front" ? front(hem, uid, t, h, mark?.body, knee) : back(hem, uid, t, h, mark?.body), clip };
 }
 
 export const PANTS_HEM = HEM;

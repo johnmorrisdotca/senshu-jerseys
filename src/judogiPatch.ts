@@ -11,7 +11,7 @@
 import { blend, clean, graphemes, hashOf, hexOf, lum, readColour, shade, type Rgb } from "./colour.ts";
 import { layout, drawRun } from "./text.ts";
 import { BELT_TOP } from "./judogiJacket.ts";
-import { n2 } from "./path.ts";
+import { mapPath, n2 } from "./path.ts";
 
 /** The drawing's scale: units to the centimetre, for a 170 cm size (the jacket is 78 cm long and 200 units across its box). */
 export const CM = 2.63;
@@ -222,6 +222,97 @@ export function cloth(id: string, x: number, y: number, w: number, h: number, ba
     `<rect ${rect(0, 0)} fill="none" stroke="${lo}" stroke-width="0.9" stroke-opacity="0.8"/>` +
     `<path d="M${n2(x + 1.3)} ${n2(y + h - 1.4)}V${n2(y + 1.3)}H${n2(x + w - 1.4)}" fill="none" stroke="${hi}" stroke-width="0.6" stroke-opacity="0.9" transform="translate(0.2 0.2)"/>` +
     (build.edge === "satin" ? satinEdge(x, y, w, h, tc) : stitched(`M${n2(x + m)} ${n2(y + m)}H${n2(x + w - m)}V${n2(y + h - m)}H${n2(x + m)}Z`));
+  return { defs, under, over };
+}
+
+/** The shapes `shapedCloth` cuts: a rectangle, a rounded one, a circle (an ellipse in a box that is not square), a heater shield, or `{ path }`, a custom outline. */
+export type ClothShape = "rectangle" | "rounded" | "circle" | "shield" | { path: string };
+
+/** A custom outline is a path of absolute commands (`M L C Q Z`) and numbers only, at most 400 characters, starting with `M`, drawn in a 100 by 100 box and stretched to the cloth's box. */
+export const clothPath = (v: unknown): string => (typeof v === "string" && v.length <= 400 && /^[MLCQZ0-9eE.,\s-]+$/.test(v) && /^\s*M/.test(v) ? v.trim() : "");
+
+/** One ellipse as four cubic curves (a path `mapPath` can scale about its middle), centred on the origin. */
+function ellipse(w: number, h: number): string {
+  const [rx, ry, k] = [w / 2, h / 2, 0.5523];
+  return `M${n2(-rx)} 0C${n2(-rx)} ${n2(-ry * k)} ${n2(-rx * k)} ${n2(-ry)} 0 ${n2(-ry)}C${n2(rx * k)} ${n2(-ry)} ${n2(rx)} ${n2(-ry * k)} ${n2(rx)} 0C${n2(rx)} ${n2(ry * k)} ${n2(rx * k)} ${n2(ry)} 0 ${n2(ry)}C${n2(-rx * k)} ${n2(ry)} ${n2(-rx)} ${n2(ry * k)} ${n2(-rx)} 0Z`;
+}
+
+/** A rectangle with rounded corners as lines and quadratic curves, centred on the origin. */
+function roundRect(w: number, h: number, r: number): string {
+  const [x, y] = [w / 2, h / 2];
+  const c = Math.min(r, x, y);
+  return `M${n2(-x + c)} ${n2(-y)}L${n2(x - c)} ${n2(-y)}Q${n2(x)} ${n2(-y)} ${n2(x)} ${n2(-y + c)}L${n2(x)} ${n2(y - c)}Q${n2(x)} ${n2(y)} ${n2(x - c)} ${n2(y)}L${n2(-x + c)} ${n2(y)}Q${n2(-x)} ${n2(y)} ${n2(-x)} ${n2(y - c)}L${n2(-x)} ${n2(-y + c)}Q${n2(-x)} ${n2(-y)} ${n2(-x + c)} ${n2(-y)}Z`;
+}
+
+/** A heater shield: a flat top, straight sides, and the foot drawn in to a point, centred on the origin. */
+function shieldPath(w: number, h: number): string {
+  const [x, y] = [w / 2, h / 2];
+  return `M${n2(-x)} ${n2(-y + 1.2)}Q${n2(-x)} ${n2(-y)} ${n2(-x + 1.2)} ${n2(-y)}L${n2(x - 1.2)} ${n2(-y)}Q${n2(x)} ${n2(-y)} ${n2(x)} ${n2(-y + 1.2)}L${n2(x)} ${n2(h * 0.08)}C${n2(x)} ${n2(h * 0.3)} ${n2(x * 0.45)} ${n2(y * 0.8)} 0 ${n2(y)}C${n2(-x * 0.45)} ${n2(y * 0.8)} ${n2(-x)} ${n2(h * 0.3)} ${n2(-x)} ${n2(h * 0.08)}Z`;
+}
+
+/** A shape's outline in a box `w` by `h` centred on the origin, as one path (`M L C Q Z` only). A custom path that is not safe (see `clothPath`) is cut as a rounded rectangle. */
+export function clothOutline(shape: ClothShape, w: number, h: number): string {
+  if (shape === "circle") return ellipse(w, h);
+  if (shape === "rounded") return roundRect(w, h, Math.min(w, h) * 0.24);
+  if (shape === "shield") return shieldPath(w, h);
+  if (typeof shape === "object") {
+    const d = clothPath(shape.path);
+    return d === "" ? roundRect(w, h, Math.min(w, h) * 0.24) : mapPath(d, (x, y) => [(x / 100 - 0.5) * w, (y / 100 - 0.5) * h]);
+  }
+  return roundRect(w, h, 1.1);
+}
+
+/**
+ * A piece of cloth of any shape sewn down: what `cloth` does for a rectangle (its own cloth and weave, a turned edge, its thickness `build.mm`, 3 to 4 mm, standing off the
+ * garment as a wall of layers with a lift of shadow, a lit line along the upper left, and its edge stitched as `build.edge`: a running stitch or a satin border), cut to `shape`
+ * in the box `x, y, w, h` of the drawing. `id` must be unique on the page. Returns `cloth`'s three parts: `defs`, `under` (drawn before what is printed on the patch) and `over`
+ * (the face's weave, edge and stitching, drawn after it). The shape `"rectangle"` is `cloth` itself.
+ */
+export function shapedCloth(id: string, shape: ClothShape, x: number, y: number, w: number, h: number, base: Rgb, thread: Rgb, build: PatchBuild = {}): { defs: string; under: string; over: string } {
+  if (shape === "rectangle") return cloth(id, x, y, w, h, base, thread, build);
+  const [cx, cy] = [x + w / 2, y + h / 2];
+  const place = (d: string): string => mapPath(d, (px, py) => [px + cx, py + cy]);
+  const centred = clothOutline(shape, w, h);
+  const d = place(centred);
+  // The same outline drawn `m` in from every side (taken in about its middle).
+  const inset = (m: number): string => {
+    const [sx, sy] = [Math.max(0.05, 1 - (2 * m) / w), Math.max(0.05, 1 - (2 * m) / h)];
+    return place(mapPath(centred, (px, py) => [px * sx, py * sy]));
+  };
+  const mm = patchMm(build.mm);
+  const edge = build.edge ?? "running";
+  const t = (mm * CM) / 10;
+  const light = lum(base) > 0.4;
+  const hi = hexOf(light ? blend(base, [255, 255, 255], 0.75) : shade(base, 0.22));
+  const lo = hexOf(light ? blend(base, [70, 78, 96], 0.34) : blend(base, [0, 0, 0], 0.45));
+  const wall = hexOf(blend(base, [40, 46, 60], light ? 0.42 : 0.5));
+  const deep = hexOf(blend(base, [20, 24, 36], light ? 0.6 : 0.7));
+  const defs = `<pattern id="${id}W" width="1.1" height="1.1" patternUnits="userSpaceOnUse"><rect width="0.55" height="0.55" fill="${lo}" fill-opacity="${light ? 0.07 : 0.14}"/><rect x="0.55" y="0.55" width="0.55" height="0.55" fill="${lo}" fill-opacity="${light ? 0.07 : 0.14}"/><rect x="0.55" width="0.55" height="0.55" fill="${hi}" fill-opacity="${light ? 0.26 : 0.07}"/></pattern>` +
+    `<linearGradient id="${id}G" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.12"/><stop offset="0.5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#1a2230" stop-opacity="0.12"/></linearGradient>` +
+    `<clipPath id="${id}C"><path d="${d}"/></clipPath><clipPath id="${id}L"><path d="M${n2(cx - w)} ${n2(cy - h)}L${n2(cx + w)} ${n2(cy - h)}L${n2(cx - w)} ${n2(cy + h)}Z"/></clipPath>`;
+  const move = (dx: number, dy: number): string => `transform="translate(${n2(dx)} ${n2(dy)})"`;
+  let under = "";
+  for (const [k, o] of [[t * 3.2, 0.05], [t * 1.8, 0.09]] as const) under += `<path d="${d}" ${move(t * 0.5, t * 0.9)} fill="#1a2230" fill-opacity="${o}" stroke="#1a2230" stroke-opacity="${o}" stroke-width="${n2(k)}" stroke-linejoin="round"/>`;
+  const layers = 4;
+  for (let i = layers; i >= 1; i--) under += `<path d="${d}" ${move((t * 0.5 * i) / layers, (t * 0.9 * i) / layers)} fill="${i / layers > 0.5 ? deep : wall}"/>`;
+  under += `<g data-thick="${mm.toFixed(1)}"><path d="${d}" fill="${hexOf(base)}"/></g>`;
+  const b = 1.0;
+  const tc = hexOf(thread);
+  const running = (dd: string): string => {
+    const wd = 0.6;
+    return `<path d="${dd}" fill="none" stroke="${hexOf(blend(thread, [0, 0, 0], 0.5))}" stroke-width="${n2(wd + 0.6)}" stroke-dasharray="1.7 1.1" stroke-opacity="0.4" transform="translate(0.3 0.4)" stroke-linecap="round"/>` +
+      `<path d="${dd}" fill="none" stroke="${tc}" stroke-width="${wd}" stroke-dasharray="1.7 1.1" stroke-linecap="round"/>` +
+      `<path d="${dd}" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="${n2(wd * 0.28)}" stroke-dasharray="1.7 1.1" stroke-linecap="round" transform="translate(-0.1 -0.14)"/>`;
+  };
+  const satin = `<path d="${d}${inset(b)}" fill-rule="evenodd" fill="${tc}"/>` +
+    `<path d="${inset(b / 2)}" fill="none" stroke="#10141c" stroke-width="${n2(b)}" stroke-opacity="0.22" stroke-dasharray="0.22 0.22"/>` +
+    `<path d="${inset(0.3)}" fill="none" stroke="#fff" stroke-width="0.16" stroke-opacity="0.45"/>`;
+  const over = `<g clip-path="url(#${id}C)" data-edge="${edge}"><path d="${d}" fill="url(#${id}W)"/><path d="${d}" fill="url(#${id}G)"/>` +
+    `<path d="${inset(0.9)}" fill="none" stroke="${lo}" stroke-width="1.8" stroke-opacity="0.32"/>` +
+    `<path d="${inset(0.4)}" fill="none" stroke="${lo}" stroke-width="0.8" stroke-opacity="0.7" stroke-dasharray="0.5 0.35"/></g>` +
+    `<path d="${d}" fill="none" stroke="${lo}" stroke-width="0.9" stroke-opacity="0.8"/>` +
+    `<g clip-path="url(#${id}L)"><path d="${inset(1.3)}" fill="none" stroke="${hi}" stroke-width="0.6" stroke-opacity="0.9" transform="translate(0.2 0.2)"/></g>` +
+    (edge === "satin" ? satin : running(inset(1.6)));
   return { defs, under, over };
 }
 
