@@ -6,6 +6,17 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-10-31
+
+### Fixed
+
+- **A jiu-jitsu gi's trousers stop 2 cm above the ankle bone, the IBJJF's limit, unless a hem is asked for** (SPX-833). Until now every gi drew the 5 cm hem of the IJF. `hemAboveAnkleCm` still overrides it (`BJJ_HEM_CM` is the default, 2). The judogi, karate gi and dobok are as they were, byte for byte.
+
+### Changed
+
+- **The jiu-jitsu patches are cut by `shapedCloth`** (SPX-833): `bjjPatch.ts` no longer carries its own copy of the shapes, the inset outlines and the cloth (97 lines fewer). The drawing is the same: 2,604 renders (every preset in every colour, every display and view, and every shape, edge and thickness) are byte-equal before and after. `outlineOf` is gone from `bjjPatch.ts` (it was not exported from the package); use `clothOutline`.
+- **The Uniforms page has a "Trouser hem" choice** (garment's own, 2, 5 or 10 cm), kept in the address as `hem`.
+
 ## [0.30.0] - 2026-10-31
 
 ### Added
