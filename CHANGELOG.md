@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.26.1] - 2026-10-30
+
 ### Added
 
 - **`knee: false` leaves out the trousers' knee panel** (SPX-827). `renderJudogi` and `judogiFrame` take `knee` (`true` by default, so today's drawing is unchanged); `pantsFace` takes it as a fourth argument. Only the front of the trousers changes.
