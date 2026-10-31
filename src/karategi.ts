@@ -21,10 +21,10 @@ import { chestSpan, onSleeve } from "./judogiJacket.ts";
 import { corners } from "./judogiPlaces.ts";
 import { FONT_STACKS } from "./judogiMarks.ts";
 import { patchMm, PATCH_MM } from "./judogiPatch.ts";
-import { hipsOf, onLeg } from "./judogiPants.ts";
+import { onLeg } from "./judogiPants.ts";
 import { readThread, satinDefs, satinRun, satinStroke, type ThreadColour } from "./judogiThread.ts";
-import { fold, smooth, toneOf, type Mark } from "./judogiCloth.ts";
-import { n2, poly, type Pt } from "./path.ts";
+import type { Mark } from "./judogiCloth.ts";
+import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
 
 export const KARATE_SLEEVES = ["full", "three-quarter", "short"] as const;
@@ -154,53 +154,14 @@ export function karateSpots(k: ReadKarate): { text?: { x: number; y: number; w: 
 }
 
 /** The marks the karate gi carries of its own: on the jacket's front and the trousers' front. */
-export function karateMarks(uid: string, k: ReadKarate, cloth: Rgb, pantsUid: string, worn = false): { jacket?: Mark; pants?: Mark } {
-  const out: { jacket?: Mark; pants?: Mark } = { pants: plainKnees(pantsUid, cloth, worn) };
+export function karateMarks(uid: string, k: ReadKarate): { jacket?: Mark; pants?: Mark } {
+  const out: { jacket?: Mark; pants?: Mark } = {};
   const join = (a: Mark | undefined, b: Mark): Mark => (a === undefined ? b : { defs: a.defs + b.defs, body: a.body + b.body });
   const at = karateSpots(k);
   if (at.text !== undefined) out.jacket = join(out.jacket, lapelText(`${uid}t`, k, at.text));
   if (at.sleeve !== undefined) out.jacket = join(out.jacket, roundPatch(`${uid}s`, at.sleeve.x, at.sleeve.y, at.sleeve.r, k.patchColour.rgb));
   if (at.leg !== undefined) out.pants = join(out.pants, roundPatch(`${uid}l`, at.leg.x, at.leg.y, at.leg.r, k.patchColour.rgb));
   return out;
-}
-
-/**
- * A karate gi's trousers have no reinforced knee: the judogi's knee panel is covered with the leg exactly as it is drawn round it (judogiPants.ts carries the panel, so the karate
- * gi draws over it): the leg's cloth and twill, and the trousers' long folds from the waistband to the hem, each the very curve the trousers draw, clipped to the cover, so
- * nothing of the panel or of the cover's edge shows. `uid` is the trousers' front face's, whose twill pattern the cover uses; `worn` the trousers' gathered waist.
- */
-export function plainKnees(uid: string, cloth: Rgb, worn = false): Mark {
-  const t = toneOf(cloth);
-  const h = hipsOf(worn);
-  const f0 = 0.19;
-  const f1 = 0.62;
-  let body = "";
-  let defs = "";
-  for (const side of [-1, 1] as const) {
-    const cover = poly([onLeg(side, f0, 0.03), onLeg(side, f0, 0.97), onLeg(side, f1, 0.97), onLeg(side, f1, 0.03)]);
-    const clip = `${uid}kc${side < 0 ? "l" : "r"}`;
-    defs += `<clipPath id="${clip}"><path d="${cover}"/></clipPath>`;
-    body += `<g clip-path="url(#${clip})"><path d="${cover}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3"/><path d="${cover}" fill="url(#${uid}T)"/>${legFolds(h, t, side)}</g>`;
-  }
-  return { defs, body };
-}
-
-/** The rows the trousers' hip block is drawn at, as judogiPants.ts has them (`Y`): the long folds start on the hips, so their curves need them. */
-const HIP_ROWS = [6, 19, 50, 80, 104];
-
-/** The trousers' long folds down one side, the curves judogiPants.ts draws (`fall`, `longFolds`): from the hips down the leg, the shadow at each edge, the light down the front. */
-function legFolds(hips: readonly number[], t: ReturnType<typeof toneOf>, side: -1 | 1): string {
-  const fall = (u: number, sway = 0): string => {
-    const hipAt = (y: number): Pt => {
-      let hw = hips[0] as number;
-      for (let j = 1; j < HIP_ROWS.length; j++) if (y >= (HIP_ROWS[j - 1] as number)) hw = (hips[j - 1] as number) + (((hips[j] as number) - (hips[j - 1] as number)) * (Math.min(y, HIP_ROWS[j] as number) - (HIP_ROWS[j - 1] as number))) / ((HIP_ROWS[j] as number) - (HIP_ROWS[j - 1] as number));
-      const outer = 100 + side * (hw + 1.2);
-      return [outer + (100 - outer) * u, y];
-    };
-    return smooth([hipAt(20), hipAt(56), onLeg(side, 0.1, u + sway / 2), onLeg(side, 0.5, u + sway), onLeg(side, 0.98, u)]);
-  };
-  return fold(fall(0.04), 7, t.light ? 0.14 : 0.26) + fold(fall(0.93), 5, t.light ? 0.12 : 0.22) + fold(fall(0.44, 0.03), 9, 0.16, true) +
-    fold(fall(0.7, -0.02), 6, t.light ? 0.07 : 0.14) + fold(fall(0.26, 0.02), 6, t.light ? 0.06 : 0.12);
 }
 
 /** The characters down the chest beside the lapel, in thread: the same column the embroidery's `down` direction sets, each character upright, one under the next. */

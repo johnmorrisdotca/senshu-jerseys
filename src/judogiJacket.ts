@@ -45,11 +45,13 @@ const LOOSE = [22, 30, 40, 54, 63.5, 61.5, 53, 47, 45, 45.5, 47, 50, 54];
 /** Belted: the belt holds the waist to some 34 cm across (the man's 01, 02, 04 are .44 to .49 of L, the form's 06 .385), the skirt flaring out below it. */
 const TIED = [22, 30, 40, 54, 63.5, 61.5, 53, 47, 44.5, 45, 46.5, 50.5, 54.5];
 /**
- * The half depth of the body at each row, as a person's: some 24 cm deep at the chest with the thick cloth over it, against 34 cm
- * across, about 21 cm at a belted waist, and the skirt as deep as the hips under it.
+ * The half depth of the body at each row. A person is deeper than a flat jacket looks: the US Army's ANSUR II survey (Gordon et al. 2012, 4,082 men and 1,986
+ * women) has the men's chest 254 mm deep by 289 mm across (0.88), the waist 238 by 326 (0.73) and the buttocks 246 deep by 346 across the hips (0.71); the shoulders
+ * (biacromial 416 mm) are 0.61 of that depth. The cloth hangs wider than the body, not deeper, so the jacket keeps about 0.70 of its own width in depth from the
+ * chest to the hem (0.5 to 0.55 across the shoulders and upper chest), about 29 cm front to back at the chest, a little less at a belted waist.
  */
-const LOOSE_D = [14, 18, 22, 26, 29, 31, 32, 32, 31, 31, 31, 31.5, 32];
-const TIED_D = [14, 18, 22, 26, 29, 31, 32, 30, 27.5, 28, 29.5, 31, 32];
+const LOOSE_D = [14, 18, 24, 30, 35, 37, 38, 34.5, 33.5, 33.5, 34.5, 36.5, 38.5];
+const TIED_D = [14, 18, 24, 30, 35, 37, 38, 33, 31, 31.5, 33, 36, 38.5];
 const WAIST = 127;
 /** The top edge of a tied belt at the back, in the jacket's units: a back patch is kept above it. */
 export const BELT_TOP = WAIST - 2.5;

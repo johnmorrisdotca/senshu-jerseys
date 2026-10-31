@@ -33,6 +33,10 @@ judogiCheck({ size: "180" });
 
 `judogiCheck` reports whether a named size meets the cited length facts (jacket to mid-thigh, sleeves leaving about 5 cm to the wrist, trousers leaving about 5 cm to the ankle, belt 4–5 cm wide with 20–30 cm hanging ends). Traditional sizes 1–7 map onto those heights.
 
+## How deep the body is
+
+Turned to its side, a gi is as deep front to back as a person is, not a slab. The US Army's ANSUR II survey (Gordon and others, 2012; 4,082 men and 1,986 women; public working data) gives, for men, a chest 254 mm deep by 289 mm across (0.88), a waist 238 by 326 (0.73) and buttocks 246 deep by hips 346 across (0.71); the shoulders (biacromial breadth 416 mm) are 0.61 of that chest depth. The cloth hangs wider than the body but not deeper, so the jacket is about 0.70 of its width deep from the chest to the hem (0.5 to 0.55 across the shoulders), 29 cm at the chest, and the trousers' hips 1.2 times what judogiPants.ts draws. The same body serves the judogi, the karate gi, the dobok and the jiu-jitsu gi.
+
 ## Belt specifications
 
 A belt is made in a few real widths, and the designer offers only those for the chosen belt. They are read from KuSakura's published catalogue and belt guide (read 2026-10-27), used as specifications only: no maker's mark or name is drawn.

@@ -18,7 +18,7 @@ import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc
 import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "./judogiEndTags.ts";
 import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { JUDO_CUT, type GiCut } from "./giCut.ts";
-import { karateMarks, karateNotes, plainKnees, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
+import { karateMarks, karateNotes, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
 import { bjjMarks, bjjNotes, readBjj, type JudogiBjj, type ReadBjj } from "./bjjgi.ts";
 import { dobokFlag, dobokMarks, dobokNotes, readDobok, type JudogiDobok, type ReadDobok } from "./dobok.ts";
 import { GARMENT_TIES, isJudoTie, readTie, tieReach, wrapsOf, type BeltKnot, type BeltTie } from "./beltTie.ts";
@@ -408,7 +408,7 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
   const patch: Mark | undefined = o.patch === undefined ? undefined : backPatch(`${o.uid}j`, o.patch, BACK_COLLAR_FOOT);
   const own = o.dobok === undefined ? undefined : dobokMarks(o.dobok, toneOf(o.cloth));
   const bjj = o.bjj === undefined ? undefined : bjjMarks(`${o.uid}B`, o.bjj, o.mode === "suit", o.knee);
-  const front = join(join(join(o.marks?.jacket.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`).jacket), own?.front), bjj?.jacketFront);
+  const front = join(join(join(o.marks?.jacket.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate).jacket), own?.front), bjj?.jacketFront);
   const back = join(join(join(patch, own?.back), bjj?.jacketBack), o.marks?.jacket.back);
   const backInner = o.marks?.jacket.backInner;
   if (front === undefined && back === undefined && backInner === undefined) return undefined;
@@ -417,12 +417,9 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
 
 /** What is sewn on the trousers' front. */
 function pantsMarks(o: Ready): GiInk["marks"] | undefined {
-  // A dobok's trousers, like a karate gi's, have no reinforced knee.
   const worn = o.mode === "suit";
-  const plain = o.dobok === undefined ? undefined : plainKnees(`${o.uid}pf`, o.cloth, worn);
-  // The cover over the knee goes first, so nothing sewn on the thigh is hidden by it.
   const bjj = o.bjj === undefined ? undefined : bjjMarks(`${o.uid}B`, o.bjj, worn, o.knee);
-  const front = join(join(join(plain, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate, o.cloth, `${o.uid}pf`, worn).pants), bjj?.pantsFront), o.marks?.pants.front);
+  const front = join(join(o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate).pants, bjj?.pantsFront), o.marks?.pants.front);
   const back = bjj?.pantsBack;
   if (front === undefined && back === undefined) return undefined;
   return { ...(front === undefined ? {} : { front }), ...(back === undefined ? {} : { back }) };
@@ -516,7 +513,7 @@ function compose(o: Ready): Sheet {
   const beltDefs = `${collar?.defs ?? ""}${strap?.defs ?? ""}`;
   // Worn, the trousers are gathered at the waist and sit inside the jacket; laid out, they keep their full width.
   const worn = o.mode === "suit";
-  const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth, worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "front", worn, o.knee && o.bjj === undefined), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "back", worn), yaw, drawOf(o));
+  const pants = o.mode === "jacket" ? undefined : volumeOf(`${o.uid}p`, pantsDesc(depth * PANTS_DEEP, worn), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "front", worn, o.knee && o.bjj === undefined && o.karate === undefined && o.dobok === undefined), pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), "back", worn), yaw, drawOf(o));
   if (jacket !== undefined && pants === undefined) return box(defs + jacket.defs + beltDefs, jacket.body + belted, jacketBox(o, tied !== undefined), yaw);
   if (pants !== undefined && jacket === undefined) return box(pants.defs, pants.body, PANTS_BOX, yaw);
   if (jacket === undefined || pants === undefined) return box("", "", JACKET_BOX, yaw);
@@ -527,6 +524,9 @@ function compose(o: Ready): Sheet {
   const [px, py] = PIECES_AT;
   return box(defs + jacket.defs + beltDefs + pants.defs, `${jacket.body}${belted}<g transform="translate(${px} ${py})">${pants.body}</g>`, [JACKET_BOX[0], JACKET_BOX[1], px + PANTS_BOX[0] + PANTS_BOX[2] - JACKET_BOX[0], py + PANTS_BOX[3] - JACKET_BOX[1]], yaw);
 }
+
+/** The trousers' hips are deeper than judogiPants.ts draws them: ANSUR II has the buttocks 246 mm deep by 346 across the hips (0.71), the drawing's hip block 0.55 to 0.59. */
+const PANTS_DEEP = 1.2;
 
 /** The folded belt, or the belt's gift box (with the belt folded in it): one piece of cells, see beltBox.ts. */
 function solidSheet(o: Ready, yaw: number, still = false): Sheet {
@@ -591,7 +591,7 @@ function flatSheet(o: Ready): Sheet {
   }
   const tied = o.mode === "suit" || o.mode === "jacket" ? paint : undefined;
   const j = jacketFace(inkOf(o, "j", tied, jacketMarks(o)), side, o.cut);
-  const p = pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), side, o.mode === "suit", o.knee && o.bjj === undefined);
+  const p = pantsFace(inkOf(o, "p", undefined, pantsMarks(o)), side, o.mode === "suit", o.knee && o.bjj === undefined && o.karate === undefined && o.dobok === undefined);
   if (o.mode === "jacket") return box(defs + flat(j), j.body, jacketBox(o, tied !== undefined), 0);
   if (o.mode === "pants") return box(flat(p), p.body, PANTS_BOX, 0);
   if (o.mode === "suit") {
