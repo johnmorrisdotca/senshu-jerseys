@@ -7,6 +7,8 @@
 
 import { BELT_RGB } from "./judogiBelt.ts";
 import { hexOf, shade, type Rgb } from "./colour.ts";
+import { satinStroke } from "./judogiThread.ts";
+import type { BeltKnot } from "./beltTie.ts";
 
 /** Drawing units to the centimetre (a belt 4 cm wide is 10.5 of them). */
 const CM = 2.63;
@@ -63,6 +65,22 @@ export interface BeltTipStyle {
   bars?: { colour: string; count?: number; widthCm?: number; gapCm?: number };
 }
 
+/**
+ * A degree in Roman numerals stitched across one end, as the ITF's black belts show it: "in gold coloured Roman Numerals, positioned transversally across one end of the
+ * belt" (ITF Umpire Rules, Appendix 2, Approved Clothing, in force January 1st, 2015). The numerals read across the belt with their tops toward the knot, so they stand upright
+ * on an end that hangs. Drawn as the package's own straight satin strokes (I, V and X need no font).
+ */
+export interface BeltNumeral {
+  /** The degree, 1 to 10 (I to X). */
+  value: number;
+  /** The thread: gold by default, or any stripe colour. */
+  colour?: string;
+  /** Which hanging end, as seen from the front: `left` (the default: the end a folded belt shows on top) or `right`. */
+  end?: "left" | "right";
+  /** From the cut end to the numerals' nearer edge, centimetres (3 by default). */
+  fromEndCm?: number;
+}
+
 /** Everything that can be drawn on a belt's cloth besides its colour and the embroidery. Every part is optional and they combine. */
 export interface JudogiBeltStyle {
   /** The belt's own colour where it is none of the grade colours (a jiu-jitsu kid's grey, a purple belt): a colour name or `#rrggbb`, taking the place of `belt`'s. */
@@ -74,6 +92,7 @@ export interface JudogiBeltStyle {
   along?: BeltAlong[];
   bars?: BeltBars[];
   tip?: BeltTipStyle;
+  numeral?: BeltNumeral;
 }
 
 /** One band along the belt, as parts of its width from the top edge. */
@@ -91,6 +110,7 @@ export interface ReadStyle {
   along: { fill: string; from: number; to: number }[];
   bars: { fill: string; ends: [boolean, boolean]; count: number; widthCm: number; gapCm: number; fromEndCm: number }[];
   tip: { fill: string; ends: [boolean, boolean]; lengthCm: number; fromEndCm: number; bars: { fill: string; count: number; widthCm: number; gapCm: number } | undefined } | undefined;
+  numeral?: { text: string; fill: string; end: 0 | 1; fromEndCm: number };
 }
 
 const num = (v: unknown, fallback: number, lo: number, hi: number): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : fallback);
@@ -136,9 +156,63 @@ export function readStyle(style: JudogiBeltStyle | undefined): ReadStyle | undef
       bars: barFill === undefined || t.bars === undefined ? undefined : { fill: barFill, count: Math.round(num(t.bars.count, 1, 1, 6)), widthCm: num(t.bars.widthCm, 0.8, 0.2, 2), gapCm: num(t.bars.gapCm, 0.7, 0.2, 2) },
     };
   }
-  if (base === undefined && alternate === undefined && split === undefined && along.length === 0 && bars.length === 0 && tip === undefined) return undefined;
-  return { base, alternate, split, along, bars, tip };
+  const n = style.numeral;
+  const numeral = n === undefined || typeof n !== "object" || typeof n.value !== "number" || !Number.isFinite(n.value) ? undefined
+    : { text: roman(Math.round(Math.max(1, Math.min(10, n.value)))), fill: stripeHex(n.colour ?? "gold") ?? (stripeHex("gold") as string), end: (n.end === "right" ? 1 : 0) as 0 | 1, fromEndCm: num(n.fromEndCm, 3, 0.5, 15) };
+  if (base === undefined && alternate === undefined && split === undefined && along.length === 0 && bars.length === 0 && tip === undefined && numeral === undefined) return undefined;
+  return { base, alternate, split, along, bars, tip, ...(numeral === undefined ? {} : { numeral }) };
 }
+
+/** A number 1 to 10 in Roman numerals. */
+export function roman(v: number): string {
+  return ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][v] ?? "I";
+}
+
+/** How wide each numeral is, as a part of its height, and the gap between two. */
+const GLYPH_W: Record<string, number> = { I: 0.34, V: 0.66, X: 0.66 };
+const GLYPH_GAP = 0.14;
+
+/**
+ * The numerals' box on an end, in the end's frame: from `x0` to `x1` along it (`x1` nearer the cut end), and their height along the belt. The row of numerals runs across
+ * the belt and is kept inside it, a little in from each edge, so a long one (VIII) is drawn smaller.
+ */
+export function numeralBox(n: NonNullable<ReadStyle["numeral"]>, end: 0 | 1, half: number): { x0: number; x1: number; h: number } {
+  const across = [...n.text].reduce((w, c) => w + (GLYPH_W[c] ?? 0.34), 0) + GLYPH_GAP * (n.text.length - 1);
+  const h = Math.min(2.4 * CM, (2 * half * 0.78) / across);
+  const x1 = END_LENGTH[end] - n.fromEndCm * CM;
+  return { x0: x1 - h, x1, h };
+}
+
+/** The numerals in thread, across one end in its own frame: each glyph upright with its top toward the knot, read from the picture's left as the end hangs. */
+function numeralMark(n: NonNullable<ReadStyle["numeral"]>, end: 0 | 1, half: number): string {
+  const { x0, h } = numeralBox(n, end, half);
+  const chars = [...n.text];
+  const across = chars.reduce((w, c) => w + (GLYPH_W[c] ?? 0.34), 0) + GLYPH_GAP * (chars.length - 1);
+  const sw = Math.max(0.45, h * 0.15);
+  const serif = (GLYPH_W.I as number) * h;
+  // A glyph's own upright frame (u to the right as read, v up) laid on the end: up is toward the knot (-x), and reading runs the way the end's -y does, the picture's
+  // left to right on an end that hangs.
+  const at = (u: number, v: number): string => `${n2s(x0 + h / 2 - v)} ${n2s(-u)}`;
+  let u = -(across * h) / 2;
+  let d = "";
+  for (const c of chars) {
+    const w = (GLYPH_W[c] ?? 0.34) * h;
+    const m = u + w / 2;
+    const top = h / 2 - sw / 2;
+    if (c === "I") d += `M${at(m, -top)}L${at(m, top)}`;
+    if (c === "V") d += `M${at(u + sw / 2, top)}L${at(m, -top)}L${at(u + w - sw / 2, top)}`;
+    if (c === "X") d += `M${at(u + sw / 2, top)}L${at(u + w - sw / 2, -top)}M${at(u + w - sw / 2, top)}L${at(u + sw / 2, -top)}`;
+    // Serifs: a short bar across the top and the foot of each stroke's ends, as a numeral is cut.
+    const bar = (x: number, v: number): string => `M${at(x - serif / 2, v)}L${at(x + serif / 2, v)}`;
+    if (c === "I") d += bar(m, top) + bar(m, -top);
+    if (c === "V") d += bar(u + sw / 2, top) + bar(u + w - sw / 2, top);
+    if (c === "X") d += bar(u + sw / 2, top) + bar(u + w - sw / 2, top) + bar(u + sw / 2, -top) + bar(u + w - sw / 2, -top);
+    u += w + GLYPH_GAP * h;
+  }
+  return satinStroke(d, sw, rgbOf(n.fill));
+}
+
+const n2s = (v: number): string => String(Math.round(v * 100) / 100);
 
 /** The bands along the whole belt, in the order they are laid: the split colour's half first, then each stripe over it. */
 export function bandsOf(style: ReadStyle | undefined): Band[] {
@@ -176,6 +250,7 @@ export function endMark(style: ReadStyle | undefined, end: 0 | 1, half: number):
       }
     }
   }
+  if (style.numeral !== undefined && style.numeral.end === end) s += numeralMark(style.numeral, end, half);
   for (const b of style.bars) {
     if (!b.ends[end]) continue;
     const w = b.widthCm * CM;
@@ -195,17 +270,38 @@ const n = (v: number): string => String(Math.round(v * 100) / 100);
 export interface BeltPreset {
   id: string;
   label: string;
-  belt: "white" | "yellow" | "orange" | "green" | "blue" | "brown" | "black";
+  belt: "white" | "yellow" | "orange" | "green" | "blue" | "brown" | "black" | "red";
   style: JudogiBeltStyle;
   /** The system it belongs to, and the number of the source in docs/judogi.md. */
   system: string;
   source: string;
+  /** The art whose belt it is. */
+  art: "judo" | "bjj" | "karate" | "taekwondo";
+  /** How that art ties it, where not judo's (`beltKnot` and `beltTailCm` of `renderJudogi`): a karate belt's long ends, an ITF belt once round. */
+  tie?: { knot: BeltKnot; tailCm: number };
 }
 
-const half = (belt: BeltPreset["belt"], split: string, label: string, system: string, source: string): BeltPreset => ({ id: `half-${belt}-${split}`, label, belt, style: { split }, system, source });
+const half = (belt: BeltPreset["belt"], split: string, label: string, system: string, source: string): BeltPreset => ({ id: `half-${belt}-${split}`, label, belt, style: { split }, system, source, art: "judo" });
 const tags = (belt: BeltPreset["belt"], tag: string, count: number, mon: number): BeltPreset => ({
   id: `mon-${mon}`, label: `${mon}${mon === 1 ? "st" : mon === 2 ? "nd" : mon === 3 ? "rd" : "th"} Mon: ${belt} with ${count} ${tag} tag${count === 1 ? "" : "s"}`, belt,
-  style: { bars: [{ colour: tag, count }] }, system: "British Judo Mon grades", source: "bja-mon",
+  style: { bars: [{ colour: tag, count }] }, system: "British Judo Mon grades", source: "bja-mon", art: "judo",
+});
+/** A karate belt, worn long; a WT dobok's, twice round; an ITF one, once round (beltTie.ts). */
+const KARATE_TIE = { knot: "hanging", tailCm: 50 } as const;
+const WT_TIE = { knot: "hanging", tailCm: 38 } as const;
+const ITF_TIE = { knot: "single", tailCm: 40 } as const;
+const ord = (n: number): string => `${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"}`;
+const karateKyu = (bars: number): BeltPreset => ({
+  id: `karate-brown-${bars}`, label: `Karate: brown, ${bars} black bar${bars === 1 ? "" : "s"} (${ord(4 - bars)} kyu)`, belt: "brown", style: { bars: [{ colour: "black", count: bars, ends: "left", widthCm: 0.8, gapCm: 0.6, fromEndCm: 4 }] },
+  system: "Karate kyu and dan bars (a lead, style by style)", source: "chart-karate", art: "karate", tie: KARATE_TIE,
+});
+const karateDan = (n: number): BeltPreset => ({
+  id: `karate-dan-${n}`, label: `Karate: black, ${n} gold bar${n === 1 ? "" : "s"} (${ord(n)} dan)`, belt: "black", style: { bars: [{ colour: "gold", count: n, ends: "left", widthCm: 0.6, gapCm: 0.5, fromEndCm: 4 }] },
+  system: "Karate kyu and dan bars (a lead, style by style)", source: "chart-karate", art: "karate", tie: KARATE_TIE,
+});
+const itfDan = (n: number, junior = false): BeltPreset => ({
+  id: `itf-${junior ? "junior" : "senior"}-${n}`, label: `ITF ${junior ? "junior" : "senior"} black belt, ${roman(n)} (${ord(n)} degree)`, belt: "black",
+  style: { numeral: { value: n }, ...(junior ? { along: [{ colour: "white", widthCm: 1 }] } : {}) }, system: "ITF black belts (degree in gold Roman numerals)", source: "itf-app2", art: "taekwondo", tie: ITF_TIE,
 });
 
 /** The common real systems, by id. The designer fills its controls from one, and `renderJudogi({ belt, beltStyle })` takes the same pair. */
@@ -223,19 +319,30 @@ export const BELT_PRESETS: readonly BeltPreset[] = [
   tags("blue", "red", 1, 13), tags("blue", "red", 2, 14), tags("blue", "red", 3, 15),
   tags("brown", "red", 1, 16), tags("brown", "red", 2, 17), tags("brown", "red", 3, 18),
   // Australia's junior bars (as Wikipedia reports them): white bars at each end, 3, 2 or 1 by age band.
-  { id: "bars-white-3", label: "Three white bars at each end (under 10)", belt: "yellow", style: { bars: [{ colour: "white", count: 3 }] }, system: "Junior bars at each end", source: "wikipedia-rank-in-judo" },
-  { id: "bars-white-2", label: "Two white bars at each end (10 to 13)", belt: "yellow", style: { bars: [{ colour: "white", count: 2 }] }, system: "Junior bars at each end", source: "wikipedia-rank-in-judo" },
-  { id: "bars-white-1", label: "One white bar at each end (13 to 16)", belt: "yellow", style: { bars: [{ colour: "white", count: 1 }] }, system: "Junior bars at each end", source: "wikipedia-rank-in-judo" },
+  { id: "bars-white-3", label: "Three white bars at each end (under 10)", belt: "yellow", style: { bars: [{ colour: "white", count: 3 }] }, system: "Junior bars at each end", source: "wikipedia-rank-in-judo", art: "judo" },
+  { id: "bars-white-2", label: "Two white bars at each end (10 to 13)", belt: "yellow", style: { bars: [{ colour: "white", count: 2 }] }, system: "Junior bars at each end", source: "wikipedia-rank-in-judo", art: "judo" },
+  { id: "bars-white-1", label: "One white bar at each end (13 to 16)", belt: "yellow", style: { bars: [{ colour: "white", count: 1 }] }, system: "Junior bars at each end", source: "wikipedia-rank-in-judo", art: "judo" },
   // Finland's one to three red stripes on both ends of a junior belt (as Wikipedia reports it).
-  { id: "stripes-red-2", label: "Two red stripes on both ends (junior)", belt: "white", style: { bars: [{ colour: "red", count: 2 }] }, system: "Junior stripes at both ends", source: "wikipedia-rank-in-judo" },
+  { id: "stripes-red-2", label: "Two red stripes on both ends (junior)", belt: "white", style: { bars: [{ colour: "red", count: 2 }] }, system: "Junior stripes at both ends", source: "wikipedia-rank-in-judo", art: "judo" },
   // The AJJF-approved women's black belt (kuro-obi): black with one white line down the middle of its whole length, still sold in Japan.
-  { id: "womens-black-white-line", label: "Women's black belt (white line)", belt: "black", style: { along: [{ colour: "white", widthCm: 1.2 }] }, system: "AJJF women's black belt (Japan)", source: "kusakura-jgrk" },
+  { id: "womens-black-white-line", label: "Women's black belt (white line)", belt: "black", style: { along: [{ colour: "white", widthCm: 1.2 }] }, system: "AJJF women's black belt (Japan)", source: "kusakura-jgrk", art: "judo" },
   // Brazilian jiu-jitsu kids: a centre stripe, and a coloured tip carrying degree stripes (optional, a school's choice).
-  { id: "kids-centre-white", label: "Kids: colour belt with a white centre stripe", belt: "orange", style: { along: [{ colour: "white" }] }, system: "Jiu-jitsu kids' belts", source: "brazilianblackbelt-kids" },
-  { id: "kids-centre-black", label: "Kids: colour belt with a black centre stripe", belt: "green", style: { along: [{ colour: "black" }] }, system: "Jiu-jitsu kids' belts", source: "brazilianblackbelt-kids" },
-  { id: "kids-centre-black-yellow", label: "Kids: yellow belt with a black centre stripe", belt: "yellow", style: { along: [{ colour: "black" }] }, system: "Jiu-jitsu kids' belts", source: "brazilianblackbelt-kids" },
-  { id: "tip-black-degrees-3", label: "Black tip, three white degree stripes", belt: "blue", style: { tip: { colour: "black", lengthCm: 7, bars: { colour: "white", count: 3 } } }, system: "Degree stripes on a tip", source: "brazilianblackbelt-kids" },
-  { id: "tip-red-degrees-3", label: "Red tip, three white degree stripes", belt: "black", style: { tip: { colour: "red", lengthCm: 7, bars: { colour: "white", count: 3 } } }, system: "Degree stripes on a tip", source: "brazilianblackbelt-kids" },
+  { id: "kids-centre-white", label: "Kids: colour belt with a white centre stripe", belt: "orange", style: { along: [{ colour: "white" }] }, system: "Jiu-jitsu kids' belts", source: "brazilianblackbelt-kids", art: "bjj" },
+  { id: "kids-centre-black", label: "Kids: colour belt with a black centre stripe", belt: "green", style: { along: [{ colour: "black" }] }, system: "Jiu-jitsu kids' belts", source: "brazilianblackbelt-kids", art: "bjj" },
+  { id: "kids-centre-black-yellow", label: "Kids: yellow belt with a black centre stripe", belt: "yellow", style: { along: [{ colour: "black" }] }, system: "Jiu-jitsu kids' belts", source: "brazilianblackbelt-kids", art: "bjj" },
+  { id: "tip-black-degrees-3", label: "Black tip, three white degree stripes", belt: "blue", style: { tip: { colour: "black", lengthCm: 7, bars: { colour: "white", count: 3 } } }, system: "Degree stripes on a tip", source: "brazilianblackbelt-kids", art: "bjj" },
+  { id: "tip-red-degrees-3", label: "Red tip, three white degree stripes", belt: "black", style: { tip: { colour: "red", lengthCm: 7, bars: { colour: "white", count: 3 } } }, system: "Degree stripes on a tip", source: "brazilianblackbelt-kids", art: "bjj" },
+  // Karate, worn long: brown kyu belts with one to three black bars and black dan belts with gold bars across one end, as many charts and makers show them (a lead: the
+  // styles differ, and none of their bodies' own pages was read).
+  karateKyu(1), karateKyu(3), karateDan(1), karateDan(3), karateDan(5),
+  // Taekwon-do. The ITF's colour belts carry a tip of the next colour at the end (ITF, Belt colour meanings); its black belts go once round and show the degree in gold Roman
+  // numerals across one end, the junior one with a white stripe 1 cm wide down the middle of one face (ITF Umpire Rules, Appendix 2, 2015).
+  { id: "itf-gup-blue-red", label: "ITF: blue, red tip (3rd gup)", belt: "blue", style: { tip: { colour: "red", lengthCm: 5 } }, system: "ITF colour belts with tips", source: "itf-belts", art: "taekwondo", tie: ITF_TIE },
+  { id: "itf-gup-red-black", label: "ITF: red, black tip (1st gup)", belt: "red", style: { tip: { colour: "black", lengthCm: 5 } }, system: "ITF colour belts with tips", source: "itf-belts", art: "taekwondo", tie: ITF_TIE },
+  itfDan(1), itfDan(4), itfDan(7), itfDan(2, true),
+  // World Taekwondo and the Kukkiwon: the poom belt, black and red (WT's guidelines name it so); black on top, as it is worn (a lead), and a dan belt with gold bars (a lead).
+  { id: "poom", label: "Poom belt: black over red, lengthwise", belt: "black", style: { split: "red" }, system: "Kukkiwon poom belt (junior black belt)", source: "wt-ident", art: "taekwondo", tie: WT_TIE },
+  { id: "wt-dan-bars-3", label: "Taekwondo: black, three gold bars (3rd dan)", belt: "black", style: { bars: [{ colour: "gold", count: 3, ends: "left", widthCm: 0.6, gapCm: 0.5, fromEndCm: 4 }] }, system: "Taekwondo dan bars (a lead)", source: "chart-arts", art: "taekwondo", tie: WT_TIE },
 ];
 
 /** The preset of an id, or undefined. */

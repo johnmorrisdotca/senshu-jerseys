@@ -106,6 +106,8 @@ export const BELT_SOURCES: Record<string, BeltSource> = {
   itf: { id: "itf", title: "ITF Taekwon-Do, Belt colour meanings", url: "https://www.itftaekwondo.com/belt-colour-meanings/", read: READ, kind: "primary", note: "The tip system: white, white with yellow tip (9th gup), yellow, yellow with green tip, green, green with blue tip, blue, blue with red tip, red, red with black tip (1st gup), black 1st to 9th degree." },
   wkf: { id: "wkf", title: "WKF Kumite Competition Rules 2024 (as hosted by the Finnish Karate Federation)", url: "https://karateliitto.fi/app/uploads/2024/02/WKF_Kumite_Competition_Rules_2024.pdf", read: READ, kind: "primary", note: "A contestant wears one red belt (aka) or blue belt (ao), plain, with no embroidery or marks beyond the maker's label; belts of grade are not worn in the bout; about 5 cm wide, 15 cm free each side of the knot, no longer than three-quarters thigh length." },
   jka: { id: "jka", title: "JKA, DAN Ranking", url: "https://jka.or.jp/en/about-jka/dan-ranking/", read: READ, kind: "primary", note: "10 kyu and 10 dan; the page was unavailable when read (HTTP 503): the figures are from a search result's summary of it, to confirm." },
+  itfApp2: { id: "itfApp2", title: "ITF Umpire Rules, Appendix 2, Approved Clothing (in force January 1st, 2015)", url: "https://itftkd.sport/wp-content/uploads/2014/10/2015-Appendix-2-ITF-Approved-Clothing-Jan-20.pdf", read: "2026-10-30", kind: "primary", note: "Junior (under 18) and senior black belts: of sufficient length to wrap only one time around the waist; at most 5 cm wide; the degree in gold coloured Roman numerals positioned transversally across one end; the junior belt with a 1 cm white stripe lengthwise down the centre of one face; a name and the federation's name optional, in gold." },
+  wtIdent: { id: "wtIdent", title: "World Taekwondo, 2022 Guidelines of Identifications", url: "https://www.worldtaekwondo.org/att_file_up/partners_suppliers/2022/2022_WT_Guidelines_of_Identifications.pdf", read: "2026-10-30", kind: "primary", note: "Poomsae uniforms: a Black and Red (Poom Belt) for cadets and juniors, a Black (Dan Belt) for the older divisions; the maker's identification at the end of the belt within 6 cm2; nothing on how a belt is tied or how long its ends are." },
   chartArts: { id: "chartArts", title: "John's reference: 'Martial arts belt ranks' chart (picture, Dropbox belt-stripes)", url: "dropbox:/Projects/Resources/senshu-jerseys/belt-stripes/2026-10-28-martial-arts-belt-ranks-by-art.png", read: READ, kind: "lead", note: "Aikido, BJJ, capoeira, ju-jutsu, ITF taekwondo, shotokan karate, krav maga and judo belt orders as an infographic; a lead, unsourced." },
   chartKarate: { id: "chartKarate", title: "John's reference: karate belt ranking (picture, social media)", url: "dropbox:/Projects/Resources/senshu-jerseys/belt-stripes/2026-10-28-karate-kyu-dan-bars.png", read: READ, kind: "lead", note: "Nine kyu from white to brown (brown with 1 to 3 bars), dan belts black with 1 to 7 bars across one end; a lead, unsourced." },
   chartDegrees: { id: "chartDegrees", title: "John's references: black belt with tip bars (pictures)", url: "dropbox:/Projects/Resources/senshu-jerseys/belt-stripes/2026-10-28-black-tip-red-bars-degrees.png", read: READ, kind: "lead", note: "Black belts sold with red or white bars across them (martial-arts supplier); a lead." },
@@ -171,7 +173,7 @@ const ITF: [string, string, number, BeltColour, BeltColour | undefined][] = [
   ["blue", "Blue", 4, "blue", undefined], ["blue-red", "Blue, red tip", 3, "blue", "red"], ["red", "Red", 2, "red", undefined], ["red-black", "Red, black tip", 1, "red", "black"],
 ];
 const itfGrades: BeltGrade[] = ITF.map(([id, name, n, body, tip]) => g(`gup-${id}`, `${name} (${n}${n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th"} gup)`, n, "kyu", [body], tip === undefined ? {} : { tags: { colour: tip, count: 1, form: "tip" } }));
-itfGrades.push(g("dan-1", "Black (1st to 9th degree)", 1, "dan", ["black"], { note: "The ITF page lists black for 1st to 9th degree and says nothing of marks on it; a black belt with gold dan bars is common (lead, from the references)." }));
+itfGrades.push(g("dan-1", "Black (1st to 9th degree)", 1, "dan", ["black"], { note: "Black for 1st to 9th degree; the degree in gold Roman numerals across one end, the belt once round the waist and at most 5 cm wide (ITF Umpire Rules, Appendix 2); under 18, a junior black belt with a 1 cm white stripe down the middle of one face. Drawn with the `numeral` of beltStyle (the `itf-*` presets)." }));
 
 const leadKyu = (rows: [string, number, BeltColour][], kind: BeltGrade["rankKind"] = "kyu"): BeltGrade[] => rows.map(([name, n, c]) => g(`${kind}-${n}`, name, n, kind, [c]));
 
@@ -242,16 +244,16 @@ export const BELT_SYSTEMS: BeltSystem[] = [
     name: "Taekwon-do: ITF colour belts with tips",
     art: "taekwondo",
     status: "partly",
-    ends: { hangCm: cm(20, 40, 30), widthCm: cm(4, 5, 4.5), worn: "hips" },
+    ends: { hangCm: cm(20, 45, 40), widthCm: cm(4, 5, 4.5), worn: "hips" },
     customary: [
       { text: "태권도", script: "hangul", font: "gothic", meaning: "taekwondo (the way of the foot and fist)", basis: "lead" },
       { text: "NAME", script: "latin", font: "block", basis: "lead" },
     ],
     grades: itfGrades,
-    sources: ["itf", "chartArts"],
+    sources: ["itf", "itfApp2", "wtIdent", "chartArts"],
     notes: [
       "Ten gup belts (the odd ones carry a tip of the next colour) and black for 1st to 9th degree; the ITF page gives colours only, with no length or width.",
-      "Taekwondo belts are usually longer than a judo belt and worn at the hips over a v-neck dobok (lead: retailer practice); the hang range is an estimate to confirm.",
+      "An ITF black belt goes once round the waist (ITF Umpire Rules, Appendix 2), so the same belt leaves longer ends than one tied twice round; the hang (about 40 cm drawn) is read from photographs, not a rule.",
       "World Taekwondo and Kukkiwon set dan and poom, not colour belts (schools choose): see the notes in docs/martial-arts.md.",
     ],
   },

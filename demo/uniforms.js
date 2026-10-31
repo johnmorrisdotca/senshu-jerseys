@@ -1,6 +1,7 @@
-// The Uniforms page: every garment side by side as picture tiles, each wearing the chosen belt, a row of belts (colours, then the real arrangements of stripes, bars and tips)
-// folded as a shop shows them, and the chosen garment large and turnable. Garment, belt, display, angle, tilt and zoom are in the address.
-import { BELT_PRESETS, JUDOGI_BELTS, JUDOGI_BELT_LABELS, beltPreset, judogiFrame } from "./dist/index.js";
+// The Uniforms page: every garment side by side as picture tiles, each wearing the chosen belt, rows of belts (colours, then each art's real arrangements of stripes, bars,
+// tips and numerals) tied as they are worn or folded as a shop shows them, how the belt is tied, and the chosen garment large and turnable. Garment, belt, tie, display,
+// angle, tilt and zoom are in the address.
+import { BELT_KNOTS, BELT_PRESETS, JUDOGI_BELTS, JUDOGI_BELT_LABELS, beltPreset, judogiFrame } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { segmented, tiles } from "./judogiPick.js";
 import { bindView, clamp, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
@@ -17,16 +18,21 @@ const SPEED = 30;
 const COLOURS = JUDOGI_BELTS.filter((b) => b !== "none");
 const BELTS = [...COLOURS, ...BELT_PRESETS.map((p) => p.id)];
 const SHOWS = { worn: "suit", belt: "belt", folded: "folded" };
+const ARTS = ["judo", "bjj", "karate", "taekwondo"];
+const KNOTS = ["auto", ...BELT_KNOTS];
+const TAILS = ["auto", "25", "35", "45", "55"];
 
 const state = {
   garment: GARMENTS.some((g) => g.id === params.get("garment")) ? params.get("garment") : GARMENTS[0].id,
   belt: BELTS.includes(params.get("belt")) ? params.get("belt") : "black",
   show: params.get("show") in SHOWS ? params.get("show") : "worn",
+  knot: KNOTS.includes(params.get("knot")) ? params.get("knot") : "auto",
+  tail: TAILS.includes(params.get("tail")) ? params.get("tail") : "auto",
   yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
   tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
   zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
 };
-const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", yaw: 0, tilt: 0, zoom: 1 };
+const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", knot: "auto", tail: "auto", yaw: 0, tilt: 0, zoom: 1 };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -34,11 +40,22 @@ function syncUrl() {
   history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
 }
 
-/** The package's options for a garment wearing a belt: a belt colour, or one of the real arrangements. */
+/**
+ * The package's options for a garment wearing a belt: a belt colour, or one of the real arrangements. The belt is tied as asked, else as its art ties it (a karate
+ * preset's long ends), else as the garment's own (left to the package).
+ */
 function dressed(garment, belt, mode) {
   const preset = beltPreset(belt);
-  return { ...garment.options, mode, belt: preset?.belt ?? belt, ...(preset === undefined ? {} : { beltStyle: preset.style }), language: lang() === "ja" ? "ja" : "en", size: "170", view: "front", yaw: 0 };
+  const knot = state.knot !== "auto" ? state.knot : preset?.tie?.knot;
+  const tail = state.tail !== "auto" ? Number(state.tail) : preset?.tie?.tailCm;
+  return {
+    ...garment.options, mode, belt: preset?.belt ?? belt, ...(preset === undefined ? {} : { beltStyle: preset.style }),
+    ...(knot === undefined ? {} : { beltKnot: knot }), ...(tail === undefined ? {} : { beltTailCm: tail }),
+    language: lang() === "ja" ? "ja" : "en", size: "170", view: "front", yaw: 0,
+  };
 }
+/** How the belt row draws its belts: tied as worn, or folded when the folded belt is on show. */
+const beltRowMode = () => (state.show === "folded" ? "folded" : "belt");
 const garmentOf = (id) => GARMENTS.find((g) => g.id === id);
 const beltName = (id) => {
   const preset = beltPreset(id);
@@ -122,10 +139,16 @@ function beltTiles(id, label, values) {
 function paintTiles() {
   for (const tile of $("uni-garment").querySelectorAll("[data-value]")) {
     const g = garmentOf(tile.dataset.value);
-    picture(tile, `g:${g.id}:${state.belt}:${lang()}`, dressed(g, state.belt, "suit"), 220, 3);
+    picture(tile, `g:${g.id}:${state.belt}:${state.knot}:${state.tail}:${lang()}`, dressed(g, state.belt, "suit"), 220, 3);
   }
+  const mode = beltRowMode();
   for (const tile of document.querySelectorAll(".uni-belts [data-value]")) {
-    picture(tile, `b:${tile.dataset.value}`, dressed(garmentOf(state.garment), tile.dataset.value, "folded"), 220, 2);
+    const o = dressed(garmentOf(state.garment), tile.dataset.value, mode);
+    // A belt alone is the same whatever the garment, but its tie is the garment's own unless asked: the key names what changes the drawing.
+    const key = `b:${mode}:${tile.dataset.value}:${mode === "folded" ? "" : JSON.stringify([o.karate, o.dobok, o.beltKnot, o.beltTailCm])}`;
+    if (tile.dataset.key !== key) delete tile.dataset.ready;
+    tile.dataset.key = key;
+    picture(tile, key, o, 220, 2);
   }
 }
 
@@ -139,19 +162,23 @@ function controls() {
   };
   section(say("uniformsGarment"), garmentTiles());
   section(say("uniformsShow"), segmented({ id: "uni-show", label: say("uniformsShow"), values: Object.keys(SHOWS), current: state.show, name: (v) => say(`uniformsShow_${v}`), onPick: (v) => change("show", v) }));
+  section(say("uniformsKnot"), segmented({ id: "uni-knot", label: say("uniformsKnot"), values: KNOTS, current: state.knot, name: (v) => say(`uniformsKnot_${v}`), onPick: (v) => change("knot", v) }));
+  section(say("uniformsTail"), segmented({ id: "uni-tail", label: say("uniformsTail"), values: TAILS, current: state.tail, name: (v) => (v === "auto" ? say("uniformsKnot_auto") : `${v} cm`), onPick: (v) => change("tail", v) }));
   section(say("uniformsBelts"), beltTiles("uni-belt", say("uniformsBelts"), COLOURS));
-  section(say("uniformsBeltStyles"), beltTiles("uni-belt-style", say("uniformsBeltStyles"), BELT_PRESETS.map((p) => p.id)));
+  for (const art of ARTS) {
+    const label = `${say("uniformsBeltStyles")}: ${say(`uniformsArt_${art}`)}`;
+    section(label, beltTiles(`uni-belt-${art}`, label, BELT_PRESETS.filter((p) => p.art === art).map((p) => p.id)));
+  }
   paintTiles();
 }
 
 function change(key, value) {
   state[key] = value;
   syncUrl();
-  if (key === "belt") {
-    for (const tile of document.querySelectorAll("#uni-belt [data-value], #uni-belt-style [data-value]")) tile.setAttribute("aria-pressed", String(tile.dataset.value === value));
-    for (const tile of $("uni-garment").querySelectorAll("[data-value]")) delete tile.dataset.ready;
-    paintTiles();
-  }
+  if (key === "belt") for (const tile of document.querySelectorAll(".uni-belts [data-value]")) tile.setAttribute("aria-pressed", String(tile.dataset.value === value));
+  if (key === "belt" || key === "knot" || key === "tail") for (const tile of $("uni-garment").querySelectorAll("[data-value]")) delete tile.dataset.ready;
+  // The garment tiles wear the belt as it is tied; the belt row redraws when its tie or its display changes (a key that is the same keeps its picture).
+  if (key === "belt" || key === "knot" || key === "tail" || key === "show" || key === "garment") paintTiles();
   draw();
 }
 

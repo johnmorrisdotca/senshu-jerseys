@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { renderJudogi } from "../src/judogi.ts";
 import { depthOrder } from "../src/pieceVolume.ts";
-import { BACK_Y, FACE_Y, strapCells, strapFace, type StrapDesc } from "../src/judogiStrap.ts";
+import { BACK_Y, END_FACE_Y, FACE_Y, strapCells, strapFace, type StrapDesc } from "../src/judogiStrap.ts";
 import { placeCell, turn } from "../src/volume.ts";
 
 // A belt alone, as the designer draws it. Its knot is two lengths of strap that cross one another and the turns, so the cells' middles
@@ -74,8 +74,9 @@ test("what is sewn on a belt's hanging end shows on its outer face only, at 0, 9
     for (const { c } of ends) {
       if (!placeCell(c, yaw, 14).visible) continue;
       const y = Math.min(...c.tex.filter((_, k) => k % 2 === 1));
-      if (y >= BACK_Y - 1) reverse++;
-      else if (y < FACE_Y + RING.w + 2) face++;
+      // The reverse samples the plain strip; the outer face its end's own strip (END_FACE_Y), which carries what is sewn on it.
+      if (y >= BACK_Y - 1 && y < BACK_Y + RING.w + 2) reverse++;
+      else if (y < FACE_Y + RING.w + 2 || END_FACE_Y.some((r) => y >= r - 1 && y < r + RING.w + 2)) face++;
     }
     return { face, reverse };
   };
@@ -90,6 +91,9 @@ test("what is sewn on a belt's hanging end shows on its outer face only, at 0, 9
   // The strip the reverse faces sample has the cloth and the rows but none of the marks.
   const marked = strapFace({ fill: "#123456", edge: "#000", stitch: "#222", defs: "", ends: { left: { defs: "", body: '<text id="mark">M</text>' } } }, RING.w);
   assert.equal(marked.body.match(/id="mark"/g)?.length, 1);
+  // A tied belt's strap has a strip of its own for each end, which carries that end's marks again (and only that end's).
+  const tied = strapFace({ fill: "#123456", edge: "#000", stitch: "#222", defs: "", ends: { left: { defs: "", body: '<text id="mark">M</text>' } } }, RING.w, undefined, true);
+  assert.equal(tied.body.match(/id="mark"/g)?.length, 2);
   assert.ok(marked.body.indexOf(`y="${BACK_Y - 1.5}"`) >= 0, "a plain strip for the reverse");
 });
 

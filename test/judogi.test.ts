@@ -10,7 +10,7 @@ import { collarCells } from "../src/judogiCollar.ts";
 import { paintOrder, type PaintPiece } from "../src/judogiGl.ts";
 import { collarDesc, jacketDesc } from "../src/judogiJacket.ts";
 import { pieceCells } from "../src/pieceVolume.ts";
-import { strapCells, strapFace, strapWidth } from "../src/judogiStrap.ts";
+import { END_FACE_Y, strapCells, strapFace, strapWidth } from "../src/judogiStrap.ts";
 import { placeCell, sleeveAt, type VolumeDesc } from "../src/volume.ts";
 import { pantsDesc } from "../src/judogiPants.ts";
 import { kodokanEmblemSvg } from "../src/judogiKodokan.ts";
@@ -162,7 +162,7 @@ test("a kohaku belt's panels run along the strap, on its ends as on its turns", 
   const face = strapFace(p, 12.5);
   assert.ok(face.body.includes(`fill="${p.stripFill}"`), "the strap strip carries the pattern put to end in red at its cut ends");
   // Down a hanging end, the strip's length runs with the end: a front cell's drawing goes along x as the end goes down.
-  const ends = strapCells({ y: 28, sag: 3, w: 12.5, t: 1.3, a: 66, b: 30, full: 2, side: 0, worn: false }).filter((c) => c.p[1]! > 60 && c.n[2] > 0.9 && c.tex[1] === 0 && c.tex[3] === 0);
+  const ends = strapCells({ y: 28, sag: 3, w: 12.5, t: 1.3, a: 66, b: 30, full: 2, side: 0, worn: false }).filter((c) => c.p[1]! > 60 && c.n[2] > 0.9 && (END_FACE_Y as readonly number[]).includes(c.tex[1]!) && c.tex[3] === c.tex[1]);
   assert.ok(ends.length > 0);
   for (const c of ends) {
     const down = Math.abs(c.p[4]! - c.p[1]!);

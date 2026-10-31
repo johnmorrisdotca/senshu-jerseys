@@ -7,8 +7,8 @@ import { ROUND } from "../src/judogiStrap.ts";
 import { nearSleeve, placeCell, turn, type Cell, type VolumeDesc } from "../src/volume.ts";
 
 // The jacket with its belt as the designer draws it: the pieces' own descriptions are read back from the drawing.
-const pieces = (): { jacket: VolumeDesc; strap: VolumeDesc } => {
-  const svg = renderJudogi({ mode: "jacket", belt: "orange", yaw: 0, width: 360 });
+const pieces = (o: object = {}): { jacket: VolumeDesc; strap: VolumeDesc } => {
+  const svg = renderJudogi({ mode: "jacket", belt: "orange", yaw: 0, width: 360, ...o });
   const all = [...svg.matchAll(/data-piece="([^"]*)"/g)].map((m) => JSON.parse(m[1]!.replace(/&quot;/g, '"')) as VolumeDesc);
   return { jacket: all.find((d) => d.strap === undefined && d.collar === undefined)!, strap: all.find((d) => d.strap !== undefined)! };
 };
@@ -66,6 +66,29 @@ test("the belt's hanging ends lie on the skirt: from the side they stay within a
     }
   }
   assert.ok(worst > 0, "the check sees them reach the outline");
+});
+
+test("long ends lie on the skirt too, and below the hem hang straight down from it, on a karate gi and an ITF dobok and tied any way", () => {
+  for (const o of [{ karate: true }, { dobok: { cut: "itf" } }, { beltKnot: "hanging", beltTailCm: 55 }, { beltKnot: "spread", beltTailCm: 40 }]) {
+    const { jacket, strap } = pieces(o);
+    const torso = pieceCells(jacket).filter((c) => (c.g === 0 || c.g === 3) && c.inside !== true);
+    const s = strap.strap!;
+    const hem = jacket.y.at(-1)!;
+    const cells = pieceCells(strap).slice(ROUND * 6);
+    const ys = (c: Cell): number[] => c.p.filter((_, k) => k % 3 === 1);
+    const onSkirt = cells.filter((c) => ys(c).every((y) => y > s.y + s.sag + s.w + 8 && y < hem - 2));
+    const below = cells.filter((c) => ys(c).every((y) => y > hem + 4));
+    assert.ok(onSkirt.length > 20 && below.length > 10, `${JSON.stringify(o)}: the ends are found above and below the hem`);
+    // An end's thickness and its gap, and under the knot the other end's, which the right one lies over where they touch.
+    const thick = 2 * s.t + 1.8 + 0.6;
+    for (const yaw of [0, 90, 270]) {
+      const body = torso.flatMap((c) => project(c, yaw, jacket.pitch).map((q) => q.tri));
+      for (const c of onSkirt) for (const q of project(c, yaw, jacket.pitch)) for (const v of q.tri) { const d = Math.min(...body.map((t) => away(v, t))); assert.ok(d <= thick, `${JSON.stringify(o)} yaw ${yaw}: an end stands ${d.toFixed(1)} off the skirt at y ${v[1].toFixed(1)}, hem ${hem}`); }
+    }
+    // Past the hem nothing holds an end against the body: it keeps the hem's depth, never sinking into the trousers' line or swinging out.
+    const z = below.flatMap((c) => c.p.filter((_, k) => k % 3 === 2));
+    assert.ok(Math.max(...z) - Math.min(...z) < s.t * 2 + 0.5, `${JSON.stringify(o)}: below the hem the ends hang at one depth`);
+  }
 });
 
 test("the knot stays against the belt's front: no part of it is more than a knot's thickness off the body's outline", () => {

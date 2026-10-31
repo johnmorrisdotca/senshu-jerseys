@@ -1,7 +1,7 @@
 // The karate gi (karategi), a variant of the judogi drawing: the same jacket, trousers and belt on the same volumes, cut and cloth changed. A karate gi's cloth is lighter
 // and plainer (one fine weave, no quilted skirt, no waist seam, a single hem, softer folds), its lapel narrower, its sleeves cut to the wrist, to mid-forearm or to the
 // elbow. Kanji are stitched down the wearer's left chest beside the lapel, and a round patch sits on the left sleeve and the left leg (neutral
-// placeholder art, no style's or federation's badge). The belt is the judogi's, its ends 25 cm.
+// placeholder art, no style's or federation's badge). The belt is the judogi's, worn long: its ends hang side by side to just above the knee (beltTie.ts).
 //
 // Sources, read 2026-10-30. The World Karate Federation's Kumite Competition Rules (valid from 1.1.2024, Article 2, 2.2.1) and its Karate Competition Rules (effective from
 // 1.1.2020, Article 2, Competitors) give the same measures for a competition gi: the jacket, tightened with the belt, covers the hips and is no longer than three-quarters of the
@@ -114,7 +114,7 @@ export function readKarate(raw: unknown): ReadKarate | undefined {
 }
 
 /** What the competition rules say of this gi, as checks: each is met or not, and the fact is cited. */
-export function karateNotes(k: ReadKarate, heightCm: number, colour: "white" | "blue"): { id: string; met: boolean; fact: string }[] {
+export function karateNotes(k: ReadKarate, heightCm: number, colour: "white" | "blue", tailCm = 25): { id: string; met: boolean; fact: string }[] {
   const wkf = "WKF Kumite Competition Rules (valid from 1.1.2024) Article 2, and Karate Competition Rules (effective from 1.1.2020) Article 2";
   const competition = k.cut !== "training";
   const thigh = Math.round(heightCm * 0.245 * 0.75);
@@ -122,7 +122,7 @@ export function karateNotes(k: ReadKarate, heightCm: number, colour: "white" | "
     { id: "karate-jacket", met: true, fact: `The jacket, tightened with the belt, covers the hips and is no longer than three-quarters of the thigh (${wkf}).` },
     { id: "karate-sleeve", met: k.sleeve !== "short", fact: `The sleeves are no longer than the bend of the wrist and no shorter than halfway down the forearm, and are not rolled up (${wkf}); the short sleeve ends at the elbow, outside that range.` },
     { id: "karate-trouser", met: true, fact: `The trousers cover at least two thirds of the shin and do not reach below the anklebone (${wkf}).` },
-    { id: "karate-belt-ends", met: thigh >= 25, fact: `The belt leaves at least 15 cm free on each side of the knot and is no longer than three-quarters of the thigh, about ${thigh} cm at this height (${wkf}); its ends are drawn 25 cm. A karateka's belt in training is often much longer (Wikipedia, Karate gi), which is not drawn yet.` },
+    { id: "karate-belt-ends", met: tailCm >= 15 && (!competition || tailCm <= thigh), fact: `In competition the belt leaves at least 15 cm free on each side of the knot and is no longer than three-quarters of the thigh, about ${thigh} cm at this height (${wkf}); a karateka's belt in training is often worn much longer (Wikipedia, Karate gi). Its ends are drawn ${tailCm} cm.` },
     { id: "karate-plain", met: !competition || (colour === "white" && k.text === "" && !k.sleevePatch && !k.legPatch), fact: `A competition gi is white, without stripes, piping or personal embroidery; only the national emblem or flag on the left breast and the maker's original labels may show (${wkf}).` },
   ];
 }

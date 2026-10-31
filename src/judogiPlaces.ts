@@ -7,7 +7,7 @@
 
 import { BELT_BOTTOM, BELT_TOP, CHEST_BOTTOM, CHEST_TOP, chestSpan, sleeveRegion } from "./judogiJacket.ts";
 import { hipsOf, onLeg } from "./judogiPants.ts";
-import { END_LENGTH, type ReadStyle } from "./judogiStripes.ts";
+import { END_LENGTH, numeralBox, type ReadStyle } from "./judogiStripes.ts";
 import type { Pt } from "./path.ts";
 
 /** Drawing units to the centimetre, as the garments are drawn. */
@@ -257,6 +257,10 @@ export function obstaclesFor(half: number, style: ReadStyle | undefined, neck: b
         out.push({ id, face, box: { x: (x0 + x1) / 2, y: 0, w: x1 - x0, h: 2 * half, rot: 0 } });
       };
       const tip = style.tip;
+      if (style.numeral !== undefined && style.numeral.end === i) {
+        const nb = numeralBox(style.numeral, i as 0 | 1, half);
+        block(nb.x0, nb.x1, "belt-numeral");
+      }
       if (tip !== undefined && tip.ends[i]) block(Math.max(0, l - tip.fromEndCm * CM - tip.lengthCm * CM), l - tip.fromEndCm * CM, "belt-tip");
       for (const [k, b] of style.bars.entries()) {
         if (!b.ends[i]) continue;

@@ -9,6 +9,7 @@ import type { BeltPaint, Face } from "./judogiCloth.ts";
 import { beltDefaultWidthCm } from "./beltSpecs.ts";
 import { n2 } from "./path.ts";
 import { knotCells } from "./judogiKnot.ts";
+import { END_LENGTH_25, endLengths, tieEnds, wrapsOf, type BeltKnot, type BeltTie } from "./beltTie.ts";
 import type { Cell, VolumeDesc } from "./volume.ts";
 
 type Vec = [number, number, number];
@@ -30,7 +31,13 @@ export interface StrapDesc {
   worn: boolean;
   /** Worn: the jacket's rows from the belt's top down to the hem, as `y, half width, half depth` in turn, so the hanging ends lie on the skirt. */
   skirt?: number[];
+  /** How it is tied (beltTie.ts): the knot's style and how far the ends hang, in centimetres. The judogi's (`spread`, 25) when not given. */
+  knot?: BeltKnot;
+  tail?: number;
 }
+
+/** The tie a strap carries. */
+const tieOf = (s: StrapDesc): BeltTie | undefined => (s.knot === undefined && s.tail === undefined ? undefined : { knot: s.knot ?? "spread", tailCm: s.tail ?? 25 });
 
 /**
  * At 2.63 units to the centimetre: a rank belt 4 cm wide, a black belt 4.75 cm and a master's red or red-white belt 5 cm, each 5 mm
@@ -42,7 +49,6 @@ export const UNITS_PER_CM = 2.63;
 /** A belt's width in drawing units: the width its grade is made in (4.2 cm for white and the rank colours, 4.5 for black, red-white and red: see beltSpecs.ts) or, when given, `cm` centimetres. */
 export const strapWidth = (belt: string, cm?: number): number => (cm !== undefined ? cm * UNITS_PER_CM : beltDefaultWidthCm(belt) * UNITS_PER_CM);
 const ROWS = 10;
-const HANG = 64;
 /** Where the strips lie on the strap's drawing: the face, the edge of the two turns and the edge of one. */
 export const FACE_Y = 0;
 const EDGE2_Y = 26;
@@ -60,6 +66,13 @@ export const ROUND = 72;
 const DOWN = 8;
 /** Where each hanging end's own stretch of the face strip starts, so a mark on one end does not repeat on the turns (which use the strip's first 60 units) or on the other end. */
 export const END_X = [130, 58] as const;
+/**
+ * The strips a tied belt's two hanging ends sample, each a whole length of its own below the others (the picture's left end, then its right), so an end of any length
+ * finds cloth: its cut end lies where it does on the face strip (`END_CUT`), and it runs back toward the knot as far as it is long. What is sewn on an end is drawn there too.
+ */
+export const END_FACE_Y = [66, 86] as const;
+/** Where each end's cut end lies along the strips: the default end's stretch, so a kohaku belt's sections and the marks sewn near the end fall where they always have. */
+const END_CUT = [END_X[0] + END_LENGTH_25[0], END_X[1] + END_LENGTH_25[1]] as const;
 
 const sub = (p: Vec, q: Vec): Vec => [p[0] - q[0], p[1] - q[1], p[2] - q[2]];
 const cross = (u: Vec, v: Vec): Vec => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
@@ -127,8 +140,11 @@ export function strapCells(s: StrapDesc): Cell[] {
     return [nx / l, nz / l] as [number, number];
   });
   const lift = s.worn ? GAP : 0;
+  const tie = tieOf(s);
+  // Two turns lie one on the other, or one alone (a belt tied once round).
+  const wraps = wrapsOf(tie);
   const inner = base.map((p, i): [number, number] => [p[0] + normals[i]![0] * lift, p[1] + normals[i]![1] * lift]);
-  const outer = base.map((p, i): [number, number] => [p[0] + normals[i]![0] * (lift + 2 * s.t), p[1] + normals[i]![1] * (lift + 2 * s.t)]);
+  const outer = base.map((p, i): [number, number] => [p[0] + normals[i]![0] * (lift + wraps * s.t), p[1] + normals[i]![1] * (lift + wraps * s.t)]);
   const zFront = outer[0]![1];
   // The band sags at the front, where the knot pulls it down.
   const topAt = (i: number): number => s.y + s.sag * Math.pow(Math.max(0, outer[i]![1] / zFront), 2);
@@ -145,7 +161,8 @@ export function strapCells(s: StrapDesc): Cell[] {
     const out: Vec = [normals[i]![0] + normals[k]![0], 0, normals[i]![1] + normals[k]![1]];
     const inward: Vec = [-out[0], 0, -out[2]];
     cells.push(...quad([o(outer[i]!, y0), o(outer[k]!, y1), o(outer[i]!, y0 + s.w), o(outer[k]!, y1 + s.w)], [[x0, FACE_Y], [x1, FACE_Y], [x0, FACE_Y + s.w], [x1, FACE_Y + s.w]], out));
-    const edge: [number, number][] = [[x0, EDGE2_Y], [x1, EDGE2_Y], [x0, EDGE2_Y + EDGE_H], [x1, EDGE2_Y + EDGE_H]];
+    const ey = wraps === 2 ? EDGE2_Y : EDGE1_Y;
+    const edge: [number, number][] = [[x0, ey], [x1, ey], [x0, ey + EDGE_H], [x1, ey + EDGE_H]];
     // Worn, the edges of the turns behind the jacket are hidden by it: they show only where the turns' outer face does.
     const hidden = s.worn ? unit(out) : undefined;
     cells.push(...quad([o(outer[i]!, y0), o(outer[k]!, y1), o(inner[i]!, y0), o(inner[k]!, y1)], edge, [0, -1, 0], hidden));
@@ -155,7 +172,12 @@ export function strapCells(s: StrapDesc): Cell[] {
   const front: Vec | undefined = s.worn ? [0, 0, 1] : undefined;
   const cy = s.y + s.sag + s.w / 2;
   cells.push(...knotCells(s, cy, zFront, (x) => roundAt(s, s.a, s.b, x) - roundAt(s, s.a, s.b, 0), front));
-  endsOf(cy).forEach(([from, to], i) => cells.push(...endCells(from, to, zFront + s.t, s, front, END_X[i] as number, cy + s.w / 2)));
+  const lengths = endLengths(tie);
+  tieEnds(tie, cy).forEach(([from, to], i) => {
+    // The ends of a long belt hang side by side: the right one, which comes down over the knot, lies on the other where they touch under it.
+    const over = i === 1 && tie !== undefined && tie.knot !== "spread" ? s.t : 0;
+    cells.push(...endCells(from, to, zFront + s.t, s, front, (END_CUT[i] as number) - (lengths[i] as number), cy + s.w / 2, END_FACE_Y[i] as number, wraps, over));
+  });
   return cells;
 }
 
@@ -178,11 +200,6 @@ export function through(pts: readonly Vec[], n: number): Vec[] {
   return out;
 }
 
-/** The two hanging ends, each from under the knot to its cut end, on the picture's 200-wide drawing (the belt's middle at x 100). */
-function endsOf(cy: number): [[number, number], [number, number]][] {
-  return [[[96, cy + 6], [80, cy + 6 + HANG]], [[105, cy + 5], [119, cy + 5 + HANG * 0.92]]];
-}
-
 /** The depth of a round of half width `a` and half depth `b` at `x` across it, as the body's volume draws it (never less than its side wall). */
 export const roundAt = (s: StrapDesc, a: number, b: number, x: number): number => Math.max(s.side * b, b * Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, Math.abs(x) / a), s.full)), 1 / s.full));
 
@@ -202,7 +219,7 @@ const SETTLE = 12;
 const REST = 1.8;
 
 /** A hanging end: its front and back faces, its two long edges and its cut end, from under the knot (`z` deep). Worn, it lies on the belt, then on the skirt below it. */
-function endCells(from: [number, number], to: [number, number], z: number, s: StrapDesc, also: Vec | undefined, xs: number, below = 0): Cell[] {
+function endCells(from: readonly [number, number], to: readonly [number, number], z: number, s: StrapDesc, also: Vec | undefined, xs: number, below: number, row: number, wraps: number, over: number): Cell[] {
   const dx = to[0] - from[0];
   const dy = to[1] - from[1];
   const l = Math.hypot(dx, dy) || 1;
@@ -219,12 +236,17 @@ function endCells(from: [number, number], to: [number, number], z: number, s: St
     const w2 = f * (2 * f - 1);
     const x = w0 * p0[0]! + w1 * p1[0]! + w2 * p2[0]! - 100;
     const y = w0 * p0[1]! + w1 * p1[1]! + w2 * p2[1]!;
-    if (s.skirt === undefined) return [x, y, z + 2.5 * f * f];
+    // Where it lies over the other end, under the knot: that end's thickness, going to nothing a few centimetres down.
+    const on = over * Math.max(0, 1 - (f * l) / 26);
+    if (s.skirt === undefined) return [x, y, z + 2.5 * f * f + on];
     // The back of the end rests on the belt where it hangs from it, and on the cloth below, a gap's width off it.
     const u = Math.max(0, Math.min(1, (y - below) / SETTLE));
     const e = u * u * (3 - 2 * u);
-    const onBelt = roundAt(s, s.a, s.b, x) + GAP + 2 * s.t;
-    return [x, y, onBelt + (skirtAt(s, y, x) + REST - onBelt) * e + s.t];
+    const onBelt = roundAt(s, s.a, s.b, x) + GAP + wraps * s.t;
+    // Past the hem nothing is under it: a long end hangs on at the depth it left the hem, where it crossed it.
+    const hem = s.skirt[s.skirt.length - 3] as number;
+    const free = y > hem && to[1] > from[1] ? [from[0] + ((to[0] - from[0]) * (hem - from[1])) / (to[1] - from[1]) - 100, hem] : [x, y];
+    return [x, y, onBelt + (skirtAt(s, free[1] as number, free[0] as number) + REST - onBelt) * e + s.t + on];
   };
   const back = (p: Vec): Vec => [p[0], p[1], p[2] - s.t];
   const cells: Cell[] = [];
@@ -234,7 +256,7 @@ function endCells(from: [number, number], to: [number, number], z: number, s: St
     const x0 = xs + f0 * l;
     const x1 = xs + f1 * l;
     const [la, lb, ra, rb] = [side(-1, f0), side(-1, f1), side(1, f0), side(1, f1)];
-    const face: [number, number][] = [[x0, FACE_Y], [x1, FACE_Y], [x0, FACE_Y + s.w], [x1, FACE_Y + s.w]];
+    const face: [number, number][] = [[x0, row], [x1, row], [x0, row + s.w], [x1, row + s.w]];
     const edge: [number, number][] = [[x0, EDGE1_Y], [x1, EDGE1_Y], [x0, EDGE1_Y + EDGE_H], [x1, EDGE1_Y + EDGE_H]];
     const outL = sub(la, ra);
     cells.push(...quad([la, lb, ra, rb], face, [0, 0, 1], also));
@@ -259,7 +281,7 @@ export function strapDesc(s: StrapDesc, pitch: number): VolumeDesc {
  * turns and of one below it. The knot is the strap itself, so it needs nothing of its own. Each strip runs on past its ends, so a cell
  * that is grown at its edge still finds cloth.
  */
-export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
+export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS, ends = false): Face {
   const fine = p.fine !== undefined;
   const thread = p.fine?.thread ?? p.stitch;
   const rows = (y0: number, h: number, n: number): string => {
@@ -289,14 +311,22 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS): Face {
     `<path d="M-40 ${EDGE2_Y + EDGE_H / 2}H240" stroke="${p.edge}" stroke-width="0.6" stroke-opacity="0.8"/>` +
     strip(EDGE1_Y, EDGE_H) + `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>`;
   const clip = [
+    ...(ends ? END_FACE_Y.map((y) => `M-40 ${y - 1.5}H240V${n2(y + w + 1.5)}H-40Z`) : []),
     `M-40 ${FACE_Y - 1.5}H240V${n2(FACE_Y + w + 1.5)}H-40Z`,
     `M-40 ${EDGE2_Y - 1.5}H240V${EDGE2_Y + EDGE_H + 1.5}H-40Z`,
     `M-40 ${EDGE1_Y - 1.5}H240V${EDGE1_Y + EDGE_H + 1.5}H-40Z`,
     `M-40 ${BACK_Y - 1.5}H240V${n2(BACK_Y + w + 1.5)}H-40Z`,
   ];
   // What is sewn on each hanging end lies on that end's own stretch of the strip, its frame's origin at the knot's end and its middle on the strip's.
-  const sewn = (m: { body: string } | undefined, x: number): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(w / 2)})">${m.body}</g>`);
+  const sewn = (m: { body: string } | undefined, x: number, y = 0): string => (m === undefined ? "" : `<g transform="translate(${x} ${n2(y + w / 2)})">${m.body}</g>`);
+  // A tied belt's ends, each on a strip of its own with only what is sewn on that end.
+  const endStrips = ends ? [0, 1].map((i) => {
+    const y = END_FACE_Y[i] as number;
+    const x = END_X[i] as number;
+    const stripe = i === 0 ? p.stripeEnds?.left : p.stripeEnds?.right;
+    return cloth(y) + sewn({ body: stripe ?? "" }, x, y) + sewn(i === 0 ? p.ends?.left : p.ends?.right, x, y);
+  }).join("") : "";
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
   const twillDefs = fine ? `<pattern id="jgtwill" width="0.62" height="0.62" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="0.62" height="0.24" fill="#000" fill-opacity="0.09"/><rect y="0.31" width="0.62" height="0.14" fill="#fff" fill-opacity="0.07"/></pattern>` : "";
-  return { defs: twillDefs + (p.strip?.defs ?? ""), body: faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
+  return { defs: twillDefs + (p.strip?.defs ?? ""), body: endStrips + faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

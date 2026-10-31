@@ -163,7 +163,7 @@ Sources:
 
 ![Every grade of Taekwon-do: ITF colour belts with tips, drawn from its data](images/belts/taekwondo-itf.webp)
 
-Status: partly. Worn at the hips; width 4 to 5 cm (usually 4.5); ends hang 20 to 40 cm from the knot (usually 30).
+Status: partly. Worn at the hips; width 4 to 5 cm (usually 4.5); ends hang 20 to 45 cm from the knot (usually 40).
 
 | Grade | Colours | Marks | Ages |
 |---|---|---|---|
@@ -177,7 +177,7 @@ Status: partly. Worn at the hips; width 4 to 5 cm (usually 4.5); ends hang 20 to
 | Blue, red tip (3rd gup) | blue | 1 red tip at the end |  |
 | Red (2nd gup) | red | plain |  |
 | Red, black tip (1st gup) | red | 1 black tip at the end |  |
-| Black (1st to 9th degree) | black | plain. The ITF page lists black for 1st to 9th degree and says nothing of marks on it; a black belt with gold dan bars is common (lead, from the references). |  |
+| Black (1st to 9th degree) | black | plain. Black for 1st to 9th degree; the degree in gold Roman numerals across one end, the belt once round the waist and at most 5 cm wide (ITF Umpire Rules, Appendix 2); under 18, a junior black belt with a 1 cm white stripe down the middle of one face. Drawn with the `numeral` of beltStyle (the `itf-*` presets). |  |
 
 Customary text on the belt end:
 
@@ -187,12 +187,14 @@ Customary text on the belt end:
 Notes:
 
 - Ten gup belts (the odd ones carry a tip of the next colour) and black for 1st to 9th degree; the ITF page gives colours only, with no length or width.
-- Taekwondo belts are usually longer than a judo belt and worn at the hips over a v-neck dobok (lead: retailer practice); the hang range is an estimate to confirm.
+- An ITF black belt goes once round the waist (ITF Umpire Rules, Appendix 2), so the same belt leaves longer ends than one tied twice round; the hang (about 40 cm drawn) is read from photographs, not a rule.
 - World Taekwondo and Kukkiwon set dan and poom, not colour belts (schools choose): see the notes in docs/martial-arts.md.
 
 Sources:
 
 - [ITF Taekwon-Do, Belt colour meanings](https://www.itftaekwondo.com/belt-colour-meanings/), read 2026-10-27 (primary): The tip system: white, white with yellow tip (9th gup), yellow, yellow with green tip, green, green with blue tip, blue, blue with red tip, red, red with black tip (1st gup), black 1st to 9th degree.
+- [ITF Umpire Rules, Appendix 2, Approved Clothing (in force January 1st, 2015)](https://itftkd.sport/wp-content/uploads/2014/10/2015-Appendix-2-ITF-Approved-Clothing-Jan-20.pdf), read 2026-10-30 (primary): Junior (under 18) and senior black belts: of sufficient length to wrap only one time around the waist; at most 5 cm wide; the degree in gold coloured Roman numerals positioned transversally across one end; the junior belt with a 1 cm white stripe lengthwise down the centre of one face; a name and the federation's name optional, in gold.
+- [World Taekwondo, 2022 Guidelines of Identifications](https://www.worldtaekwondo.org/att_file_up/partners_suppliers/2022/2022_WT_Guidelines_of_Identifications.pdf), read 2026-10-30 (primary): Poomsae uniforms: a Black and Red (Poom Belt) for cadets and juniors, a Black (Dan Belt) for the older divisions; the maker's identification at the end of the belt within 6 cm2; nothing on how a belt is tied or how long its ends are.
 - [John's reference: 'Martial arts belt ranks' chart (picture, Dropbox belt-stripes)](dropbox:/Projects/Resources/senshu-jerseys/belt-stripes/2026-10-28-martial-arts-belt-ranks-by-art.png), read 2026-10-27 (lead): Aikido, BJJ, capoeira, ju-jutsu, ITF taekwondo, shotokan karate, krav maga and judo belt orders as an infographic; a lead, unsourced.
 
 ## Karate: WKF competition belts (aka red, ao blue)

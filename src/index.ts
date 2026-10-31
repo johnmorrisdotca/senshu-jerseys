@@ -10,13 +10,15 @@ export {
 } from "./judogi.ts";
 export type { JudogiBelt, JudogiCheck, JudogiColour, JudogiMode, JudogiOptions, JudogiSize, JudogiView } from "./judogi.ts";
 export { BELT_RGB as JUDOGI_BELT_RGB } from "./judogiBelt.ts";
-export { KARATE_CUTS, KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TEXT } from "./karategi.ts";
+export { KARATE_CUTS, KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TEXT, LEG_PATCH_CM, SLEEVE_PATCH_CM } from "./karategi.ts";
 export type { JudogiKarate, KarateCut, KarateSleeve } from "./karategi.ts";
 export { DOBOK_CUTS, DOBOK_GRADES } from "./dobok.ts";
 export type { DobokCut, DobokGrade, JudogiDobok } from "./dobok.ts";
-export { BELT_PRESETS, STRIPE_COLOURS, beltPreset } from "./judogiStripes.ts";
+export { BELT_PRESETS, STRIPE_COLOURS, beltPreset, roman } from "./judogiStripes.ts";
+export { BELT_KNOTS, BELT_TAIL_CM, GARMENT_TIES } from "./beltTie.ts";
+export type { BeltKnot, BeltTie } from "./beltTie.ts";
 export { gradeBelt } from "./beltGrade.ts";
-export type { BeltAlong, BeltBars, BeltPreset, BeltTipStyle, JudogiBeltStyle, StripeColour } from "./judogiStripes.ts";
+export type { BeltAlong, BeltBars, BeltNumeral, BeltPreset, BeltTipStyle, JudogiBeltStyle, StripeColour } from "./judogiStripes.ts";
 export { PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_EDGES, PATCH_FACTS, PATCH_MM, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS } from "./judogiPatch.ts";
 export type { JudogiBackPatch, PatchColour, PatchEdge, PatchStyle, ZekkenInk } from "./judogiPatch.ts";
 export { HELMET_KINDS, HELMET_MARKS, renderHelmet } from "./helmet.ts";

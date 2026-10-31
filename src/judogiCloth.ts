@@ -2,6 +2,7 @@
 // skirt, the twill of the trousers), stitch rows and soft folds, and the volume each piece is wrapped over. The pieces themselves are in
 // judogiJacket.ts, judogiPants.ts and judogiBelt.ts. Original drawing; no maker, federation or sponsor mark.
 
+import type { BeltTie } from "./beltTie.ts";
 import { blend, hexOf, lum, shade, type Rgb } from "./colour.ts";
 import { n2, type Pt } from "./path.ts";
 import type { VolumeDesc } from "./volume.ts";
@@ -29,6 +30,8 @@ export interface BeltPaint {
   fine?: { thread?: string };
   /** Marks laid straight on a strap's face strip, in the strip's own units (the collar's lapel hem). */
   strip?: Mark;
+  /** How the belt is tied, for the flat drawing (beltTie.ts): the judogi's own when not given. */
+  tie?: BeltTie;
 }
 
 /** Marks sewn or woven on one face of a piece (patches, labels, embroidery): their defs and their drawing, in the face's own box. */

@@ -406,7 +406,7 @@ function front(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   s += hemTrim(t, tied, cut);
   s += ink.marks?.front?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
+  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST) + 1, ink.belt.tie) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
   return s;
 }
 
@@ -441,7 +441,7 @@ function back(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   s += hemTrim(t, tied, cut);
   s += ink.marks?.back?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
+  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1, ink.belt.tie) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
   return s;
 }
 

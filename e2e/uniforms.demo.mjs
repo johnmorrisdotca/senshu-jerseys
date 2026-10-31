@@ -40,7 +40,7 @@ test("garment, belt, show, angle and zoom are kept in the address and survive a 
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   await pick(page, "uni-garment", "judogi-blue");
   await pick(page, "uni-belt", "brown");
-  await pick(page, "uni-belt-style", "tip-red-degrees-3");
+  await pick(page, "uni-belt-bjj", "tip-red-degrees-3");
   await page.locator('[data-testid="uni-yaw"]').fill("40");
   await expect(page).toHaveURL(/garment=judogi-blue/);
   await expect(page).toHaveURL(/belt=tip-red-degrees-3/);
@@ -51,7 +51,7 @@ test("garment, belt, show, angle and zoom are kept in the address and survive a 
   await expect(page).toHaveURL(/zoom=1\.4/);
   await page.goto(page.url());
   await expect(page.locator('[data-testid="uni-garment"] [data-value="judogi-blue"]')).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator('[data-testid="uni-belt-style"] [data-value="tip-red-degrees-3"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="uni-belt-bjj"] [data-value="tip-red-degrees-3"]')).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator('[data-testid="uni-show"] [data-value="folded"]')).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   expect(await yawOf(page)).toBe(40);
@@ -137,5 +137,48 @@ test("every dobok tile is drawn, each its own picture, and the choice is kept in
     await expect(page.locator(`[data-testid="uni-garment"] [data-value="${id}"]`)).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator("#uni-stage canvas")).toBeVisible();
   }
+  expect(errors.filter((e) => !/GL Driver|ReadPixels|WebGL/.test(e))).toEqual([]);
+});
+
+test("every art's belt variants are tiles, tied as worn and folded, and the tie is kept in the address", async ({ page }) => {
+  test.slow();
+  test.setTimeout(240000);
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/uniforms.html?garment=karate-full");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  const VARIANTS = { "uni-belt-karate": ["karate-brown-1", "karate-dan-3"], "uni-belt-taekwondo": ["itf-senior-4", "itf-junior-2", "itf-gup-blue-red", "poom", "wt-dan-bars-3"], "uni-belt-bjj": ["tip-black-degrees-3"], "uni-belt-judo": ["half-yellow-orange", "mon-12"] };
+  // Each variant drawn tied (the belt row shows the belt as it is worn), then folded once the folded belt is on show: a different picture each time.
+  const drawn = async () => {
+    const out = {};
+    for (const [group, ids] of Object.entries(VARIANTS)) {
+      for (const id of ids) {
+        const tile = page.locator(`[data-testid="${group}"] [data-value="${id}"]`);
+        await tile.scrollIntoViewIfNeeded();
+        await expect(tile).toHaveAttribute("data-ready", "1", { timeout: 60000 });
+        out[id] = await tile.locator("img").evaluate((i) => (i.complete && i.naturalWidth > 8 ? i.src : ""));
+        expect(out[id].length).toBeGreaterThan(0);
+      }
+    }
+    return out;
+  };
+  const tied = await drawn();
+  await pick(page, "uni-show", "folded");
+  await expect(page).toHaveURL(/show=folded/);
+  const folded = await drawn();
+  for (const id of Object.keys(tied)) expect(folded[id]).not.toBe(tied[id]);
+  // Worn on the garment: the large view draws it, and the knot and the ends' length are choices kept in the address.
+  await pick(page, "uni-show", "worn");
+  await pick(page, "uni-belt-taekwondo", "itf-senior-4");
+  await pick(page, "uni-knot", "single");
+  await pick(page, "uni-tail", "55");
+  await expect(page).toHaveURL(/belt=itf-senior-4/);
+  await expect(page).toHaveURL(/knot=single/);
+  await expect(page).toHaveURL(/tail=55/);
+  await page.goto(page.url());
+  await expect(page.locator('[data-testid="uni-knot"] [data-value="single"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="uni-tail"] [data-value="55"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="uni-belt-taekwondo"] [data-value="itf-senior-4"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
   expect(errors.filter((e) => !/GL Driver|ReadPixels|WebGL/.test(e))).toEqual([]);
 });
