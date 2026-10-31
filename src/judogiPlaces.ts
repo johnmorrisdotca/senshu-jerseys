@@ -103,7 +103,7 @@ export function boxesClash(a: Obb, b: Obb, gap: number): boolean {
   return true;
 }
 
-export type MarkKind = "emblem" | "logo" | "embroidery" | "label" | "brand";
+export type MarkKind = "emblem" | "logo" | "nation" | "embroidery" | "label" | "brand";
 
 /** A mark to place. `w` and `h` are its size at full scale before turning; `pref` is where it would like to be. */
 export interface Item {

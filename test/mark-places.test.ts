@@ -27,6 +27,8 @@ const CATALOGUE: Option[] = [
   { name: "e:belt-long", opts: { embroidery: [{ place: "belt-end-left", text: "TANAKA KENICHI SENSEI", heightCm: 4 }] } },
   ...LOGO_PLACES.map((place): Option => ({ name: `l:${place}`, opts: { logos: [{ place }] } })),
   { name: "brand", opts: { branding: true } },
+  { name: "n:embroidery", opts: { nation: { code: "CAN", place: "shoulders" } } },
+  { name: "n:print-band", opts: { nation: { code: "USA", place: "shoulder-right", style: "print", band: "#1f3a8a" } } },
 ];
 
 const merge = (parts: Option[]): JudogiOptions => {
@@ -36,6 +38,7 @@ const merge = (parts: Option[]): JudogiOptions => {
     o.logos.push(...(p.opts.logos ?? []));
     if (p.opts.emblem !== undefined) o.emblem = p.opts.emblem;
     if (p.opts.label !== undefined) o.label = p.opts.label;
+    if (p.opts.nation !== undefined) o.nation = p.opts.nation;
     if (p.opts.branding !== undefined) o.branding = p.opts.branding;
   }
   return o;
@@ -112,7 +115,7 @@ test("every pair of marks shares nothing: no two boxes touch, each stays in its 
 
 test("every triple of marks that can share an area is laid out without a clash", () => {
   // The areas where several marks meet: the trousers' hip, the jacket's hem corner, the chest, a belt end and a shoulder.
-  const crowded = CATALOGUE.filter((o) => /^(e:pants-left|e:pants-right|l:pants-waist|e:pants-thigh|l:pants-thigh|e:jacket-chest|e:chest|emblem|label|l:jacket-hem|l:jacket-shoulder|e:shoulder|e:belt|l:belt|brand|e:pants-left-down)/.test(o.name));
+  const crowded = CATALOGUE.filter((o) => /^(e:pants-left|e:pants-right|l:pants-waist|e:pants-thigh|l:pants-thigh|e:jacket-chest|e:chest|emblem|label|l:jacket-hem|l:jacket-shoulder|e:shoulder|n:|e:belt|l:belt|brand|e:pants-left-down)/.test(o.name));
   let triples = 0;
   for (let i = 0; i < crowded.length; i++) {
     for (let j = i + 1; j < crowded.length; j++) {

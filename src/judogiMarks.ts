@@ -18,6 +18,7 @@ import { LABEL_ASPECT, labelMark, readLabel, type JudogiLabel, type ReadLabel } 
 import { cloth, patchEdge, PATCH_MM } from "./judogiPatch.ts";
 import { pantsSpots } from "./judogiPants.ts";
 import type { EmbroideryStitching } from "./beltSpecs.ts";
+import { inkFor, nationRun, printPlan, printStrip, readNation, NATION_STRIPE, type JudogiNation, type ReadNation } from "./judogiNation.ts";
 import { readThread, satinDefs, satinRun, satinShape, satinStroke, type ThreadColour } from "./judogiThread.ts";
 import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
@@ -81,7 +82,7 @@ export interface JudogiLogo {
   tonal?: boolean;
 }
 
-export type { JudogiLabel };
+export type { JudogiLabel, JudogiNation };
 
 export interface JudogiEmblem {
   /** The national emblem on the left chest: SVG text (a flag from Hata, say) or a `data:image/` address; a neutral placeholder without either. */
@@ -204,6 +205,8 @@ export interface MarkSpec {
   logos: ReadLogo[];
   emblem: ReadEmblem | undefined;
   label: ReadLabel | undefined;
+  /** The nation's letters on the shoulder (or both). */
+  nation: ReadNation | undefined;
   branding: ReadBranding | undefined;
   /** The neck label's own cloth and thread. */
   brandLabel: ReadLabel | undefined;
@@ -238,10 +241,13 @@ function readImage(svg: unknown, href: unknown): { src: string; aspect: number }
 }
 
 /** The marks from outside, made safe. Only the places the rules name are taken, and only the first of each. */
-export function readMarks(options: { embroidery?: unknown; logos?: unknown; emblem?: unknown; rules?: unknown; label?: unknown; branding?: unknown; size?: unknown }): MarkSpec | undefined {
+export function readMarks(options: { nation?: unknown; embroidery?: unknown; logos?: unknown; emblem?: unknown; rules?: unknown; label?: unknown; branding?: unknown; size?: unknown }): MarkSpec | undefined {
   const rules: MarkRules = options.rules === "ajjf" ? "ajjf" : "ijf";
   const embroidery: ReadEmbroidery[] = [];
   const seen = new Set<string>();
+  // The nation's letters take their shoulder, so a text asked for at the same place gives way to them.
+  const nation = readNation(options.nation, readFont);
+  for (const p of nation?.places ?? []) seen.add(p);
   if (Array.isArray(options.embroidery)) {
     for (const raw of options.embroidery.slice(0, 20)) {
       if (raw === null || typeof raw !== "object") continue;
@@ -342,8 +348,8 @@ export function readMarks(options: { embroidery?: unknown; logos?: unknown; embl
   const inherit = (l: unknown): unknown => (l === true ? { colour: branding?.colour, thread: branding?.thread } : l !== null && typeof l === "object" ? { colour: branding?.colour, thread: branding?.thread, ...(l as object) } : l);
   const label = readLabel(inherit(options.label));
   const brandLabel = branding !== undefined && branding.neckLabel ? readLabel({ colour: branding.colour, thread: branding.thread }) : undefined;
-  if (embroidery.length === 0 && logos.length === 0 && emblem === undefined && label === undefined && brandLabel === undefined) return undefined;
-  return { rules, embroidery, logos, emblem, label, branding, brandLabel };
+  if (embroidery.length === 0 && logos.length === 0 && emblem === undefined && label === undefined && brandLabel === undefined && nation === undefined) return undefined;
+  return { rules, embroidery, logos, emblem, label, nation, branding, brandLabel };
 }
 
 /** What the rules say of each mark asked for: met or not, with the source. A mark outside its limit is drawn at the limit, and reported here. */
@@ -359,6 +365,15 @@ export function markNotes(m: MarkSpec, skipped: readonly { item: Item; reason: s
       ? `Text at the ${e.place.replace(/-/g, " ")} is not a place the ${m.rules === "ajjf" ? "All Japan Judo Federation" : "IJF"} rules name (${src}).`
       : `Text at the ${e.place.replace(/-/g, " ")} is at most ${lim.h} cm high and ${lim.len} cm long, one text to a place (${src}).`;
     notes.push({ id: `embroidery-${e.place}`, met: within, fact });
+  }
+  if (m.nation !== undefined) {
+    const n = m.nation;
+    const lim = PLACE_FACTS["shoulder-left"][m.rules];
+    const where = n.places.length === 2 ? "both shoulders" : `the ${n.places[0]?.replace(/-/g, " ")}`;
+    const fact = lim === null
+      ? `The country's letters (${n.code}${n.name === "" ? "" : `, ${n.name}`}) at ${where} are not a place the All Japan Judo Federation's marking rules name (${src}).`
+      : `The country's letters (${n.code}${n.name === "" ? "" : `, ${n.name}`}) at ${where} go in the shoulder stripe, at most ${NATION_STRIPE.len} cm by ${NATION_STRIPE.h} cm, calculated from the lower part of the collar down the sleeve; the stripe is reserved for the National Federation, which may also show the national emblem there (${src}, C1.5 page 8, C1.4 page 7). The rules give no size for letters inside it.`;
+    notes.push({ id: "nation", met: lim !== null && n.heightCm <= lim.h + 1e-6 && n.lengthCm <= lim.len + 1e-6, fact });
   }
   for (const l of m.logos) {
     const piece = l.place.startsWith("pants") ? "pants" : l.place.startsWith("belt") ? "belt" : "jacket";
@@ -594,6 +609,31 @@ export interface MarkLayout {
 
 const side = (place: string): 1 | -1 => (place.endsWith("left") ? 1 : -1);
 
+/** The nation's letters on one shoulder, as thread (a text with the stripe's limits) or as a printed strip, turned to run down the sleeve. */
+function nationItem(m: MarkSpec, n: ReadNation, place: "shoulder-left" | "shoulder-right", js: ReturnType<typeof jacketSpots>): MarkItem {
+  const w2 = place.endsWith("left") ? "left" : "right";
+  const sp = js.shoulder(w2);
+  const rot = n.reading === "up" ? sp.rot - 180 : sp.rot;
+  const common = { id: `nation:${place}`, kind: "nation", place, area: `shoulder-${w2}`, target: "jacket-back", rot, pref: [sp.x, sp.y], minScale: 0.5 } as const;
+  const asText = n.font !== "block";
+  if (n.style === "print") {
+    const plan = (k: number): { w: number; h: number } => printPlan(n, asText, CM, k);
+    const full = plan(1);
+    const css = typeof n.font === "object" && n.font.css !== undefined ? n.font.css : "";
+    return { ...common, w: full.w, h: full.h, size: plan, draw: (k, _id, cloth) => ({ defs: "", body: printStrip(n, printPlan(n, asText, CM, k), cloth, fontFamily(n.font), css) }) };
+  }
+  const plan = (k: number): { w: number; h: number } => {
+    const r = nationRun(n, asText, CM, k);
+    return { w: r.width, h: r.height };
+  };
+  const full = plan(1);
+  const css = typeof n.font === "object" && n.font.css !== undefined ? `<style>${n.font.css}</style>` : "";
+  return { ...common, w: full.w, h: full.h, size: plan, draw: (k, id, cloth) => {
+    const rgb = n.thread?.rgb ?? inkFor(cloth);
+    return { defs: satinDefs(`${id}S`, rgb) + css, body: satinRun(nationRun(n, asText, CM, k), rgb, `${id}S`, fontFamily(n.font)) };
+  } };
+}
+
 /** Every mark of the spec as an item to place, in the order they claim room: the emblem, the logos, the embroidery, the label, then the branding's own S. */
 function itemsOf(m: MarkSpec): MarkItem[] {
   const js = jacketSpots();
@@ -631,6 +671,7 @@ function itemsOf(m: MarkSpec): MarkItem[] {
     return { ...common, area: `leg-${w2}`, target: "pants-front", pref: [leg.x, leg.y] };
   };
   for (const l of m.logos) items.push(logoItem(l));
+  if (m.nation !== undefined) for (const place of m.nation.places) items.push(nationItem(m, m.nation, place, js));
   for (const e of m.embroidery) {
     const place = e.place;
     const w2 = place.endsWith("left") ? "left" : "right";
@@ -657,7 +698,7 @@ function itemsOf(m: MarkSpec): MarkItem[] {
     // On the jacket at the bottom front on the wearer's left, on the trousers under the waistband near the middle, and on the belt's left end near the knot, turned to read across the belt.
     items.push(label("jacket", 12.5, "hem-left", "jacket-front", 0, [136.6, 152]), label("pants", 9, "waist-left", "pants-front", 0, [118.5, 30]), label("belt", 7.6, "belt-left", "belt-left", -90, [16, 0]));
   }
-  const order = (i: MarkItem): number => ({ emblem: 0, logo: 1, embroidery: 2, label: 3, brand: 4 })[i.kind];
+  const order = (i: MarkItem): number => ({ emblem: 0, logo: 1, nation: 2, embroidery: 3, label: 4, brand: 5 })[i.kind];
   return items.sort((a, b) => order(a) - order(b));
 }
 

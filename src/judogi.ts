@@ -11,7 +11,7 @@ import { toneOf, type BeltPaint, type Face, type GiInk, type Mark } from "./judo
 import { collarPiece } from "./judogiCollar.ts";
 import { BACK_COLLAR_FOOT, BELT_TOP, beltRound, collarDesc, jacketDesc, jacketFace, LAPEL_BAND } from "./judogiJacket.ts";
 import type { JudogiBranding } from "./judogiBrand.ts";
-import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
+import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type JudogiNation, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { PANTS_HEM_CM, pantsDesc, pantsFace, pantsHemCm } from "./judogiPants.ts";
 import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
@@ -76,6 +76,8 @@ export interface JudogiOptions {
   backPatch?: JudogiBackPatch;
   /** Names and words stitched in the places the rules name (the jacket's hem, its chest, sleeves and shoulders, a belt's ends, the trousers' top), in thread. */
   embroidery?: JudogiEmbroidery[];
+  /** The country's letters on the shoulder, stitched or printed as a flat strip, in the IJF's 25 by 5 cm shoulder stripe (`JudogiNation`). */
+  nation?: JudogiNation;
   /** The manufacturer's logo: one to a garment, in the rules' spots. Without artwork, a neutral placeholder is drawn. */
   logos?: JudogiLogo[];
   /** The national emblem on the left chest: a flag (SVG text from Hata, say), your own artwork, or a neutral placeholder. */
