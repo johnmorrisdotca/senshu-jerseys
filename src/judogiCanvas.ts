@@ -43,6 +43,8 @@ export interface JudogiCanvasOptions {
   pixelRatio?: number;
   /** The canvas's size in CSS pixels where it should be larger than the SVG's (the drawing is set in its middle, whole): a zoomed view needs the room to show the drawing larger. */
   box?: { width: number; height: number };
+  /** True makes the canvas exactly `box` (not larger than the SVG only): the drawing is fitted into it, so a canvas that is the whole view lets a zoomed drawing reach every edge of the view. */
+  fill?: boolean;
   /** False paints on a 2D canvas even where WebGL 2 is there (slower; for a test or a browser whose graphics card misbehaves). */
   webgl?: boolean;
 }
@@ -69,8 +71,9 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   const ratio = clamp(options.pixelRatio ?? (globalThis.devicePixelRatio || 1), 1, 4, 1);
   const natW = Number(svg.getAttribute("width")) || vw;
   const natH = Number(svg.getAttribute("height")) || (natW * vh) / vw;
-  const cssW = Math.max(natW, options.box?.width ?? 0);
-  const cssH = Math.max(natH, options.box?.height ?? 0);
+  const filled = options.fill === true && options.box !== undefined && options.box.width >= 1 && options.box.height >= 1;
+  const cssW = filled ? options.box!.width : Math.max(natW, options.box?.width ?? 0);
+  const cssH = filled ? options.box!.height : Math.max(natH, options.box?.height ?? 0);
   // A face is painted from its own defs: the cells\' triangles and clips (a good part of the markup) are for the SVG, not for a picture of a face.
   const faceDefs = defs.innerHTML.replace(/<g data-cells[^>]*>[\s\S]*?<\/g>/g, "");
   const faces = new Map<string, Promise<CanvasImageSource>>();
@@ -98,6 +101,7 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   canvas.width = Math.max(1, Math.round(cssW * ratio));
   canvas.height = Math.max(1, Math.round(cssH * ratio));
   canvas.style.width = `${cssW}px`;
+  if (filled) canvas.style.height = `${cssH}px`;
   canvas.setAttribute("role", "img");
   // Its size in CSS pixels as made (a page may show it smaller): what `data-bounds` is measured against.
   canvas.setAttribute("data-size", `${cssW} ${cssH}`);
@@ -137,8 +141,29 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
     }
     return b;
   };
-  /** Set `framing` for this turn so that the drawing lies inside the canvas with a margin. */
-  const frame = (yaw: number, tilt: number): void => {
+  /**
+   * The box round the piece over every turn at this tip, in device pixels at zoom 1: the silhouette's box (`boundsAt`) at every tenth of a turn, joined. Kept for the last tip, so
+   * turning costs nothing; tipping it once.
+   */
+  let reach: { tilt: number; x0: number; y0: number; x1: number; y1: number } | undefined;
+  const reachAt = (tilt: number): { x0: number; y0: number; x1: number; y1: number } => {
+    if (reach !== undefined && reach.tilt === tilt) return reach;
+    const b = { tilt, x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    for (let yaw = 0; yaw < 360; yaw += 10) {
+      const t = boundsAt(yaw, tilt);
+      b.x0 = Math.min(b.x0, t.x0);
+      b.y0 = Math.min(b.y0, t.y0);
+      b.x1 = Math.max(b.x1, t.x1);
+      b.y1 = Math.max(b.y1, t.y1);
+    }
+    reach = b;
+    return b;
+  };
+  /**
+   * Set `framing` so that the drawing, turned to any angle at this tip, lies inside the canvas with a margin, its middle at the canvas's middle (so a zoom about the middle zooms
+   * about the piece). The same at every angle, so that turning it does not move or resize it.
+   */
+  const frame = (_yaw: number, tilt: number): void => {
     framing.scale = 1;
     framing.dx = 0;
     framing.dy = 0;
@@ -146,18 +171,12 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
     const W = canvas.width;
     const H = canvas.height;
     const m = 0.05 * Math.min(W, H);
-    const b = boundsAt(yaw, tilt);
+    const b = reachAt(tilt);
     if (!Number.isFinite(b.x0)) return;
     const s = Math.min(1, (W - 2 * m) / Math.max(1, b.x1 - b.x0), (H - 2 * m) / Math.max(1, b.y1 - b.y0));
-    // Scaled about the middle of the canvas, then moved only as far as the margin asks.
-    const lo = (v: number, mid: number): number => mid + s * (v - mid);
-    const x0 = lo(b.x0, W / 2);
-    const x1 = lo(b.x1, W / 2);
-    const y0 = lo(b.y0, H / 2);
-    const y1 = lo(b.y1, H / 2);
     framing.scale = s;
-    framing.dx = x0 < m ? m - x0 : x1 > W - m ? W - m - x1 : 0;
-    framing.dy = y0 < m ? m - y0 : y1 > H - m ? H - m - y1 : 0;
+    framing.dx = -s * ((b.x0 + b.x1) / 2 - W / 2);
+    framing.dy = -s * ((b.y0 + b.y1) / 2 - H / 2);
   };
   const painter = (options.webgl === false ? undefined : glPainter(canvas, pieces, place)) ?? flatPainter(canvas, pieces, place, k);
   if (painter === undefined) return undefined;

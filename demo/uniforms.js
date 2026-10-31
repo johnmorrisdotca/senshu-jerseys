@@ -4,7 +4,7 @@
 import { BELT_KNOTS, BELT_PRESETS, JUDOGI_BELTS, JUDOGI_BELT_LABELS, beltPreset, judogiFrame } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { segmented, tiles } from "./judogiPick.js";
-import { bindView, clamp, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
+import { bindMoves, bindView, clamp, fillView, viewSize, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
 import { GARMENTS } from "./uniformsList.js";
 import { WORDS } from "./words.js";
 
@@ -33,8 +33,9 @@ const state = {
   yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
   tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
   zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
+  drag: params.get("drag") === "turn" ? "turn" : "move",
 };
-const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", knot: "auto", tail: "auto", hem: "auto", yaw: 0, tilt: 0, zoom: 1 };
+const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", knot: "auto", tail: "auto", hem: "auto", yaw: 0, tilt: 0, zoom: 1, drag: "move" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -191,9 +192,9 @@ const pan = { x: 0, y: 0 };
 let painted;
 let drawing = 0;
 let madeAt = { ratio: 0, scale: 0 };
+let natH = 0;
 const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), scale: state.zoom > 3.5 ? 8 : state.zoom > 1.8 ? 6 : state.zoom > 1.2 ? 5 : 4 });
 const camera = () => ({ zoom: state.zoom, panX: pan.x, panY: pan.y });
-const boxWidth = () => Math.max(0, $("uni-stage").clientWidth - 20);
 const pitch = () => (state.tilt === 0 ? 0 : -state.tilt);
 
 async function draw() {
@@ -203,8 +204,11 @@ async function draw() {
   holder.innerHTML = judogiFrame({ ...o, bare: true });
   let svg = holder.firstElementChild;
   const q = quality();
-  const canvas = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
+  natH = svg === null ? 0 : Number(svg.getAttribute("height")) || 0;
+  const box = svg === null ? undefined : fillView($("uni-turntable"), $("uni-stage"), natH);
+  const canvas = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box, fill: true });
   if (canvas === undefined) {
+    fillView($("uni-turntable"), $("uni-stage"), undefined);
     holder.innerHTML = judogiFrame(o);
     svg = holder.firstElementChild;
   }
@@ -242,6 +246,7 @@ function placeStage() {
     painted.turn(state.yaw, pitch(), camera());
   } else $("uni-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
   $("uni-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
+  showMoves(state.zoom, state.drag);
   $("uni-turntable").style.touchAction = state.zoom > 1.05 ? "none" : "";
   $("uni-zoom-out").disabled = state.zoom <= ZOOM_MIN + 1e-6;
   $("uni-zoom-in").disabled = state.zoom >= ZOOM_MAX - 1e-6;
@@ -295,8 +300,8 @@ function stop() {
 }
 
 let grabbed = false;
-const hands = bindView($("uni-turntable"), {
-  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: true }),
+const hooks = {
+  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: true, drag: state.drag }),
   grab() {
     grabbed = true;
     turning.byHover = false;
@@ -313,7 +318,9 @@ const hands = bindView($("uni-turntable"), {
       settleQuality();
     }
   },
-});
+};
+const hands = bindView($("uni-turntable"), hooks);
+const showMoves = bindMoves("uni", $("uni-turntable"), hooks, (value) => { state.drag = value; showMoves(state.zoom, state.drag); syncUrl(); });
 $("uni-yaw").addEventListener("input", () => { stop(); turnTo(Number($("uni-yaw").value)); syncUrl(); });
 $("uni-tilt").addEventListener("input", () => { stop(); turnTo(state.yaw, Number($("uni-tilt").value)); syncUrl(); });
 $("uni-play").addEventListener("click", () => (turning.on ? stop() : play()));
@@ -336,7 +343,7 @@ let resizing = 0;
 window.addEventListener("resize", () => {
   placeStage();
   globalThis.clearTimeout(resizing);
-  resizing = globalThis.setTimeout(() => { if (Math.abs(boxWidth() - (painted?.canvas.clientWidth ?? 0)) > 8) draw(); }, 300);
+  resizing = globalThis.setTimeout(() => { const want = viewSize($("uni-turntable"), natH); if (painted !== undefined && (Math.abs(want.width - painted.canvas.clientWidth) > 8 || Math.abs(want.height - painted.canvas.clientHeight) > 8)) draw(); }, 300);
 });
 window.addEventListener("senshu-language", () => { controls(); draw(); syncPlay(); });
 

@@ -78,6 +78,8 @@ painted.turn(30);                  // and again for each angle
 painted.dispose();                 // when it leaves the page
 ```
 
+`turn(yaw, tilt, { zoom, panX, panY })` also zooms the picture about the canvas's middle and moves it (`panX`, `panY` in CSS pixels). The drawing is fitted so that it lies inside the canvas with a margin at every angle at that tilt, never above its own size, with the middle of what it covers over a whole turn at the canvas's middle: it neither moves nor changes size as it turns, and a zoom about the middle is a zoom about the piece. Give `judogiCanvas` `{ box: { width, height }, fill: true }` to make the canvas exactly that size (the size of the view it sits in) so that a zoomed drawing reaches every edge of the view; without `fill` the canvas is the SVG's size, or `box` where that is larger. `data-bounds` on the canvas is the box round the drawing as painted, in CSS pixels.
+
 The shade is opaque greys that multiply onto the cloth (CSS `mix-blend-mode`), which every current browser draws; a white cloth would show the grid of a half-transparent shade as lines.
 
 

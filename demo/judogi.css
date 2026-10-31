@@ -15,8 +15,15 @@
 .judo-view[data-grab] { cursor: grabbing; }
 .judo-view:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .judo-view .stage { background: transparent; overflow: visible; transform-origin: 50% 50%; }
-.judo-zoom { display: inline-flex; gap: 4px; }
-.judo-zoom .fam-button { min-width: 44px; padding: 0 10px; font-variant-numeric: tabular-nums; }
+.judo-zoom, .judo-pan, .judo-hand { display: inline-flex; gap: 4px; }
+.judo-pan[hidden] { display: none; }
+.judo-pan { flex-wrap: wrap; align-items: center; }
+.judo-pan > .fam-button, .judo-hand .fam-button { min-width: 48px; min-height: 48px; padding: 0 10px; }
+.judo-hand { margin-inline-start: 8px; }
+/* A canvas is the whole of the view: a zoomed drawing then reaches every edge of it, and the camera moves inside. */
+.judo-view .stage[data-painted] { padding: 0; min-height: 0; display: block; overflow: hidden; }
+.judo-view .stage[data-painted] canvas { width: 100% !important; height: 100% !important; max-width: none; max-height: none; }
+.judo-zoom .fam-button { min-width: 48px; padding: 0 10px; font-variant-numeric: tabular-nums; }
 .judo-zoom #judo-zoom-reset { min-width: 56px; }
 
 /* Swatches: a colour is a dot, a finger wide in its hit area. */

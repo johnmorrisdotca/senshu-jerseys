@@ -60,7 +60,7 @@ test("the controls are in the page's own style, beside the view, and a finger wi
   await page.goto("/judogi.html");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const plain = await page.evaluate(() => [...document.querySelectorAll("#judo-controls select, .judo-layout button")]
-    .filter((el) => !el.hidden && (window.getComputedStyle(el).appearance !== "none" && el.tagName === "SELECT" || el.getBoundingClientRect().height < 44))
+    .filter((el) => !el.hidden && el.offsetParent !== null && (window.getComputedStyle(el).appearance !== "none" && el.tagName === "SELECT" || el.getBoundingClientRect().height < 44))
     .map((el) => el.id));
   expect(plain).toEqual([]);
   // The turn controls are on screen with the view, without scrolling.
@@ -600,24 +600,63 @@ test("at 1x every piece fits the view with a margin at every angle and tilt, ext
   }
 });
 
-// SPX-750: a plain press and drag turns the piece at every zoom; Shift, the middle or right button and two fingers move a zoomed view.
-for (const zoom of [1, 3]) {
-  test(`a plain drag turns the piece at ${zoom}x`, async ({ page }) => {
-    await page.goto(`/judogi.html?mode=jacket&belt=black&zoom=${zoom}`);
-    await expect(page.locator("#judo-stage canvas")).toBeVisible();
-    const m = await middle(page);
-    await page.mouse.move(m.x, m.y);
-    await page.mouse.down();
-    // The press stops the automatic turn the pointer's arrival started: the angle is read after it.
-    const yaw0 = await attr(page, "data-yaw");
-    await page.mouse.move(m.x + m.width / 4, m.y, { steps: 6 });
-    await page.mouse.up();
-    // Across the view's width is a half turn, so a quarter of it is about 45 degrees.
-    expect(Math.abs((await attr(page, "data-yaw")) - yaw0)).toBeGreaterThan(30);
-    // The move/turn toggle is gone.
-    await expect(page.locator('[data-testid="judo-hand"]')).toHaveCount(0);
-  });
-}
+// A plain press and drag turns the piece at 1x; zoomed in it moves the view unless the Turn button is chosen (kept in the address); Shift, the middle or right button and two fingers always move a zoomed view.
+const dragBy = async (page, dx, dy = 0) => {
+  const m = await middle(page);
+  await page.mouse.move(m.x, m.y);
+  await page.mouse.down();
+  // The press stops the automatic turn the pointer's arrival started: the angle is read after it.
+  const yaw0 = await attr(page, "data-yaw");
+  const b0 = (await page.locator("#judo-stage canvas").getAttribute("data-bounds")).split(" ").map(Number);
+  await page.mouse.move(m.x + dx, m.y + dy, { steps: 6 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  const b1 = (await page.locator("#judo-stage canvas").getAttribute("data-bounds")).split(" ").map(Number);
+  return { turned: Math.abs((await attr(page, "data-yaw")) - yaw0), moved: [b1[0] - b0[0], b1[1] - b0[1]] };
+};
+
+test("a plain drag turns the piece at 1x, and the move and turn buttons are not there yet", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-pan"]')).toBeHidden();
+  const m = await middle(page);
+  const r = await dragBy(page, m.width / 4);
+  // Across the view's width is a half turn, so a quarter of it is about 45 degrees.
+  expect(r.turned).toBeGreaterThan(30);
+});
+
+test("zoomed in a plain drag moves the view; the Turn button makes it turn, and the choice is kept in the address", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black&zoom=3");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-pan"]')).toBeVisible();
+  await expect(page.locator('[data-testid="judo-hand-move"]')).toHaveAttribute("aria-pressed", "true");
+  let r = await dragBy(page, 60, 30);
+  expect(r.turned).toBeLessThan(2);
+  expect(Math.round(r.moved[0])).toBeGreaterThan(20);
+  await page.locator('[data-testid="judo-hand-turn"]').click();
+  await expect(page).toHaveURL(/drag=turn/);
+  r = await dragBy(page, 120);
+  expect(r.turned).toBeGreaterThan(10);
+  await page.goto(page.url());
+  await expect(page.locator('[data-testid="judo-hand-turn"]')).toHaveAttribute("aria-pressed", "true");
+  await page.locator('[data-testid="judo-hand-move"]').click();
+  await expect(page).not.toHaveURL(/drag=/);
+});
+
+test("the arrow buttons move a zoomed view, and Fit puts it back", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black&zoom=3");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const bounds = () => page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-bounds") ?? "").split(" ").map(Number));
+  for (const [dir, axis, sign] of [["left", 0, -1], ["right", 0, 1], ["up", 1, -1], ["down", 1, 1]]) {
+    const before = await bounds();
+    await page.locator(`[data-testid="judo-pan-${dir}"]`).click();
+    await page.waitForTimeout(150);
+    const after = await bounds();
+    expect(Math.sign(Math.round(after[axis] - before[axis])), dir).toBe(sign);
+  }
+  await page.locator('[data-testid="judo-fit"]').click();
+  await expect(page.locator('[data-testid="judo-pan"]')).toBeHidden();
+});
 
 test("zoomed in, Shift and a drag, the right button and the middle button move the view without turning it; Fit puts it all back", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black&zoom=3");

@@ -1,5 +1,5 @@
-// The judogi view's own hands: a drag turns it (across the view is a half turn) and tips it (up and down) at every zoom, the wheel and a trackpad turn it, a pinch, Ctrl or
-// Command with the wheel, the buttons, and a double press zoom it from 1x to 5x, and Shift with a drag, the middle or right button, or two fingers move a zoomed view. Grabbing it stops the
+// The judogi view's own hands: a drag turns it (across the view is a half turn) and tips it (up and down) at 1x; zoomed in, a drag moves it unless the Turn button says it turns, the wheel and a trackpad turn it, a pinch, Ctrl or
+// Command with the wheel, the buttons, and a double press zoom it from 1x to 5x, and Shift with a drag, the middle or right button, or two fingers move a zoomed view always. The arrow buttons of `bindMoves` move it too. Grabbing it stops the
 // automatic turn. The same pattern as the kyogijo-stadiums 3D view: a plain wheel over the view leaves the page to scroll unless the view has focus, and Ctrl with the wheel
 // (what a trackpad's pinch sends) is the zoom. The view only reports changes; the page draws.
 export const TILT_MAX = 30;
@@ -12,9 +12,55 @@ const TILT_ACROSS = 60;
 export const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export const wrapYaw = (a) => ((((Math.round(a) + 180) % 360) + 360) % 360) - 180;
 
+const FRACTION = 0.25;
+
+/**
+ * The page's own canvas size for `view` and a drawing `natH` tall: the whole of the view (a canvas that is the view lets a zoomed drawing reach every edge of it), as tall as the
+ * drawing wants on a desk (at least 320) and held to a third of the screen on a phone, where the form must stay in reach. `fill` sets the stage to it; `undefined` frees the stage for an SVG.
+ */
+export function fillView(view, stage, natH) {
+  if (natH === undefined) {
+    delete stage.dataset.painted;
+    stage.style.height = "";
+    return undefined;
+  }
+  const box = viewSize(view, natH);
+  stage.dataset.painted = "1";
+  stage.style.height = `${box.height}px`;
+  return box;
+}
+
+/** What `fillView` would make the canvas, without touching the page. */
+export function viewSize(view, natH) {
+  const wide = globalThis.matchMedia("(min-width: 900px)").matches;
+  return { width: view.clientWidth, height: wide ? Math.max(320, Math.round(natH) + 20) : Math.max(180, Math.min(Math.round(natH) + 8, Math.round(globalThis.innerHeight * 0.34))) };
+}
+
+/**
+ * The buttons that move a zoomed view and choose what a plain drag does there: `<prefix>-pan-left|right|up|down` move the piece a quarter of the view that way,
+ * `<prefix>-hand-move` and `<prefix>-hand-turn` choose between a drag that moves it and one that turns it (`onDrag(value)`), `<prefix>-fit` and the rest are the page's own.
+ */
+export function bindMoves(prefix, view, hooks, onDrag) {
+  const root = document.getElementById(`${prefix}-pan`);
+  for (const [dir, dx, dy] of [["left", -1, 0], ["right", 1, 0], ["up", 0, -1], ["down", 0, 1]]) {
+    document.getElementById(`${prefix}-pan-${dir}`).addEventListener("click", () => {
+      const s = hooks.get();
+      const r = view.getBoundingClientRect();
+      hooks.grab();
+      hooks.set({ panX: s.panX + dx * r.width * FRACTION, panY: s.panY + dy * r.height * FRACTION }, true);
+    });
+  }
+  for (const value of ["move", "turn"]) document.getElementById(`${prefix}-hand-${value}`).addEventListener("click", () => onDrag(value));
+  /** Show the buttons only while zoomed in (they do nothing at 1x), the chosen drag lit. */
+  return (zoom, drag) => {
+    root.hidden = zoom <= 1.05;
+    for (const value of ["move", "turn"]) document.getElementById(`${prefix}-hand-${value}`).setAttribute("aria-pressed", String(drag === value));
+  };
+}
+
 /**
  * Bind the hands to `view` (the element that clips and holds the stage, which the page transforms by `zoom` and `pan`).
- * `hooks.get()` gives `{ yaw, tilt, zoom, panX, panY, turnable }`; `hooks.set(partial, final)` takes what changed; `hooks.grab()` is called when a hand takes hold.
+ * `hooks.get()` gives `{ yaw, tilt, zoom, panX, panY, turnable, drag }` (`drag` is `"move"` or `"turn"`: what a plain drag does while zoomed in); `hooks.set(partial, final)` takes what changed; `hooks.grab()` is called when a hand takes hold.
  */
 export function bindView(view, hooks) {
   const pointers = new Map();
@@ -49,8 +95,8 @@ export function bindView(view, hooks) {
       const [a, b] = [...pointers.values()];
       gesture = { kind: "pinch", dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: s.zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, panX: s.panX, panY: s.panY };
     } else if (pointers.size === 1) {
-      // A plain press and drag turns the piece at every zoom (SPX-750); Shift, the middle or the right button moves a zoomed view. A flat layout cannot turn, so there a drag moves it.
-      const pan = e.button === 1 || e.button === 2 || e.shiftKey || (!s.turnable && s.zoom > 1.05);
+      // At 1x a plain press and drag turns the piece; zoomed in it moves the view unless the Turn button is chosen. Shift, the middle or the right button always move a zoomed view. A flat layout cannot turn, so there a drag moves it.
+      const pan = e.button === 1 || e.button === 2 || e.shiftKey || (s.zoom > 1.05 && (!s.turnable || s.drag !== "turn"));
       gesture = { kind: pan ? "pan" : "turn", x: e.clientX, y: e.clientY, yaw: s.yaw, tilt: s.tilt, panX: s.panX, panY: s.panY, moved: false };
     }
     view.dataset.grab = "1";

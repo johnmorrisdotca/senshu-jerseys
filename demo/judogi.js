@@ -8,7 +8,7 @@ import {
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
-import { bindView, clamp, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
+import { bindMoves, bindView, clamp, fillView, TILT_MAX, viewSize, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -49,6 +49,8 @@ const state = {
   // How far the camera is tipped (degrees, up is positive) and zoomed (1 to 5): in the address, like the angle.
   tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
   zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
+  // What a plain drag does while zoomed in: move the view, or turn the piece.
+  drag: params.get("drag") === "turn" ? "turn" : "move",
   // The back patch: its style, the words on it and its colours. Every one is in the address.
   patch: PATCH_STYLES.includes(params.get("patch")) ? params.get("patch") : "none",
   pname: (params.get("pname") ?? "").slice(0, 24),
@@ -201,7 +203,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -229,7 +231,7 @@ let madeAt = { ratio: 0, scale: 0 };
 const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), scale: state.zoom > 3.5 ? 8 : state.zoom > 1.8 ? 6 : state.zoom > 1.2 ? 5 : 4 });
 /** The zoom and pan the canvas paints with: it is made as wide as its view, so a zoomed drawing has the room, and the camera moves inside it. */
 const camera = () => ({ zoom: state.zoom, panX: pan.x, panY: pan.y });
-const boxWidth = () => Math.max(0, $("judo-stage").clientWidth - 20);
+let natH = 0;
 
 let drawing = 0;
 /** The judogi on the stage as a canvas that turns it, or undefined while the stage shows an SVG (a flat view). */
@@ -247,7 +249,10 @@ async function draw() {
   holder.innerHTML = judogiFrame(onCanvas ? { ...o, bare: true } : o);
   let svg = holder.firstElementChild;
   const q = quality();
-  let canvas = svg === null || !onCanvas ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box: { width: boxWidth(), height: 0 } });
+  natH = svg === null ? 0 : Number(svg.getAttribute("height")) || 0;
+  const box = svg === null || !onCanvas ? undefined : fillView($("judo-turntable"), $("judo-stage"), natH);
+  let canvas = box === undefined ? undefined : await judogiCanvas(svg, { pixelRatio: q.ratio, scale: q.scale, box, fill: true });
+  if (canvas === undefined) fillView($("judo-turntable"), $("judo-stage"), undefined);
   if (canvas === undefined && onCanvas) {
     holder.innerHTML = judogiFrame(o);
     svg = holder.firstElementChild;
@@ -303,6 +308,7 @@ function placeStage() {
     painted.turn(shownYaw(), shownTilt(), camera());
   } else $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
   $("judo-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
+  showMoves(state.zoom, state.drag);
   // Zoomed in the page does not scroll under a finger, so a one-finger drag can turn the piece and two fingers move the view.
   const zoomed = state.zoom > 1.05;
   $("judo-turntable").style.touchAction = zoomed ? "none" : "";
@@ -706,8 +712,8 @@ $("judo-turntable").addEventListener("pointerleave", () => {
   if (turning.byHover) stop();
 });
 let grabbed = false;
-const hands = bindView($("judo-turntable"), {
-  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: !flat() }),
+const hooks = {
+  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: !flat(), drag: state.drag }),
   grab() {
     grabbed = true;
     turning.byHover = false;
@@ -724,7 +730,9 @@ const hands = bindView($("judo-turntable"), {
       settleQuality();
     }
   },
-});
+};
+const hands = bindView($("judo-turntable"), hooks);
+const showMoves = bindMoves("judo", $("judo-turntable"), hooks, (value) => { state.drag = value; showMoves(state.zoom, state.drag); syncUrl(); });
 $("judo-tilt").addEventListener("input", () => {
   stop();
   turnTo(state.yaw, Number($("judo-tilt").value));
@@ -758,7 +766,7 @@ let resizing = 0;
 window.addEventListener("resize", () => {
   placeStage();
   globalThis.clearTimeout(resizing);
-  resizing = globalThis.setTimeout(() => { if ((!flat() || stillSolid()) && Math.abs(boxWidth() - (painted?.canvas.clientWidth ?? 0)) > 8) draw(); }, 300);
+  resizing = globalThis.setTimeout(() => { if ((!flat() || stillSolid()) && painted !== undefined && (Math.abs(viewSize($("judo-turntable"), natH).width - painted.canvas.clientWidth) > 8 || Math.abs(viewSize($("judo-turntable"), natH).height - painted.canvas.clientHeight) > 8)) draw(); }, 300);
 });
 $("judo-svg").addEventListener("click", exportSvg);
 $("judo-png").addEventListener("click", exportPng);
