@@ -19,7 +19,7 @@ import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "
 import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { JUDO_CUT, type GiCut } from "./giCut.ts";
 import { karateMarks, karateNotes, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
-import { bjjMarks, bjjNotes, readBjj, type JudogiBjj, type ReadBjj } from "./bjjgi.ts";
+import { BJJ_HEM_CM, bjjMarks, bjjNotes, readBjj, type JudogiBjj, type ReadBjj } from "./bjjgi.ts";
 import { dobokFlag, dobokMarks, dobokNotes, readDobok, type JudogiDobok, type ReadDobok } from "./dobok.ts";
 import { GARMENT_TIES, isJudoTie, readTie, tieReach, wrapsOf, type BeltKnot, type BeltTie } from "./beltTie.ts";
 import { n2 } from "./path.ts";
@@ -195,7 +195,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const dobok = karate === undefined ? readDobok(options?.dobok) : undefined;
   const bjj = karate === undefined && dobok === undefined ? readBjj(options?.bjj, options?.colour === "blue" ? "blue" : "white") : undefined;
   // Asked for a hem, the trousers are held to the limit of the gi they are for: the IJF's 5 cm above the ankle bone, the IBJJF's 2 cm.
-  const hemCm = pantsHemCm(options?.hemAboveAnkleCm);
+  const hemCm = pantsHemCm(options?.hemAboveAnkleCm ?? (bjj === undefined ? undefined : BJJ_HEM_CM));
   const hemNotes = options?.hemAboveAnkleCm === undefined ? [] : [bjj === undefined
     ? { id: "trouser-hem", met: hemCm <= PANTS_HEM_CM.ijf, fact: `The distance between the bottom of the trousers and the outer ankle bone (malleolus) must be 5 cm or less (IJF Judogi Rules); drawn ${hemCm} cm.` }
     : { id: "trouser-hem", met: hemCm <= PANTS_HEM_CM.ibjjf, fact: `Gi pants should reach no more than 2 cm above the tibial malleolus (ankle bone) (IBJJF uniform rules, ibjjf.com/uniform); drawn ${hemCm} cm.` }];
@@ -373,7 +373,7 @@ function read(options?: JudogiOptions): Ready {
   const band = o.band === true;
   const bare = o.bare === true;
   const knee = o.knee !== false;
-  const hem = pantsHemCm(o.hemAboveAnkleCm);
+  const hem = pantsHemCm(o.hemAboveAnkleCm ?? (bjj === undefined ? undefined : BJJ_HEM_CM));
   const solid = mode === "folded" || mode === "box" ? [beltSize, boxType, boxState, boxText, boxWood, boxSize, band] : undefined;
   const uid = `jg${hashOf(JSON.stringify([colour, belt, size, mode, view, language, Math.round(yaw), thickness, beltCm, style, beltRows, beltThickness, beltCover, patch, spec, solid, karate, dobok, bjj, ...(tie === undefined ? [] : [tie]), ...(knee ? [] : ["bare-knee"]), ...(hem === PANTS_HEM_CM.default ? [] : [`hem${hem}`])]))}`;
   const marks = spec === undefined ? undefined : buildMarks(`${uid}k`, spec, cloth, strapWidth(belt, beltCm), style);

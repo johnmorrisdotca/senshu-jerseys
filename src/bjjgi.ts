@@ -22,11 +22,14 @@ import { hexOf, type Rgb } from "./colour.ts";
 import type { GiCut } from "./giCut.ts";
 import { onSleeve, SLEEVE_ANGLE, chestSpan, BELT_BOTTOM, BACK_COLLAR_FOOT } from "./judogiJacket.ts";
 import { CM } from "./judogiPatch.ts";
-import { onLeg, hipsOf, PANTS_HEM } from "./judogiPants.ts";
+import { onLeg, hipsOf, PANTS_HEM, PANTS_HEM_CM } from "./judogiPants.ts";
 import { fold, smooth, stitch, toneOf, type Mark } from "./judogiCloth.ts";
 import { corners, type Obb } from "./judogiPlaces.ts";
 import { drawBjjPatch, readBjjPatch, type BjjPatch, type PatchShape, type ReadBjjPatch } from "./bjjPatch.ts";
 import { n2, poly, type Pt } from "./path.ts";
+
+/** How far above the ankle bone the jiu-jitsu trousers stop unless asked otherwise: the IBJJF's 2 cm (`hemAboveAnkleCm` overrides it). */
+export const BJJ_HEM_CM: number = PANTS_HEM_CM.ibjjf;
 
 export const BJJ_COLOURS = ["white", "blue", "black"] as const;
 export type BjjColour = (typeof BJJ_COLOURS)[number];

@@ -5,9 +5,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { judogiCheck, judogiFrame, renderJudogi } from "../src/judogi.ts";
 import { GARMENT_TIES } from "../src/beltTie.ts";
-import { BJJ_COLOURS, BJJ_CUT, BJJ_PRESETS, BJJ_ZONES, BJJ_ZONE_IDS, COLLAR_CM, HEM_CLEAR_CM, PANTS_PATCH_LIMIT, patchCorners, placements, presetPatches, readBjj, zoneAt } from "../src/bjjgi.ts";
-import { PATCH_ARTS, PATCH_SHAPES, PATCH_TEXT_MAX, outlineOf, readBjjPatch } from "../src/bjjPatch.ts";
-import { PATCH_MM } from "../src/judogiPatch.ts";
+import { BJJ_COLOURS, BJJ_CUT, BJJ_HEM_CM, BJJ_PRESETS, BJJ_ZONES, BJJ_ZONE_IDS, COLLAR_CM, HEM_CLEAR_CM, PANTS_PATCH_LIMIT, patchCorners, placements, presetPatches, readBjj, zoneAt } from "../src/bjjgi.ts";
+import { PATCH_ARTS, PATCH_SHAPES, PATCH_TEXT_MAX, readBjjPatch } from "../src/bjjPatch.ts";
+import { PATCH_MM, clothOutline } from "../src/judogiPatch.ts";
 import { bodyOutline, jacketDesc, sleeveOutline } from "../src/judogiJacket.ts";
 import { hipOutline, hipsOf, legOutline } from "../src/judogiPants.ts";
 import { corners } from "../src/judogiPlaces.ts";
@@ -166,7 +166,7 @@ test("a patch is any of five shapes, with a size, a colour, a border and words o
   const p = placements(readBjj({ patches: [{ zone: "upper-arm-left", widthCm: 40, heightCm: 40 }] })!)[0]!;
   assert.deepEqual([p.wCm, p.hCm], [8, 17]);
   // Every shape draws its own outline, and a custom path is scaled into the patch.
-  const shapes = new Set(PATCH_SHAPES.map((s) => outlineOf(s, 40, 30, "M0 0L100 0L50 100Z")));
+  const shapes = new Set(PATCH_SHAPES.map((s) => clothOutline(s === "custom" ? { path: "M0 0L100 0L50 100Z" } : s, 40, 30)));
   assert.equal(shapes.size, PATCH_SHAPES.length);
   for (const outline of ["M0 0L100 0L100 100Z", "M10 10C40 0 60 0 90 10Q100 50 90 90L10 90Z"]) {
     const svg = renderJudogi({ mode: "jacket", bjj: { patches: [{ zone: "upper-back", shape: "custom", outline }] }, view: "flat-back" });
@@ -267,4 +267,13 @@ test("a drawing with patches weighs what it should", () => {
   assert.ok(covered > plain);
   assert.ok(covered - plain < 400_000, `the patches add ${covered - plain} bytes to a turning suit`);
   assert.ok(renderJudogi({ mode: "suit", belt: "black", view: "flat", bjj: { patches: "covered" } }).length < 400_000);
+});
+
+test("a jiu-jitsu gi's trousers stop 2 cm above the ankle bone unless a hem is asked for", () => {
+  assert.equal(BJJ_HEM_CM, 2);
+  const suit = (o: object) => renderJudogi({ mode: "suit", view: "front", bjj: true, ...o });
+  assert.equal(suit({}), suit({ hemAboveAnkleCm: 2 }));
+  assert.notEqual(suit({}), suit({ hemAboveAnkleCm: 5 }));
+  assert.notEqual(suit({}), renderJudogi({ mode: "suit", view: "front" }), "a judo gi keeps its 5 cm");
+  assert.equal(renderJudogi({ mode: "suit", view: "front" }), renderJudogi({ mode: "suit", view: "front", hemAboveAnkleCm: 5 }));
 });
