@@ -14,6 +14,10 @@ export { KARATE_CUTS, KARATE_SLEEVES, KARATE_SLEEVE_SHARE, KARATE_TEXT, LEG_PATC
 export type { JudogiKarate, KarateCut, KarateSleeve } from "./karategi.ts";
 export { DOBOK_CUTS, DOBOK_GRADES } from "./dobok.ts";
 export type { DobokCut, DobokGrade, JudogiDobok } from "./dobok.ts";
+export { BJJ_COLOURS, BJJ_PRESETS, BJJ_ZONES, BJJ_ZONE_IDS, COLLAR_CM, HEM_CLEAR_CM, presetPatches } from "./bjjgi.ts";
+export type { BjjColour, BjjPreset, BjjZone, JudogiBjj } from "./bjjgi.ts";
+export { PATCH_ARTS, PATCH_SHAPES, PATCH_TEXT_MAX } from "./bjjPatch.ts";
+export type { BjjPatch, PatchArt, PatchShape } from "./bjjPatch.ts";
 export { BELT_PRESETS, STRIPE_COLOURS, beltPreset, roman } from "./judogiStripes.ts";
 export { BELT_KNOTS, BELT_TAIL_CM, GARMENT_TIES } from "./beltTie.ts";
 export type { BeltKnot, BeltTie } from "./beltTie.ts";

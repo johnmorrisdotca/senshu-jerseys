@@ -78,6 +78,7 @@ export function tieReach(t: BeltTie | undefined): number {
  */
 export const GARMENT_TIES = {
   judogi: JUDO_TIE,
+  bjj: { knot: "hanging", tailCm: 25 },
   karate: { knot: "hanging", tailCm: 50 },
   "karate-competition": { knot: "hanging", tailCm: 25 },
   "dobok-wt": { knot: "hanging", tailCm: 38 },

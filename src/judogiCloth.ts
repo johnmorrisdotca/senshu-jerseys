@@ -101,9 +101,15 @@ export function toneOf(cloth: Rgb): Tone {
  * `S` the sleeves (a plainer weave), `T` the trousers (a fine diagonal twill). A `plain` cloth (a karate gi's) has one fine, faint plain weave
  * for the body, the skirt and the sleeves: no rice grain, no quilting.
  */
-export function weaves(uid: string, t: Tone, plain = false): string {
+export function weaves(uid: string, t: Tone, plain = false, weave?: "pearl"): string {
   // On a dark cloth the same light lines stand out far more, so they are kept faint.
   const o = t.light ? 1 : 0.45;
+  if (weave === "pearl") {
+    // A pearl weave: rows of small raised beads, each row half a bead along from the one above, every bead lit at its top left and in shadow under its lower right.
+    const bead = (id: string, w: number, a: number): string => `<pattern id="${uid}${id}" width="${w}" height="${n2(w * 0.86)}" patternUnits="userSpaceOnUse">` + [[w * 0.25, w * 0.215], [w * 0.75, w * 0.645]].map(([x, y]) => `<ellipse cx="${n2(x as number + w * 0.04)}" cy="${n2(y as number + w * 0.05)}" rx="${n2(w * 0.2)}" ry="${n2(w * 0.17)}" fill="${t.seam}" fill-opacity="${n2(0.3 * a * o)}"/><ellipse cx="${n2(x as number)}" cy="${n2(y as number)}" rx="${n2(w * 0.17)}" ry="${n2(w * 0.14)}" fill="${t.hi}" fill-opacity="${n2(0.62 * a * (t.light ? 1 : 1.4))}"/><ellipse cx="${n2(x as number - w * 0.04)}" cy="${n2(y as number - w * 0.05)}" rx="${n2(w * 0.07)}" ry="${n2(w * 0.05)}" fill="#fff" fill-opacity="${n2(0.5 * a * o)}"/>`).join("") + "</pattern>";
+    const twill = `<pattern id="${uid}T" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)"><rect width="2.2" height="0.8" fill="${t.seam}" fill-opacity="${n2(0.09 * o)}"/></pattern>`;
+    return bead("G", 2.6, 1) + bead("Q", 2.6, 1) + bead("S", 2.4, 0.7) + twill;
+  }
   if (plain) {
     const fine = (id: string, a: number): string => `<pattern id="${uid}${id}" width="1.8" height="1.8" patternUnits="userSpaceOnUse">` +
       `<rect width="0.9" height="0.9" fill="${t.seam}" fill-opacity="${n2(a * o)}"/><rect x="0.9" y="0.9" width="0.9" height="0.9" fill="${t.seam}" fill-opacity="${n2(a * o)}"/><rect x="0.9" width="0.9" height="0.45" fill="${t.hi}" fill-opacity="${n2(0.35 * o)}"/></pattern>`;

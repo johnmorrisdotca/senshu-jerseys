@@ -20,6 +20,14 @@ export interface GiCut {
   cuff?: number;
   /** The collar band's own colours where it is not the cloth's (a dobok's black or black-and-red V-neck): its fill, edge and stitch, and colours laid along it as parts of its width from the neck's edge. */
   band?: CollarBand;
+  /** How much the body is taken in from the waist down, as a share of the judogi's width (a jiu-jitsu gi's fitted jacket: 0.92). 1 or none is the judogi's cut. */
+  fit?: number;
+  /** Extra half depth in drawing units across the belt and the skirt (a jiu-jitsu gi's skirt stands out over the trousers worn under it). */
+  skirtDepth?: number;
+  /** The jacket's weave: the judogi's rice grain (the default) or a pearl weave, small raised beads in staggered rows (a jiu-jitsu gi's embossed cloth). */
+  weave?: "pearl";
+  /** How many rows of stitching run along each lapel band (6 on the judogi's wide lapel, 4 on a narrow one by default). */
+  lapelRows?: number;
   /** A band of another colour along the jacket's lower edge, front and back (an ITF black belt's dobok): its colours and its height in the drawing's units. */
   hemBand?: CollarBand & { h: number };
 }

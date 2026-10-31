@@ -62,19 +62,29 @@ const rowsOf = (cut: GiCut): number[] => (cut.hem === HEM ? Y : [...Y.slice(0, -
 const softly = (cut: GiCut) => (d: string, w: number, o: number, light = false): string => fold(d, w, o * cut.soft, light);
 
 /** The half widths of the body, tied with a belt or hanging loose. */
-const halves = (tied: boolean): number[] => (tied ? TIED : LOOSE);
+const halves = (tied: boolean, cut: GiCut = JUDO_CUT): number[] => {
+  const rows = tied ? TIED : LOOSE;
+  const fit = cut.fit;
+  return fit === undefined ? rows : rows.map((h, j) => h * (1 - (1 - fit) * (FIT_FROM[j] as number)));
+};
+/** How much of a cut's fit each row takes: none above the chest, all at the waist, the skirt flaring back out toward the judogi's width at the hem, the body easing in between (a fitted cut is taken in under the arm, not at the shoulder). */
+const FIT_FROM = [0, 0, 0, 0, 0, 0.2, 0.65, 1, 1, 0.9, 0.7, 0.45, 0.3];
+/** How much of a cut's extra skirt depth each row takes: none above the waist, all across the belt and the skirt, easing out toward the hem. */
+const DEEP_FROM = [0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1, 1, 0.8, 0.5];
+/** The half depth of the body at each row for a cut: a cut with a skirt that stands out (`skirtDepth`) is deeper below the waist, so trousers worn under it never show through. */
+const depths = (tied: boolean, cut: GiCut = JUDO_CUT): number[] => (cut.skirtDepth === undefined ? (tied ? TIED_D : LOOSE_D) : (tied ? TIED_D : LOOSE_D).map((d, j) => d + cut.skirtDepth! * (DEEP_FROM[j] as number)));
 /** The body's half width at `y`, between its rows. */
-const halfAt = (tied: boolean, y: number, cut: GiCut = JUDO_CUT): number => rowAt(halves(tied), y, rowsOf(cut));
+export const halfAt = (tied: boolean, y: number, cut: GiCut = JUDO_CUT): number => rowAt(halves(tied, cut), y, rowsOf(cut));
 
 /**
  * Where a belt tied on the jacket lies: the top of its band at the back, and the round under it, the widest of the rows it covers so no
  * cloth shows through it (its depth as the volume's: the rows' half depth by `depth`, the cross-section's exponent, the side wall's 0.4).
  */
-export function beltRound(depth = 1, width = 12): { y: number; a: number; b: number; full: number; side: number } {
+export function beltRound(depth = 1, width = 12, cut: GiCut = JUDO_CUT): { y: number; a: number; b: number; full: number; side: number } {
   const k = Math.max(0.35, Math.min(1.6, depth));
   const top = BELT_TOP;
   const foot = top + 2.5 + width;
-  return { y: top, a: Math.max(halfAt(true, top), halfAt(true, foot)) + 1.2, b: Math.max(rowAt(TIED_D, top), rowAt(TIED_D, foot)) * k, full: FULL, side: SIDE };
+  return { y: top, a: Math.max(halfAt(true, top, cut), halfAt(true, foot, cut)) + 1.2, b: Math.max(rowAt(depths(true, cut), top, rowsOf(cut)), rowAt(depths(true, cut), foot, rowsOf(cut))) * k, full: FULL, side: SIDE };
 }
 
 /** A value given at each row, at `y` between them. */
@@ -156,7 +166,7 @@ export function jacketDesc(depth = 1, tied = false, cut: GiCut = JUDO_CUT): Volu
     { s: 1, q: [...mirror(S), ...mirror(p), ...mirror(A), ...mirror(q)], c: g.c.map((v, k) => (k % 2 === 0 ? 200 - v : v)) },
   ];
   // The sleeves are round over the arms, a little flatter than deep.
-  return { ...pieceDesc(rowsOf(cut), halves(tied).map((h) => h + 1.2), tied ? TIED_D : LOOSE_D, sl, depth, 9, 20, 8), full: FULL, side: SIDE, tube: 0.85, inner: cut.hem };
+  return { ...pieceDesc(rowsOf(cut), halves(tied, cut).map((h) => h + 1.2), depths(tied, cut), sl, depth, 9, 20, 8), full: FULL, side: SIDE, tube: 0.85, inner: cut.hem };
 }
 
 /**
@@ -165,7 +175,8 @@ export function jacketDesc(depth = 1, tied = false, cut: GiCut = JUDO_CUT): Volu
  * thickness 9 mm at the neck (IJF: up to 1 cm), and its middle at the back a little below the top of the collar there.
  */
 export function collarDesc(jd: VolumeDesc, cut: GiCut = JUDO_CUT): CollarDesc {
-  const top = offset(topEdge(cut), -cut.lapel / 2).reverse();
+  // A jacket cut shorter than the judogi's ends its lapels at its own hem.
+  const top = upTo(offset(topEdge(cut), -cut.lapel / 2), cut.hem).reverse();
   const under = offset(underEdge(cut), cut.lapel / 2);
   // The under lapel ends where its middle line meets the top one's, under the middle of the top lapel.
   const topAt = (y: number): number => atY([...top].reverse(), y)[0];
@@ -185,6 +196,14 @@ export function collarDesc(jd: VolumeDesc, cut: GiCut = JUDO_CUT): CollarDesc {
   return { y: jd.y, a: jd.a, b: jd.b, full: FULL, side: SIDE, top: top.flat(), under: under.slice(0, end + 1).flat(), w: cut.lapel - 1, t: cut.collar, neck: cut.neck === "v" ? 10.5 : 8.5 };
 }
 
+/** A line down the drawing cut off at height `y`, its last point on it. */
+function upTo(pts: readonly Pt[], y: number): Pt[] {
+  const k = pts.findIndex((p) => p[1] > y);
+  if (k <= 0) return [...pts];
+  const [a, b] = [pts[k - 1] as Pt, pts[k] as Pt];
+  return [...pts.slice(0, k), [a[0] + ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]), y]];
+}
+
 /** The jacket's cross-section: rounder than a jersey's square body, as cloth hangs. */
 const FULL = 2.2;
 /** The side wall's depth as a part of the body's: small, so that turning the jacket a little never makes its silhouette wider than it is face on (volume.ts, `side`). */
@@ -192,7 +211,7 @@ const SIDE = 0.1;
 
 /** The outline of the body (no sleeves), clockwise from the collar's top left. */
 export function bodyOutline(tied: boolean, cut: GiCut = JUDO_CUT): Pt[] {
-  const h = halves(tied);
+  const h = halves(tied, cut);
   const left: Pt[] = rowsOf(cut).map((y, j) => [100 - (h[j] as number), y]);
   const right: Pt[] = [...left].reverse().map(mirror);
   return [...left, ...right];
@@ -329,7 +348,9 @@ function lapelBand(uid: string, t: Tone, edge: readonly Pt[], sign: 1 | -1, shad
   // Thick cloth folded over itself: a light ridge just in from the free edge, a darker roll where it meets the jacket.
   s += fold(smooth(offset(edge, -sign * 2.4)), 2.6, t.light ? 0.5 : 0.2, true);
   s += fold(smooth(offset(edge, -sign * (lapel - 2))), 3.4, shadeTo);
-  for (const k of lapel === LAPEL ? [1.6, 3.5, 5.4, 7.3, 9.2, 11] : [1.5, 3.4, 5.3, 7.2]) s += stitch(smooth(offset(edge, -sign * k)), t, 0.36, 0.6);
+  // A collar filled with rubber stands up round like a roll: a broad light down its middle, and a shade under each of its edges.
+  if (cut.lapelRows !== undefined) s += fold(smooth(offset(edge, -sign * lapel * 0.46)), lapel * 0.42, t.light ? 0.42 : 0.16, true) + fold(smooth(offset(edge, -sign * 1.2)), 2.2, shadeTo * 0.6);
+  for (const k of cut.lapelRows !== undefined ? Array.from({ length: cut.lapelRows }, (_, i) => 1.5 + (i * (lapel - 3.4)) / (cut.lapelRows! - 1)) : lapel === LAPEL ? [1.6, 3.5, 5.4, 7.3, 9.2, 11] : [1.5, 3.4, 5.3, 7.2]) s += stitch(smooth(offset(edge, -sign * k)), t, 0.36, 0.6);
   s += `<path d="${smooth(edge)}" fill="none" stroke="${t.seam}" stroke-width="0.6" stroke-opacity="0.55"/>`;
   s += seam(smooth(sewn), t, 0.6);
   return s;
@@ -402,11 +423,11 @@ function front(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   s += fold(smooth([[142, 90], [134, 102], [124, 113]]), 10, t.light ? 0.07 : 0.14);
   s += fold(smooth([[128, 40], [124, 70], [126, 104]]), 9, t.light ? 0.2 : 0.1, true);
   s += edges(t, tied, cut);
-  s += lapelBand(uid, t, topEdge(cut), 1, t.light ? 0.2 : 0.3, cut);
+  s += cut.hem < HEM ? `<g clip-path="url(#${uid}hem)">${lapelBand(uid, t, topEdge(cut), 1, t.light ? 0.2 : 0.3, cut)}</g>` : lapelBand(uid, t, topEdge(cut), 1, t.light ? 0.2 : 0.3, cut);
   s += hemTrim(t, tied, cut);
   s += ink.marks?.front?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST) + 1, ink.belt.tie) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST) + 1);
+  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "front", WAIST, halfAt(true, WAIST, cut) + 1, ink.belt.tie) : beltOnJacket(ink.belt, t, "front", WAIST, halfAt(true, WAIST, cut) + 1);
   return s;
 }
 
@@ -441,7 +462,7 @@ function back(uid: string, ink: GiInk, t: Tone, cut: GiCut): string {
   s += hemTrim(t, tied, cut);
   s += ink.marks?.back?.body ?? "";
   s += `<path d="${outline}" fill="url(#${uid}V)"/>`;
-  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST) + 1, ink.belt.tie) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST) + 1);
+  if (ink.belt !== undefined) s += ink.beltApart ? beltShadow(t, "back", WAIST, halfAt(true, WAIST, cut) + 1, ink.belt.tie) : beltOnJacket(ink.belt, t, "back", WAIST, halfAt(true, WAIST, cut) + 1);
   return s;
 }
 
@@ -478,9 +499,10 @@ export function jacketFace(ink: GiInk, face: "front" | "back", cut: GiCut = JUDO
   const outline = poly(faceOutline(tied, face, cut));
   const room = `M14 ${INNER_DY + RIM_FROM - 1}H186V${INNER_DY + 96}H14Z`;
   const clip = [outline, poly(sleeveOutline(-1, cut.sleeve, cut.cuff)), poly(sleeveOutline(1, cut.sleeve, cut.cuff)), room];
-  const defs = weaves(uid, t, cut.plain) + lightDefs(uid, t) +
+  const defs = weaves(uid, t, cut.plain, cut.weave) + lightDefs(uid, t) +
     `<clipPath id="${uid}body"><path d="${outline}"/></clipPath>` +
     `<clipPath id="${uid}under"><path d="${leftOf(topEdge(cut))}"/></clipPath>` +
+    `<clipPath id="${uid}hem"><rect x="-60" y="-10" width="320" height="${n2(cut.hem + 10)}"/></clipPath>` +
     (ink.marks?.[face]?.defs ?? "") + (face === "back" ? ink.marks?.backInner?.defs ?? "" : "");
   return { defs, body: face === "front" ? front(uid, ink, t, cut) : back(uid, ink, t, cut), clip, extra: inside(uid, ink, t, face, cut) };
 }
