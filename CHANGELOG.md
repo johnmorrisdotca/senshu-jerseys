@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-31
+
 ### Added
 
 - **`nation`: the country's letters on the shoulder, stitched or printed flat** (SPX-701). `nation: { code: "CAN", name, place, style, thread, ink, band, reading, heightCm, lengthCm }` puts a 2 to 4 letter code down the top of the sleeve from the collar, on `shoulder-left` (the default), `shoulder-right` or `shoulders`: as satin thread (`style: "embroidery"`, the default) or as a printed strip (`style: "print"`: flat ink on the cloth with no thickness, edge or shadow, with an optional ground, `band`). It sits in the IJF's shoulder stripe, held to 25 by 5 cm (IJF Judogi Rules 09 03 2022, C1.5 page 8; C1.4 page 7), and `judogiCheck` reports it as `nation`. New exports: `NATION_PLACES`, `NATION_STYLES` and the types `JudogiNation`, `NationPlace`, `NationStyle`.
