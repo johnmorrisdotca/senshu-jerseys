@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-10-31
+
 ### Added
 
 - **`fontToPath`: text to outlines, so embroidery can use a brush face without shipping or loading a font** (SPX-701). `fontToPath(bytes, text, { direction, spacing, precision })` reads the `.ttf` you give it and returns the text as one path, `{ d, width, height, missing }`, which is an embroidery's `path` as it stands: `{ place: "jacket-chest", path: fontToPath(brush, "柔道", { direction: "down" }), thread: "red" }`. Run it once and keep the result (four kanji in Yuji Syuku are about 10 kB of path, 7 kB at `precision: 0`): the page needs no font, no `@font-face`, and a saved SVG and the canvas painter draw it unchanged. `direction: "down"` stands each character upright in a column. A character the font lacks is left out and listed in `missing`. Reads TrueType `glyf` outlines with composites and character maps of formats 4 and 12, about 2.7 kB gzipped, no dependency, and tree-shaken out of a bundle that does not import it; CFF (`.otf`), WOFF, WOFF2 and `.ttc` are refused with a message that says so. Tried with Yuji Syuku, Yuji Mai and Klee One (SIL OFL 1.1, none shipped; docs/judogi.md names the fonts and their credit). Exports `fontToPath` and the types `FontPath` and `FontPathOptions`.
