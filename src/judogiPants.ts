@@ -94,12 +94,12 @@ function longFolds(h: readonly number[], t: Tone, side: -1 | 1): string {
 }
 
 /** A leg: twill cloth, its seams, the knee panel (front only) and the turned hem with a break where it would meet the foot. */
-function leg(uid: string, t: Tone, side: -1 | 1, front: boolean): string {
+function leg(uid: string, t: Tone, side: -1 | 1, front: boolean, knee: boolean): string {
   const out = poly(legOutline(side));
   let s = `<path d="${out}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${out}" fill="url(#${uid}T)"/>`;
   s += seam(down(side, side === -1 ? 0.012 : 0.988, 0, 1), t, 0.3);
   s += seam(down(side, side === -1 ? 0.988 : 0.012, 0.02, 1), t, 0.28);
-  if (front) {
+  if (front && knee) {
     // The knee: a second layer from above the knee to below it, stitched round twice, standing a little proud of the leg.
     const k0 = 0.22;
     const k1 = 0.58;
@@ -149,13 +149,13 @@ export const CORD_T = 0.4 * CM;
  * as strokes, so it turns with the cloth it lies on.
  */
 function cord(d: string, base: string, edge: string, light: boolean): string {
-  const s = (width: number, stroke: string, extra = ""): string => `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${n2(width)}" stroke-linecap="round" stroke-linejoin="round"${extra}/>`;
+  const s = (width: number, stroke: string, extra = "", cap = "round"): string => `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${n2(width)}" stroke-linecap="${cap}" stroke-linejoin="round"${extra}/>`;
   return s(CORD_W + 1, "#1a2230", ` stroke-opacity="0.12" transform="translate(${n2(CORD_T * 0.8)} ${n2(CORD_T * 1.3)})"`) +
     s(CORD_W, edge, ` transform="translate(${n2(CORD_T * 0.5)} ${n2(CORD_T * 0.9)})"`) +
     s(CORD_W, base) +
     s(CORD_W * 0.3, "#05070d", ` stroke-opacity="0.22" transform="translate(0 ${n2(CORD_W * 0.36)})"`) +
     s(CORD_W * 0.22, "#fff", ` stroke-opacity="${light ? 0.9 : 0.45}" transform="translate(0 ${n2(-CORD_W * 0.26)})"`) +
-    s(CORD_W * 0.8, edge, ` stroke-opacity="${light ? 0.32 : 0.36}" stroke-linecap="butt" stroke-dasharray="0.45 0.7"`);
+    s(CORD_W * 0.8, edge, ` stroke-opacity="${light ? 0.32 : 0.36}" stroke-dasharray="0.45 0.7"`, "butt");
 }
 
 /** A knot or a bead of cord: a rounded lump with its wraps, shade and light, `rx` by `ry` units. */
@@ -196,9 +196,9 @@ function hipSides(h: readonly number[], t: Tone): string {
   return longFolds(h, t, -1) + longFolds(h, t, 1);
 }
 
-function front(uid: string, t: Tone, h: readonly number[], marks = ""): string {
+function front(uid: string, t: Tone, h: readonly number[], marks = "", knee = true): string {
   const hip = poly(hipOutline(h));
-  let s = leg(uid, t, -1, true) + leg(uid, t, 1, true);
+  let s = leg(uid, t, -1, true, knee) + leg(uid, t, 1, true, knee);
   s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
   s += waistband(h, t);
   s += seam("M100 19C100.5 48 100 78 100 106", t, 0.55);
@@ -211,7 +211,7 @@ function front(uid: string, t: Tone, h: readonly number[], marks = ""): string {
 
 function back(uid: string, t: Tone, h: readonly number[], marks = ""): string {
   const hip = poly(hipOutline(h));
-  let s = leg(uid, t, -1, false) + leg(uid, t, 1, false);
+  let s = leg(uid, t, -1, false, true) + leg(uid, t, 1, false, true);
   s += `<path d="${hip}" fill="${t.fill}" stroke="${t.fill}" stroke-width="3" stroke-linejoin="round"/><path d="${hip}" fill="url(#${uid}T)"/>` + hipSides(h, t);
   s += waistband(h, t);
   s += seam("M100 19C100 48 100.5 78 100 106", t, 0.6);
@@ -223,15 +223,15 @@ function back(uid: string, t: Tone, h: readonly number[], marks = ""): string {
   return s;
 }
 
-/** The trousers' front or back, in the 200-wide box the volume samples. */
-export function pantsFace(ink: GiInk, face: "front" | "back", worn = false): Face {
+/** The trousers' front or back, in the 200-wide box the volume samples. `knee: false` leaves out the front's reinforced knee panel. */
+export function pantsFace(ink: GiInk, face: "front" | "back", worn = false, knee = true): Face {
   const t = toneOf(ink.cloth);
   const uid = `${ink.uid}${face === "front" ? "f" : "b"}`;
   const h = hipsOf(worn);
   const clip = [poly(hipOutline(h)), poly(legOutline(-1)), poly(legOutline(1))];
   const all = `<clipPath id="${uid}all">${clip.map((d) => `<path d="${d}"/>`).join("")}</clipPath>`;
   const mark = ink.marks?.[face];
-  return { defs: weaves(uid, t) + lightDefs(uid, t) + all + (mark?.defs ?? ""), body: face === "front" ? front(uid, t, h, mark?.body) : back(uid, t, h, mark?.body), clip };
+  return { defs: weaves(uid, t) + lightDefs(uid, t) + all + (mark?.defs ?? ""), body: face === "front" ? front(uid, t, h, mark?.body, knee) : back(uid, t, h, mark?.body), clip };
 }
 
 export const PANTS_HEM = HEM;

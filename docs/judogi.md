@@ -29,6 +29,8 @@ judogiCheck({ size: "180" });
 
 `mode` is `pieces` (the jacket with its belt tied, and the trousers beside it), `suit`, `jacket`, `pants` or `belt`; `view` is `front`, `back`, `flat` (the pieces laid out with no volume, the belt beside them) or `flat-back` (the same, from behind).
 
+`knee` is `true` by default: the trousers carry the reinforced knee, a second layer over each knee stitched round. `knee: false` leaves the panel out and draws the plain leg (`renderJudogi({ mode: "pants", knee: false })`); the back, the jacket and the belt do not change.
+
 `judogiCheck` reports whether a named size meets the cited length facts (jacket to mid-thigh, sleeves leaving about 5 cm to the wrist, trousers leaving about 5 cm to the ankle, belt 4–5 cm wide with 20–30 cm hanging ends). Traditional sizes 1–7 map onto those heights.
 
 ## Belt specifications

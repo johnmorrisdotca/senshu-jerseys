@@ -6,6 +6,14 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **`knee: false` leaves out the trousers' knee panel** (SPX-827). `renderJudogi` and `judogiFrame` take `knee` (`true` by default, so today's drawing is unchanged); `pantsFace` takes it as a fourth argument. Only the front of the trousers changes.
+
+### Fixed
+
+- **The drawstring cord is valid XML** (SPX-827). `cord()` wrote `stroke-linecap` twice on its braid path, which browsers accept and a saved SVG does not. It writes it once. `test/judogiXml.test.ts` parses every judogi, karate gi and dobok drawing (the presets, the marks, the modes, the views and several angles) as strict XML with no repeated attribute; it found no other duplicate.
+
 ## [0.26.0] - 2026-10-30
 
 ### Added
