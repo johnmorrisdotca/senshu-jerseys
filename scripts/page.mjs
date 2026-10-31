@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { transformSync } from "esbuild";
 
 import { WORDS } from "../demo/words.js";
-import { FAMILY_SCRIPT, familyFooter, familyHead, familyHeader, familyUnreviewed } from "./family-template.mjs";
+import { FAMILY_EMBED_BUILDER_WORDS, FAMILY_SCRIPT, familyEmbedBuilder, familyFooter, familyHead, familyHeader, familyUnreviewed } from "./family-template.mjs";
 
 const id = "senshu-jerseys";
 const TITLE = "Senshu Jerseys 選手: sports jerseys as SVG";
@@ -15,7 +15,7 @@ const DESCRIPTION = "Jerseys, sweaters, kits, caps, helmets and retired-number b
 function withFamily(html, { title, description }) {
   return html
     .replace("<!--family:head-->", familyHead({ id, title, description }))
-    .replace("<!--family:header-->", familyHeader({ id }))
+    .replace("<!--family:header-->", familyHeader({ id, links: [{ href: "builder.html", say: "navBuilder" }] }))
     .replace("<!--family:unreviewed-->", familyUnreviewed({ id }))
     .replace("<!--family:footer-->", familyFooter({ id }))
     .replace(
@@ -43,6 +43,25 @@ export function renderUniforms() {
     title: "Senshu Jerseys: uniforms",
     description: "Every martial-arts garment side by side, each wearing a belt you choose: judogi and belts, turning in 3D.",
   });
+}
+
+/** demo/builder.html, every option of the jersey with the code for what is shown, made by the family's embed builder. */
+export function renderBuilder() {
+  const parts = {
+    builderHead: familyHead({ id, title: "Senshu Jerseys: the builder", description: "Choose a jersey's options, see it, and copy the code for what is shown." }),
+    builderHeader: familyHeader({ id, links: [{ href: "./", say: "bldBack" }] }),
+    unreviewed: familyUnreviewed({ id }),
+    footer: familyFooter({ id }),
+    script: `<script>${FAMILY_SCRIPT}</script>`,
+  };
+  return readFileSync(new URL("../demo/builder.html", import.meta.url), "utf8").replace(/<!-- family:([A-Za-z]+) -->/g, (_match, key) => parts[key]);
+}
+
+/** The family's embed builder as a browser module. */
+export function builderModule() {
+  return `export const FAMILY_EMBED_BUILDER_WORDS = ${JSON.stringify(FAMILY_EMBED_BUILDER_WORDS)};
+export ${familyEmbedBuilder.toString()};
+`;
 }
 
 /** demo/embed.html, the frame a page puts in an iframe: plain, no family blocks. */
