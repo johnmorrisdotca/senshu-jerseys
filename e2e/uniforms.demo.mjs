@@ -210,3 +210,17 @@ test("every art's belt variants are tiles, tied as worn and folded, and the tie 
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   expect(errors.filter((e) => !/GL Driver|ReadPixels|WebGL/.test(e))).toEqual([]);
 });
+
+test("the trouser hem is a control, kept in the address, and survives a reload", async ({ page }) => {
+  test.slow();
+  await page.goto("/uniforms.html?garment=bjj-white");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="uni-hem"] [data-value="auto"]')).toHaveAttribute("aria-pressed", "true");
+  await pick(page, "uni-hem", "10");
+  await expect(page).toHaveURL(/hem=10/);
+  await page.goto(page.url());
+  await expect(page.locator('[data-testid="uni-hem"] [data-value="10"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#uni-stage canvas")).toBeVisible();
+  await pick(page, "uni-hem", "auto");
+  await expect(page).not.toHaveURL(/hem=/);
+});
