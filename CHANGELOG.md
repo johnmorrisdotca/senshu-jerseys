@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-10-31
+
 ### Added
 
 - **A trouser hem option** (SPX-832). `hemAboveAnkleCm` on `renderJudogi` and `judogiFrame` (and the fifth argument of `pantsFace`) sets how far above the outer ankle bone the trousers stop, 2 to 10 cm, 5 by default so today's drawing is unchanged byte for byte. The IJF's limit is 5 cm (Judogi Rules), the IBJJF's 2 cm (its uniform rules); `PANTS_HEM_CM` and `pantsHemCm` are exported, and `judogiCheck` adds `trouser-hem` when the option is given. The knee panel stays where the knee is.
