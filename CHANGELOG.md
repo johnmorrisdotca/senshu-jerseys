@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-10-31
+
 ### Added
 
 - **The jiu-jitsu gi, with patches all over** (SPX-788). `bjj` on `renderJudogi` and `judogiFrame` draws a Brazilian jiu-jitsu gi on the judogi's volumes: a shorter, fitted jacket (its hem about 71 cm down at 170 cm, taken in 8 per cent at the waist, its skirt standing out over the trousers) in a pearl weave, tapered sleeves, a thick stitched collar (1.3 cm thick and 4.9 cm wide, seven rows of stitching, drawn as a rubber-filled roll), trousers with a long reinforced knee and loops on the waistband, in white, royal blue or black (`BJJ_COLOURS`), and the belt tied as that art ties it (`GARMENT_TIES.bjj`). Patches are sewn in named zones (`BJJ_ZONES`: shoulder, upper arm, forearm, lapel, upper back, lower back, skirt, hip, thigh, knee, shin, calf, the back of the arm), 0 to many, each a rectangle, a rounded one, a circle, a shield or a custom outline, with a size, a colour, a border and words or generic placeholder art, 3 to 4 mm thick with the edge stitched (`running` or `satin`), on the cloth so they turn with it. Two presets: `ibjjf`, a patch in each location the IBJJF's Uniform Manual for Manufactures (Section A, edition EN-07, section 6) authorizes, inside its size and 15 cm from the cuff, and `covered`, a patch in every zone. `judogiCheck` reports the manual's measures and which patches are in an authorized place. A uniforms-page tile for each colour and each look. See docs/judogi.md, "The jiu-jitsu gi".
