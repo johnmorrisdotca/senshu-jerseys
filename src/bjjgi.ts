@@ -67,7 +67,7 @@ export const BJJ_ZONES: readonly BjjZone[] = [
   z("skirt-front", "jacket-front", [11, 6], [11, 6]), z("skirt-front-right", "jacket-front", [9, 6], undefined),
   z("upper-back", "jacket-back", [24, 22], [24, 22], "rounded"), z("lower-back", "jacket-back", [18, 8], undefined),
   z("skirt-back", "jacket-back", [24, 6], [24, 6]),
-  z("shoulder-back-left", "jacket-back", [7, 6], undefined), z("shoulder-back-right", "jacket-back", [7, 6], undefined),
+  z("shoulder-back-left", "jacket-back", [6, 5], undefined), z("shoulder-back-right", "jacket-back", [6, 5], undefined),
   z("arm-back-left", "jacket-back", [7, 14], undefined), z("arm-back-right", "jacket-back", [7, 14], undefined),
   z("hip-left", "pants-front", [8, 8], undefined), z("hip-right", "pants-front", [8, 8], undefined),
   z("thigh-left", "pants-front", [10, 16], [10, 16]), z("thigh-right", "pants-front", [10, 16], [10, 16]),
@@ -214,8 +214,8 @@ export function zoneAt(id: string, gi: GiCut = BJJ_CUT): ZoneAt {
     case "forearm-left": case "forearm-right": return arm(0.72);
     case "arm-back-left": case "arm-back-right": return arm(0.27);
     case "shoulder-back-left": case "shoulder-back-right": {
-      const [x, y] = onSleeve(sd, 0.08, 0.5, gi.sleeve, gi.cuff);
-      return { x, y: y + 2, rot: sd === -1 ? -22 : 22 };
+      const [x, y] = onSleeve(sd, 0.14, 0.62, gi.sleeve, gi.cuff);
+      return { x, y: y + 2, rot: sd === -1 ? -14 : 14 };
     }
     case "shoulder-left": case "shoulder-right": {
       // Between the neck's end and the shoulder's point, a hand under the seam that joins them.
@@ -228,7 +228,7 @@ export function zoneAt(id: string, gi: GiCut = BJJ_CUT): ZoneAt {
       return { x: chestSpan(y, gi)[0] + 3.2 * CM + 4.6 + 4, y, rot: 14.9 };
     }
     case "lapel-right": return { x: 76, y: 78, rot: 14.9 };
-    case "skirt-front": return { x: 129, y: BELT_BOTTOM + 11, rot: 0 };
+    case "skirt-front": return { x: 123, y: BELT_BOTTOM + 11, rot: 0 };
     case "skirt-front-right": return { x: 70, y: BELT_BOTTOM + 11, rot: 0 };
     case "upper-back": return { x: 100, y: BACK_COLLAR_FOOT + 4.5 + (22 * CM) / 2, rot: 0 };
     case "lower-back": return { x: 100, y: 111, rot: 0 };

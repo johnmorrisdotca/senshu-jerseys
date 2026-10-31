@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { BJJ_COLOURS, BJJ_PRESETS } from "../src/bjjgi.ts";
 import { DOBOK_CUTS, DOBOK_GRADES } from "../src/dobok.ts";
 import { JUDOGI_MODES, JUDOGI_VIEWS, judogiFrame, renderJudogi, type JudogiOptions } from "../src/judogi.ts";
 import { KARATE_CUTS, KARATE_SLEEVES } from "../src/karategi.ts";
@@ -48,6 +49,8 @@ const SETS: [string, JudogiOptions][] = [
   ["no knee", { knee: false }],
   ...KARATE_CUTS.flatMap((cut) => KARATE_SLEEVES.map((sleeve): [string, JudogiOptions] => [`karate ${cut} ${sleeve}`, { belt: "black", karate: { cut, sleeve } }])),
   ...DOBOK_CUTS.flatMap((cut) => DOBOK_GRADES.map((grade): [string, JudogiOptions] => [`dobok ${cut} ${grade}`, { belt: "black", dobok: { cut, grade } }])),
+  ...BJJ_COLOURS.flatMap((colour) => BJJ_PRESETS.map((patches): [string, JudogiOptions] => [`bjj ${colour} ${patches}`, { belt: "black", bjj: { colour, patches } }])),
+  ["bjj no knee", { belt: "black", bjj: { patches: "covered" }, knee: false }],
 ];
 
 test("the checker itself catches a repeated attribute", () => {
@@ -55,7 +58,7 @@ test("the checker itself catches a repeated attribute", () => {
   assert.equal(strictXml(`<svg><path d="M0 0" stroke-linecap="round"/></svg>`), null);
 });
 
-test("every judogi, karate gi and dobok drawing is strict XML with no repeated attribute", () => {
+test("every judogi, karate gi, dobok and jiu-jitsu gi drawing is strict XML with no repeated attribute", () => {
   for (const [name, o] of SETS) {
     for (const mode of name === "plain" ? JUDOGI_MODES : (["suit", "pants"] as const)) {
       for (const view of JUDOGI_VIEWS) assert.equal(strictXml(renderJudogi({ ...o, mode, view })), null, `${name} ${mode} ${view}`);
