@@ -56,6 +56,8 @@ export type { JerseyBox } from "./jersey.ts";
 export { VERSION } from "./version.ts";
 export { EMBROIDERY_FONTS, EMBROIDERY_PLACES, FONT_STACKS, LOGO_PLACES, MARK_RULES } from "./judogiMarks.ts";
 export type { EmbroideryDirection, EmbroideryFontFace, EmbroideryFontName, EmbroideryPlace, JudogiEmblem, JudogiEmbroidery, JudogiLogo, LogoPlace, MarkRules } from "./judogiMarks.ts";
+export { fontToPath } from "./fontPath.ts";
+export type { FontPath, FontPathOptions } from "./fontPath.ts";
 export { THREAD_COLOURS, THREAD_LABELS, THREAD_RGB } from "./judogiThread.ts";
 export type { ThreadColour } from "./judogiThread.ts";
 export { LABEL_COLOURS, LABEL_COLOUR_LABELS, LABEL_MM } from "./judogiLabel.ts";

@@ -234,7 +234,25 @@ renderJudogi({
 | `gyosho` | semi-cursive script, `行書体` | Yuji Mai, Yuji Boku, Zen Kurenaido |
 | `cursive` | Latin script | the system's own |
 
-The package ships no Japanese font: a Japanese face is megabytes. A drawing saved as SVG, and the canvas painter (`judogiCanvas`, which draws the SVG as an image), can use only the fonts the computer has or the SVG carries, so pass the font with the text: `font: { family: "Yuji Syuku", css: "@font-face{font-family:'Yuji Syuku';src:url(data:font/woff2;base64,...)}" }`. The CSS must be `@font-face` rules with `data:` sources only (anything else is dropped). To keep it small, take a subset of just the characters you use: Google Fonts serves one when its address ends `&text=山田`, and `pyftsubset` makes one from a font file. Or skip fonts altogether and pass outlines you made yourself (opentype.js, say): `{ place, path: { d: "M...Z", width, height } }` is set as thread, scaled to the place.
+The package ships no Japanese font: a Japanese face is megabytes. A drawing saved as SVG, and the canvas painter (`judogiCanvas`, which draws the SVG as an image), can use only the fonts the computer has or the SVG carries, so pass the font with the text: `font: { family: "Yuji Syuku", css: "@font-face{font-family:'Yuji Syuku';src:url(data:font/woff2;base64,...)}" }`. The CSS must be `@font-face` rules with `data:` sources only (anything else is dropped). To keep it small, take a subset of just the characters you use: Google Fonts serves one when its address ends `&text=山田`, and `pyftsubset` makes one from a font file. Or skip fonts altogether and pass outlines: `{ place, path: { d: "M...Z", width, height } }` is set as thread, scaled to the place, with the same satin rows whatever units the outline is in.
+
+**Text to outlines: `fontToPath`.** `fontToPath(bytes, text, { direction, spacing, precision })` reads a TrueType file (the `.ttf` bytes as an `ArrayBuffer` or a typed array, however you got them: `fetch`, `readFileSync`) and returns the outlines of `text` as one path, `{ d, width, height, missing }`, for an embroidery's `path`. Run it once, keep the result (measured with Yuji Syuku and Klee One: four kanji about 10 kB of path, `TANAKA` 6 to 9 kB, at the default precision; `precision: 0` takes about a third off), and the page needs no font and no `@font-face`: a saved SVG and the canvas painter draw it as it is. It is about 2.7 kB gzipped, with no dependency, and is left out of a bundle that does not import it.
+
+```js
+import { fontToPath, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+
+const brush = new Uint8Array(await (await fetch("/fonts/YujiSyuku-Regular.ttf")).arrayBuffer());
+renderJudogi({
+  mode: "suit",
+  embroidery: [{ place: "jacket-chest", path: fontToPath(brush, "柔道", { direction: "down" }), thread: "red" }],
+});
+```
+
+- `direction: "down"` stands each character upright in a column, as a vertical Japanese line stands (no rotated punctuation); `"across"` (the default) sets a line. `spacing` is extra space between characters as a share of the em (0.04 across, 0.08 down by default). `precision` is the decimals kept (1; the em is 100 units, so that is a thousandth of the em); a path that would pass the 59,000 characters an embroidery takes is rounded more coarsely by itself.
+- A character the font lacks is left out and listed in `missing`; nothing is substituted. No kerning, ligatures, hinting or font variations (a variable font gives its default look).
+- It reads TrueType outlines (`glyf`) with composite glyphs, and Unicode character maps of formats 4 and 12. A CFF font (an `.otf` with PostScript outlines), WOFF and WOFF2 and `.ttc` collections are refused with a message that says so: take the `.ttf`. A damaged file throws `fontToPath: ...`, it never returns a half path.
+- The fonts to try, all SIL OFL 1.1 and all `.ttf` in [google/fonts](https://github.com/google/fonts/tree/main/ofl): Yuji Syuku (`楷書体` kaisho, a brush face), Yuji Mai and Yuji Boku (`行書体` gyosho, a semi-cursive one), Klee One and Zen Kurenaido (a pen). Tried on 2026-10-31 with Yuji Syuku, Yuji Mai and Klee One. Credit the font you use as its licence asks (Yuji: Copyright 2021 The Yuji Project Authors); the package carries none of them. A Japanese face is 8 MB or so, so run `fontToPath` where the file is, never ship it to the page.
+- Latin in a script or cursive hand needs a font of that hand: the package's own `block` letters are plain strokes.
 
 **Manufacturer's logo** (`logos`): one logo to a garment, in the spots the rules name: `jacket-hem` (bottom front, wearer's left), `jacket-shoulder-left`, `jacket-shoulder-right` (the outer upper arm just under the shoulder seam, on the front, turned with the sleeve's slope, as makers sew theirs: never on the back), `belt-end-left`, `belt-end-right`, `pants-waist-left`, `pants-waist-right` (just under the waistband, off centre beside the fly and the drawstring), `pants-thigh-left`, `pants-thigh-right` (the upper front of the leg, a hand lower) and `pants-leg-left`, `pants-leg-right` (near the hem). `tonal: true` draws a placeholder in thread the colour of the cloth. Give `svg` (SVG text) or `href` (a `data:image/` address) for your own artwork; without either a neutral placeholder is drawn, and the package ships nothing else. Artwork is drawn as an image, so nothing in it can run.
 

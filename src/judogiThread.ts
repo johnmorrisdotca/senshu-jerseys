@@ -95,10 +95,10 @@ function threadOf(rgb: Rgb): Thread {
 }
 
 /** The fine diagonal pattern of satin on a shape with no centre line: threads side by side at an angle, a dark gap between each pair. */
-export function satinDefs(id: string, rgb: Rgb): string {
+export function satinDefs(id: string, rgb: Rgb, unit = 1): string {
   const t = threadOf(rgb);
   // Threads side by side at an angle, each a fine lit ridge with a dark gap beside it (finer than before, so a closer look shows rows and not a flat tint).
-  return `<pattern id="${id}" width="0.5" height="0.5" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">` +
+  return `<pattern id="${id}" width="0.5" height="0.5" patternUnits="userSpaceOnUse" patternTransform="rotate(38)${unit === 1 ? "" : ` scale(${+unit.toPrecision(4)})`}">` +
     `<rect width="0.5" height="0.14" fill="${t.gap}" fill-opacity="0.55"/><rect y="0.2" width="0.5" height="0.1" fill="${t.sheen}" fill-opacity="0.5"/></pattern>`;
 }
 
@@ -161,9 +161,11 @@ export function satinRun(run: Run, rgb: Rgb, id: string, family: string, edge?: 
 }
 
 /** A shape given as an outline path (an outline a person made from a font) filled with thread. */
-export function satinShape(d: string, rgb: Rgb, id: string, transform: string, outline?: Rgb): string {
+export function satinShape(d: string, rgb: Rgb, id: string, transform: string, outline?: Rgb, unit = 1): string {
   const t = threadOf(rgb);
+  // `unit` is how many of the shape's own units make one unit of the drawing (outlines from a font are 100 to the em): the thread's width, shadow and gaps keep their size whatever the shape's.
+  const u = (v: number): string => `${+(v * unit).toPrecision(4)}`;
   // A thin outline stitch in a second colour round the satin (the cover stitch a logo has), drawn under the fill so only its outer half shows.
-  const ring = outline === undefined ? "" : `<path d="${d}" fill="none" stroke="${hexOf(outline)}" stroke-width="1.1" stroke-linejoin="round"/>`;
-  return `<g transform="${transform}"><path d="${d}" fill="${t.shadow}" fill-opacity="0.3" transform="translate(0.35 0.5)"/>${ring}<path d="${d}" fill="${t.fill}" stroke="${t.gap}" stroke-opacity="0.5" stroke-width="0.25" stroke-linejoin="round"/><path d="${d}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="0.16" stroke-linejoin="round" transform="translate(0.12 0.16)"/></g>`;
+  const ring = outline === undefined ? "" : `<path d="${d}" fill="none" stroke="${hexOf(outline)}" stroke-width="${u(1.1)}" stroke-linejoin="round"/>`;
+  return `<g transform="${transform}"><path d="${d}" fill="${t.shadow}" fill-opacity="0.3" transform="translate(${u(0.35)} ${u(0.5)})"/>${ring}<path d="${d}" fill="${t.fill}" stroke="${t.gap}" stroke-opacity="0.5" stroke-width="${u(0.25)}" stroke-linejoin="round"/><path d="${d}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="#fff" stroke-opacity="0.3" stroke-width="${u(0.16)}" stroke-linejoin="round" transform="translate(${u(0.12)} ${u(0.16)})"/></g>`;
 }

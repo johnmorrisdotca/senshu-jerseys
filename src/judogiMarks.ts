@@ -400,11 +400,11 @@ function textPlan(m: MarkSpec, e: ReadEmbroidery, k: number): { w: number; h: nu
   const hU = Math.min(e.heightCm, lim.h) * CM * k;
   const sleeveAcross = (e.place === "sleeve-left" || e.place === "sleeve-right") && e.direction !== "along";
   const lU = Math.min(e.lengthCm, lim.len, sleeveAcross ? 7.5 : 99) * CM * k;
-  const defsOf = (id: string, rgb: Rgb): string => satinDefs(`${id}S`, rgb) + (typeof e.font === "object" && e.font.css !== undefined ? `<style>${e.font.css}</style>` : "");
+  const defsOf = (id: string, rgb: Rgb, unit = 1): string => satinDefs(`${id}S`, rgb, unit) + (typeof e.font === "object" && e.font.css !== undefined ? `<style>${e.font.css}</style>` : "");
   if (e.text === "") {
     const p = e.path as { d: string; width: number; height: number };
-    const kk = Math.min(hU / p.height, lU / p.width);
-    return { w: p.width * kk, h: p.height * kk, render: (id, rgb) => ({ defs: defsOf(id, rgb), body: satinShape(p.d, rgb, `${id}S`, `scale(${n2(kk)}) translate(${n2(-p.width / 2)} ${n2(-p.height / 2)})`) }) };
+    const kk = +Math.min(hU / p.height, lU / p.width).toPrecision(4);
+    return { w: p.width * kk, h: p.height * kk, render: (id, rgb) => ({ defs: defsOf(id, rgb, 1 / kk), body: satinShape(p.d, rgb, `${id}S`, `scale(${kk}) translate(${n2(-p.width / 2)} ${n2(-p.height / 2)})`, undefined, 1 / kk) }) };
   }
   const asText = e.font !== "block";
   const family = fontFamily(e.font);
