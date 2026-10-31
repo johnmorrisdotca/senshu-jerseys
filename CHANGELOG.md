@@ -6,19 +6,20 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.28.1] - 2026-10-31
+
+### Fixed
+
+- **The jacket is as deep as a person, not a slab, turned to its side** (SPX-828). The half depth of the body rows is up from 14-32 to 14-38.5 units (shoulders 29 to 35, chest 32 to 38, skirt 31-32 to 33.5-38.5), so it is 0.70 of its width deep from the chest to the hem (it was 0.45 to 0.65) and 0.5 to 0.55 across the shoulders, from ANSUR II's chest, waist and hip depths (docs/judogi.md, "How deep the body is"). The trousers' hips are 1.2 times deeper. The belt, collar, patches, labels and sleeves follow the new depth.
+- **The karate gi and the dobok no longer cover the judo knee panel with a copy of the trousers' cloth**: they draw the trousers with `knee: false`, and `plainKnees` is gone. `karateMarks` takes `(uid, karate)`.
+- The demo's gift-box test reloads the page through a blank page (a WebKit run on the CI runner never finished a `goto` to the address the page had set with `replaceState`), and is two tests.
+
 ## [0.28.0] - 2026-10-31
 
 ### Added
 
 - **A trouser hem option** (SPX-832). `hemAboveAnkleCm` on `renderJudogi` and `judogiFrame` (and the fifth argument of `pantsFace`) sets how far above the outer ankle bone the trousers stop, 2 to 10 cm, 5 by default so today's drawing is unchanged byte for byte. The IJF's limit is 5 cm (Judogi Rules), the IBJJF's 2 cm (its uniform rules); `PANTS_HEM_CM` and `pantsHemCm` are exported, and `judogiCheck` adds `trouser-hem` when the option is given. The knee panel stays where the knee is.
 - **`shapedCloth`: a patch's cloth in any shape** (SPX-832). `cloth` cut to a rounded rectangle, circle, shield or a custom path, with the same thickness (`PATCH_MM`), edge (`PATCH_EDGES`), shade, lift and stitching; exported with `clothOutline`, `clothPath` and the `ClothShape` type. It draws what the jiu-jitsu gi's patches draw. See docs/judogi.md, "Back patches".
-
-## [0.27.1] - 2026-10-31
-
-### Fixed
-
-- **The jacket is as deep as a person, not a slab, turned to its side** (SPX-828). The half depth of the body rows is up from 14-32 to 14-38.5 units (shoulders 29 to 35, chest 32 to 38, skirt 31-32 to 33.5-38.5), so it is 0.70 of its width deep from the chest to the hem (it was 0.45 to 0.65) and 0.5 to 0.55 across the shoulders, from ANSUR II's chest, waist and hip depths (docs/judogi.md, "How deep the body is"). The trousers' hips are 1.2 times deeper. The belt, collar, patches, labels and sleeves follow the new depth.
-- **The karate gi and the dobok no longer cover the judo knee panel with a copy of the trousers' cloth**: they draw the trousers with `knee: false`, and `plainKnees` is gone. `karateMarks` takes `(uid, karate)`.
 
 ## [0.27.0] - 2026-10-31
 
