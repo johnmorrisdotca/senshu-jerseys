@@ -6,6 +6,13 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.27.1] - 2026-10-31
+
+### Fixed
+
+- **The jacket is as deep as a person, not a slab, turned to its side** (SPX-828). The half depth of the body rows is up from 14-32 to 14-38.5 units (shoulders 29 to 35, chest 32 to 38, skirt 31-32 to 33.5-38.5), so it is 0.70 of its width deep from the chest to the hem (it was 0.45 to 0.65) and 0.5 to 0.55 across the shoulders, from ANSUR II's chest, waist and hip depths (docs/judogi.md, "How deep the body is"). The trousers' hips are 1.2 times deeper. The belt, collar, patches, labels and sleeves follow the new depth.
+- **The karate gi and the dobok no longer cover the judo knee panel with a copy of the trousers' cloth**: they draw the trousers with `knee: false`, and `plainKnees` is gone. `karateMarks` takes `(uid, karate)`.
+
 ## [0.27.0] - 2026-10-31
 
 ### Added
