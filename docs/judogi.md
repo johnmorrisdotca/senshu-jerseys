@@ -238,7 +238,7 @@ The package ships no Japanese font: a Japanese face is megabytes. A drawing save
 
 **Text to outlines: `fontToPath`.** `fontToPath(bytes, text, { direction, spacing, precision })` reads a TrueType file (the `.ttf` bytes as an `ArrayBuffer` or a typed array, however you got them: `fetch`, `readFileSync`) and returns the outlines of `text` as one path, `{ d, width, height, missing }`, for an embroidery's `path`. Run it once, keep the result (measured with Yuji Syuku and Klee One: four kanji about 10 kB of path, `TANAKA` 6 to 9 kB, at the default precision; `precision: 0` takes about a third off), and the page needs no font and no `@font-face`: a saved SVG and the canvas painter draw it as it is. It is about 2.7 kB gzipped, with no dependency, and is left out of a bundle that does not import it.
 
-```js
+```js no-run
 import { fontToPath, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
 
 const brush = new Uint8Array(await (await fetch("/fonts/YujiSyuku-Regular.ttf")).arrayBuffer());
