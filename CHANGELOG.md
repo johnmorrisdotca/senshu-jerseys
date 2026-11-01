@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-31
+
 ### Added
 
 - **The designer's view fits, zooms and pans** (SPX-738). The picture is the whole of the view and is fitted so that every piece, belt ends of 55 cm included, lies inside it with a margin at every angle and tilt, whatever the display. Zoomed in, a plain drag (one finger on a phone) moves the view; Move and Turn buttons choose between moving and turning (`drag=turn` in the address); arrow buttons move it a quarter of the view; Fit puts it back. + and − zoom about the middle of the piece as it is turned, a Ctrl or Command wheel, a pinch and a double press about the pointer. This closes the case where a belt at 2x, -179 degrees and -30 tilt was cut off with no way to move it. On the Judogi and Uniforms pages.
