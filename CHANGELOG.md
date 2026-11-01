@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-31
+
 ### Added
 
 - **The Judogi designer takes a font file, the country's letters and the trouser hem** (SPX-834). Each embroidery line has a "Choose a .ttf file" picker and an Across or Down choice: the file goes through `fontToPath` in the browser and becomes the line's `path`; the address keeps only the file's name and the direction (`e1file`, `e1dir`, `e2file`, `e2dir`), says "Pick the font again" after a reload, and shows `fontToPath`'s message for a file it refuses (CFF, WOFF). The country's letters (`nation`) have a code, Thread or Print, the shoulder, the letter colour and a print's band colour (`nc`, `ns`, `np`, `ni`, `nb`). The trouser hem (`hemAboveAnkleCm`) is 2, 5 or 10 cm (`hem`). The stage carries a `data-frame` fingerprint of the drawing so that the tests can tell it changed. The library is unchanged.
