@@ -3,6 +3,11 @@ import { fakeFont, tinyFont } from "./tinyFont.mjs";
 
 // The judogi designer: it draws on a canvas, turns in place, keeps its angle when a choice changes, keeps every choice in the address,
 // and has no control left in the browser's own style.
+// The view controls are the shared <kazoku-view-controls>: its parts are inside its shadow root, which these selectors reach.
+const PARTS = { yaw: "#yaw", tilt: "#tilt", angle: ".angle", tiltfield: ".tilt", play: '[data-b="play"]', front: '[data-b="front"]', out: '[data-b="out"]', two: '[data-b="two"]', in: '[data-b="in"]', fit: '[data-b="fit"]', pan: '[data-g="pan"]', left: '[data-b="left"]', right: '[data-b="right"]', up: '[data-b="up"]', down: '[data-b="down"]', move: '[data-b="move"]', turn: '[data-b="turn"]' };
+const vc = (page, name) => page.locator(`kazoku-view-controls ${PARTS[name]}`);
+/** The zoom the controls hold, as the old Back-to-1x button showed it. */
+const zoomText = (page) => page.locator("kazoku-view-controls").evaluate((el) => `${Number(el.state.zoom.toFixed(1))}×`);
 /** Choose an option of a swatch, tile or segmented picker. */
 const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
 const yawOf = (page) => page.locator("#judo-stage canvas").getAttribute("data-yaw").then(Number);
@@ -26,7 +31,7 @@ test("the angle slider turns the drawing in place, and a choice keeps the angle"
   const canvas = page.locator("#judo-stage canvas");
   await expect(canvas).toBeVisible();
   await canvas.evaluate((n) => n.setAttribute("data-mark", "before"));
-  await page.locator('[data-testid="judo-yaw"]').fill("40");
+  await vc(page, "yaw").fill("40");
   expect(await yawOf(page)).toBe(40);
   // The same element, moved: nothing was drawn again.
   await expect(page.locator('#judo-stage canvas[data-mark="before"]')).toHaveCount(1);
@@ -46,7 +51,7 @@ test("the angle slider turns the drawing in place, and a choice keeps the angle"
 test("it turns on its own with the button, and stops on the second press", async ({ page }) => {
   await page.goto("/judogi.html?mode=pants");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  const play = page.locator('[data-testid="judo-play"]');
+  const play = vc(page, "play");
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "true");
   await expect.poll(() => yawOf(page)).not.toBe(0);
@@ -65,16 +70,26 @@ test("the controls are in the page's own style, beside the view, and a finger wi
     .map((el) => el.id));
   expect(plain).toEqual([]);
   // The turn controls are on screen with the view, without scrolling.
-  const bar = await page.locator('[data-testid="judo-play"]').boundingBox();
+  const bar = await vc(page, "play").boundingBox();
   const vh = page.viewportSize()?.height ?? 0;
   expect(bar && bar.y + bar.height <= vh + 400).toBe(true);
+});
+
+test("the view controls are in the first screen with the view, on a desk and on a phone", async ({ page }) => {
+  await page.goto("/judogi.html");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const vh = page.viewportSize()?.height ?? 0;
+  for (const name of ["yaw", "tilt", "play", "front", "out", "in", "fit"]) {
+    const box = await vc(page, name).boundingBox();
+    expect(box !== null && box.y >= 0 && box.y + box.height <= vh, `${name} is in the first screen`).toBe(true);
+  }
 });
 
 test("the flat view stays a drawing, with nothing to turn", async ({ page }) => {
   await page.goto("/judogi.html?view=flat");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
   await expect(page.locator("#judo-stage canvas")).toHaveCount(0);
-  await expect(page.locator('[data-testid="judo-play"]')).toBeHidden();
+  await expect(vc(page, "play")).toBeHidden();
 });
 
 test("the back patch's choices are in the address, show only when they apply, and the flat back is a drawing", async ({ page }) => {
@@ -90,7 +105,7 @@ test("the back patch's choices are in the address, show only when they apply, an
   await expect(page).toHaveURL(/pname=SATO/);
   await page.goto("/judogi.html?view=flat-back&patch=zekken");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
-  await expect(page.locator('[data-testid="judo-play"]')).toBeHidden();
+  await expect(vc(page, "play")).toBeHidden();
 });
 
 test("embroidery, the logo and the emblem are chosen in the page and kept in the address", async ({ page }) => {
@@ -158,12 +173,12 @@ const middle = async (page) => {
 test("a drag turns and tips the view, and grabbing it stops the automatic turn", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  await page.locator('[data-testid="judo-play"]').click();
-  await expect(page.locator('[data-testid="judo-play"]')).toHaveAttribute("aria-pressed", "true");
+  await vc(page, "play").click();
+  await expect(vc(page, "play")).toHaveAttribute("aria-pressed", "true");
   const m = await middle(page);
   await page.mouse.move(m.x, m.y);
   await page.mouse.down();
-  await expect(page.locator('[data-testid="judo-play"]')).toHaveAttribute("aria-pressed", "false");
+  await expect(vc(page, "play")).toHaveAttribute("aria-pressed", "false");
   const before = await attr(page, "data-yaw");
   // A drag across the view's width is a half turn; up lifts the front of the piece (the package's tilt is then negative: seen from below).
   await page.mouse.move(m.x + m.width / 4, m.y - m.height / 4, { steps: 6 });
@@ -173,7 +188,7 @@ test("a drag turns and tips the view, and grabbing it stops the automatic turn",
   const lifted = await attr(page, "data-tilt");
   expect(lifted).toBeLessThan(0);
   await expect(page).toHaveURL(/tilt=\d+/);
-  expect(await page.locator('[data-testid="judo-tilt"]').inputValue()).toBe(String(-lifted));
+  expect(await vc(page, "tilt").inputValue()).toBe(String(-lifted));
   // It stays still: nothing turns it on again.
   await page.waitForTimeout(300);
   expect(await attr(page, "data-yaw")).toBe(yaw);
@@ -182,12 +197,12 @@ test("a drag turns and tips the view, and grabbing it stops the automatic turn",
 test("the tilt slider tips the view by up to 30 degrees and the address keeps it", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  await page.locator('[data-testid="judo-tilt"]').fill("30");
+  await vc(page, "tilt").fill("30");
   // The slider's top lifts the front, like a drag up: the package is told the opposite sign.
   expect(await attr(page, "data-tilt")).toBe(-30);
   await expect(page).toHaveURL(/tilt=30/);
   await page.goto(page.url());
-  await expect(page.locator('[data-testid="judo-tilt"]')).toHaveValue("30");
+  await expect(vc(page, "tilt")).toHaveValue("30");
   expect(await attr(page, "data-tilt")).toBe(-30);
 });
 
@@ -211,7 +226,7 @@ test("a sideways swipe turns the view, an up and down wheel is the page's unless
   // SPX-750: the wheel's direction is the original one (John 2026-10-28: "you changed the wheel behaviour... fix that back"): a wheel DOWN gives the package a
   // negative tilt (seen from below), the Tilt slider's value a positive one. Only the drag was meant to change sign (a drag up lifts the front).
   await expect.poll(() => attr(page, "data-tilt")).toBeLessThan(0);
-  expect(await page.locator('[data-testid="judo-tilt"]').inputValue()).toBe("15");
+  expect(await vc(page, "tilt").inputValue()).toBe("15");
   await page.mouse.wheel(0, -200);
   await expect.poll(() => attr(page, "data-tilt")).toBeGreaterThan(0);
   // Ctrl and the wheel is a pinch on a trackpad: zoom.
@@ -219,35 +234,34 @@ test("a sideways swipe turns the view, an up and down wheel is the page's unless
   await page.mouse.wheel(0, -200);
   await page.keyboard.up("Control");
   await expect(page).toHaveURL(/zoom=\d/);
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).not.toHaveText("1×");
+  await expect.poll(() => zoomText(page)).not.toBe("1×");
 });
 
 test("zoom runs from 1x to 5x by the buttons and a double press, and the address keeps it", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  const reset = page.locator('[data-testid="judo-zoom-reset"]');
-  await expect(reset).toHaveText("1×");
-  await expect(page.locator('[data-testid="judo-zoom-out"]')).toBeDisabled();
-  for (let i = 0; i < 10 && (await page.locator('[data-testid="judo-zoom-in"]').isEnabled()); i++) await page.locator('[data-testid="judo-zoom-in"]').click();
-  await expect(reset).toHaveText("5×");
-  await expect(page.locator('[data-testid="judo-zoom-in"]')).toBeDisabled();
+  await expect.poll(() => zoomText(page)).toBe("1×");
+  await expect(vc(page, "out")).toBeDisabled();
+  for (let i = 0; i < 10 && (await vc(page, "in").isEnabled()); i++) await vc(page, "in").click();
+  await expect.poll(() => zoomText(page)).toBe("5×");
+  await expect(vc(page, "in")).toBeDisabled();
   await expect(page).toHaveURL(/zoom=5/);
   // Past the limit in the address is the limit.
   await page.goto("/judogi.html?mode=jacket&zoom=9");
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("5×");
+  await expect.poll(() => zoomText(page)).toBe("5×");
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  await reset.click();
-  await expect(reset).toHaveText("1×");
+  await vc(page, "fit").click();
+  await expect.poll(() => zoomText(page)).toBe("1×");
   await expect(page).not.toHaveURL(/zoom=/);
   // A double press zooms in where it was pressed, and again puts it back.
   const m = await middle(page);
   await page.mouse.dblclick(m.x + 30, m.y - 30);
-  await expect(reset).toHaveText("2×");
+  await expect.poll(() => zoomText(page)).toBe("2×");
   await page.mouse.dblclick(m.x, m.y);
-  await expect(reset).toHaveText("1×");
+  await expect.poll(() => zoomText(page)).toBe("1×");
   await page.goto("/judogi.html?mode=jacket&zoom=2");
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("2×");
+  await expect.poll(() => zoomText(page)).toBe("2×");
 });
 
 test("the arrow keys turn and tip the view and plus and minus zoom it", async ({ page }) => {
@@ -259,22 +273,22 @@ test("the arrow keys turn and tip the view and plus and minus zoom it", async ({
   // SPX-750: Arrow Up goes with the wheel up, as it did before the drag fix: the package's tilt is positive.
   await page.keyboard.press("ArrowUp");
   expect(await attr(page, "data-tilt")).toBe(5);
-  await expect(page.locator('[data-testid="judo-tilt"]')).toHaveValue("-5");
+  await expect(vc(page, "tilt")).toHaveValue("-5");
   await page.keyboard.press("+");
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).not.toHaveText("1×");
+  await expect.poll(() => zoomText(page)).not.toBe("1×");
   await page.keyboard.press("0");
   expect(await attr(page, "data-yaw")).toBe(0);
   expect(await attr(page, "data-tilt")).toBe(0);
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("1×");
+  await expect.poll(() => zoomText(page)).toBe("1×");
 });
 
 test("a flat view zooms as a drawing and has nothing to turn or tip", async ({ page }) => {
   await page.goto("/judogi.html?view=flat");
   await expect(page.locator("#judo-stage svg")).toBeVisible();
   // Nothing greyed that does nothing: the turn and tilt controls are not there, with a line to say why; the zoom stays.
-  for (const id of ["judo-turnbar", "judo-tiltbar", "judo-yaw", "judo-tilt", "judo-play", "judo-front"]) await expect(page.locator(`[data-testid="${id}"], #${id}`).first()).toBeHidden();
+  for (const name of ["angle", "tiltfield", "yaw", "tilt", "play", "front"]) await expect(vc(page, name)).toBeHidden();
   await expect(page.locator('[data-testid="judo-flat-note"]')).toBeVisible();
-  await page.locator('[data-testid="judo-zoom-in"]').click();
+  await vc(page, "in").click();
   await expect(page.locator("#judo-stage")).toHaveAttribute("style", /scale\(/);
 });
 
@@ -391,12 +405,12 @@ test("every display mode in every view: the turn controls are there only where t
       const flat = view.startsWith("flat");
       await expect(page.locator(flat ? "#judo-stage svg" : "#judo-stage canvas")).toBeVisible();
       const where = `${mode} ${view}`;
-      for (const id of ["judo-turnbar", "judo-tiltbar", "judo-yaw", "judo-tilt", "judo-play", "judo-front"]) {
-        const shown = page.locator(`#${id}`);
-        if (flat) await expect(shown, `${where}: ${id} is hidden`).toBeHidden();
+      for (const name of ["angle", "tiltfield", "yaw", "tilt", "play", "front"]) {
+        const shown = vc(page, name);
+        if (flat) await expect(shown, `${where}: ${name} is hidden`).toBeHidden();
         else {
-          await expect(shown, `${where}: ${id} is shown`).toBeVisible();
-          await expect(shown, `${where}: ${id} works`).toBeEnabled();
+          await expect(shown, `${where}: ${name} is shown`).toBeVisible();
+          await expect(shown, `${where}: ${name} works`).toBeEnabled();
         }
       }
       await expect(page.locator('[data-testid="judo-flat-note"]'), where).toHaveCount(1);
@@ -404,11 +418,11 @@ test("every display mode in every view: the turn controls are there only where t
       else {
         await expect(page.locator('[data-testid="judo-flat-note"]'), where).toBeHidden();
         // A turn control that does something: the angle slider moves the drawing.
-        await page.locator('[data-testid="judo-yaw"]').fill("40");
+        await vc(page, "yaw").fill("40");
         expect(await attr(page, "data-yaw"), where).toBe(40 + (view === "back" ? 180 : 0) > 180 ? 40 + 180 - 360 : 40 + (view === "back" ? 180 : 0));
       }
-      await page.locator('[data-testid="judo-zoom-in"]').click();
-      await expect(page.locator('[data-testid="judo-zoom-reset"]'), where).not.toHaveText("1×");
+      await vc(page, "in").click();
+      await expect.poll(() => zoomText(page), where).not.toBe("1×");
     }
   }
 });
@@ -516,7 +530,7 @@ test("the folded belt and the belt's gift box are Display choices with their own
   await ctl("judo-bnd").click();
   await expect(page).toHaveURL(/bnd=1/);
   // It turns like the other views.
-  await page.locator('[data-testid="judo-yaw"]').fill("50");
+  await vc(page, "yaw").fill("50");
   await expect.poll(() => canvas.getAttribute("data-yaw").then(Number)).toBe(50);
   // The same page changes to the box.
   await pick(page, "judo-mode", "box");
@@ -571,8 +585,8 @@ test("the folded belt and the box have no controls that do nothing in a flat vie
       await page.goto(`/judogi.html?mode=${mode}&view=${view}&bxs=open`);
       await expect(page.locator("#judo-stage canvas, #judo-stage svg").first()).toBeVisible();
       // A flat view is the same scene standing still: its turn controls are taken away, a turning view keeps them.
-      if (view.startsWith("flat")) await expect(page.locator("#judo-turnbar")).toBeHidden();
-      else await expect(page.locator("#judo-turnbar")).toBeVisible();
+      if (view.startsWith("flat")) await expect(vc(page, "angle")).toBeHidden();
+      else await expect(vc(page, "angle")).toBeVisible();
     }
   }
   expect(errors).toEqual([]);
@@ -592,9 +606,9 @@ test("at 1x every piece fits the view with a margin at every angle and tilt, ext
     await page.goto(`/judogi.html?mode=${mode}&belt=red-white`);
     await expect(page.locator("#judo-stage canvas")).toBeVisible();
     for (const tilt of [-30, 0, 30]) {
-      await page.locator('[data-testid="judo-tilt"]').fill(String(tilt));
+      await vc(page, "tilt").fill(String(tilt));
       for (const yaw of [-179, -135, -90, -45, 0, 45, 90, 135, 179]) {
-        await page.locator('[data-testid="judo-yaw"]').fill(String(yaw));
+        await vc(page, "yaw").fill(String(yaw));
         await inside(`${mode} yaw ${yaw} tilt ${tilt}`);
       }
     }
@@ -606,9 +620,9 @@ test("John's case on the designer: the belt at -179 degrees and -30 tilt, zoomed
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const read = () => page.locator("#judo-stage canvas").evaluate((c) => ({ b: (c.getAttribute("data-bounds") ?? "").split(" ").map(Number), s: (c.getAttribute("data-size") ?? "").split(" ").map(Number) }));
   const before = await read();
-  await page.locator('[data-testid="judo-zoom-in"]').click();
-  await page.locator('[data-testid="judo-zoom-in"]').click();
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("2×");
+  await vc(page, "in").click();
+  await vc(page, "in").click();
+  await expect.poll(() => zoomText(page)).toBe("2×");
   await page.waitForTimeout(600);
   const r = await read();
   // The piece grew about its own middle, which stays put (a phone's view is too narrow to hold it whole at 2x: the arrows move it).
@@ -637,7 +651,7 @@ const dragBy = async (page, dx, dy = 0) => {
 test("a plain drag turns the piece at 1x, and the move and turn buttons are not there yet", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  await expect(page.locator('[data-testid="judo-pan"]')).toBeHidden();
+  await expect(vc(page, "pan")).toBeHidden();
   const m = await middle(page);
   const r = await dragBy(page, m.width / 4);
   // Across the view's width is a half turn, so a quarter of it is about 45 degrees.
@@ -647,19 +661,44 @@ test("a plain drag turns the piece at 1x, and the move and turn buttons are not 
 test("zoomed in a plain drag moves the view; the Turn button makes it turn, and the choice is kept in the address", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black&zoom=3");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
-  await expect(page.locator('[data-testid="judo-pan"]')).toBeVisible();
-  await expect(page.locator('[data-testid="judo-hand-move"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(vc(page, "pan")).toBeVisible();
+  await expect(vc(page, "move")).toHaveAttribute("aria-pressed", "true");
   let r = await dragBy(page, 60, 30);
   expect(r.turned).toBeLessThan(2);
   expect(Math.round(r.moved[0])).toBeGreaterThan(20);
-  await page.locator('[data-testid="judo-hand-turn"]').click();
+  await vc(page, "turn").click();
   await expect(page).toHaveURL(/drag=turn/);
   r = await dragBy(page, 120);
   expect(r.turned).toBeGreaterThan(10);
   await page.goto(page.url());
-  await expect(page.locator('[data-testid="judo-hand-turn"]')).toHaveAttribute("aria-pressed", "true");
-  await page.locator('[data-testid="judo-hand-move"]').click();
+  await expect(vc(page, "turn")).toHaveAttribute("aria-pressed", "true");
+  await vc(page, "move").click();
   await expect(page).not.toHaveURL(/drag=/);
+});
+
+// One finger turns the piece at 1x and moves the view when zoomed in (sent as touch pointer events to the view).
+const finger = (page, type, x, y) => page.locator('[data-testid="judo-turntable"]').evaluate((el, [t, cx, cy]) => {
+  el.dispatchEvent(new PointerEvent(t, { pointerId: 1, pointerType: "touch", isPrimary: true, clientX: cx, clientY: cy, bubbles: true, cancelable: true, button: 0, buttons: t === "pointerup" ? 0 : 1 }));
+}, [type, x, y]);
+
+test("one finger turns the piece at 1x and moves the view when zoomed in", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const m = await middle(page);
+  await finger(page, "pointerdown", m.x, m.y);
+  await finger(page, "pointermove", m.x + m.width / 4, m.y);
+  await finger(page, "pointerup", m.x + m.width / 4, m.y);
+  expect(Math.abs(await attr(page, "data-yaw"))).toBeGreaterThan(30);
+  await page.goto("/judogi.html?mode=jacket&belt=black&zoom=3");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const b0 = await page.locator("#judo-stage canvas").getAttribute("data-bounds").then((v) => v.split(" ").map(Number));
+  await finger(page, "pointerdown", m.x, m.y);
+  await finger(page, "pointermove", m.x + 60, m.y);
+  await finger(page, "pointerup", m.x + 60, m.y);
+  await page.waitForTimeout(500);
+  const b1 = await page.locator("#judo-stage canvas").getAttribute("data-bounds").then((v) => v.split(" ").map(Number));
+  expect(Math.round(b1[0] - b0[0])).toBeGreaterThan(20);
+  expect(await attr(page, "data-yaw")).toBe(0);
 });
 
 test("the arrow buttons move a zoomed view, and Fit puts it back", async ({ page }) => {
@@ -668,13 +707,13 @@ test("the arrow buttons move a zoomed view, and Fit puts it back", async ({ page
   const bounds = () => page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-bounds") ?? "").split(" ").map(Number));
   for (const [dir, axis, sign] of [["left", 0, -1], ["right", 0, 1], ["up", 1, -1], ["down", 1, 1]]) {
     const before = await bounds();
-    await page.locator(`[data-testid="judo-pan-${dir}"]`).click();
+    await vc(page, dir).click();
     await page.waitForTimeout(150);
     const after = await bounds();
     expect(Math.sign(Math.round(after[axis] - before[axis])), dir).toBe(sign);
   }
-  await page.locator('[data-testid="judo-fit"]').click();
-  await expect(page.locator('[data-testid="judo-pan"]')).toBeHidden();
+  await vc(page, "fit").click();
+  await expect(vc(page, "pan")).toBeHidden();
 });
 
 test("zoomed in, Shift and a drag, the right button and the middle button move the view without turning it; Fit puts it all back", async ({ page }) => {
@@ -708,8 +747,8 @@ test("zoomed in, Shift and a drag, the right button and the middle button move t
     expect(await attr(page, "data-yaw")).toBe(yaw0);
   }
   // Fit: zoom and pan back.
-  await page.locator('[data-testid="judo-fit"]').click();
-  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("1×");
+  await vc(page, "fit").click();
+  await expect.poll(() => zoomText(page)).toBe("1×");
   const fitted = await bounds();
   const canvas = await page.locator("#judo-stage canvas").evaluate((c) => (c.getAttribute("data-size") ?? "").split(" ").map(Number));
   expect(fitted[0]).toBeGreaterThanOrEqual(-1);

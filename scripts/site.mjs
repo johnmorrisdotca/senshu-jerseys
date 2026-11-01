@@ -8,6 +8,8 @@ mkdirSync("site", { recursive: true });
 cpSync("demo", "site", { recursive: true, filter: (from) => !/\.d\.ts$/.test(from) });
 // The declarations are for editors, not for a browser.
 cpSync("dist", "site/dist", { recursive: true, filter: (from) => !/\.d\.ts$/.test(from) });
+// The shared view controls (a dev dependency, used only by the demo) are served beside the pages.
+cpSync("node_modules/@johnmorrisdotca/kazoku-ui/dist", "site/kazoku-ui", { recursive: true, dereference: true, filter: (from) => !/\.d\.ts$/.test(from) });
 writeFileSync("site/index.html", renderIndex());
 writeFileSync("site/judogi.html", renderJudogi());
 writeFileSync("site/uniforms.html", renderUniforms());

@@ -8,10 +8,12 @@ import {
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
-import { bindMoves, bindView, clamp, fillView, TILT_MAX, viewSize, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
+import { clamp, fillView, viewSize } from "./judogiView.js";
+import "./kazoku-ui/view-controls/define.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
+const bar = $("judo-bar");
 const params = new URLSearchParams(location.search);
 /** The belt's width: its grade's own, or one of the widths that grade is made in (4.2, 4.5 or 4.7 cm; a maker's catalogue, see docs/judogi.md). */
 const BELT_WIDTHS = ["auto", "4.2", "4.5", "4.7"];
@@ -40,8 +42,6 @@ function stateOfStyle(style) {
 }
 const lang = () => window.senshuLanguage?.lang ?? "en";
 const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
-/** Degrees a second when it turns on its own: slow enough to look at the cloth. */
-const SPEED = 30;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
 
 const state = {
@@ -50,12 +50,11 @@ const state = {
   mode: JUDOGI_MODES.includes(params.get("mode")) ? params.get("mode") : "pieces",
   view: JUDOGI_VIEWS.includes(params.get("view")) ? params.get("view") : "front",
   size: JUDOGI_SIZES.includes(params.get("size")) ? params.get("size") : "170",
-  yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
-  // How far the camera is tipped (degrees, up is positive) and zoomed (1 to 5): in the address, like the angle.
-  tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
-  zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
-  // What a plain drag does while zoomed in: move the view, or turn the piece.
-  drag: params.get("drag") === "turn" ? "turn" : "move",
+  // The camera (angle, tip, zoom, what a drag does) is the view controls': read from them, kept in the address by them.
+  yaw: bar.state.yaw,
+  tilt: bar.state.tilt,
+  zoom: bar.state.zoom,
+  drag: bar.state.drag,
   // The back patch: its style, the words on it and its colours. Every one is in the address.
   patch: PATCH_STYLES.includes(params.get("patch")) ? params.get("patch") : "none",
   pname: (params.get("pname") ?? "").slice(0, 24),
@@ -209,7 +208,9 @@ function fingerprint(text) {
 
 const logoList = () => state.logo.split(",").filter((p) => LOGO_PLACES.includes(p));
 
-const turning = { on: false, byHover: false, last: 0, frame: 0 };
+/** The turn the pointer's arrival started, and whether a hand has taken hold since (a grab stops the turn for good). */
+let byHover = false;
+let grabbed = false;
 
 /** The options the package takes, made from the page's state. A word left empty is the package's own default. */
 function options() {
@@ -284,13 +285,18 @@ function options() {
 
 const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e1dir: "across", e2c: "gold", e2f: "block", e2n: "0", e2dir: "across", ns: "embroidery", np: "shoulder-left", ni: "none", nb: "none", hem: "5", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", dg: "0", dc: "wt", dgr: "kup", dd: "none", dk: "0", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
+const CAMERA = ["yaw", "tilt", "zoom", "drag"];
+
 function syncUrl() {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(state)) {
-    if (String(v) === "" || (k === "yaw" && (Number(v) === 0 || turning.on))) continue;
+    if (String(v) === "" || CAMERA.includes(k)) continue;
     if (k in DEFAULTS && String(v) === String(DEFAULTS[k])) continue;
     q.set(k, String(v));
   }
+  // The camera's keys are the view controls' to write: keep what they have put in the address.
+  const now = new URLSearchParams(location.search);
+  for (const k of CAMERA) if (now.has(k)) q.set(k, now.get(k));
   history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
 }
 
@@ -302,7 +308,6 @@ const stillSolid = () => flat() && solid();
 /** The angle and the tip the canvas is painted at. */
 const shownYaw = () => (stillSolid() ? (state.view === "flat-back" ? 180 : 0) : state.yaw + (state.view === "back" ? 180 : 0));
 const shownTilt = () => (stillSolid() ? 0 : pitchOf());
-const wrap = wrapYaw;
 /** Where the zoomed stage is moved to, in pixels from its middle (not in the address). */
 const pan = { x: 0, y: 0 };
 /** The picture quality the canvas was last made at: it is made again when a zoom settles somewhere that wants another. */
@@ -349,12 +354,10 @@ async function draw() {
   if (canvas === undefined) $("judo-stage").replaceChildren(...holder.childNodes);
   else $("judo-stage").replaceChildren(canvas.canvas);
   $("judo-check").textContent = checkText(judogiCheck(o));
-  // A flat layout is a drawing: its turn and tilt controls are taken away, with a line to say why, rather than greyed.
-  $("judo-turnbar").hidden = flat();
-  $("judo-tiltbar").hidden = flat();
+  // A flat layout is a drawing: the view controls take away its turn and tilt, and a line says why, rather than greyed.
+  bar.toggleAttribute("flat", flat());
   $("judo-flat-note").hidden = !flat();
-  if (flat()) stop();
-  showAngle();
+  if (flat()) bar.pause();
   placeStage();
 }
 
@@ -370,42 +373,17 @@ function checkText(check) {
   return check.ok ? `${head} ${check.notes.map((n) => n.fact).join(" ")}` : check.notes.filter((n) => !n.met).map((n) => n.fact).join(" ");
 }
 
-function showAngle() {
-  $("judo-yaw-out").textContent = `${wrap(state.yaw)}°`;
-  $("judo-yaw").value = String(wrap(state.yaw));
-  $("judo-tilt-out").textContent = `${state.tilt}°`;
-  $("judo-tilt").value = String(state.tilt);
-}
-
 /** The stage's zoom and pan: a transform only, so a drag or a pinch costs no drawing. Pan is kept so that the picture still covers the view. */
 function placeStage() {
-  const box = $("judo-turntable").getBoundingClientRect();
-  const room = (state.zoom - 1) / 2;
-  pan.x = state.zoom === 1 ? 0 : clamp(pan.x, -box.width * room, box.width * room);
-  pan.y = state.zoom === 1 ? 0 : clamp(pan.y, -box.height * room, box.height * room);
   // A canvas zooms inside itself (sharp, and the same cost at any zoom); a flat drawing is an SVG, scaled by a transform.
   if (painted !== undefined) {
     $("judo-stage").style.transform = "";
     painted.turn(shownYaw(), shownTilt(), camera());
-  } else $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
-  $("judo-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
-  showMoves(state.zoom, state.drag);
-  // Zoomed in the page does not scroll under a finger, so a one-finger drag can turn the piece and two fingers move the view.
-  const zoomed = state.zoom > 1.05;
-  $("judo-turntable").style.touchAction = zoomed ? "none" : "";
-  $("judo-zoom-out").disabled = state.zoom <= ZOOM_MIN + 1e-6;
-  $("judo-zoom-in").disabled = state.zoom >= ZOOM_MAX - 1e-6;
-}
-
-/** Move the drawing already on the stage to the current angle, without drawing it again. */
-function turnTo(yaw, tilt = state.tilt) {
-  state.yaw = yaw;
-  state.tilt = tilt;
-  const shown = state.yaw + (state.view === "back" ? 180 : 0);
-  const svg = $("judo-stage").querySelector("svg");
-  if (painted !== undefined) painted.turn(shown, pitchOf(), camera());
-  else if (svg !== null && !flat()) judogiTurn(svg, shown, pitchOf());
-  showAngle();
+  } else {
+    $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
+    const svg = $("judo-stage").querySelector("svg");
+    if (svg !== null && !flat()) judogiTurn(svg, state.yaw + (state.view === "back" ? 180 : 0), pitchOf());
+  }
 }
 
 let crisp = 0;
@@ -416,36 +394,6 @@ function settleQuality() {
     const q = quality();
     if ((!flat() || stillSolid()) && (q.ratio !== madeAt.ratio || q.scale !== madeAt.scale)) draw();
   }, 350);
-}
-
-function tick(now) {
-  if (!turning.on) return;
-  const dt = turning.last === 0 ? 0 : Math.min(0.1, (now - turning.last) / 1000);
-  turning.last = now;
-  turnTo(state.yaw + SPEED * dt);
-  turning.frame = requestAnimationFrame(tick);
-}
-
-function play(byHover = false) {
-  if (turning.on || flat()) return;
-  turning.on = true;
-  turning.byHover = byHover;
-  turning.last = 0;
-  turning.frame = requestAnimationFrame(tick);
-  syncPlay();
-}
-
-function stop() {
-  if (!turning.on) return;
-  turning.on = false;
-  globalThis.cancelAnimationFrame(turning.frame);
-  syncPlay();
-  syncUrl();
-}
-
-function syncPlay() {
-  $("judo-play").setAttribute("aria-pressed", String(turning.on));
-  $("judo-play").textContent = turning.on ? say("pause") : say("play");
 }
 
 function select(id, values, labels) {
@@ -874,78 +822,44 @@ function exportPng() {
 }
 
 controls();
-$("judo-yaw").addEventListener("input", () => {
-  stop();
-  turnTo(Number($("judo-yaw").value));
-  syncUrl();
+const view = $("judo-turntable");
+// Still until a mouse comes over it: then it turns, and stops when the mouse leaves, unless it was set turning with the button. Grabbing it (a press, the wheel, a key) stops the turn for good.
+view.addEventListener("pointerenter", (event) => {
+  if (event.pointerType === "mouse" && !reduced.matches && !grabbed && !bar.state.turning) {
+    bar.play();
+    byHover = true;
+  }
 });
-$("judo-play").addEventListener("click", () => (turning.on ? stop() : play()));
-// Still until a mouse comes over it: then it turns, and stops when the mouse leaves, unless it was set turning with the button. Grabbing it (a drag, the wheel, a key) stops the turn for good.
-$("judo-turntable").addEventListener("pointerenter", (event) => {
-  if (event.pointerType === "mouse" && !reduced.matches && !grabbed) play(true);
+view.addEventListener("pointerleave", () => {
+  if (byHover) bar.pause();
 });
-$("judo-turntable").addEventListener("pointerleave", () => {
-  if (turning.byHover) stop();
-});
-let grabbed = false;
-const hooks = {
-  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: !flat(), drag: state.drag }),
-  grab() {
-    grabbed = true;
-    turning.byHover = false;
-    stop();
-  },
-  set(next, final) {
-    if (next.zoom !== undefined) state.zoom = next.zoom;
-    if (next.panX !== undefined) pan.x = next.panX;
-    if (next.panY !== undefined) pan.y = next.panY;
-    if (next.yaw !== undefined || next.tilt !== undefined) turnTo(next.yaw ?? state.yaw, next.tilt ?? state.tilt);
-    placeStage();
-    if (final) {
-      syncUrl();
-      settleQuality();
-    }
-  },
+const grab = () => {
+  grabbed = true;
+  bar.pause();
 };
-const hands = bindView($("judo-turntable"), hooks);
-const showMoves = bindMoves("judo", $("judo-turntable"), hooks, (value) => { state.drag = value; showMoves(state.zoom, state.drag); syncUrl(); });
-$("judo-tilt").addEventListener("input", () => {
-  stop();
-  turnTo(state.yaw, Number($("judo-tilt").value));
-  syncUrl();
-});
-$("judo-zoom-in").addEventListener("click", () => hands.zoomBy(1.4));
-$("judo-zoom-out").addEventListener("click", () => hands.zoomBy(1 / 1.4));
-const fit = () => {
-  pan.x = 0;
-  pan.y = 0;
-  state.zoom = 1;
+view.addEventListener("pointerdown", grab);
+bar.addEventListener("kazoku-viewchange", ({ detail }) => {
+  const { yaw, tilt, zoom, panX, panY, drag, reason, final } = detail;
+  Object.assign(state, { yaw, tilt: Math.round(tilt), zoom, drag });
+  pan.x = panX;
+  pan.y = panY;
+  if (reason === "play" || reason === "pause") byHover = false;
+  if (reason === "wheel" || reason === "key") grab();
   placeStage();
-  syncUrl();
-  settleQuality();
-};
-$("judo-fit").addEventListener("click", fit);
-$("judo-zoom-reset").addEventListener("click", () => {
-  pan.x = 0;
-  pan.y = 0;
-  state.zoom = 1;
-  placeStage();
-  syncUrl();
-  settleQuality();
-});
-$("judo-front").addEventListener("click", () => {
-  stop();
-  turnTo(0, 0);
-  syncUrl();
+  if (final) {
+    syncUrl();
+    settleQuality();
+  }
 });
 let resizing = 0;
 window.addEventListener("resize", () => {
-  placeStage();
+  bar.set({}, false);
   globalThis.clearTimeout(resizing);
   resizing = globalThis.setTimeout(() => { if ((!flat() || stillSolid()) && painted !== undefined && (Math.abs(viewSize($("judo-turntable"), natH).width - painted.canvas.clientWidth) > 8 || Math.abs(viewSize($("judo-turntable"), natH).height - painted.canvas.clientHeight) > 8)) draw(); }, 300);
 });
 $("judo-svg").addEventListener("click", exportSvg);
 $("judo-png").addEventListener("click", exportPng);
-window.addEventListener("senshu-language", () => { controls(); draw(); syncPlay(); });
+const speak = () => bar.setAttribute("lang", lang() === "ja" ? "ja" : "en");
+window.addEventListener("senshu-language", () => { speak(); controls(); draw(); });
+speak();
 draw();
-syncPlay();

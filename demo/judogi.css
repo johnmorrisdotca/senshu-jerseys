@@ -15,6 +15,7 @@
 .judo-view[data-grab] { cursor: grabbing; }
 .judo-view:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .judo-view .stage { background: transparent; overflow: visible; transform-origin: 50% 50%; }
+kazoku-view-controls { --kazoku-ink: var(--ink); --kazoku-surface: var(--surface); --kazoku-line: var(--rule); --kazoku-accent: var(--felt); }
 .judo-zoom, .judo-pan, .judo-hand { display: inline-flex; gap: 4px; }
 .judo-pan[hidden] { display: none; }
 .judo-pan { flex-wrap: wrap; align-items: center; }

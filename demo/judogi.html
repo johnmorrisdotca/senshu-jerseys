@@ -20,36 +20,7 @@
           <div class="judo-view" id="judo-turntable" data-testid="judo-turntable" tabindex="0" role="group" aria-roledescription="turntable" data-say-label="judoViewLabel">
             <div class="stage" id="judo-stage" data-testid="judo-stage"></div>
           </div>
-          <div class="turnbar" id="judo-turnbar" data-testid="judo-turnbar">
-            <label class="fam-label" for="judo-yaw" data-say="angle"></label>
-            <input class="range" type="range" id="judo-yaw" min="-180" max="180" step="1" value="0" data-testid="judo-yaw" />
-            <output id="judo-yaw-out" for="judo-yaw">0°</output>
-            <button type="button" class="fam-button" id="judo-play" data-testid="judo-play" aria-pressed="false" data-say="play"></button>
-            <button type="button" class="fam-button" id="judo-front" data-say="front"></button>
-          </div>
-          <div class="turnbar">
-            <span class="judo-tiltbar" id="judo-tiltbar" data-testid="judo-tiltbar">
-              <label class="fam-label" for="judo-tilt" data-say="judoTilt"></label>
-              <input class="range" type="range" id="judo-tilt" min="-30" max="30" step="1" value="0" data-testid="judo-tilt" />
-              <output id="judo-tilt-out" for="judo-tilt">0°</output>
-            </span>
-            <span class="judo-zoom" role="group" data-say-label="judoZoom">
-              <button type="button" class="fam-button" id="judo-zoom-out" data-testid="judo-zoom-out" data-say-label="judoZoomOut">−</button>
-              <button type="button" class="fam-button" id="judo-zoom-reset" data-testid="judo-zoom-reset" data-say-label="judoZoomReset">1×</button>
-              <button type="button" class="fam-button" id="judo-zoom-in" data-testid="judo-zoom-in" data-say-label="judoZoomIn">+</button>
-              <button type="button" class="fam-button" id="judo-fit" data-testid="judo-fit" data-say="judoFit"></button>
-            </span>
-            <span class="judo-pan" id="judo-pan" data-testid="judo-pan" role="group" data-say-label="judoPan" hidden>
-              <button type="button" class="fam-button" id="judo-pan-left" data-testid="judo-pan-left" data-say-label="judoPanLeft" aria-label="Move left">&#9664;</button>
-              <button type="button" class="fam-button" id="judo-pan-up" data-testid="judo-pan-up" data-say-label="judoPanUp" aria-label="Move up">&#9650;</button>
-              <button type="button" class="fam-button" id="judo-pan-down" data-testid="judo-pan-down" data-say-label="judoPanDown" aria-label="Move down">&#9660;</button>
-              <button type="button" class="fam-button" id="judo-pan-right" data-testid="judo-pan-right" data-say-label="judoPanRight" aria-label="Move right">&#9654;</button>
-              <span class="judo-hand" role="group" data-say-label="judoDrag">
-                <button type="button" class="fam-button" id="judo-hand-move" data-testid="judo-hand-move" aria-pressed="true" data-say="judoDragMove"></button>
-                <button type="button" class="fam-button" id="judo-hand-turn" data-testid="judo-hand-turn" aria-pressed="false" data-say="judoDragTurn"></button>
-              </span>
-            </span>
-          </div>
+          <kazoku-view-controls id="judo-bar" data-testid="judo-bar" for="judo-turntable" address></kazoku-view-controls>
         </div>
         <p class="fam-fine" id="judo-flat-note" data-testid="judo-flat-note" data-say="judoFlatNote" hidden></p>
         <div class="fam-actions">
