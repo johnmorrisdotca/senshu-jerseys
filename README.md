@@ -357,7 +357,7 @@ console.log(hanging.includes("Retired number banner 99")); // true
 console.log(pennant.includes("Championship banner")); // true
 ```
 
-A judogi (jacket, trousers and belt) is its own drawing, each piece a garment with volume that turns: a stitched lapel crossing left over right, sleeves hanging from a dropped shoulder, a quilted skirt, and trousers whose hips part into two legs. The designer demo keeps every choice in the address. [Judogi](./docs/judogi.md).
+A judogi (jacket, trousers and belt) is its own drawing, each piece a garment with volume that turns: a stitched lapel crossing left over right, sleeves hanging from a dropped shoulder, a quilted skirt, and trousers whose hips part into two legs. The designer demo keeps every choice in the address: the belt and its stripes, the marks, a font file of your own for embroidery (only its name is kept), the country's letters on the shoulder and the trouser hem. [Judogi](./docs/judogi.md).
 
 ```js
 import { JUDOGI_COLOURS, judogiCheck, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";

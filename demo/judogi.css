@@ -84,3 +84,14 @@
 /* A flat layout is a drawing and does not turn: the turn and tilt controls are not shown, not greyed. */
 .turnbar[hidden], .judo-tiltbar[hidden] { display: none; }
 .judo-tiltbar { display: contents; }
+
+/* A font file: a pill that opens the file chooser (the file input itself is out of sight), the name of the file and how to drop it. */
+.judo-fontbox { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.judo-filebtn { cursor: pointer; min-height: 48px; position: relative; }
+.judo-filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.judo-filebtn:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+.judo-filename { font-size: .85rem; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.judo-fontbox .judo-note { flex-basis: 100%; margin-top: 0; }
+.judo-fontnote:empty { display: none; }
+.judo-fontnote[data-error="1"] { color: var(--bad); }
+.judo-fontbox .fam-button { min-height: 48px; }

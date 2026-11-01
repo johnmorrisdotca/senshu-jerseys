@@ -161,6 +161,18 @@ export const PICTURES = {
     "sleeve-left": svg(`${FRONT}<rect x="47" y="16" width="7" height="5" fill="#fff" transform="rotate(-20 50 18)"/>`),
     "sleeve-right": svg(`${FRONT}<rect x="10" y="16" width="7" height="5" fill="#fff" transform="rotate(20 14 18)"/>`),
   },
+  // The shoulder stripe seen from behind, on the wearer's left (the picture's left), right or both; the same stripe as thread (dashes, a stitch) or as flat print.
+  nationPlace: {
+    "shoulder-left": svg(`${BACK}<path d="M27 6 15 18" stroke="#c8102e" stroke-width="4.5" stroke-linecap="butt"/>`),
+    "shoulder-right": svg(`${BACK}<path d="M37 6 49 18" stroke="#c8102e" stroke-width="4.5" stroke-linecap="butt"/>`),
+    shoulders: svg(`${BACK}<path d="M27 6 15 18M37 6 49 18" stroke="#c8102e" stroke-width="4.5" stroke-linecap="butt"/>`),
+  },
+  nationStyle: {
+    embroidery: svg('<rect x="6" y="14" width="52" height="28" rx="3" fill="currentColor" fill-opacity=".07" stroke-width="1"/><path d="M22 23h-6v10h6M26 34l4-11 4 11M28 31h4M38 34V23l8 11V23" stroke="#c8102e" stroke-width="3.2" stroke-dasharray="1.3 1"/>'),
+    print: svg('<rect x="6" y="14" width="52" height="28" rx="3" fill="#1b3a8c" stroke-width="1"/><path d="M22 23h-6v10h6M26 34l4-11 4 11M28 31h4M38 34V23l8 11V23" stroke="#fff" stroke-width="3"/>'),
+  },
+  // The trouser leg's foot: the hem a given number of centimetres above the ankle bone (the dot), at the true ratio of the three steps.
+  hem: Object.fromEntries([2, 5, 10].map((cm) => [String(cm), svg(`<path d="M22 4 20 ${50 - cm * 3.2}h24l-2-${46 - cm * 3.2}" fill="currentColor" fill-opacity=".1"/><path d="M14 52h36" stroke-width="1"/><circle cx="32" cy="48" r="2" fill="#c8102e" stroke="none"/>`)])),
   sewing: {
     x: svg('<rect x="10" y="8" width="44" height="40" fill="#fff" fill-opacity=".9"/><path d="M14 12l36 32M50 12 14 44" stroke-dasharray="3 2.4"/>'),
     lines: svg('<rect x="10" y="8" width="44" height="40" fill="#fff" fill-opacity=".9"/><path d="M21 12v32M32 12v32M43 12v32" stroke-dasharray="3 2.4"/>'),

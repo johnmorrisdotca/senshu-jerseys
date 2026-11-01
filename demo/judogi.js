@@ -4,7 +4,7 @@ import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
   beltWidthsFor, beltStitchLinesFor, beltThicknessesFor, beltCoversFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
-  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor, KARATE_CUTS, KARATE_SLEEVES,
+  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor, KARATE_CUTS, KARATE_SLEEVES, NATION_PLACES, NATION_STYLES, fontToPath,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -20,6 +20,9 @@ const rowsFor = (belt) => ["auto", ...beltStitchLinesFor(belt).map(String)];
 const thicknessFor = (belt) => ["auto", ...beltThicknessesFor(belt)];
 const coverFor = (belt) => ["auto", ...beltCoversFor(belt)];
 const widthsFor = (belt) => ["auto", ...beltWidthsFor(belt).map(String)];
+const HEMS = ["2", "5", "10"];
+/** The country's letters as typed, kept to letters and capitals; the package takes 2 to 4. */
+const nationCode = (value) => value.replace(/[^\p{L}]/gu, "").toUpperCase().slice(0, 4);
 /** A stripe colour from the address, or none. */
 function stripeColour(v) {
   return STRIPE_COLOURS.includes(v) ? v : "none";
@@ -67,7 +70,18 @@ const state = {
     [`e${n}f`, EMBROIDERY_FONTS.includes(params.get(`e${n}f`)) ? params.get(`e${n}f`) : "block"],
     // Thread the cloth's own colour (a tonal mark).
     [`e${n}n`, params.get(`e${n}n`) === "1" ? "1" : "0"],
+    // The name of the font file the lines were set in and the way they run: never the font itself, which stays in this browser and is picked again after a reload.
+    [`e${n}file`, (params.get(`e${n}file`) ?? "").slice(0, 80)],
+    [`e${n}dir`, params.get(`e${n}dir`) === "down" ? "down" : "across"],
   ])),
+  // The country's letters on the shoulder: the code (2 to 4 letters), thread or print, the shoulder, the colour of the letters and of a printed band.
+  nc: (params.get("nc") ?? "").slice(0, 4),
+  ns: NATION_STYLES.includes(params.get("ns")) ? params.get("ns") : "embroidery",
+  np: NATION_PLACES.includes(params.get("np")) ? params.get("np") : "shoulder-left",
+  ni: THREAD_COLOURS.includes(params.get("ni")) ? params.get("ni") : "none",
+  nb: THREAD_COLOURS.includes(params.get("nb")) ? params.get("nb") : "none",
+  // How far above the ankle bone the trousers stop: 2 cm (the IBJJF's), 5 (the IJF's) or 10.
+  hem: HEMS.includes(params.get("hem")) ? params.get("hem") : "5",
   logon: params.get("logon") === "1" ? "1" : "0",
   // The maker's logo places, none to many (the rules allow one to a garment): a comma list in the address.
   logo: (params.get("logo") ?? "").split(",").filter((p) => LOGO_PLACES.includes(p)).join(","),
@@ -143,6 +157,48 @@ async function loadFlag(code) {
   return svg;
 }
 
+/** The font files picked for the two embroidery lines (they stay in this browser), what fontToPath said of each, and why the last file was refused. */
+const fonts = {};
+const fontInfo = { 1: {}, 2: {} };
+const fontError = { 1: "", 2: "" };
+
+/** A line's words as outlines of the font file picked for it, or undefined when there is no file (or no usable outline): the line then says why and the package's own lettering is used. */
+function fontPath(n, words) {
+  const info = (fontInfo[n] = {});
+  if (fonts[n] === undefined) return undefined;
+  try {
+    const p = fontToPath(fonts[n].bytes, words, { direction: state[`e${n}dir`] });
+    if (p.missing.length > 0) info.missing = [...new Set(p.missing)].join(" ");
+    if (p.d === "") info.none = true;
+    return p.d === "" ? undefined : { d: p.d, width: p.width, height: p.height };
+  } catch (error) {
+    info.error = error.message;
+    return undefined;
+  }
+}
+
+/** The line under each font picker: a refused file, a file to pick again after a reload, characters the font lacks. */
+function showFontNotes() {
+  for (const n of [1, 2]) {
+    const note = document.querySelector(`[data-testid="judo-e${n}ff-note"]`);
+    if (note === null) continue;
+    const bad = fontError[n] || fontInfo[n].error || "";
+    note.dataset.error = bad === "" ? "" : "1";
+    if (bad !== "") note.textContent = bad;
+    else if (fonts[n] === undefined && state[`e${n}file`] !== "") note.textContent = `${say("judoFontAgain")}: ${state[`e${n}file`]}`;
+    else if (fontInfo[n].none) note.textContent = say("judoFontNone");
+    else if (fontInfo[n].missing) note.textContent = `${say("judoFontMissing")}: ${fontInfo[n].missing}`;
+    else note.textContent = "";
+  }
+}
+
+/** A short fingerprint of the drawing the package returned, on the stage, so that a test can tell the drawing changed. */
+function fingerprint(text) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+}
+
 const logoList = () => state.logo.split(",").filter((p) => LOGO_PLACES.includes(p));
 
 const turning = { on: false, byHover: false, last: 0, frame: 0 };
@@ -155,9 +211,11 @@ function options() {
     if (state.patch === "ijf") Object.assign(o.backPatch, { colour: state.pcolour, sewing: state.psew, ...(state.pcode === "" ? {} : { code: state.pcode }) });
     else o.backPatch.ink = state.pink;
   }
-  const embroidery = [1, 2].filter((n) => state[`e${n}p`] !== "none").map((n) => ({
-    place: state[`e${n}p`], text: state[`e${n}t`] || (state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU"), thread: state[`e${n}c`], font: state[`e${n}f`], ...(state[`e${n}n`] === "1" ? { tonal: true } : {}),
-  }));
+  const embroidery = [1, 2].filter((n) => state[`e${n}p`] !== "none").map((n) => {
+    const words = state[`e${n}t`] || (state[`e${n}p`] === "jacket-chest" ? "柔道" : "SENSHU");
+    const path = fontPath(n, words);
+    return { place: state[`e${n}p`], ...(path === undefined ? { text: words, font: state[`e${n}f`] } : { path }), thread: state[`e${n}c`], ...(state[`e${n}n`] === "1" ? { tonal: true } : {}) };
+  });
   if (embroidery.length > 0) o.embroidery = embroidery;
   if (logoList().length > 0) o.logos = logoList().map((place) => ({ place, ...(state.logon === "1" ? { tonal: true } : {}) }));
   if (state.emblem === "placeholder") o.emblem = {};
@@ -187,6 +245,12 @@ function options() {
     if (state.kp === "both" || state.kp === "none") o.karate.patches = state.kp === "both";
     else if (state.kp !== "auto") o.karate.patches = { [state.kp === "sleeve" ? "leg" : "sleeve"]: false };
   }
+  if (nationCode(state.nc).length >= 2) {
+    o.nation = { code: nationCode(state.nc), style: state.ns, place: state.np };
+    if (state.ni !== "none") o.nation[state.ns === "print" ? "ink" : "thread"] = state.ni;
+    if (state.ns === "print" && state.nb !== "none") o.nation.band = state.nb;
+  }
+  if (state.hem !== "5") o.hemAboveAnkleCm = Number(state.hem);
   if (state.label !== "none") o.label = { colour: state.label };
   if (state.brand === "1") {
     o.branding = { kanji: state.bk, colour: state.bc, ...(state.bn === "" ? {} : { name: state.bn }), ...(state.bl === "" ? {} : { line: state.bl }), ...(state.bt === "" ? {} : { sizeTag: state.bt }) };
@@ -199,11 +263,11 @@ function options() {
       if (state.bxz !== "auto") o.boxSize = Number(state.bxz);
     } else if (state.bnd === "1") o.band = true;
   }
-  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined || o.label !== undefined || o.branding !== undefined) o.rules = state.rules;
+  if (embroidery.length > 0 || o.logos !== undefined || o.emblem !== undefined || o.nation !== undefined || o.label !== undefined || o.branding !== undefined) o.rules = state.rules;
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e2c: "gold", e2f: "block", e2n: "0", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e1dir: "across", e2c: "gold", e2f: "block", e2n: "0", e2dir: "across", ns: "embroidery", np: "shoulder-left", ni: "none", nb: "none", hem: "5", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -241,6 +305,7 @@ let painted;
 async function draw() {
   if (state.emblem === "flag") await loadFlag(state.flag);
   const o = options();
+  showFontNotes();
   if (stillSolid()) Object.assign(o, { view: state.view === "flat-back" ? "back" : "front", yaw: 0 });
   const mine = ++drawing;
   const holder = document.createElement("div");
@@ -261,6 +326,7 @@ async function draw() {
     canvas?.dispose();
     return;
   }
+  $("judo-stage").dataset.frame = fingerprint(holder.innerHTML);
   painted?.dispose();
   painted = canvas;
   madeAt = q;
@@ -451,6 +517,68 @@ const solid = () => state.mode === "folded" || state.mode === "box";
 const has = (garment) => GARMENTS[state.mode].includes(garment);
 const garmentOf = (place) => (place.startsWith("pants") ? "pants" : place.startsWith("belt") ? "belt" : "jacket");
 
+/** The picker for a line's font: a .ttf file read in this browser (nothing is sent anywhere), its name, a way to drop it, and the line that says what happened to it. */
+function fontPicker(n) {
+  const box = document.createElement("div");
+  box.className = "judo-fontbox";
+  const pick = document.createElement("label");
+  pick.className = "fam-button judo-filebtn";
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".ttf,font/ttf";
+  input.id = `judo-e${n}ff`;
+  input.dataset.testid = `judo-e${n}ff`;
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    input.value = "";
+    if (file === undefined) return;
+    try {
+      const bytes = await file.arrayBuffer();
+      fontToPath(bytes, "A");
+      fonts[n] = { bytes };
+      fontError[n] = "";
+      state[`e${n}file`] = file.name.slice(0, 80);
+    } catch (error) {
+      fontError[n] = error.message;
+    }
+    syncUrl();
+    controls();
+    draw();
+  });
+  pick.append(input, document.createElement("span"));
+  pick.lastChild.textContent = say("judoFontFile_pick");
+  box.append(pick);
+  if (state[`e${n}file`] !== "") {
+    const name = document.createElement("span");
+    name.className = "judo-filename";
+    name.dataset.testid = `judo-e${n}ff-name`;
+    name.textContent = state[`e${n}file`];
+    const drop = document.createElement("button");
+    drop.type = "button";
+    drop.className = "fam-button";
+    drop.dataset.testid = `judo-e${n}ff-remove`;
+    drop.textContent = say("judoFontFile_remove");
+    drop.addEventListener("click", () => {
+      delete fonts[n];
+      fontError[n] = "";
+      state[`e${n}file`] = "";
+      syncUrl();
+      controls();
+      draw();
+    });
+    box.append(name, drop);
+  }
+  const note = document.createElement("p");
+  note.className = "fam-fine judo-note judo-fontnote";
+  note.dataset.testid = `judo-e${n}ff-note`;
+  note.setAttribute("role", "status");
+  const local = document.createElement("p");
+  local.className = "fam-fine judo-note";
+  local.textContent = say("judoFontFile_local");
+  box.append(note, local);
+  return box;
+}
+
 /** One control in the form: its section's heading key, its id, its label and the element. */
 const field = (section, id, label, node) => ({ section, id, label, node });
 
@@ -513,6 +641,7 @@ function rows() {
   }
   if (solid()) out.push(field(G, "judo-bsz", say("judoBeltSize"), select("judo-bsz", ["auto", ...BELT_SIZES.map((s) => String(s.size))], (v) => (v === "auto" ? say("judoBeltSize_auto") : v))));
   else out.push(field(G, "judo-size", say("judoSize"), select("judo-size", JUDOGI_SIZES, (v) => v)));
+  if (has("pants")) out.push(field(G, "judo-hem", say("judoHem"), tiles({ id: "judo-hem", label: say("judoHem"), values: HEMS, current: state.hem, picture: (v) => PICTURES.hem[v], name: (v) => say(`judoHem_${v}`), onPick: set("hem") })));
   if (state.mode === "folded") out.push(field(G, "judo-bnd", say("judoBand"), toggle({ id: "judo-bnd", label: say("judoBand"), on: state.bnd === "1", words: { on: say("judoBand_on"), off: say("judoBand_off") }, onChange: (on) => change("bnd", on ? "1" : "0") })));
   if (state.mode === "box") {
     const X = "judoG_box";
@@ -565,7 +694,21 @@ function rows() {
     out.push(field(E, `judo-e${n}t`, say("judoEmbText"), text(`judo-e${n}t`, 24, here === "jacket-chest" ? "柔道" : "SENSHU")));
     out.push(field(E, `judo-e${n}n`, say("judoTonal"), toggle({ id: `judo-e${n}n`, label: say("judoTonal"), on: state[`e${n}n`] === "1", words: { on: say("judoTonal_on"), off: say("judoTonal_off") }, onChange: (on) => change(`e${n}n`, on ? "1" : "0", true) })));
     if (state[`e${n}n`] !== "1") out.push(field(E, `judo-e${n}c`, say("judoThread"), swatches({ id: `judo-e${n}c`, label: say("judoThread"), values: THREAD_COLOURS, current: state[`e${n}c`], css: (v) => rgb(THREAD_RGB[v]), name: pair(THREAD_LABELS), onPick: set(`e${n}c`) })));
-    out.push(field(E, `judo-e${n}f`, say("judoFont"), segmented({ id: `judo-e${n}f`, label: say("judoFont"), values: EMBROIDERY_FONTS, current: state[`e${n}f`], name: (v) => say(`judoFont_${v}`), onPick: set(`e${n}f`) })));
+    if (fonts[n] === undefined) out.push(field(E, `judo-e${n}f`, say("judoFont"), segmented({ id: `judo-e${n}f`, label: say("judoFont"), values: EMBROIDERY_FONTS, current: state[`e${n}f`], name: (v) => say(`judoFont_${v}`), onPick: set(`e${n}f`) })));
+    out.push(field(E, `judo-e${n}ff`, say("judoFontFile"), fontPicker(n)));
+    if (state[`e${n}file`] !== "") out.push(field(E, `judo-e${n}dir`, say("judoFontDir"), segmented({ id: `judo-e${n}dir`, label: say("judoFontDir"), values: ["across", "down"], current: state[`e${n}dir`], name: (v) => say(`judoFontDir_${v}`), onPick: set(`e${n}dir`) })));
+  }
+
+  // The country's letters on the shoulder: the jacket's.
+  if (jacket) {
+    const N = "judoG_nation";
+    out.push(field(N, "judo-nc", say("judoNation"), text("judo-nc", 4, "CAN")));
+    if (nationCode(state.nc).length >= 2) {
+      out.push(field(N, "judo-ns", say("judoNationStyle"), tiles({ id: "judo-ns", label: say("judoNationStyle"), values: NATION_STYLES, current: state.ns, picture: (v) => PICTURES.nationStyle[v], name: (v) => say(`judoNationStyle_${v}`), onPick: set("ns", true) })));
+      out.push(field(N, "judo-np", say("judoNationPlace"), tiles({ id: "judo-np", label: say("judoNationPlace"), values: NATION_PLACES, current: state.np, picture: (v) => PICTURES.nationPlace[v], name: (v) => say(`judoNationPlace_${v}`), onPick: set("np") })));
+      out.push(field(N, "judo-ni", say("judoNationInk"), swatches({ id: "judo-ni", label: say("judoNationInk"), values: ["none", ...THREAD_COLOURS], current: state.ni, css: (v) => rgb(THREAD_RGB[v]), name: (v) => (v === "none" ? say("judoNationInk_auto") : pair(THREAD_LABELS)(v)), onPick: set("ni") })));
+      if (state.ns === "print") out.push(field(N, "judo-nb", say("judoNationBand"), swatches({ id: "judo-nb", label: say("judoNationBand"), values: ["none", ...THREAD_COLOURS], current: state.nb, css: (v) => rgb(THREAD_RGB[v]), name: (v) => (v === "none" ? say("judoNationBand_none") : pair(THREAD_LABELS)(v)), onPick: set("nb") })));
+    }
   }
 
   // Logos, the emblem and the label.
@@ -605,7 +748,7 @@ function rows() {
     out.push(field(B, "judo-bc", say("judoBrandColour"), swatches({ id: "judo-bc", label: say("judoBrandColour"), values: LABEL_COLOURS, current: state.bc, css: (v) => LABEL_CSS[v], name: pair(LABEL_COLOUR_LABELS), onPick: set("bc") })));
   }
 
-  const marked = (state.e1p !== "none" && places.includes(state.e1p)) || logoList().length > 0 || (jacket && state.emblem !== "none") || state.label !== "none" || brandOn;
+  const marked = (state.e1p !== "none" && places.includes(state.e1p)) || logoList().length > 0 || (jacket && nationCode(state.nc).length >= 2) || (jacket && state.emblem !== "none") || state.label !== "none" || brandOn;
   if (marked) out.push(field(B, "judo-rules", say("judoRules"), segmented({ id: "judo-rules", label: say("judoRules"), values: MARK_RULES, current: state.rules, name: (v) => say(`judoRules_${v}`), onPick: set("rules") })));
   return out;
 }
@@ -646,8 +789,16 @@ function controls() {
       row.append(lab);
       node.addEventListener(node.tagName === "INPUT" ? "input" : "change", () => {
         if (id === "judo-preset") return applyPreset(node.value);
+        const nationWas = nationCode(state.nc).length >= 2;
         state[id.replace("judo-", "")] = node.value;
         syncUrl();
+        // The country's other choices appear once the code has two letters: the form is built again with the caret where it was.
+        if (id === "judo-nc" && nationWas !== nationCode(state.nc).length >= 2) {
+          controls();
+          const again = $("judo-nc");
+          again.focus();
+          again.setSelectionRange(again.value.length, again.value.length);
+        }
         if (node.tagName === "SELECT") {
           // Embroidery's place changes which controls apply.
           if (/^judo-e[12]p$/.test(id) || id === "judo-bsz") controls();

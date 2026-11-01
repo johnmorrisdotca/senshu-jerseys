@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fakeFont, tinyFont } from "./tinyFont.mjs";
 
 // The judogi designer: it draws on a canvas, turns in place, keeps its angle when a choice changes, keeps every choice in the address,
 // and has no control left in the browser's own style.
@@ -808,5 +809,176 @@ test("the designer's karate gi: sleeve, cut, text and patches are kept in the ad
     .filter((el) => el.closest('[data-testid^="judo-k"]') !== null && (el.tagName === "BUTTON" ? el.getBoundingClientRect().height < 47 : false))
     .map((el) => el.dataset.value || el.id));
   expect(bad).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+// A fingerprint of the drawing the package returned, set on the stage after every draw: it changes when, and only when, the drawing does.
+const frameOf = (page) => page.locator("#judo-stage").getAttribute("data-frame");
+/** Wait for the drawing to be different from `before` and return the new one. */
+async function changedFrom(page, before) {
+  await expect(page.locator("#judo-stage")).not.toHaveAttribute("data-frame", before);
+  return frameOf(page);
+}
+
+test("a font file is picked on an embroidery line, draws the words in it, and only its name and direction are in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&belt=black&e1p=jacket-chest&e1t=AOA&e1c=red");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const plain = await frameOf(page);
+  await expect(page.locator('[data-testid="judo-e1f"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-e1dir"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-e1ff"]').setInputFiles({ name: "tiny.ttf", mimeType: "font/ttf", buffer: tinyFont() });
+  const across = await changedFrom(page, plain);
+  await expect(page).toHaveURL(/e1file=tiny\.ttf/);
+  await expect(page).not.toHaveURL(/e1dir/);
+  await expect(page.locator('[data-testid="judo-e1ff-name"]')).toHaveText("tiny.ttf");
+  // The package's own lettering is not offered while a font is in use, and the direction is.
+  await expect(page.locator('[data-testid="judo-e1f"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="judo-e1ff-note"]')).toHaveText("");
+  await pick(page, "judo-e1dir", "down");
+  await expect(page).toHaveURL(/e1dir=down/);
+  const down = await changedFrom(page, across);
+  expect(down).not.toBe(plain);
+  // The address holds a name and a direction, never the font: it stays short.
+  expect(new URL(page.url()).search.length).toBeLessThan(160);
+  // A letter the font lacks is named.
+  await page.locator('[data-testid="judo-e1t"]').fill("AXA");
+  await expect(page.locator('[data-testid="judo-e1ff-note"]')).toContainText("X");
+  await page.locator('[data-testid="judo-e1t"]').fill("AOA");
+  await expect(page).toHaveURL(/e1t=AOA/);
+  // After a reload the file is gone: the line says to pick it again and draws the package's lettering.
+  const again = page.url();
+  await page.goto("about:blank");
+  await page.goto(again);
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-e1ff-note"]')).toContainText(/pick the font again/i);
+  await expect(page.locator('[data-testid="judo-e1ff-note"]')).toContainText("tiny.ttf");
+  await expect(page.locator('[data-testid="judo-e1dir"] [data-value="down"]')).toHaveAttribute("aria-pressed", "true");
+  expect(await frameOf(page)).toBe(plain);
+  // Picking it again draws it again, and Remove puts the lettering back.
+  await page.locator('[data-testid="judo-e1ff"]').setInputFiles({ name: "tiny.ttf", mimeType: "font/ttf", buffer: tinyFont() });
+  await expect(page.locator("#judo-stage")).toHaveAttribute("data-frame", down);
+  await page.locator('[data-testid="judo-e1ff-remove"]').click();
+  await expect(page).not.toHaveURL(/e1file/);
+  await expect(page.locator("#judo-stage")).toHaveAttribute("data-frame", plain);
+  await expect(page.locator('[data-testid="judo-e1f"]')).toHaveCount(1);
+  expect(errors).toEqual([]);
+});
+
+test("a font the package refuses shows its message in the line and changes nothing", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&belt=black&e1p=jacket-chest&e1t=AOA");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const plain = await frameOf(page);
+  const note = page.locator('[data-testid="judo-e1ff-note"]');
+  await page.locator('[data-testid="judo-e1ff"]').setInputFiles({ name: "web.woff", mimeType: "font/woff", buffer: fakeFont("wOFF") });
+  await expect(note).toContainText("WOFF");
+  await expect(note).toHaveAttribute("data-error", "1");
+  await page.locator('[data-testid="judo-e1ff"]').setInputFiles({ name: "post.otf", mimeType: "font/otf", buffer: fakeFont("OTTO") });
+  await expect(note).toContainText("CFF");
+  // Nothing was taken: no name in the address, the same drawing, no direction to choose.
+  await expect(page).not.toHaveURL(/e1file/);
+  await expect(page.locator('[data-testid="judo-e1dir"]')).toHaveCount(0);
+  expect(await frameOf(page)).toBe(plain);
+  // A good file clears the message.
+  await page.locator('[data-testid="judo-e1ff"]').setInputFiles({ name: "tiny.ttf", mimeType: "font/ttf", buffer: tinyFont() });
+  await changedFrom(page, plain);
+  await expect(note).toHaveText("");
+  expect(errors).toEqual([]);
+});
+
+test("a second embroidery line has its own font picker, and the pick is a pill a finger wide", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black&e1p=jacket-chest&e1t=AOA&e2p=jacket-hem&e2t=OA");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const plain = await frameOf(page);
+  await page.locator('[data-testid="judo-e2ff"]').setInputFiles({ name: "two.ttf", mimeType: "font/ttf", buffer: tinyFont() });
+  await changedFrom(page, plain);
+  await expect(page).toHaveURL(/e2file=two\.ttf/);
+  await expect(page).not.toHaveURL(/e1file/);
+  const box = await page.locator("label.judo-filebtn").first().boundingBox();
+  expect(box.height).toBeGreaterThanOrEqual(47);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+});
+
+test("the country's letters: code, thread or print, shoulder, letter colour and band colour change the drawing and are kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=jacket&view=back&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const none = await frameOf(page);
+  // Only the code at first.
+  for (const id of ["judo-ns", "judo-np", "judo-ni", "judo-nb"]) await expect(page.locator(`[data-testid="${id}"]`)).toHaveCount(0);
+  await page.locator('[data-testid="judo-nc"]').fill("can");
+  await expect(page).toHaveURL(/nc=can/);
+  const thread = await changedFrom(page, none);
+  for (const id of ["judo-ns", "judo-np", "judo-ni"]) await expect(page.locator(`[data-testid="${id}"]`)).toHaveCount(1);
+  // The caret is where it was: more typing goes on at the end.
+  await page.keyboard.type("x");
+  await expect(page.locator('[data-testid="judo-nc"]')).toHaveValue("canx");
+  await page.locator('[data-testid="judo-nc"]').fill("CAN");
+  await expect(page.locator('[data-testid="judo-nb"]')).toHaveCount(0);
+  await pick(page, "judo-ns", "print");
+  await expect(page).toHaveURL(/ns=print/);
+  const print = await changedFrom(page, thread);
+  await expect(page.locator('[data-testid="judo-nb"]')).toHaveCount(1);
+  await pick(page, "judo-np", "shoulders");
+  await expect(page).toHaveURL(/np=shoulders/);
+  const both = await changedFrom(page, print);
+  await pick(page, "judo-ni", "red");
+  await expect(page).toHaveURL(/ni=red/);
+  const red = await changedFrom(page, both);
+  await pick(page, "judo-nb", "navy");
+  await expect(page).toHaveURL(/nb=navy/);
+  await changedFrom(page, red);
+  // Back to thread: the band goes, the letters keep their colour.
+  await pick(page, "judo-ns", "embroidery");
+  await expect(page.locator('[data-testid="judo-nb"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="judo-ni"] [data-value="red"]')).toHaveAttribute("aria-pressed", "true");
+  await pick(page, "judo-ns", "print");
+  // The address is the whole state.
+  const again = page.url();
+  await page.goto("about:blank");
+  await page.goto(again);
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-nc"]')).toHaveValue("CAN");
+  for (const [id, value] of [["judo-ns", "print"], ["judo-np", "shoulders"], ["judo-ni", "red"], ["judo-nb", "navy"]]) await expect(page.locator(`[data-testid="${id}"] [data-value="${value}"]`)).toHaveAttribute("aria-pressed", "true");
+  // One letter is no code: nothing is drawn and the other choices go.
+  await page.locator('[data-testid="judo-nc"]').fill("C");
+  await expect(page.locator('[data-testid="judo-ns"]')).toHaveCount(0);
+  await expect(page.locator("#judo-stage")).toHaveAttribute("data-frame", none);
+  expect(errors).toEqual([]);
+});
+
+test("the trousers' hem is 2, 5 or 10 cm above the ankle, changes the drawing, and is kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=pants&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-hem"] [data-value="5"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="judo-hem"] button')).toHaveCount(3);
+  const five = await frameOf(page);
+  await pick(page, "judo-hem", "2");
+  await expect(page).toHaveURL(/hem=2/);
+  const two = await changedFrom(page, five);
+  await pick(page, "judo-hem", "10");
+  await expect(page).toHaveURL(/hem=10/);
+  const ten = await changedFrom(page, two);
+  expect(ten).not.toBe(five);
+  const again = page.url();
+  await page.goto("about:blank");
+  await page.goto(again);
+  await expect(page.locator('[data-testid="judo-hem"] [data-value="10"]')).toHaveAttribute("aria-pressed", "true");
+  expect(await frameOf(page)).toBe(ten);
+  // 5 is the package's own: it leaves the address and the drawing is as it was.
+  await pick(page, "judo-hem", "5");
+  await expect(page).not.toHaveURL(/hem=/);
+  await expect(page.locator("#judo-stage")).toHaveAttribute("data-frame", five);
+  // A belt alone has no trousers, so no hem to choose; it stays in the address.
+  await pick(page, "judo-hem", "2");
+  await pick(page, "judo-mode", "belt");
+  await expect(page.locator('[data-testid="judo-hem"]')).toHaveCount(0);
+  await expect(page).toHaveURL(/hem=2/);
   expect(errors).toEqual([]);
 });
