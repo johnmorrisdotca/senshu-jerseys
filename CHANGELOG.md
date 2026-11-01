@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-10-31
+
 ### Added
 
 - **The ITF's 4th to 6th Dan stripes and the degree on the black belt** (SPX-835). `dobok: { cut: "itf", grade: "dan", dan: 4 | 5 | 6 }` sews a black stripe 3 cm wide down the outer seam of each sleeve and each trouser leg, with a row of stitching along each edge, drawn on the flat and the turning views; `competition: true` leaves them off. The ITF Tournament Rules 2023, 17.3.1, say those holders "are not allowed to wear their Doboks with black stripes on their sleeves of the shirt and trousers during competition", and nothing about their width, their place or any other degree's trim, so none is drawn for the other degrees. `dan` (1 to 9) also puts the degree in gold Roman numerals across the black belt's end, as Appendix 2 requires ("must indicate the competitor's degree"), unless `beltStyle.numeral` says otherwise. `judogiCheck` reports what is drawn (`dobok-itf-stripes`). A dobok with no `dan` is drawn as before. Exports nothing new (`JudogiDobok` has `dan` and `competition`).
