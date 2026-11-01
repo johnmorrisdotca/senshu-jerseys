@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.32.1] - 2026-10-31
+
+### Fixed
+
+- **A striped tail's edges are clean at 5x** (SPX-836). On a red-white belt with a tip or bars, a cell grown at its corners (`STRAP_GROW`, which keeps the ribbon spikes away) showed the kohaku red of the strap's edge strip beside the black or white bars, and the belt's own colour past a stripe along its edge, so the edges of a tail looked ragged in the WebGL, canvas and SVG painters. The tip and bars are now sewn round the edges: each end's colour blocks lie on the strap's edge strip and run out over every strip's margin, and a stripe along the belt that reaches an edge does the same. The grow, the cells, the flat drawings and every belt without stripes are as they were. `test/beltEdges.test.ts` samples the grown triangle of every cell of both ends and the edge strip and checks that no fringe point is a different colour from the cloth it grows from.
+
 ## [0.32.0] - 2026-10-31
 
 ### Added
