@@ -22,4 +22,5 @@ export const GARMENTS = [
   { id: "dobok-wt-dan", options: { dobok: { cut: "wt", grade: "dan" } } },
   { id: "dobok-itf", options: { dobok: { cut: "itf" } } },
   { id: "dobok-itf-dan", options: { dobok: { cut: "itf", grade: "dan" } } },
+  { id: "dobok-itf-dan5", options: { dobok: { cut: "itf", grade: "dan", dan: 5 } } },
 ];

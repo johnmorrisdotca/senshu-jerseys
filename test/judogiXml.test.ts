@@ -55,6 +55,7 @@ const SETS: [string, JudogiOptions][] = [
   ["bjj long hem", { belt: "black", bjj: { patches: "ibjjf" }, hemAboveAnkleCm: 2 }],
   ...KARATE_CUTS.flatMap((cut) => KARATE_SLEEVES.map((sleeve): [string, JudogiOptions] => [`karate ${cut} ${sleeve}`, { belt: "black", karate: { cut, sleeve } }])),
   ...DOBOK_CUTS.flatMap((cut) => DOBOK_GRADES.map((grade): [string, JudogiOptions] => [`dobok ${cut} ${grade}`, { belt: "black", dobok: { cut, grade } }])),
+  ["dobok itf 5th dan stripes", { belt: "black", dobok: { cut: "itf", grade: "dan", dan: 5 } }],
   ...BJJ_COLOURS.flatMap((colour) => BJJ_PRESETS.map((patches): [string, JudogiOptions] => [`bjj ${colour} ${patches}`, { belt: "black", bjj: { colour, patches } }])),
   ["bjj no knee", { belt: "black", bjj: { patches: "covered" }, knee: false }],
 ];

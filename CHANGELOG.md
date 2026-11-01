@@ -6,6 +6,19 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **The ITF's 4th to 6th Dan stripes and the degree on the black belt** (SPX-835). `dobok: { cut: "itf", grade: "dan", dan: 4 | 5 | 6 }` sews a black stripe 3 cm wide down the outer seam of each sleeve and each trouser leg, with a row of stitching along each edge, drawn on the flat and the turning views; `competition: true` leaves them off. The ITF Tournament Rules 2023, 17.3.1, say those holders "are not allowed to wear their Doboks with black stripes on their sleeves of the shirt and trousers during competition", and nothing about their width, their place or any other degree's trim, so none is drawn for the other degrees. `dan` (1 to 9) also puts the degree in gold Roman numerals across the black belt's end, as Appendix 2 requires ("must indicate the competitor's degree"), unless `beltStyle.numeral` says otherwise. `judogiCheck` reports what is drawn (`dobok-itf-stripes`). A dobok with no `dan` is drawn as before. Exports nothing new (`JudogiDobok` has `dan` and `competition`).
+- **A Taekwondo dobok switch in the judogi designer, and a 5th Dan tile on the Uniforms page.** The switch (the karate gi's and the dobok exclude each other) brings the cut (WT V-neck or ITF wrap, as picture tiles), the grade (colour belt, poom, dan), the ITF black belt's degree and, for the 4th to 6th, training or competition, all kept in the address (`dg`, `dc`, `dgr`, `dd`, `dk`); the Japanese page has its words. `test:demo` covers it, including the controls' height and the address across a reload.
+
+### Changed
+
+- **The poom collar's layout is now sourced**: World Taekwondo's 2022 Guidelines of Identifications show the cadet's collar split along its length into two equal halves, red along the neck's edge and black outside it, on both bands and round the back of the neck, which is how it was already drawn (docs/judogi.md, "The taekwondo dobok", replaces "the package's reading" with this); a test holds the red nearer the neck than the black.
+
+### Fixed
+
+- `test/dobok.test.ts` compared two drawings' lengths with their ids in, and the ids' hash varies in length, so a flag-less jacket could come out longer than a flagged one. It compares them with the ids taken out.
+
 ## [0.32.2] - 2026-10-31
 
 ### Fixed

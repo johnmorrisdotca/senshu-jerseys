@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // The Uniforms page: every garment and belt is a picture tile, the chosen garment turns, every choice is in the address, and no control is left in the browser's own style.
 const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
 const BJJ_TILES = ["bjj-white", "bjj-white-ibjjf", "bjj-white-covered", "bjj-blue", "bjj-blue-ibjjf", "bjj-blue-covered", "bjj-black", "bjj-black-ibjjf", "bjj-black-covered"];
-const DOBOK_TILES = ["dobok-wt", "dobok-wt-poom", "dobok-wt-dan", "dobok-itf", "dobok-itf-dan"];
+const DOBOK_TILES = ["dobok-wt", "dobok-wt-poom", "dobok-wt-dan", "dobok-itf", "dobok-itf-dan", "dobok-itf-dan5"];
 const yawOf = (page) => page.locator("#uni-stage canvas").getAttribute("data-yaw").then(Number);
 
 test("the page loads, the large view is drawn and every tile has its picture", async ({ page }) => {

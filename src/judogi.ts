@@ -20,7 +20,7 @@ import { END_LENGTH, bandsOf, endBlocks, endMark, readStyle, type JudogiBeltStyl
 import { JUDO_CUT, type GiCut } from "./giCut.ts";
 import { karateMarks, karateNotes, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
 import { BJJ_HEM_CM, bjjMarks, bjjNotes, readBjj, type JudogiBjj, type ReadBjj } from "./bjjgi.ts";
-import { dobokFlag, dobokMarks, dobokNotes, readDobok, type JudogiDobok, type ReadDobok } from "./dobok.ts";
+import { dobokFlag, dobokMarks, dobokNotes, dobokPantsMarks, readDobok, type JudogiDobok, type ReadDobok } from "./dobok.ts";
 import { GARMENT_TIES, isJudoTie, readTie, tieReach, wrapsOf, type BeltKnot, type BeltTie } from "./beltTie.ts";
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
@@ -205,7 +205,7 @@ export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const beltHang = tie.tailCm;
   const marked = options === undefined ? undefined : readMarks(withFlag(options, dobok));
   if (dobok !== undefined) {
-    const skipped = marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(options?.beltStyle)).skipped).filter((n) => n.id.startsWith("skipped-"));
+    const skipped = marked === undefined ? [] : markNotes(marked, layoutMarks(marked, strapWidth(pick(JUDOGI_BELTS, options?.belt, "white"), beltCm), readStyle(dobokBeltStyle(options?.beltStyle, dobok, pick(JUDOGI_BELTS, options?.belt, "white")))).skipped).filter((n) => n.id.startsWith("skipped-"));
     const gi = [...dobokNotes(dobok, pick(JUDOGI_COLOURS, options?.colour, "white") === "white" ? "white" : BLUE_GI), ...(dobok.cut === "itf" ? [itfBeltNote(tie, beltCm ?? beltDefaultWidthCm(pick(JUDOGI_BELTS, options?.belt, "black")))] : [])];
     return { ok: [...gi, ...skipped].every((n) => n.met), size, heightCm: h, notes: [...gi, ...skipped] };
   }
@@ -246,6 +246,12 @@ function boxFitNote(o: JudogiOptions): { id: string; met: boolean; fact: string 
   const type = pick(BOX_TYPES, o.boxType, "kiri");
   const size = readBeltSize(o.beltSize) ?? BELT_SIZE_FOR[pick(JUDOGI_SIZES, o.size, "170")];
   return { id: "belt-box-fit", met: boxSizeFor(size, type) !== undefined, fact: `A ${type === "kiri" ? "wooden (kiri)" : "silver cardboard"} gift box holds a belt of size ${type === "kiri" ? 6 : 6.5} at most (KuSakura gift-box pages, read 2026-10-28); a longer belt does not go in a box.` };
+}
+
+/** The belt's style as asked, and for an ITF black belt with a degree (`dobok.dan`) the degree in gold numerals across one end unless the style names one. */
+function dobokBeltStyle(style: JudogiBeltStyle | undefined, dobok: ReadDobok | undefined, belt: JudogiBelt): JudogiBeltStyle | undefined {
+  if (dobok?.dan === undefined || belt !== "black" || style?.numeral !== undefined) return style;
+  return { ...style, numeral: { value: dobok.dan } };
 }
 
 /** The ITF's black belt: once round the waist, at most 5 cm wide, the degree in gold Roman numerals across one end (`numeral` on `beltStyle`). */
@@ -348,7 +354,6 @@ function read(options?: JudogiOptions): Ready {
   const thickness = typeof o.thickness === "number" && Number.isFinite(o.thickness) ? Math.max(0, Math.min(28, o.thickness)) : 12;
   const beltAsked = readBeltCm(o.beltWidthCm);
   const beltCm = beltAsked === undefined ? undefined : Math.max(3, Math.min(6, beltAsked));
-  const style = readStyle(o.beltStyle);
   const beltRows = (BELT_STITCH_LINES as readonly unknown[]).includes(o.beltStitchLines) ? o.beltStitchLines : undefined;
   // A folded belt or a boxed one lies as it is made: a belt that comes in a thick grade (the kohaku, the black) is shown thick unless a grade is asked for.
   const stiff = (o.mode === "folded" || o.mode === "box") && o.belt !== undefined && beltThicknessesFor(o.belt).includes("thick");
@@ -362,6 +367,7 @@ function read(options?: JudogiOptions): Ready {
   const patch = readPatch(o.backPatch);
   const karate = readKarate(o.karate);
   const dobok = karate === undefined ? readDobok(o.dobok) : undefined;
+  const style = readStyle(dobokBeltStyle(o.beltStyle, dobok, belt));
   const bjj = karate === undefined && dobok === undefined ? readBjj(o.bjj, colour === "blue" ? "blue" : "white") : undefined;
   const cloth = bjj?.cloth ?? (colour === "blue" ? BLUE_GI : WHITE_GI);
   const spec = readMarks(withFlag(o, dobok));
@@ -419,7 +425,7 @@ const join = (a: Mark | undefined, b: Mark | undefined): Mark | undefined => (a 
 /** What is sewn on the jacket's faces: the back patch and the marks on either face. */
 function jacketMarks(o: Ready): GiInk["marks"] | undefined {
   const patch: Mark | undefined = o.patch === undefined ? undefined : backPatch(`${o.uid}j`, o.patch, BACK_COLLAR_FOOT);
-  const own = o.dobok === undefined ? undefined : dobokMarks(o.dobok, toneOf(o.cloth));
+  const own = o.dobok === undefined ? undefined : dobokMarks(o.dobok, toneOf(o.cloth), `${o.uid}D`);
   const bjj = o.bjj === undefined ? undefined : bjjMarks(`${o.uid}B`, o.bjj, o.mode === "suit", o.knee);
   const front = join(join(join(o.marks?.jacket.front, o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate).jacket), own?.front), bjj?.jacketFront);
   const back = join(join(join(patch, own?.back), bjj?.jacketBack), o.marks?.jacket.back);
@@ -432,8 +438,9 @@ function jacketMarks(o: Ready): GiInk["marks"] | undefined {
 function pantsMarks(o: Ready): GiInk["marks"] | undefined {
   const worn = o.mode === "suit";
   const bjj = o.bjj === undefined ? undefined : bjjMarks(`${o.uid}B`, o.bjj, worn, o.knee);
-  const front = join(join(o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate).pants, bjj?.pantsFront), o.marks?.pants.front);
-  const back = bjj?.pantsBack;
+  const own = o.dobok === undefined ? undefined : dobokPantsMarks(o.dobok, o.hem, worn);
+  const front = join(join(join(o.karate === undefined ? undefined : karateMarks(`${o.uid}K`, o.karate).pants, own?.front), bjj?.pantsFront), o.marks?.pants.front);
+  const back = join(own?.back, bjj?.pantsBack);
   if (front === undefined && back === undefined) return undefined;
   return { ...(front === undefined ? {} : { front }), ...(back === undefined ? {} : { back }) };
 }

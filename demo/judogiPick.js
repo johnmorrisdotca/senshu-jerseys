@@ -173,6 +173,16 @@ export const PICTURES = {
   },
   // The trouser leg's foot: the hem a given number of centimetres above the ankle bone (the dot), at the true ratio of the three steps.
   hem: Object.fromEntries([2, 5, 10].map((cm) => [String(cm), svg(`<path d="M22 4 20 ${50 - cm * 3.2}h24l-2-${46 - cm * 3.2}" fill="currentColor" fill-opacity=".1"/><path d="M14 52h36" stroke-width="1"/><circle cx="32" cy="48" r="2" fill="#c8102e" stroke="none"/>`)])),
+  // The jacket's neck: a pullover's V, or a jacket that wraps left over right with its tie at the side; and the collar's colour for each grade (a colour belt's own cloth, red along black for a poom, black for a dan).
+  dobokCut: {
+    wt: svg(`${BODY}<path d="M25 5l7 21 7-21" stroke-width="2.4"/><path d="M26 31h12" stroke-width="1" stroke-dasharray="2 2"/>`),
+    itf: svg(`${BODY}<path d="M26 5l12 26" stroke-width="1.6"/><path d="M38 31l4 4M38 31l-1 5" stroke-width="1.2"/>`),
+  },
+  dobokGrade: {
+    kup: svg(`${BODY}<path d="M25 5l7 21 7-21" stroke-width="1.2"/>`),
+    poom: svg(`${BODY}<path d="M25.6 5l6.4 19 6.4-19" stroke="#c8202e" stroke-width="2.4"/><path d="M24 5l8 24 8-24" stroke="currentColor" stroke-width="2.4"/>`),
+    dan: svg(`${BODY}<path d="M24.6 5l7.4 22 7.4-22" stroke="currentColor" stroke-width="3.6"/>`),
+  },
   sewing: {
     x: svg('<rect x="10" y="8" width="44" height="40" fill="#fff" fill-opacity=".9"/><path d="M14 12l36 32M50 12 14 44" stroke-dasharray="3 2.4"/>'),
     lines: svg('<rect x="10" y="8" width="44" height="40" fill="#fff" fill-opacity=".9"/><path d="M21 12v32M32 12v32M43 12v32" stroke-dasharray="3 2.4"/>'),

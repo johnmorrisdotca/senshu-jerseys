@@ -4,7 +4,7 @@ import {
   JUDOGI_BELT_RGB, JUDOGI_BELTS, JUDOGI_BELT_LABELS, JUDOGI_COLOURS, JUDOGI_MODES, JUDOGI_SIZES, JUDOGI_VIEWS, PATCH_COLOURS, PATCH_COLOUR_LABELS, PATCH_STYLES, ZEKKEN_INKS, ZEKKEN_INK_LABELS,
   BRAND_KANJI, BRAND_KANJI_LABELS, EMBROIDERY_FONTS, EMBROIDERY_PLACES, LABEL_COLOURS, LABEL_COLOUR_LABELS, LOGO_PLACES, MARK_RULES, THREAD_COLOURS, THREAD_LABELS, THREAD_RGB,
   beltWidthsFor, beltStitchLinesFor, beltThicknessesFor, beltCoversFor, BELT_PRESETS, STRIPE_COLOURS, beltPreset, judogiCheck, judogiFrame,
-  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor, KARATE_CUTS, KARATE_SLEEVES, NATION_PLACES, NATION_STYLES, fontToPath,
+  BELT_SIZES, BOX_STATES, BOX_TYPES, KIRI_WOODS, beltSizeForJudogi, boxSizeFor, KARATE_CUTS, KARATE_SLEEVES, DOBOK_CUTS, DOBOK_GRADES, NATION_PLACES, NATION_STYLES, fontToPath,
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
@@ -21,6 +21,8 @@ const thicknessFor = (belt) => ["auto", ...beltThicknessesFor(belt)];
 const coverFor = (belt) => ["auto", ...beltCoversFor(belt)];
 const widthsFor = (belt) => ["auto", ...beltWidthsFor(belt).map(String)];
 const HEMS = ["2", "5", "10"];
+/** An ITF black belt's degree: none, or 1 to 9 (the ITF's black stripes on the sleeves and trousers are for the 4th to 6th). */
+const DOBOK_DEGREES = ["none", ...Array.from({ length: 9 }, (_, i) => String(i + 1))];
 /** The country's letters as typed, kept to letters and capitals; the package takes 2 to 4. */
 const nationCode = (value) => value.replace(/[^\p{L}]/gu, "").toUpperCase().slice(0, 4);
 /** A stripe colour from the address, or none. */
@@ -133,6 +135,12 @@ const state = {
   kc: KARATE_CUTS.includes(params.get("kc")) ? params.get("kc") : "training",
   kt: (params.get("kt") ?? "").slice(0, 4),
   kp: ["both", "sleeve", "leg", "none"].includes(params.get("kp")) ? params.get("kp") : "auto",
+  // The taekwondo dobok (instead of the karate gi): on or off, the cut, the grade whose collar and trim it takes, an ITF black belt's degree and whether it is worn in competition.
+  dg: params.get("dg") === "1" && params.get("kg") !== "1" ? "1" : "0",
+  dc: DOBOK_CUTS.includes(params.get("dc")) ? params.get("dc") : "wt",
+  dgr: DOBOK_GRADES.includes(params.get("dgr")) ? params.get("dgr") : "kup",
+  dd: DOBOK_DEGREES.includes(params.get("dd")) ? params.get("dd") : "none",
+  dk: params.get("dk") === "1" ? "1" : "0",
 };
 // A named real-world arrangement in the address (`bp=half-yellow-orange`) fills the belt and its stripes, unless the address names them itself.
 const named = beltPreset(params.get("bp") ?? "");
@@ -245,6 +253,13 @@ function options() {
     if (state.kp === "both" || state.kp === "none") o.karate.patches = state.kp === "both";
     else if (state.kp !== "auto") o.karate.patches = { [state.kp === "sleeve" ? "leg" : "sleeve"]: false };
   }
+  if (state.dg === "1" && state.kg !== "1") {
+    o.dobok = { cut: state.dc, grade: state.dgr };
+    if (state.dc === "itf" && state.dgr === "dan" && state.dd !== "none") {
+      o.dobok.dan = Number(state.dd);
+      if (state.dk === "1") o.dobok.competition = true;
+    }
+  }
   if (nationCode(state.nc).length >= 2) {
     o.nation = { code: nationCode(state.nc), style: state.ns, place: state.np };
     if (state.ni !== "none") o.nation[state.ns === "print" ? "ink" : "thread"] = state.ni;
@@ -267,7 +282,7 @@ function options() {
   return o;
 }
 
-const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e1dir: "across", e2c: "gold", e2f: "block", e2n: "0", e2dir: "across", ns: "embroidery", np: "shoulder-left", ni: "none", nb: "none", hem: "5", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
+const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname: "", pcode: "", pline: "", pcolour: "blue", pink: "black", psew: "x", e1c: "navy", e1f: "block", e1n: "0", e1dir: "across", e2c: "gold", e2f: "block", e2n: "0", e2dir: "across", ns: "embroidery", np: "shoulder-left", ni: "none", nb: "none", hem: "5", logon: "0", e1p: "none", e2p: "none", logo: "", emblem: "none", ems: "flag", emc: "", emp: "chest", flag: "ca", rules: "ijf", label: "none", brand: "0", bk: "te", bn: "", bl: "", bt: "", bc: "navy", bw: "auto", sl: "auto", th: "auto", cv: "auto", bsz: "auto", bxt: "kiri", bxs: "closed", bxx: "", bxw: "natural", bxz: "auto", bnd: "0", kg: "0", ks: "full", kc: "training", kt: "", kp: "auto", dg: "0", dc: "wt", dgr: "kup", dd: "none", dk: "0", ss: "none", sc: "none", st: "none", stn: "0", stc: "white", sb: "none", sbn: "1", se: "both" };
 
 function syncUrl() {
   const q = new URLSearchParams();
@@ -345,7 +360,7 @@ async function draw() {
 
 /** What the size check found, in the page's language: the facts themselves are English, so the Japanese page says only whether the size meets them. */
 function checkText(check) {
-  const head = `${say(state.kg === "1" ? "judoOkKarate" : "judoOk")}: ${check.heightCm} cm.`;
+  const head = `${say(state.kg === "1" ? "judoOkKarate" : state.dg === "1" ? "judoOkDobok" : "judoOk")}: ${check.heightCm} cm.`;
   if (lang() === "ja") {
     // The facts are English; the one thing a Japanese page must say is that a mark was left out for want of room.
     const left = check.notes.filter((n) => !n.met && n.id.startsWith("skipped-")).length;
@@ -662,12 +677,22 @@ function rows() {
 
   if (has("jacket") || has("pants")) {
     const K = "judoKarate";
-    out.push(field(K, "judo-kg", say("judoKarate"), toggle({ id: "judo-kg", label: say("judoKarate"), on: state.kg === "1", words: { on: say("judoKarate_on"), off: say("judoKarate_off") }, onChange: (on) => change("kg", on ? "1" : "0", true) })));
+    out.push(field(K, "judo-kg", say("judoKarate"), toggle({ id: "judo-kg", label: say("judoKarate"), on: state.kg === "1", words: { on: say("judoKarate_on"), off: say("judoKarate_off") }, onChange: (on) => { if (on) state.dg = "0"; change("kg", on ? "1" : "0", true); } })));
     if (state.kg === "1") {
       out.push(field(K, "judo-ks", say("judoKarateSleeve"), segmented({ id: "judo-ks", label: say("judoKarateSleeve"), values: KARATE_SLEEVES, current: state.ks, name: (v) => say(`judoKarateSleeve_${v}`), onPick: set("ks") })));
       out.push(field(K, "judo-kc", say("judoKarateCut"), segmented({ id: "judo-kc", label: say("judoKarateCut"), values: KARATE_CUTS, current: state.kc, name: (v) => say(`judoKarateCut_${v}`), onPick: set("kc") })));
       out.push(field(K, "judo-kt", say("judoKarateText"), text("judo-kt", 4, "空手")));
       out.push(field(K, "judo-kp", say("judoKaratePatches"), segmented({ id: "judo-kp", label: say("judoKaratePatches"), values: ["auto", "both", "sleeve", "leg", "none"], current: state.kp, name: (v) => say(`judoKaratePatches_${v}`), onPick: set("kp") })));
+    }
+    const D = "judoDobok";
+    out.push(field(D, "judo-dg", say("judoDobok"), toggle({ id: "judo-dg", label: say("judoDobok"), on: state.dg === "1", words: { on: say("judoDobok_on"), off: say("judoDobok_off") }, onChange: (on) => { if (on) state.kg = "0"; change("dg", on ? "1" : "0", true); } })));
+    if (state.dg === "1") {
+      out.push(field(D, "judo-dc", say("judoDobokCut"), tiles({ id: "judo-dc", label: say("judoDobokCut"), values: DOBOK_CUTS, current: state.dc, picture: (v) => PICTURES.dobokCut[v], name: (v) => say(`judoDobokCut_${v}`), onPick: set("dc", true) })));
+      out.push(field(D, "judo-dgr", say("judoDobokGrade"), tiles({ id: "judo-dgr", label: say("judoDobokGrade"), values: DOBOK_GRADES, current: state.dgr, picture: (v) => PICTURES.dobokGrade[v], name: (v) => say(`judoDobokGrade_${v}`), onPick: set("dgr", true) })));
+      if (state.dc === "itf" && state.dgr === "dan") {
+        out.push(field(D, "judo-dd", say("judoDobokDegree"), segmented({ id: "judo-dd", label: say("judoDobokDegree"), values: DOBOK_DEGREES, current: state.dd, name: (v) => (v === "none" ? say("judoDobokDegree_none") : v), onPick: set("dd", true) })));
+        if (["4", "5", "6"].includes(state.dd)) out.push(field(D, "judo-dk", say("judoDobokComp"), toggle({ id: "judo-dk", label: say("judoDobokComp"), on: state.dk === "1", words: { on: say("judoDobokComp_on"), off: say("judoDobokComp_off") }, onChange: (on) => change("dk", on ? "1" : "0") })));
+      }
     }
   }
 

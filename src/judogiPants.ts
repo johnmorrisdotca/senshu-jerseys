@@ -43,7 +43,7 @@ export const PANTS_HEM_CM = { min: 2, max: 10, default: 5, ijf: 5, ibjjf: 2 } as
 export const pantsHemCm = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(PANTS_HEM_CM.min, Math.min(PANTS_HEM_CM.max, v)) : PANTS_HEM_CM.default);
 
 /** The y of the hem for a hem `cm` above the ankle bone: the default's 262, a centimetre higher or lower moving it by one centimetre of the drawing. */
-const hemOf = (cm: number): number => HEM - (pantsHemCm(cm) - PANTS_HEM_CM.default) * CM;
+export const hemOf = (cm: number): number => HEM - (pantsHemCm(cm) - PANTS_HEM_CM.default) * CM;
 
 /** A leg on the picture's left: the outer top S, the outer hem P, the inner top at the crotch A, the inner hem Q. The other is its mirror. */
 /** The legs start a little above the crotch, under the hip block, so the two never meet edge to edge and leave a hairline. */

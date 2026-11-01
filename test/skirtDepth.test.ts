@@ -51,6 +51,7 @@ const SUITS: [string, object][] = [
   ["a karate gi", { belt: "black", karate: true }],
   ["a jiu-jitsu gi", { belt: "black", bjj: true }],
   ["a dobok", { belt: "black", dobok: true }],
+  ["an ITF 5th Dan dobok", { belt: "black", dobok: { cut: "itf", grade: "dan", dan: 5 } }],
 ];
 
 test("worn under the jacket, the trousers are never in front of its skirt, side on and a little round", () => {

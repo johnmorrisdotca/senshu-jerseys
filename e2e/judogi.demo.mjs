@@ -812,6 +812,57 @@ test("the designer's karate gi: sleeve, cut, text and patches are kept in the ad
   expect(errors).toEqual([]);
 });
 
+// The taekwondo dobok in the designer: a switch brings its cut, grade and degree, each choice is in the address and survives a reload, the karate gi and the dobok exclude
+// each other, and the controls are in the page's style.
+test("the designer's dobok: cut, grade, degree and competition are kept in the address", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/judogi.html?mode=suit&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  await expect(page.locator('[data-testid="judo-dc"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-dg"]').click();
+  await expect(page).toHaveURL(/dg=1/);
+  await expect(page.locator("#judo-check")).toContainText(/World Taekwondo/);
+  await pick(page, "judo-dgr", "poom");
+  await expect(page).toHaveURL(/dgr=poom/);
+  // The degree is an ITF black belt's: it appears with the ITF cut and the dan grade only.
+  await expect(page.locator('[data-testid="judo-dd"]')).toHaveCount(0);
+  await pick(page, "judo-dc", "itf");
+  await pick(page, "judo-dgr", "dan");
+  await expect(page.locator('[data-testid="judo-dd"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid="judo-dk"]')).toHaveCount(0);
+  const plain = await frameOf(page);
+  await pick(page, "judo-dd", "5");
+  const striped = await changedFrom(page, plain);
+  await expect(page).toHaveURL(/dc=itf/);
+  await expect(page).toHaveURL(/dgr=dan/);
+  await expect(page).toHaveURL(/dd=5/);
+  // In competition the stripes are left off.
+  await expect(page.locator('[data-testid="judo-dk"]')).toHaveCount(1);
+  await page.locator('[data-testid="judo-dk"]').click();
+  await expect(page).toHaveURL(/dk=1/);
+  expect(await changedFrom(page, striped)).not.toBe(striped);
+  await expect(page.locator("#judo-check")).toContainText(/17\.3\.1/);
+  await page.goto(page.url());
+  for (const [id, value] of [["judo-dc", "itf"], ["judo-dgr", "dan"], ["judo-dd", "5"]]) await expect(page.locator(`[data-testid="${id}"] [data-value="${value}"]`)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="judo-dk"]')).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  // The karate gi takes the dobok's place, and the dobok the karate gi's.
+  await page.locator('[data-testid="judo-kg"]').click();
+  await expect(page).toHaveURL(/kg=1/);
+  await expect(page).not.toHaveURL(/dg=1/);
+  await expect(page.locator('[data-testid="judo-dc"]')).toHaveCount(0);
+  await page.locator('[data-testid="judo-dg"]').click();
+  await expect(page).toHaveURL(/dg=1/);
+  await expect(page).not.toHaveURL(/kg=1/);
+  const bad = await page.evaluate(() => [...document.querySelectorAll("#judo-controls button, #judo-controls input:not([type=range]):not([type=checkbox]), #judo-controls select")]
+    .filter((el) => !el.hidden && el.getBoundingClientRect().width > 0)
+    .filter((el) => el.closest('[data-testid^="judo-d"]') !== null && (el.tagName === "BUTTON" ? el.getBoundingClientRect().height < 47 : false))
+    .map((el) => el.dataset.value || el.id));
+  expect(bad).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
 // A fingerprint of the drawing the package returned, set on the stage after every draw: it changes when, and only when, the drawing does.
 const frameOf = (page) => page.locator("#judo-stage").getAttribute("data-frame");
 /** Wait for the drawing to be different from `before` and return the new one. */
