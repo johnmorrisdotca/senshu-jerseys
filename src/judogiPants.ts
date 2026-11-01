@@ -24,10 +24,12 @@ const H = [43, 44.5, 47, 49.5, 50.2];
  * Worn under the jacket, the drawstring gathers the waist to the body and the hips sit inside the jacket's skirt, as on a person: laid
  * out flat, the trousers keep their full width.
  */
-const H_WORN = [37, 38.5, 43.5, 47.5, 50.2];
+const H_WORN = [37, 37.5, 40, 47.5, 50.2];
 export const hipsOf = (worn: boolean): readonly number[] => (worn ? H_WORN : H);
 /** Half depths: a person's hips, some 24 cm deep with the cloth, going over to the two legs. */
 const D = [24, 26, 28.5, 27.5, 24];
+/** Worn, the gathered waist is shallower too, so the belted jacket's skirt, which draws in to the belt, hangs clear over it. */
+const D_WORN = [24, 23, 26.5, 27.5, 24];
 /** The hips go over to the two legs gradually from the waistband down, as trousers do: the front softens between the legs, and the side wall tapers away over the whole hip rather than ending in a notch. */
 const LOBES = [0, 0.1, 0.3, 0.6, 1];
 const HEM = 262;
@@ -58,7 +60,7 @@ export function pantsDesc(depth = 1, worn = false, hemCm: number = PANTS_HEM_CM.
     { s: 1, q: [...mirror(S), ...mirror(P), ...mirror(A), ...mirror(Q)] },
   ];
   // The legs are round, as deep as they are wide, over a person's thighs.
-  return { ...pieceDesc(Y, hipsOf(worn).map((h) => h + 1.2), D, sl, depth, 10, 4, 6, LOBES), full: 2.6, tube: 0.95 };
+  return { ...pieceDesc(Y, hipsOf(worn).map((h) => h + 1.2), worn ? D_WORN : D, sl, depth, 10, 4, 6, LOBES), full: 2.6, tube: 0.95 };
 }
 
 export function hipOutline(h: readonly number[]): Pt[] {
