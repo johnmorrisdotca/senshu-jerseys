@@ -14,9 +14,9 @@ import type { JudogiBranding } from "./judogiBrand.ts";
 import { buildMarks, layoutMarks, markNotes, readMarks, type JudogiEmblem, type JudogiNation, type JudogiEmbroidery, type JudogiLabel, type JudogiLogo, type MarkRules, type MarkSet } from "./judogiMarks.ts";
 import { backPatch, patchNotes, readPatch, type JudogiBackPatch, type PatchSpec } from "./judogiPatch.ts";
 import { PANTS_HEM_CM, pantsDesc, pantsFace, pantsHemCm } from "./judogiPants.ts";
-import { STRAP_T, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
+import { STRAP_T, STRIP_MARGIN, UNITS_PER_CM, strapDesc, strapFace, strapWidth, type StrapDesc } from "./judogiStrap.ts";
 import { endTagsMark, readEndTags, type JudogiEndTags, type ReadEndTags } from "./judogiEndTags.ts";
-import { END_LENGTH, bandsOf, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
+import { END_LENGTH, bandsOf, endBlocks, endMark, readStyle, type JudogiBeltStyle, type ReadStyle } from "./judogiStripes.ts";
 import { JUDO_CUT, type GiCut } from "./giCut.ts";
 import { karateMarks, karateNotes, readKarate, type JudogiKarate, type ReadKarate } from "./karategi.ts";
 import { BJJ_HEM_CM, bjjMarks, bjjNotes, readBjj, type JudogiBjj, type ReadBjj } from "./bjjgi.ts";
@@ -456,7 +456,7 @@ function paintOf(o: Ready, belt: string, sectionCm?: number): BeltPaint | undefi
     ...(bands.length === 0 ? {} : { bands }),
     ...(o.beltRows === undefined ? {} : { rows: o.beltRows }),
     ...(o.beltCover === "cotton" ? {} : { cover: o.beltCover }),
-    ...(stripes.left === "" && stripes.right === "" ? {} : { stripeEnds: stripes }),
+    ...(stripes.left === "" && stripes.right === "" ? {} : { stripeEnds: stripes, stripeBlocks: { left: endBlocks(o.style, 0, half, STRIP_MARGIN), right: endBlocks(o.style, 1, half, STRIP_MARGIN) } }),
     ...(o.tie === undefined || margin !== undefined ? {} : { tie: o.tie }),
   };
   const { left, right } = o.marks?.belt ?? {};

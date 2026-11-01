@@ -56,6 +56,8 @@ export const EDGE1_Y = 36;
 /** The strip a strap's inner and reverse faces sample: the same cloth with nothing sewn on it (marks are sewn on the outer face only). */
 export const BACK_Y = 46;
 export const EDGE_H = 4;
+/** How far each strip runs beyond its cloth on both sides, so a cell grown at its edge still finds cloth. */
+export const STRIP_MARGIN = 1.5;
 /** Along a strip: where it starts on the drawing, and the length after which a kohaku belt's panels repeat. */
 export const X0 = -30;
 const PERIOD = 80;
@@ -298,7 +300,12 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS, ends = fa
   // A fine diagonal twill over the cloth: ribs a lit one and a dark one in turn.
   const twill = (y0: number, h: number): string => (fine ? `<rect x="-40" y="${n2(y0)}" width="280" height="${n2(h)}" fill="url(#jgtwill)"/>` : "");
   const strip = (y0: number, h: number): string => `<rect x="-40" y="${n2(y0 - 1.5)}" width="280" height="${n2(h + 3)}" fill="${p.stripFill ?? p.fill}"/>`;
-  const bands = (p.bands ?? []).map((b) => `<rect x="-40" y="${n2(b.from * w)}" width="280" height="${n2((b.to - b.from) * w)}" fill="${b.fill}"/>`).join("");
+  // A colour that reaches an edge of the belt runs on over the strip's margin, as a block's does (`stripeBlocks`).
+  const bands = (p.bands ?? []).map((b) => {
+    const top = b.from <= 0 ? -STRIP_MARGIN : b.from * w;
+    const foot = b.to >= 1 ? w + STRIP_MARGIN : b.to * w;
+    return `<rect x="-40" y="${n2(top)}" width="280" height="${n2(foot - top)}" fill="${b.fill}"/>`;
+  }).join("");
   // A satin or silk cover: a soft light along the strip's lit side and a fainter one near its other, over the rows.
   const sheen = (y0: number): string => p.cover === undefined || p.cover === "cotton" ? "" : `<rect x="-40" y="${n2(y0 + w * 0.06)}" width="280" height="${n2(w * 0.32)}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.3 : 0.2}"/><rect x="-40" y="${n2(y0 + w * 0.7)}" width="280" height="${n2(w * 0.16)}" fill="#fff" fill-opacity="${p.cover === "silk" ? 0.14 : 0.08}"/>`;
   const cloth = (y0: number, plain = false): string => strip(y0, w) + twill(y0, w) + (plain ? "" : bands.replace(/y="([\d.-]+)"/g, (_, y: string) => `y="${n2(Number(y) + y0)}"`)) + rows(y0, w, n) + sheen(y0) +
@@ -307,9 +314,15 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS, ends = fa
   const backStrip = cloth(BACK_Y, false);
   // An edge is the stitched rows seen end on: the cloth a little darker, and on the two turns the line where one lies on the other.
   const dark = `fill="${p.edge}" fill-opacity="0.3"`;
+  // A bar or a tip is sewn across the belt and round its edges: the colour blocks lie on each end's stretch of the edge strip as well, squeezed to its height.
+  const wrapped = (i: 0 | 1): string => {
+    const blocks = i === 0 ? p.stripeBlocks?.left : p.stripeBlocks?.right;
+    const half = p.stripeEnds?.half;
+    return blocks === undefined || blocks === "" || half === undefined ? "" : `<g transform="translate(${END_X[i]} ${n2(EDGE1_Y + EDGE_H / 2)}) scale(1 ${n2((EDGE_H + 2 * STRIP_MARGIN) / (2 * (half + STRIP_MARGIN)))})">${blocks}</g>`;
+  };
   const edges = strip(EDGE2_Y, EDGE_H) + `<rect x="-40" y="${EDGE2_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>` +
     `<path d="M-40 ${EDGE2_Y + EDGE_H / 2}H240" stroke="${p.edge}" stroke-width="0.6" stroke-opacity="0.8"/>` +
-    strip(EDGE1_Y, EDGE_H) + `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>`;
+    strip(EDGE1_Y, EDGE_H) + wrapped(0) + wrapped(1) + `<rect x="-40" y="${EDGE1_Y - 1.5}" width="280" height="${EDGE_H + 3}" ${dark}/>`;
   const clip = [
     ...(ends ? END_FACE_Y.map((y) => `M-40 ${y - 1.5}H240V${n2(y + w + 1.5)}H-40Z`) : []),
     `M-40 ${FACE_Y - 1.5}H240V${n2(FACE_Y + w + 1.5)}H-40Z`,
@@ -324,9 +337,9 @@ export function strapFace(p: BeltPaint, w: number, n = p.rows ?? ROWS, ends = fa
     const y = END_FACE_Y[i] as number;
     const x = END_X[i] as number;
     const stripe = i === 0 ? p.stripeEnds?.left : p.stripeEnds?.right;
-    return cloth(y) + sewn({ body: stripe ?? "" }, x, y) + sewn(i === 0 ? p.ends?.left : p.ends?.right, x, y);
+    return cloth(y) + sewn({ body: (i === 0 ? p.stripeBlocks?.left : p.stripeBlocks?.right) ?? "" }, x, y) + sewn({ body: stripe ?? "" }, x, y) + sewn(i === 0 ? p.ends?.left : p.ends?.right, x, y);
   }).join("") : "";
   // The paint's own defs (a kohaku belt's panels) are the caller's to add, once for the drawing.
   const twillDefs = fine ? `<pattern id="jgtwill" width="0.62" height="0.62" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><rect width="0.62" height="0.24" fill="#000" fill-opacity="0.09"/><rect y="0.31" width="0.62" height="0.14" fill="#fff" fill-opacity="0.07"/></pattern>` : "";
-  return { defs: twillDefs + (p.strip?.defs ?? ""), body: endStrips + faceStrip + backStrip + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
+  return { defs: twillDefs + (p.strip?.defs ?? ""), body: endStrips + faceStrip + backStrip + sewn({ body: p.stripeBlocks?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeBlocks?.right ?? "" }, END_X[1]) + sewn({ body: p.stripeEnds?.left ?? "" }, END_X[0]) + sewn({ body: p.stripeEnds?.right ?? "" }, END_X[1]) + sewn(p.ends?.left, END_X[0]) + sewn(p.ends?.right, END_X[1]) + (p.strip?.body ?? "") + edges, clip };
 }

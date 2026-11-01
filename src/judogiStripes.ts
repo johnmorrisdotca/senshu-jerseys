@@ -225,10 +225,23 @@ export function bandsOf(style: ReadStyle | undefined): Band[] {
  * from its middle, `half` either side): the tip block with its bars, then the bars across, each with the faintest rows of stitching over it.
  */
 export function endMark(style: ReadStyle | undefined, end: 0 | 1, half: number): string {
+  return marks(style, end, half, 0);
+}
+
+/**
+ * The colour blocks of `endMark` alone, each as a plain rectangle `bleed` units taller than the belt is wide on both sides: laid under a strap's strip they carry a block's colour out past the cloth's
+ * edge, where a cell grown at its corners (`STRAP_GROW`) samples, so no sliver of the belt's own colour shows beside a bar or a tip. Drawn too on the strap's edge strip, squeezed to its height.
+ */
+export function endBlocks(style: ReadStyle | undefined, end: 0 | 1, half: number, bleed: number): string {
+  return marks(style, end, half, bleed, true);
+}
+
+function marks(style: ReadStyle | undefined, end: 0 | 1, half: number, bleed: number, plain = false): string {
   if (style === undefined) return "";
   const l = END_LENGTH[end];
   let s = "";
   const block = (x0: number, x1: number, fill: string): string => {
+    if (plain) return `<rect x="${n(x0)}" y="${n(-half - bleed)}" width="${n(x1 - x0)}" height="${n(2 * half + 2 * bleed)}" fill="${fill}"/>`;
     const edge = hexOf(shade(rgbOf(fill), -0.4));
     return `<rect x="${n(x0)}" y="${n(-half)}" width="${n(x1 - x0)}" height="${n(2 * half)}" fill="${fill}"/>` +
       `<path d="M${n(x0)} ${n(-half)}V${n(half)}M${n(x1)} ${n(-half)}V${n(half)}" stroke="${edge}" stroke-width="0.5" stroke-opacity="0.55"/>` +
@@ -250,7 +263,7 @@ export function endMark(style: ReadStyle | undefined, end: 0 | 1, half: number):
       }
     }
   }
-  if (style.numeral !== undefined && style.numeral.end === end) s += numeralMark(style.numeral, end, half);
+  if (!plain && style.numeral !== undefined && style.numeral.end === end) s += numeralMark(style.numeral, end, half);
   for (const b of style.bars) {
     if (!b.ends[end]) continue;
     const w = b.widthCm * CM;

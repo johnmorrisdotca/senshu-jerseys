@@ -21,6 +21,8 @@ export interface BeltPaint {
   ends?: { left?: Mark; right?: Mark };
   /** Tip blocks, bars and tags across each hanging end, drawn in the end's own frame for a belt `half` wide either side of its middle (the flat drawing squeezes them to its own width). */
   stripeEnds?: { left: string; right: string; half: number };
+  /** The colour blocks of `stripeEnds` alone, carried past the belt's edges by a strap strip's margin: they go under the strip's marks and on its edge strip, so a cell grown at its corners finds the block's colour and not the belt's. */
+  stripeBlocks?: { left: string; right: string };
   /** How many rows of stitching the belt has (8, 10, 13, 14, 15 or 16), and what covers it: plain cotton, satin-woven shusu or silk, the last two with a sheen. */
   rows?: number;
   cover?: "cotton" | "shusu" | "silk";
