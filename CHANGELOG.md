@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.32.2] - 2026-10-31
+
 ### Fixed
 
 - **Worn trousers no longer show through the jacket's skirt** (SPX-835). On a suit with the belt tied, side on and a little round (60 to 120 and 240 to 300 degrees), the trousers' waistband and drawstring stood a little nearer than the belted jacket's skirt just under the belt, and the graphics card's depth test drew them over the cloth, so the skirt looked see-through. Worn, the gathered trousers are now shallower and narrower at the waist and hip rows (`D_WORN`, `H_WORN` in `judogiPants.ts`), as their drawstring pulls them in; laid out flat they are as they were, and the jacket, the belt and the canvas and SVG painters (which draw the trousers first) are unchanged. `test/skirtDepth.test.ts` puts both pieces on a depth buffer for the judogi (belted, unbelted, thick cloth), the karate gi, the jiu-jitsu gi and the dobok at ten side angles and checks that no trouser cell is in front of the skirt where the skirt covers it.
