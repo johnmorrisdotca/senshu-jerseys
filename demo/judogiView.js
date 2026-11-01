@@ -68,6 +68,16 @@ export function bindView(view, hooks) {
   let lastTap = 0;
   let lastTapAt = { x: 0, y: 0 };
   const rect = () => view.getBoundingClientRect();
+  /** The middle of the piece as it is drawn now (client pixels): the middle of its silhouette's box on the canvas, else the view's own middle (a flat SVG). */
+  const pieceMid = () => {
+    const r = rect();
+    const c = view.querySelector("canvas");
+    const b = (c?.getAttribute("data-bounds") ?? "").split(" ").map(Number);
+    const [w, h] = (c?.getAttribute("data-size") ?? "").split(" ").map(Number);
+    if (c === null || b.length !== 4 || b.some((v) => !Number.isFinite(v)) || !(w > 0) || !(h > 0)) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const cr = c.getBoundingClientRect();
+    return { x: cr.left + (((b[0] + b[2]) / 2) * cr.width) / w, y: cr.top + (((b[1] + b[3]) / 2) * cr.height) / h };
+  };
 
   /** Zoom to `next` keeping the point under `(cx, cy)` (client pixels) where it is. */
   const zoomAt = (next, cx, cy, final = true) => {
@@ -186,15 +196,14 @@ export function bindView(view, hooks) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const s = hooks.get();
     const big = e.shiftKey ? 45 : 15;
-    const centre = rect();
     switch (e.key) {
       case "ArrowLeft": if (s.turnable) hooks.set({ yaw: wrapYaw(s.yaw - big) }, true); break;
       case "ArrowRight": if (s.turnable) hooks.set({ yaw: wrapYaw(s.yaw + big) }, true); break;
       // Arrow Up and the wheel up give the package a positive tilt (seen more from above), as before the drag was fixed (SPX-750).
       case "ArrowUp": if (s.turnable) hooks.set({ tilt: clamp(s.tilt - 5, -TILT_MAX, TILT_MAX) }, true); break;
       case "ArrowDown": if (s.turnable) hooks.set({ tilt: clamp(s.tilt + 5, -TILT_MAX, TILT_MAX) }, true); break;
-      case "+": case "=": zoomAt(s.zoom * 1.25, centre.left + centre.width / 2, centre.top + centre.height / 2); break;
-      case "-": case "_": zoomAt(s.zoom / 1.25, centre.left + centre.width / 2, centre.top + centre.height / 2); break;
+      case "+": case "=": zoomAt(s.zoom * 1.25, pieceMid().x, pieceMid().y); break;
+      case "-": case "_": zoomAt(s.zoom / 1.25, pieceMid().x, pieceMid().y); break;
       case "0": case "Home": if (s.turnable) hooks.set({ yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }, true); else hooks.set({ zoom: 1, panX: 0, panY: 0 }, true); break;
       default: return;
     }
@@ -210,5 +219,5 @@ export function bindView(view, hooks) {
   view.addEventListener("keydown", onKey);
   // A right press is a pan, not the browser's menu.
   view.addEventListener("contextmenu", (e) => e.preventDefault());
-  return { zoomAt, zoomBy: (f) => { const r = rect(); zoomAt(hooks.get().zoom * f, r.left + r.width / 2, r.top + r.height / 2); } };
+  return { zoomAt, zoomBy: (f) => { const m = pieceMid(); zoomAt(hooks.get().zoom * f, m.x, m.y); } };
 }

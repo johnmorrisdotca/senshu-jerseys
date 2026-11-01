@@ -311,18 +311,22 @@ test("John's case: the belt at -179 degrees, -30 tilt and 2x is not cut by the c
 test("the + button zooms about the piece's middle, and a Ctrl-wheel or a double press zooms about the pointer", async ({ page }) => {
   await page.goto("/uniforms.html?garment=judogi-white&show=belt&belt=red-white");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
-  const mid = (b) => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
-  const b0 = (await SIZE(page)).b;
-  await page.locator('[data-testid="uni-zoom-in"]').click();
-  await page.waitForTimeout(500);
-  const b1 = (await SIZE(page)).b;
-  const [w, h] = [(await SIZE(page)).w, (await SIZE(page)).h];
-  // The middle of the canvas is the fixed point of the zoom: the piece grows about it.
-  const k = (b1[2] - b1[0]) / (b0[2] - b0[0]);
-  expect(k).toBeGreaterThan(1.3);
-  expect(Math.abs(b1[0] - (w / 2 + k * (b0[0] - w / 2)))).toBeLessThan(3);
-  expect(Math.abs(b1[1] - (h / 2 + k * (b0[1] - h / 2)))).toBeLessThan(3);
-  expect(mid(b1)[0]).toBeGreaterThan(0);
+  // The middle of the piece as it is turned (its silhouette), which is not always the canvas's middle: at -179 degrees and -30 tilt the belt lies high.
+  for (const [yaw, tilt] of [[0, 0], [-179, -30], [90, 30]]) {
+    await page.locator('[data-testid="uni-tilt"]').fill(String(tilt));
+    await page.locator('[data-testid="uni-yaw"]').fill(String(yaw));
+    await page.waitForTimeout(300);
+    const b0 = (await SIZE(page)).b;
+    await page.locator('[data-testid="uni-zoom-in"]').click();
+    await page.waitForTimeout(500);
+    const b1 = (await SIZE(page)).b;
+    const k = (b1[2] - b1[0]) / (b0[2] - b0[0]);
+    expect(k, `${yaw} ${tilt}`).toBeGreaterThan(1.3);
+    const mid = (b) => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
+    expect(Math.abs(mid(b1)[0] - mid(b0)[0]), `${yaw} ${tilt}: x`).toBeLessThan(3);
+    expect(Math.abs(mid(b1)[1] - mid(b0)[1]), `${yaw} ${tilt}: y`).toBeLessThan(3);
+    await page.locator('[data-testid="uni-fit"]').click();
+  }
   await page.locator('[data-testid="uni-fit"]').click();
   // A point of the view stays where it is while the zoom grows round it.
   const box = await page.locator('[data-testid="uni-turntable"]').boundingBox();

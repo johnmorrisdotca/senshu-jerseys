@@ -4,7 +4,7 @@ The jacket, the trousers and the belt as original SVG: contest white or blue, th
 
 Look at the [designer](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html) (`?colour=white&mode=pieces&belt=black&size=170`).
 
-**Hands in the designer.** A press and drag turns the piece at every zoom (across the view is a half turn; a drag up lifts the front) and the Tilt slider tips it; the wheel (when the view has focus), the arrow keys and a sideways swipe turn it too. To move a zoomed view, Shift and drag, drag with the middle or right button, or use two fingers (a pinch zooms about the fingers). Fit puts zoom and position back.
+**Hands in the designer.** At 1x a press and drag turns the piece (across the view is a half turn; a drag up lifts the front) and the Tilt slider tips it; the wheel (when the view has focus), the arrow keys and a sideways swipe turn it too. Zoomed in, a plain drag, or one finger, moves the view; the Move and Turn buttons beside the zoom choose between that and turning (`drag=turn` in the address), the four arrow buttons move it a quarter of the view, and Shift and drag, the middle or right button, or two fingers (a pinch zooms about the fingers) always move it. The mouse wheel with Ctrl or Command and a double press zoom about the pointer; the + and − buttons and keys zoom about the middle of the piece as it is turned. The picture is fitted so that the whole piece, belt ends of 55 cm included, is in view at every angle and tilt at 1x. Fit puts zoom and position back.
 
 <picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/judogi-desk-dark.webp">

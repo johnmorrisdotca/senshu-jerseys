@@ -587,7 +587,7 @@ test("at 1x every piece fits the view with a margin at every angle and tilt, ext
     expect(r.b[2], `${where}: right`).toBeLessThanOrEqual(r.w + 1);
     expect(r.b[3], `${where}: bottom`).toBeLessThanOrEqual(r.h + 1);
   };
-  for (const mode of ["belt", "jacket", "pants", "suit"]) {
+  for (const mode of ["belt", "jacket", "pants", "suit", "pieces", "folded", "box"]) {
     await page.goto(`/judogi.html?mode=${mode}&belt=red-white`);
     await expect(page.locator("#judo-stage canvas")).toBeVisible();
     for (const tilt of [-30, 0, 30]) {
@@ -598,6 +598,24 @@ test("at 1x every piece fits the view with a margin at every angle and tilt, ext
       }
     }
   }
+});
+
+test("John's case on the designer: the belt at -179 degrees and -30 tilt, zoomed in twice with +, stays centred on its own middle", async ({ page }) => {
+  await page.goto("/judogi.html?mode=belt&belt=red-white&sb=gold&sbn=4&ss=blue&sc=orange&st=white&yaw=-179&tilt=-30");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const read = () => page.locator("#judo-stage canvas").evaluate((c) => ({ b: (c.getAttribute("data-bounds") ?? "").split(" ").map(Number), s: (c.getAttribute("data-size") ?? "").split(" ").map(Number) }));
+  const before = await read();
+  await page.locator('[data-testid="judo-zoom-in"]').click();
+  await page.locator('[data-testid="judo-zoom-in"]').click();
+  await expect(page.locator('[data-testid="judo-zoom-reset"]')).toHaveText("2×");
+  await page.waitForTimeout(600);
+  const r = await read();
+  // The piece grew about its own middle, which stays put (a phone's view is too narrow to hold it whole at 2x: the arrows move it).
+  expect(r.b[2] - r.b[0]).toBeGreaterThan(1.7 * (before.b[2] - before.b[0]));
+  expect(Math.abs((r.b[1] + r.b[3]) / 2 - (before.b[1] + before.b[3]) / 2)).toBeLessThan(4);
+  expect(Math.abs((r.b[0] + r.b[2]) / 2 - (before.b[0] + before.b[2]) / 2)).toBeLessThan(4);
+  expect(r.b[1]).toBeGreaterThanOrEqual(-1);
+  expect(r.b[3]).toBeLessThanOrEqual(r.s[1] + 1);
 });
 
 // A plain press and drag turns the piece at 1x; zoomed in it moves the view unless the Turn button is chosen (kept in the address); Shift, the middle or right button and two fingers always move a zoomed view.
