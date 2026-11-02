@@ -4,6 +4,7 @@ import { CUT_IDS, FIT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOp
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
 import { saveImage } from "./kazoku-ui/save-image/index.js";
+import { giRow, keepRow, rowOptions } from "./giRow.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -963,3 +964,5 @@ drawRafters();
 drawTitles();
 drawBuilders();
 loadPresets();
+
+keepRow(() => giRow($("gi-row"), { dressed: (g) => rowOptions(g, lang()), keyOf: (g) => `row:${g.id}:${lang()}`, href: (g) => `uniforms.html?garment=${g.id}` }));

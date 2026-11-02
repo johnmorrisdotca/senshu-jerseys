@@ -8,6 +8,7 @@ import {
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
+import { giRow, keepRow, rowOptions } from "./giRow.js";
 import { clamp, fillView, oneAtATime, paced, viewSize } from "./judogiView.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
 import { saveImage } from "./kazoku-ui/save-image/index.js";
@@ -849,3 +850,4 @@ const speak = () => bar.setAttribute("lang", lang() === "ja" ? "ja" : "en");
 window.addEventListener("senshu-language", () => { speak(); controls(); draw(); });
 speak();
 draw();
+keepRow(() => giRow($("gi-row"), { dressed: (g) => rowOptions(g, lang()), keyOf: (g) => `row:${g.id}:${lang()}`, href: (g) => `uniforms.html?garment=${g.id}` }));

@@ -3,7 +3,9 @@
 // trouser hem, angle, tilt and zoom are in the address (the last three are the view controls').
 import { BELT_KNOTS, BELT_PRESETS, JUDOGI_BELTS, JUDOGI_BELT_LABELS, beltPreset, judogiFrame } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
+import { picture } from "./giPictures.js";
 import { segmented, tiles } from "./judogiPick.js";
+import { giRow, keepRow } from "./giRow.js";
 import { clamp, fillView, oneAtATime, paced, viewSize } from "./judogiView.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
 import "./kazoku-ui/view-controls/define.js";
@@ -68,60 +70,6 @@ const beltName = (id) => {
   return lang() === "ja" ? JUDOGI_BELT_LABELS[id].ja : JUDOGI_BELT_LABELS[id].en;
 };
 
-// ---- Still pictures for the tiles: the package's own drawing painted once, cropped to the cloth and kept as an image. One at a time, so a phone is not asked for many canvases at once. ----
-const pictures = new Map();
-let queue = Promise.resolve();
-async function shoot(options, width, scale) {
-  const holder = document.createElement("div");
-  holder.innerHTML = judogiFrame({ ...options, bare: true, width });
-  const svg = holder.firstElementChild;
-  const made = svg === null ? undefined : await judogiCanvas(svg, { pixelRatio: 2, scale });
-  if (made === undefined) return undefined;
-  made.turn(0, 0);
-  const { canvas } = made;
-  const copy = document.createElement("canvas");
-  copy.width = canvas.width;
-  copy.height = canvas.height;
-  const g = copy.getContext("2d", { willReadFrequently: true });
-  g.drawImage(canvas, 0, 0);
-  made.dispose();
-  const data = g.getImageData(0, 0, copy.width, copy.height).data;
-  let x0 = copy.width, y0 = copy.height, x1 = 0, y1 = 0;
-  for (let y = 0; y < copy.height; y++) for (let x = 0; x < copy.width; x++) if (data[(y * copy.width + x) * 4 + 3] > 24) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-  if (x1 <= x0 || y1 <= y0) return undefined;
-  const out = document.createElement("canvas");
-  out.width = x1 - x0 + 1;
-  out.height = y1 - y0 + 1;
-  out.getContext("2d").drawImage(copy, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
-  return out.toDataURL("image/png");
-}
-/** Put a tile's picture in when it is ready, once the tile is near the screen (the others wait: a page of forty drawings is not drawn at once). `key` names the drawing, so one made before is not made again. */
-const near = new IntersectionObserver((entries) => {
-  for (const e of entries) {
-    e.target.dataset.near = e.isIntersecting ? "1" : "";
-    if (e.isIntersecting) e.target._make?.();
-  }
-}, { rootMargin: "300px" });
-function picture(tile, key, options, width, scale) {
-  const set = (url) => {
-    const img = tile.querySelector("img");
-    if (img === null || url === undefined) return;
-    img.src = url;
-    tile.dataset.ready = "1";
-  };
-  tile._make = () => {
-    tile._make = undefined;
-    if (pictures.has(key)) return set(pictures.get(key));
-    queue = queue.then(async () => {
-      if (!pictures.has(key)) pictures.set(key, await shoot(options, width, scale).catch(() => undefined));
-      set(pictures.get(key));
-      await new Promise((done) => globalThis.setTimeout(done, 40));
-    });
-  };
-  if (tile.dataset.near === "1") tile._make();
-  else near.observe(tile);
-}
-
 function garmentTiles() {
   const box = tiles({
     id: "uni-garment", label: say("uniformsGarment"), values: GARMENTS.map((g) => g.id), current: state.garment,
@@ -181,6 +129,7 @@ function controls() {
 function change(key, value) {
   state[key] = value;
   syncUrl();
+  if (key === "garment") for (const tile of document.querySelectorAll(".gi-tile")) tile.setAttribute("aria-pressed", String(tile.dataset.garment === value));
   if (key === "belt") for (const tile of document.querySelectorAll(".uni-belts [data-value]")) tile.setAttribute("aria-pressed", String(tile.dataset.value === value));
   if (key === "belt" || key === "knot" || key === "tail" || key === "hem") for (const tile of $("uni-garment").querySelectorAll("[data-value]")) delete tile.dataset.ready;
   // The garment tiles wear the belt as it is tied; the belt row redraws when its tie or its display changes (a key that is the same keeps its picture).
@@ -298,3 +247,5 @@ window.addEventListener("senshu-language", () => { speak(); controls(); draw(); 
 speak();
 controls();
 draw();
+// The same row as on the other pages: a tile chooses the garment here (its picture is the garment tile's, drawn once).
+keepRow(() => giRow($("gi-row"), { dressed: (g) => dressed(g, state.belt, "suit"), keyOf: (g) => `g:${g.id}:${state.belt}:${state.knot}:${state.tail}:${state.hem}:${lang()}`, pick: (g) => { change("garment", g.id); for (const t of $("uni-garment").querySelectorAll("[data-value]")) t.setAttribute("aria-pressed", String(t.dataset.value === g.id)); $("uni-turntable").scrollIntoView({ block: "nearest" }); }, current: () => state.garment }));

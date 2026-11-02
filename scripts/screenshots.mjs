@@ -198,6 +198,18 @@ try {
     await sheet(`judogi-desk-${scheme}`, { width: 1100, cols: 4, rows: [330], scheme, zones: [{ preset: scheme === "dark" ? "midnight" : "floodlights", intensity: 0.9 }] }, judogi);
     await sheet(`banners-desk-${scheme}`, { width: 1400, cols: 6, rows: [270, 270], scheme, zones: [{ preset: scheme === "dark" ? "crimson" : "royal", intensity: 0.9 }] }, banners);
   }
+  // The row of gi besides judo, as the home page shows it (the Uniforms page's tiles: a karate gi for each sleeve and cut, a jiu-jitsu gi in each colour with plain, IBJJF-legal and covered-in
+  // patches, each taekwondo collar and cut), photographed from the page itself once every picture is in, in the light and the dark. The pictures are made one at a time on one graphics context.
+  for (const scheme of ["light", "dark"]) {
+    if (only && !only.includes(`gi-desk-${scheme}`)) continue;
+    const context = await browser.newContext({ viewport: { width: 1100, height: 900 }, colorScheme: scheme, deviceScaleFactor: 2, reducedMotion: "reduce" });
+    const page = await context.newPage();
+    await page.goto(`http://127.0.0.1:${port}/`);
+    await page.locator("#gi-row").scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelectorAll("#gi-row .gi-tile[data-ready='1']").length >= 21, null, { timeout: 120000 });
+    await webp(await page.locator("#gi").screenshot({ type: "png" }), `${out}/gi-desk-${scheme}.webp`);
+    await context.close();
+  }
   await browser.close();
   console.log(`pictures written to ${out}`);
 } finally {

@@ -5,6 +5,8 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230a1130'/%3E%3Cpath d='M34 18L16 30L24 48L34 42V84H66V42L76 48L84 30L66 18Q50 34 34 18Z' fill='%23c8102e'/%3E%3Cpath d='M34 18Q50 34 66 18' fill='none' stroke='%23f4f0e4' stroke-width='5'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="family.css" />
   <link rel="stylesheet" href="demo.css" />
+  <link rel="stylesheet" href="judogi.css" />
+  <link rel="stylesheet" href="giRow.css" />
 </head>
 <body>
 <main>
@@ -53,8 +55,14 @@
   </section>
 
   <nav class="jump" id="jump" aria-label="Sections" data-say-label="navLabel">
-    <a href="#try" data-say="navTry"></a><a href="#styles" data-say="navStyles"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#titles" data-say="navTitles"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
+    <a href="#try" data-say="navTry"></a><a href="#styles" data-say="navStyles"></a><a href="#gi" data-say="navGi"></a><a href="#wall" data-say="navWall"></a><a href="#officials" data-say="navOfficials"></a><a href="#rafters" data-say="navRafters"></a><a href="#titles" data-say="navTitles"></a><a href="#teams" data-say="navTeams"></a><a href="#caps" data-say="navCaps"></a><a href="#embed" data-say="navEmbed"></a>
   </nav>
+
+  <section class="more" id="gi" aria-labelledby="gi-h">
+    <h2 id="gi-h" data-say="giTitle"></h2>
+    <p data-say="giIntro"></p>
+    <div id="gi-row" data-testid="gi-row"></div>
+  </section>
 
   <section class="more" id="styles" aria-labelledby="styles-h">
     <h2 id="styles-h" data-say="stylesTitle"></h2>

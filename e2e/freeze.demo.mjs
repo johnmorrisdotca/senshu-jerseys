@@ -357,6 +357,21 @@ test.describe("on a 5K screen", () => {
   });
 });
 
+test("the home page's row of gi is drawn on one WebGL context, one picture at a time, and nothing runs after", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.goto("/");
+  await page.locator('[data-testid="gi-row"]').scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelectorAll("#gi-row .gi-tile[data-ready='1']").length >= 21, null, { timeout: 120_000 });
+  await settle(page, 600);
+  const drawn = await usage(page);
+  console.log(`home page row of 21 gi: contexts at once ${drawn.everLive}, graphics objects ${drawn.gpu}, textures ${drawn.textures}`);
+  expect(drawn.everLive).toBeLessThanOrEqual(1);
+  expect(drawn.contexts).toBeLessThanOrEqual(1);
+  // the shared context is given back a few seconds after the last picture
+  await expect.poll(async () => (await usage(page)).contexts, { timeout: 15_000 }).toBe(0);
+  expect((await usage(page)).gpu).toBe(0);
+});
+
 test.describe("the jersey page", () => {
   test("nothing runs at rest, one frame loop while turning, none out of sight or in a hidden tab", async ({ page }) => {
     await page.goto("/");
