@@ -5,8 +5,8 @@ import { defineConfig, devices } from "@playwright/test";
 // This package's ports are 7300 to 7399; tests use 7301 unless TEST_PORT names another (a worktree takes its own).
 const port = Number(process.env.TEST_PORT ?? 7301);
 const phone = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
-// Every WebGL page is drawn in software (SwiftShader), never on the machine's graphics card: a test run once panicked a Mac's graphics driver.
-const gl = { launchOptions: { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } };
+// Every WebGL page is drawn in software (SwiftShader), never on the machine's graphics card: a test run once panicked a Mac's graphics driver. CI has no graphics card, so it needs no switch (with the switch its runners were too slow and the demo job timed out).
+const gl = process.env.CI ? {} : { launchOptions: { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } };
 // WebKit has no software switch, so on a developer's machine it skips the pages that draw WebGL; CI (a hosted runner, no graphics card) plays them.
 const webglPages = /(judogi|uniforms|freeze)\.demo/;
 
