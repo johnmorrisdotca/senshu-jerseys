@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-11-02
+
 ### Changed (repository)
 
 - CI no longer passes the software-GL switch to Chromium (`playwright.config.mjs` uses it off CI only): with it the hosted runners were too slow and the demo job timed out. CI has no graphics card, so it draws in software anyway.
