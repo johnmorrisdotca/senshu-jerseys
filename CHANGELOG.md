@@ -6,6 +6,18 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.33.2] - 2026-11-02
+
+### Changed
+
+- **The demo takes the rest of the family's shared parts from `@johnmorrisdotca/kazoku-ui` 0.7** (a dev dependency used only by the demo; the library stays dependency-free). The Uniforms page's view is the shared `<kazoku-view-controls>`, as the designer's has been since 0.33.1: its own angle and tilt sliders, Auto-turn, zoom, Fit, pan pad and Move or Turn buttons, and the page's hands (`bindView` and `bindMoves` in `demo/judogiView.js`, now removed), are gone. The address keys (`yaw`, `tilt`, `zoom`, `drag`) are the same. The designer's Save SVG and Save PNG, and the playground's Download SVG, are the shared save-image part (`saveImage`) in place of the page's own download and canvas code. The three pages that wrote their choices into the address by hand (`demo.js`, `judogi.js`, `uniforms.js`) use the shared address state: the same keys, written once a quarter of a second after the last change, so a typed word is one write, not one for each letter.
+- **The family header has the shared language picker and a theme switch** (family template 2026-11-02, the same file in every repo that carries it). The English and Japanese buttons are `<kazoku-language-picker>`, which keeps the choice in the address (`?lang=`) and in the same `localStorage` key as before, so a reader's saved language stays; `familyLanguage` still fills the page's words and `window.senshuLanguage` is unchanged. `<kazoku-theme-switch>` (Light, Dark, Auto; `?theme=`) is new beside it. The tests hold the new template's hash, the header's picker and switch, and the two downloads.
+
+### Changed (repository)
+
+- `release.yml` is a few lines that call kazoku-ui's shared `reusable-release.yml` (pinned to v0.7.3): the same checks, tag, GitHub release with the tarball, and npm publish by trusted publishing. The trusted publisher on npmjs.com stays `release.yml`.
+- `AGENTS.md` is written from kazoku-ui's template: the family rules above a marker, this repo's board, ports, checks and rules below it.
+
 ## [0.33.1] - 2026-11-01
 
 ### Changed
