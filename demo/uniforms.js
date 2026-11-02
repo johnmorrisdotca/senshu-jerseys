@@ -1,19 +1,21 @@
 // The Uniforms page: every garment side by side as picture tiles, each wearing the chosen belt, rows of belts (colours, then each art's real arrangements of stripes, bars,
 // tips and numerals) tied as they are worn or folded as a shop shows them, how the belt is tied, and the chosen garment large and turnable. Garment, belt, tie, display,
-// trouser hem, angle, tilt and zoom are in the address.
+// trouser hem, angle, tilt and zoom are in the address (the last three are the view controls').
 import { BELT_KNOTS, BELT_PRESETS, JUDOGI_BELTS, JUDOGI_BELT_LABELS, beltPreset, judogiFrame } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { segmented, tiles } from "./judogiPick.js";
-import { bindMoves, bindView, clamp, fillView, viewSize, TILT_MAX, wrapYaw, ZOOM_MAX, ZOOM_MIN } from "./judogiView.js";
+import { clamp, fillView, viewSize } from "./judogiView.js";
+import { createAddressState } from "./kazoku-ui/address-state/index.js";
+import "./kazoku-ui/view-controls/define.js";
 import { GARMENTS } from "./uniformsList.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
+const bar = $("uni-bar");
 const params = new URLSearchParams(location.search);
 const lang = () => window.senshuLanguage?.lang ?? "en";
 const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-const SPEED = 30;
 
 const COLOURS = JUDOGI_BELTS.filter((b) => b !== "none");
 const BELTS = [...COLOURS, ...BELT_PRESETS.map((p) => p.id)];
@@ -30,17 +32,17 @@ const state = {
   knot: KNOTS.includes(params.get("knot")) ? params.get("knot") : "auto",
   tail: TAILS.includes(params.get("tail")) ? params.get("tail") : "auto",
   hem: HEMS.includes(params.get("hem")) ? params.get("hem") : "auto",
-  yaw: Number.parseInt(params.get("yaw") ?? "0", 10) || 0,
-  tilt: clamp(Number.parseInt(params.get("tilt") ?? "0", 10) || 0, -TILT_MAX, TILT_MAX),
-  zoom: clamp(Number.parseFloat(params.get("zoom") ?? "1") || 1, ZOOM_MIN, ZOOM_MAX),
-  drag: params.get("drag") === "turn" ? "turn" : "move",
+  // The camera (angle, tip, zoom, what a drag does) is the view controls': read from them, kept in the address by them.
+  yaw: bar.state.yaw,
+  tilt: bar.state.tilt,
+  zoom: bar.state.zoom,
+  drag: bar.state.drag,
 };
-const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", knot: "auto", tail: "auto", hem: "auto", yaw: 0, tilt: 0, zoom: 1, drag: "move" };
+const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", knot: "auto", tail: "auto", hem: "auto" };
+const address = createAddressState({ defaults: DEFAULTS });
 
 function syncUrl() {
-  const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(state)) if (String(v) !== String(DEFAULTS[k]) && !(k === "yaw" && turning.on)) q.set(k, String(v));
-  history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
+  address.setMany(Object.fromEntries(Object.keys(DEFAULTS).map((k) => [k, state[k]])));
 }
 
 /**
@@ -187,7 +189,6 @@ function change(key, value) {
 }
 
 // ---- The large view ----
-const turning = { on: false, byHover: false, last: 0, frame: 0 };
 const pan = { x: 0, y: 0 };
 let painted;
 let drawing = 0;
@@ -221,46 +222,32 @@ async function draw() {
   madeAt = q;
   canvas?.turn(state.yaw, pitch(), camera());
   if (canvas === undefined) $("uni-stage").replaceChildren(...holder.childNodes);
-  else {
-    canvas.canvas.dataset.yaw = String(state.yaw);
-    $("uni-stage").replaceChildren(canvas.canvas);
-  }
-  showAngle();
+  else $("uni-stage").replaceChildren(canvas.canvas);
   placeStage();
 }
 
-function showAngle() {
-  $("uni-yaw-out").textContent = `${wrapYaw(state.yaw)}°`;
-  $("uni-yaw").value = String(wrapYaw(state.yaw));
-  $("uni-tilt-out").textContent = `${state.tilt}°`;
-  $("uni-tilt").value = String(state.tilt);
+/** The middle of the piece's silhouette at Fit, in CSS pixels from the view's middle: the point the + and - buttons and keys zoom about. */
+function pieceAnchor() {
+  const c = painted?.canvas;
+  const b = (c?.getAttribute("data-bounds") ?? "").split(" ").map(Number);
+  const [w, h] = (c?.getAttribute("data-size") ?? "").split(" ").map(Number);
+  if (c === undefined || b.length !== 4 || b.some((v) => !Number.isFinite(v)) || !(w > 0) || !(h > 0)) return undefined;
+  const r = $("uni-turntable").getBoundingClientRect();
+  const cr = c.getBoundingClientRect();
+  return { x: (cr.left + (((b[0] + b[2]) / 2) * cr.width) / w - (r.left + r.width / 2) - pan.x) / state.zoom, y: (cr.top + (((b[1] + b[3]) / 2) * cr.height) / h - (r.top + r.height / 2) - pan.y) / state.zoom };
 }
 
 function placeStage() {
-  const box = $("uni-turntable").getBoundingClientRect();
-  const room = (state.zoom - 1) / 2;
-  pan.x = state.zoom === 1 ? 0 : clamp(pan.x, -box.width * room, box.width * room);
-  pan.y = state.zoom === 1 ? 0 : clamp(pan.y, -box.height * room, box.height * room);
   if (painted !== undefined) {
     $("uni-stage").style.transform = "";
     painted.turn(state.yaw, pitch(), camera());
-  } else $("uni-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
-  $("uni-zoom-reset").textContent = `${Number(state.zoom.toFixed(1))}×`;
-  showMoves(state.zoom, state.drag);
-  $("uni-turntable").style.touchAction = state.zoom > 1.05 ? "none" : "";
-  $("uni-zoom-out").disabled = state.zoom <= ZOOM_MIN + 1e-6;
-  $("uni-zoom-in").disabled = state.zoom >= ZOOM_MAX - 1e-6;
-}
-
-function turnTo(yaw, tilt = state.tilt) {
-  state.yaw = yaw;
-  state.tilt = tilt;
-  const svg = $("uni-stage").querySelector("svg");
-  if (painted !== undefined) {
-    painted.turn(yaw, pitch(), camera());
-    painted.canvas.dataset.yaw = String(Math.round(yaw));
-  } else if (svg !== null) judogiTurn(svg, yaw, pitch());
-  showAngle();
+    bar.anchor = pieceAnchor();
+  } else {
+    bar.anchor = undefined;
+    $("uni-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
+    const svg = $("uni-stage").querySelector("svg");
+    if (svg !== null) judogiTurn(svg, state.yaw, pitch());
+  }
 }
 
 let crisp = 0;
@@ -272,81 +259,39 @@ function settleQuality() {
   }, 350);
 }
 
-function tick(now) {
-  if (!turning.on) return;
-  const dt = turning.last === 0 ? 0 : Math.min(0.1, (now - turning.last) / 1000);
-  turning.last = now;
-  turnTo(state.yaw + SPEED * dt);
-  turning.frame = requestAnimationFrame(tick);
-}
-function syncPlay() {
-  $("uni-play").setAttribute("aria-pressed", String(turning.on));
-  $("uni-play").textContent = turning.on ? say("pause") : say("play");
-}
-function play(byHover = false) {
-  if (turning.on) return;
-  turning.on = true;
-  turning.byHover = byHover;
-  turning.last = 0;
-  turning.frame = requestAnimationFrame(tick);
-  syncPlay();
-}
-function stop() {
-  if (!turning.on) return;
-  turning.on = false;
-  globalThis.cancelAnimationFrame(turning.frame);
-  syncPlay();
-  syncUrl();
-}
-
+// Still until a mouse comes over it: then it turns, and stops when the mouse leaves, unless it was set turning with the button. Grabbing it (a press, the wheel, a key) stops the turn for good.
+let byHover = false;
 let grabbed = false;
-const hooks = {
-  get: () => ({ yaw: state.yaw, tilt: state.tilt, zoom: state.zoom, panX: pan.x, panY: pan.y, turnable: true, drag: state.drag }),
-  grab() {
-    grabbed = true;
-    turning.byHover = false;
-    stop();
-  },
-  set(next, final) {
-    if (next.zoom !== undefined) state.zoom = next.zoom;
-    if (next.panX !== undefined) pan.x = next.panX;
-    if (next.panY !== undefined) pan.y = next.panY;
-    if (next.yaw !== undefined || next.tilt !== undefined) turnTo(next.yaw ?? state.yaw, next.tilt ?? state.tilt);
-    placeStage();
-    if (final) {
-      syncUrl();
-      settleQuality();
-    }
-  },
-};
-const hands = bindView($("uni-turntable"), hooks);
-const showMoves = bindMoves("uni", $("uni-turntable"), hooks, (value) => { state.drag = value; showMoves(state.zoom, state.drag); syncUrl(); });
-$("uni-yaw").addEventListener("input", () => { stop(); turnTo(Number($("uni-yaw").value)); syncUrl(); });
-$("uni-tilt").addEventListener("input", () => { stop(); turnTo(state.yaw, Number($("uni-tilt").value)); syncUrl(); });
-$("uni-play").addEventListener("click", () => (turning.on ? stop() : play()));
-$("uni-front").addEventListener("click", () => { stop(); turnTo(0, 0); syncUrl(); });
-$("uni-turntable").addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse" && !reduced.matches && !grabbed) play(true); });
-$("uni-turntable").addEventListener("pointerleave", () => { if (turning.byHover) stop(); });
-$("uni-zoom-in").addEventListener("click", () => hands.zoomBy(1.4));
-$("uni-zoom-out").addEventListener("click", () => hands.zoomBy(1 / 1.4));
-const fit = () => {
-  pan.x = 0;
-  pan.y = 0;
-  state.zoom = 1;
+const view = $("uni-turntable");
+view.addEventListener("pointerenter", (event) => {
+  if (event.pointerType === "mouse" && !reduced.matches && !grabbed && !bar.state.turning) {
+    bar.play();
+    byHover = true;
+  }
+});
+view.addEventListener("pointerleave", () => {
+  if (byHover) bar.pause();
+});
+view.addEventListener("pointerdown", () => { grabbed = true; });
+bar.addEventListener("kazoku-viewchange", ({ detail }) => {
+  const { yaw, tilt, zoom, panX, panY, drag, reason, final } = detail;
+  Object.assign(state, { yaw, tilt, zoom, drag });
+  pan.x = panX;
+  pan.y = panY;
+  if (reason === "play" || reason === "pause") byHover = false;
+  if (reason === "wheel" || reason === "key") grabbed = true;
   placeStage();
-  syncUrl();
-  settleQuality();
-};
-$("uni-fit").addEventListener("click", fit);
-$("uni-zoom-reset").addEventListener("click", fit);
+  if (final) settleQuality();
+});
 let resizing = 0;
 window.addEventListener("resize", () => {
-  placeStage();
+  bar.set({}, false);
   globalThis.clearTimeout(resizing);
   resizing = globalThis.setTimeout(() => { const want = viewSize($("uni-turntable"), natH); if (painted !== undefined && (Math.abs(want.width - painted.canvas.clientWidth) > 8 || Math.abs(want.height - painted.canvas.clientHeight) > 8)) draw(); }, 300);
 });
-window.addEventListener("senshu-language", () => { controls(); draw(); syncPlay(); });
+const speak = () => bar.setAttribute("lang", lang() === "ja" ? "ja" : "en");
+window.addEventListener("senshu-language", () => { speak(); controls(); draw(); });
 
+speak();
 controls();
 draw();
-syncPlay();

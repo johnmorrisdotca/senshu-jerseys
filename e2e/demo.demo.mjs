@@ -486,7 +486,7 @@ test("the background is off by default, and a chosen one is a picture behind the
   expect(await background()).toBe("");
   await page.locator("#background").selectOption("ice");
   await expect.poll(background).toContain("data:image/svg+xml");
-  expect(page.url()).toContain("background=ice");
+  await expect(page).toHaveURL(/background=ice/);
   expect(await jersey()).toBe(plain);
   await page.emulateMedia({ colorScheme: "dark" });
   await expect.poll(background).toContain("data:image/svg+xml");
@@ -497,7 +497,7 @@ test("the background is off by default, and a chosen one is a picture behind the
   await expect.poll(background).toContain("data:image/svg+xml");
   await page.locator("#background").selectOption("");
   await expect.poll(background).toBe("");
-  expect(page.url()).not.toContain("background");
+  await expect(page).not.toHaveURL(/background/);
   await page.goto("/?background=nope");
   await expect(page.locator("#background")).toHaveValue("");
   expect(await noSideways(page)).toBe(true);
@@ -724,4 +724,22 @@ test("the tilt slider tips the garment forward up to 30 degrees, is kept in the 
   await expect(page).toHaveURL(/pitch=0/);
   await page.getByTestId("vol").click();
   await expect(page.locator("#pitchbar")).toBeHidden();
+});
+
+test("the header's language picker and theme switch answer, and keep their choice in the address", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.locator('kazoku-language-picker [data-v="ja"]').click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ja");
+  await expect(page.locator("#unreviewed")).toBeVisible();
+  await expect(page).toHaveURL(/lang=ja/);
+  await page.locator('kazoku-theme-switch [data-v="dark"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page).toHaveURL(/theme=dark/);
+  await page.goto(page.url());
+  await expect(page.locator("html")).toHaveAttribute("lang", "ja");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.locator('kazoku-language-picker [data-v="en"]').click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("#unreviewed")).toBeHidden();
 });

@@ -20,7 +20,7 @@ function withFamily(html, { title, description }) {
     .replace("<!--family:footer-->", familyFooter({ id }))
     .replace(
       /<!--family:scripts ([\w.-]+)-->/,
-      (_, script) => `<script>${FAMILY_SCRIPT}</script>\n<script>window.senshuLanguage = familyLanguage({ id: ${JSON.stringify(id)}, words: ${JSON.stringify(WORDS)}, onChange: function (lang) { window.dispatchEvent(new CustomEvent("senshu-language", { detail: lang })); } });</script>${script === "none" ? "" : `\n<script type="module" src="${script}"></script>`}`,
+      (_, script) => `<script>${FAMILY_SCRIPT}</script>\n<script>window.senshuLanguage = familyLanguage({ id: ${JSON.stringify(id)}, words: ${JSON.stringify(WORDS)}, onChange: function (lang) { window.dispatchEvent(new CustomEvent("senshu-language", { detail: lang })); } });</script>\n<script type="module">import "./kazoku-ui/language-picker/define.js"; import "./kazoku-ui/theme-switch/define.js";</script>${script === "none" ? "" : `\n<script type="module" src="${script}"></script>`}`,
     );
 }
 

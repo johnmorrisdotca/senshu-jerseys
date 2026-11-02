@@ -9,6 +9,8 @@ import {
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
 import { clamp, fillView, viewSize } from "./judogiView.js";
+import { createAddressState } from "./kazoku-ui/address-state/index.js";
+import { saveImage } from "./kazoku-ui/save-image/index.js";
 import "./kazoku-ui/view-controls/define.js";
 import { WORDS } from "./words.js";
 
@@ -287,17 +289,11 @@ const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname:
 
 const CAMERA = ["yaw", "tilt", "zoom", "drag"];
 
+// The camera's keys are the view controls' to write; the rest are kept here.
+const address = createAddressState({ defaults: DEFAULTS });
+
 function syncUrl() {
-  const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(state)) {
-    if (String(v) === "" || CAMERA.includes(k)) continue;
-    if (k in DEFAULTS && String(v) === String(DEFAULTS[k])) continue;
-    q.set(k, String(v));
-  }
-  // The camera's keys are the view controls' to write: keep what they have put in the address.
-  const now = new URLSearchParams(location.search);
-  for (const k of CAMERA) if (now.has(k)) q.set(k, now.get(k));
-  history.replaceState(null, "", `${location.pathname}${q.size ? `?${q}` : ""}`);
+  address.setMany(Object.fromEntries(Object.entries(state).filter(([k]) => !CAMERA.includes(k)).map(([k, v]) => [k, String(v) === "" ? null : v])));
 }
 
 /** The tip the package is given: the designer's Tilt is positive when the FRONT of the piece goes up (a drag up, the wheel up, Arrow Up, the slider toward its top), the package's is positive when the piece is seen more from above. */
@@ -808,31 +804,9 @@ function controls() {
   }
 }
 
-function download(name, blob) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
-
-function exportSvg() {
-  download("senshu-judogi.svg", new Blob([judogiFrame(options())], { type: "image/svg+xml" }));
-}
-
-function exportPng() {
-  const blob = new Blob([judogiFrame(options())], { type: "image/svg+xml" });
-  const url = URL.createObjectURL(blob);
-  const img = new globalThis.Image();
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, img.naturalWidth * 2);
-    canvas.height = Math.max(1, img.naturalHeight * 2);
-    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((png) => { if (png) download("senshu-judogi.png", png); URL.revokeObjectURL(url); }, "image/png");
-  };
-  img.src = url;
-}
+/** The drawing as an SVG element of its own (not on the page), which the shared save-image part writes out. */
+const exportable = () => new globalThis.DOMParser().parseFromString(judogiFrame(options()), "image/svg+xml").documentElement;
+const exportAs = (format) => saveImage(exportable(), { format, name: "senshu-judogi", inlineStyles: false });
 
 controls();
 const view = $("judo-turntable");
@@ -866,8 +840,8 @@ window.addEventListener("resize", () => {
   globalThis.clearTimeout(resizing);
   resizing = globalThis.setTimeout(() => { if ((!flat() || stillSolid()) && painted !== undefined && (Math.abs(viewSize($("judo-turntable"), natH).width - painted.canvas.clientWidth) > 8 || Math.abs(viewSize($("judo-turntable"), natH).height - painted.canvas.clientHeight) > 8)) draw(); }, 300);
 });
-$("judo-svg").addEventListener("click", exportSvg);
-$("judo-png").addEventListener("click", exportPng);
+$("judo-svg").addEventListener("click", () => exportAs("svg"));
+$("judo-png").addEventListener("click", () => exportAs("png"));
 const speak = () => bar.setAttribute("lang", lang() === "ja" ? "ja" : "en");
 window.addEventListener("senshu-language", () => { speak(); controls(); draw(); });
 speak();

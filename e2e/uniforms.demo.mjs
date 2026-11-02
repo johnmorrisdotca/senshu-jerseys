@@ -4,6 +4,9 @@ import { expect, test } from "@playwright/test";
 const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
 const BJJ_TILES = ["bjj-white", "bjj-white-ibjjf", "bjj-white-covered", "bjj-blue", "bjj-blue-ibjjf", "bjj-blue-covered", "bjj-black", "bjj-black-ibjjf", "bjj-black-covered"];
 const DOBOK_TILES = ["dobok-wt", "dobok-wt-poom", "dobok-wt-dan", "dobok-itf", "dobok-itf-dan", "dobok-itf-dan5"];
+// The view controls are the shared <kazoku-view-controls>: its parts are inside its shadow root, which these selectors reach.
+const PARTS = { yaw: "#yaw", tilt: "#tilt", play: '[data-b="play"]', in: '[data-b="in"]', fit: '[data-b="fit"]', pan: '[data-g="pan"]', left: '[data-b="left"]', right: '[data-b="right"]', up: '[data-b="up"]', down: '[data-b="down"]', turn: '[data-b="turn"]' };
+const vc = (page, name) => page.locator(`kazoku-view-controls ${PARTS[name]}`);
 const yawOf = (page) => page.locator("#uni-stage canvas").getAttribute("data-yaw").then(Number);
 
 test("the page loads, the large view is drawn and every tile has its picture", async ({ page }) => {
@@ -44,13 +47,13 @@ test("garment, belt, show, angle and zoom are kept in the address and survive a 
   await pick(page, "uni-garment", "judogi-blue");
   await pick(page, "uni-belt", "brown");
   await pick(page, "uni-belt-bjj", "tip-red-degrees-3");
-  await page.locator('[data-testid="uni-yaw"]').fill("40");
+  await vc(page, "yaw").fill("40");
   await expect(page).toHaveURL(/garment=judogi-blue/);
   await expect(page).toHaveURL(/belt=tip-red-degrees-3/);
   await expect(page).toHaveURL(/yaw=40/);
   await pick(page, "uni-show", "folded");
   await expect(page).toHaveURL(/show=folded/);
-  await page.locator('[data-testid="uni-zoom-in"]').click();
+  await vc(page, "in").click();
   await expect(page).toHaveURL(/zoom=1\.4/);
   await page.goto(page.url());
   await expect(page.locator('[data-testid="uni-garment"] [data-value="judogi-blue"]')).toHaveAttribute("aria-pressed", "true");
@@ -68,7 +71,7 @@ test("a choice keeps the angle, and it turns on its own with the button", async 
   await expect(page.locator('[data-testid="uni-belt"] [data-value="green"]')).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   expect(await yawOf(page)).toBe(60);
-  const play = page.locator('[data-testid="uni-play"]');
+  const play = vc(page, "play");
   await play.click();
   await expect(play).toHaveAttribute("aria-pressed", "true");
   await expect.poll(() => yawOf(page)).not.toBe(60);
@@ -266,9 +269,9 @@ test("at 1x every garment, in every display and with the longest belt ends, fits
       await page.goto(`/uniforms.html?garment=${garment}&show=${show}&tail=55&knot=hanging&belt=red-white`);
       await expect(page.locator("#uni-stage canvas")).toBeVisible();
       for (const tilt of [-30, 0, 30]) {
-        await page.locator('[data-testid="uni-tilt"]').fill(String(tilt));
+        await vc(page, "tilt").fill(String(tilt));
         for (const yaw of [-179, 0, 90]) {
-          await page.locator('[data-testid="uni-yaw"]').fill(String(yaw));
+          await vc(page, "yaw").fill(String(yaw));
           await inside(page, `${garment} ${show} yaw ${yaw} tilt ${tilt}`);
         }
       }
@@ -283,8 +286,8 @@ test("at 1x nothing is cut at the canvas's edge at the extreme angles (what is p
       await page.goto(`/uniforms.html?garment=${garment}&show=${show}&tail=55&knot=hanging&belt=red-white`);
       await expect(page.locator("#uni-stage canvas")).toBeVisible();
       for (const [yaw, tilt] of [[-179, -30], [90, 30], [0, -30], [-179, 30]]) {
-        await page.locator('[data-testid="uni-tilt"]').fill(String(tilt));
-        await page.locator('[data-testid="uni-yaw"]').fill(String(yaw));
+        await vc(page, "tilt").fill(String(tilt));
+        await vc(page, "yaw").fill(String(yaw));
         await edgesClear(page, `${garment} ${show} yaw ${yaw} tilt ${tilt}`);
       }
     }
@@ -299,10 +302,10 @@ test("John's case: the belt at -179 degrees, -30 tilt and 2x is not cut by the c
   // The canvas is the whole of the view, so a zoomed drawing is never cut inside it.
   expect(Math.abs(canvas.width - view.width)).toBeLessThan(2);
   expect(Math.abs(canvas.height - view.height)).toBeLessThan(2);
-  await expect(page.locator('[data-testid="uni-pan"]')).toBeVisible();
+  await expect(vc(page, "pan")).toBeVisible();
   const top = async () => (await SIZE(page)).b[1];
   for (let i = 0; i < 4 && (await top()) < 0; i++) {
-    await page.locator('[data-testid="uni-pan-down"]').click();
+    await vc(page, "down").click();
     await page.waitForTimeout(150);
   }
   expect(await top()).toBeGreaterThanOrEqual(-1);
@@ -313,11 +316,11 @@ test("the + button zooms about the piece's middle, and a Ctrl-wheel or a double 
   await expect(page.locator("#uni-stage canvas")).toBeVisible();
   // The middle of the piece as it is turned (its silhouette), which is not always the canvas's middle: at -179 degrees and -30 tilt the belt lies high.
   for (const [yaw, tilt] of [[0, 0], [-179, -30], [90, 30]]) {
-    await page.locator('[data-testid="uni-tilt"]').fill(String(tilt));
-    await page.locator('[data-testid="uni-yaw"]').fill(String(yaw));
+    await vc(page, "tilt").fill(String(tilt));
+    await vc(page, "yaw").fill(String(yaw));
     await page.waitForTimeout(300);
     const b0 = (await SIZE(page)).b;
-    await page.locator('[data-testid="uni-zoom-in"]').click();
+    await vc(page, "in").click();
     await page.waitForTimeout(500);
     const b1 = (await SIZE(page)).b;
     const k = (b1[2] - b1[0]) / (b0[2] - b0[0]);
@@ -325,9 +328,9 @@ test("the + button zooms about the piece's middle, and a Ctrl-wheel or a double 
     const mid = (b) => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
     expect(Math.abs(mid(b1)[0] - mid(b0)[0]), `${yaw} ${tilt}: x`).toBeLessThan(3);
     expect(Math.abs(mid(b1)[1] - mid(b0)[1]), `${yaw} ${tilt}: y`).toBeLessThan(3);
-    await page.locator('[data-testid="uni-fit"]').click();
+    await vc(page, "fit").click();
   }
-  await page.locator('[data-testid="uni-fit"]').click();
+  await vc(page, "fit").click();
   // A point of the view stays where it is while the zoom grows round it.
   const box = await page.locator('[data-testid="uni-turntable"]').boundingBox();
   const [px, py] = [box.x + box.width * 0.3, box.y + box.height * 0.3];
@@ -364,15 +367,15 @@ test("zoomed in, a drag moves the view, the Turn button turns it, the arrows mov
   let r = await drag(60);
   expect(r.turned).toBeLessThan(2);
   expect(r.moved).toBeGreaterThan(20);
-  await page.locator('[data-testid="uni-hand-turn"]').click();
+  await vc(page, "turn").click();
   await expect(page).toHaveURL(/drag=turn/);
   r = await drag(120);
   expect(r.turned).toBeGreaterThan(10);
   await page.goto(page.url());
-  await expect(page.locator('[data-testid="uni-hand-turn"]')).toHaveAttribute("aria-pressed", "true");
-  for (const dir of ["left", "right", "up", "down"]) await expect(page.locator(`[data-testid="uni-pan-${dir}"]`)).toBeVisible();
-  await page.locator('[data-testid="uni-fit"]').click();
-  await expect(page.locator('[data-testid="uni-pan"]')).toBeHidden();
+  await expect(vc(page, "turn")).toHaveAttribute("aria-pressed", "true");
+  for (const dir of ["left", "right", "up", "down"]) await expect(vc(page, dir)).toBeVisible();
+  await vc(page, "fit").click();
+  await expect(vc(page, "pan")).toBeHidden();
 });
 
 test("on a finger one touch turns the piece at 1x and moves it when zoomed", async ({ page, browserName }, info) => {
@@ -395,8 +398,8 @@ test("on a finger one touch turns the piece at 1x and moves it when zoomed", asy
   };
   let r = await touch(80);
   expect(r.turned).toBeGreaterThan(10);
-  await page.locator('[data-testid="uni-zoom-in"]').click();
-  await page.locator('[data-testid="uni-zoom-in"]').click();
+  await vc(page, "in").click();
+  await vc(page, "in").click();
   r = await touch(60);
   expect(r.turned).toBeLessThan(2);
   expect(r.moved).toBeGreaterThan(15);

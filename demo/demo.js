@@ -2,6 +2,8 @@
 // caps and helmets, and the code that puts it in a page. Everything the controls say is in the address. The words are in words.js.
 import { CUT_IDS, FIT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
+import { createAddressState } from "./kazoku-ui/address-state/index.js";
+import { saveImage } from "./kazoku-ui/save-image/index.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -26,14 +28,18 @@ for (const [k, v] of params) {
 const options = () => optionsFromAttributes((name) => (name in attrs ? attrs[name] : null));
 let presetsApi; // { PRESETS, LEAGUES, byId }
 
+// The page's own parameters; the language, theme, cloth and Help ones belong to the header's parts.
+const address = createAddressState({ defaults: { ...DEFAULTS, ...UI_DEFAULTS } });
+const owned = new Set([...params.keys()].filter((k) => !["lang", "theme", "cloth", "help"].includes(k)));
+
 function syncUrl() {
-  const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(attrs)) if (DEFAULTS[k] !== v) q.set(k, v);
-  for (const k of Object.keys(DEFAULTS)) if (!(k in attrs)) q.set(k, "");
+  const next = Object.fromEntries([...owned].map((k) => [k, null]));
+  Object.assign(next, attrs);
+  for (const k of Object.keys(DEFAULTS)) if (!(k in attrs)) next[k] = "";
   // While it turns the angle changes every frame: the address then says "turning" (the default) and leaves the angle out, so a reload starts the turn again.
-  for (const [k, v] of Object.entries(ui)) if (UI_DEFAULTS[k] !== v && !(k === "yaw" && ui.turn === "1" && playing())) q.set(k, v);
-  // Safari refuses more than a hundred of these in thirty seconds; the address is a convenience, so a refusal must not stop the drawing.
-  try { history.replaceState(null, "", q.size === 0 ? location.pathname + location.hash : `?${q}${location.hash}`); } catch { /* the address stays */ }
+  for (const [k, v] of Object.entries(ui)) next[k] = k === "yaw" && ui.turn === "1" && playing() ? null : v;
+  for (const k of Object.keys(next)) owned.add(k);
+  address.setMany(next);
 }
 
 // ----- Small builders.
@@ -924,10 +930,7 @@ $("embed-copy").addEventListener("click", async () => {
   setTimeout(() => { $("embed-status").textContent = ""; }, 2400);
 });
 $("embed-download").addEventListener("click", () => {
-  const blob = new Blob([embedCode(options(), "svg")], { type: "image/svg+xml" });
-  const link = el("a", { href: URL.createObjectURL(blob), download: "senshu-jersey.svg" });
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  saveImage(new globalThis.DOMParser().parseFromString(embedCode(options(), "svg"), "image/svg+xml").documentElement, { format: "svg", name: "senshu-jersey", inlineStyles: false });
 });
 
 function everything() {

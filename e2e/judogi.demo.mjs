@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { fakeFont, tinyFont } from "./tinyFont.mjs";
 
@@ -1071,4 +1072,15 @@ test("the trousers' hem is 2, 5 or 10 cm above the ankle, changes the drawing, a
   await expect(page.locator('[data-testid="judo-hem"]')).toHaveCount(0);
   await expect(page).toHaveURL(/hem=2/);
   expect(errors).toEqual([]);
+});
+
+test("Save SVG and Save PNG hand the drawing to the browser as a file", async ({ page }) => {
+  await page.goto("/judogi.html?mode=jacket&belt=black");
+  await expect(page.locator("#judo-stage canvas")).toBeVisible();
+  const [svg] = await Promise.all([page.waitForEvent("download"), page.locator('[data-testid="judo-svg"]').click()]);
+  expect(svg.suggestedFilename()).toBe("senshu-judogi.svg");
+  expect(readFileSync(await svg.path(), "utf8")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  const [png] = await Promise.all([page.waitForEvent("download"), page.locator('[data-testid="judo-png"]').click()]);
+  expect(png.suggestedFilename()).toBe("senshu-judogi.png");
+  expect(readFileSync(await png.path()).subarray(1, 4).toString()).toBe("PNG");
 });

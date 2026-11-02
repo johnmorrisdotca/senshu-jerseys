@@ -27,8 +27,8 @@ const sha = (path: string) => createHash("sha256").update(readFileSync(path)).di
 const pkg = JSON.parse(read("package.json")) as { name: string };
 const id = pkg.name.replace(/^@[^/]+\//, "");
 
-// The template of 2026-10-15d lists thirty-two packages, in eight groups.
-const TEMPLATE = { version: "2026-10-15d", sha256: "fcc192026cf284303344e108b20e6181126607c670a881a6b3bf8479da26ab03" };
+// The template of 2026-11-02 lists thirty-two packages, in eight groups.
+const TEMPLATE = { version: "2026-11-02", sha256: "04d7f4fdb246575cd3283e8f77b2a87549e30337cc21b6c7e6a2246d7677211b" };
 const WRITER_SHA256 = "0ca8badd4d54e393f723b5a625e76caf4b96a01bb79d087448748a358e834afc";
 
 test("the family template is the one file, byte for byte, as recorded", () => {
