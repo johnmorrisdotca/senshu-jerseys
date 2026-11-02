@@ -6,6 +6,16 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.33.3] - 2026-11-02
+
+### Fixed
+
+- **`judogiCanvas` holds its canvas to 6 million pixels and 4096 a side** (`MAX_PIXELS`, `MAX_SIDE`). A view as large as a 5K screen at a pixel ratio of 2 made a canvas of 5120 x 2736 (14 million pixels), and the flat painter builds a layer on two more sheets of the same size. The ratio is lowered until it fits; a canvas on an ordinary view is unchanged.
+
+### Added (repository)
+
+- `e2e/freeze.demo.mjs` and `pnpm test:freeze`: the designer, played in headless Chromium that draws WebGL in software, draws nothing at rest or out of sight, asks for one frame at a time while it turns, leaves no WebGL context, buffer or texture behind over eighteen changes, and keeps its canvas inside the pixel budget on a 5K screen. `playwright.config.mjs` draws every Chromium project in software (SwiftShader) and, off CI, leaves the pages that draw WebGL to CI in WebKit, which has no software switch.
+
 ## [0.33.2] - 2026-11-02
 
 ### Changed

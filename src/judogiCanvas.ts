@@ -10,6 +10,10 @@ import { growOf, quadPath, turn as rotate, type Cell, type Placed, type VolumeDe
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/** The most a judogi canvas may hold, in pixels, and its longest side. */
+export const MAX_PIXELS = 6_000_000;
+export const MAX_SIDE = 4096;
+
 /** A judogi on a canvas, and the way to turn it. */
 export interface JudogiCanvas {
   /** The canvas, sized like the SVG it was made from: put it on the page in its place. */
@@ -68,12 +72,14 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   if (roots.length === 0 || defs === null || view.length !== 4 || view.some((v) => !Number.isFinite(v))) return undefined;
   const [vx, vy, vw, vh] = view as [number, number, number, number];
   const k = clamp(options.scale ?? 4, 1, 8, 4);
-  const ratio = clamp(options.pixelRatio ?? (globalThis.devicePixelRatio || 1), 1, 4, 1);
+  const wanted = clamp(options.pixelRatio ?? (globalThis.devicePixelRatio || 1), 1, 4, 1);
   const natW = Number(svg.getAttribute("width")) || vw;
   const natH = Number(svg.getAttribute("height")) || (natW * vh) / vw;
   const filled = options.fill === true && options.box !== undefined && options.box.width >= 1 && options.box.height >= 1;
   const cssW = filled ? options.box!.width : Math.max(natW, options.box?.width ?? 0);
   const cssH = filled ? options.box!.height : Math.max(natH, options.box?.height ?? 0);
+  // The canvas, and each of the two sheets the flat painter builds a layer on, hold width x height x ratio squared pixels: a view as big as a 5K screen at a ratio of 2 would ask for 15 million, three times over. Held to 4096 a side and 6 million pixels.
+  const ratio = Math.max(0.25, Math.min(wanted, MAX_SIDE / Math.max(1, cssW, cssH), Math.sqrt(MAX_PIXELS / Math.max(1, cssW * cssH))));
   // A face is painted from its own defs: the cells\' triangles and clips (a good part of the markup) are for the SVG, not for a picture of a face.
   const faceDefs = defs.innerHTML.replace(/<g data-cells[^>]*>[\s\S]*?<\/g>/g, "");
   const faces = new Map<string, Promise<CanvasImageSource>>();
