@@ -301,14 +301,19 @@ test("the embed frame and the element turn the other way when told to", async ({
     el.style.cssText = "position: fixed; top: 0; left: 0; z-index: 9";
     document.body.append(el);
     const yaw = () => Number(el.shadowRoot.querySelector("svg").getAttribute("data-yaw"));
+    // a screen that draws slowly (software graphics, a busy runner) turns it slowly: wait for it to have moved, not for a fixed time
+    const between = (x, y) => ((y - x + 540) % 360) - 180;
+    const wait = async (from, sign) => {
+      for (let i = 0; i < 120 && sign * between(from, yaw()) < 6; i++) await new Promise((r) => setTimeout(r, 50));
+    };
     await new Promise((r) => setTimeout(r, 40));
     const start = yaw();
-    await new Promise((r) => setTimeout(r, 600));
+    await wait(start, -1);
     const clockwise = yaw();
     el.setAttribute("direction", "counterclockwise");
     await new Promise((r) => setTimeout(r, 40));
     const turnaround = yaw();
-    await new Promise((r) => setTimeout(r, 600));
+    await wait(turnaround, 1);
     const counter = yaw();
     el.remove();
     return { start, clockwise, turnaround, counter };
