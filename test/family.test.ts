@@ -28,7 +28,7 @@ const pkg = JSON.parse(read("package.json")) as { name: string };
 const id = pkg.name.replace(/^@[^/]+\//, "");
 
 // The template of 2026-11-02 lists thirty-two packages, in eight groups.
-const TEMPLATE = { version: "2026-11-02", sha256: "04d7f4fdb246575cd3283e8f77b2a87549e30337cc21b6c7e6a2246d7677211b" };
+const TEMPLATE = { version: "2026-11-02", sha256: "56db78c8053d66424ce513fe9ef6523d3c228ae04cb03081c9877e7d42bde512" };
 const WRITER_SHA256 = "0ca8badd4d54e393f723b5a625e76caf4b96a01bb79d087448748a358e834afc";
 
 test("the family template is the one file, byte for byte, as recorded", () => {

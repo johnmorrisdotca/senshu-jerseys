@@ -29,7 +29,7 @@ const options = () => optionsFromAttributes((name) => (name in attrs ? attrs[nam
 let presetsApi; // { PRESETS, LEAGUES, byId }
 
 // The page's own parameters; the language, theme, cloth and Help ones belong to the header's parts.
-const address = createAddressState({ defaults: { ...DEFAULTS, ...UI_DEFAULTS } });
+const address = createAddressState({ defaults: { ...DEFAULTS, ...UI_DEFAULTS }, delay: 0 });
 const owned = new Set([...params.keys()].filter((k) => !["lang", "theme", "cloth", "help"].includes(k)));
 
 function syncUrl() {

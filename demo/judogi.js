@@ -290,7 +290,7 @@ const DEFAULTS = { yaw: 0, tilt: 0, zoom: 1, drag: "move", patch: "none", pname:
 const CAMERA = ["yaw", "tilt", "zoom", "drag"];
 
 // The camera's keys are the view controls' to write; the rest are kept here.
-const address = createAddressState({ defaults: DEFAULTS });
+const address = createAddressState({ defaults: DEFAULTS, delay: 0 });
 
 function syncUrl() {
   address.setMany(Object.fromEntries(Object.entries(state).filter(([k]) => !CAMERA.includes(k)).map(([k, v]) => [k, String(v) === "" ? null : v])));

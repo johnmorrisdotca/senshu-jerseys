@@ -39,7 +39,7 @@ const state = {
   drag: bar.state.drag,
 };
 const DEFAULTS = { garment: GARMENTS[0].id, belt: "black", show: "worn", knot: "auto", tail: "auto", hem: "auto" };
-const address = createAddressState({ defaults: DEFAULTS });
+const address = createAddressState({ defaults: DEFAULTS, delay: 0 });
 
 function syncUrl() {
   address.setMany(Object.fromEntries(Object.keys(DEFAULTS).map((k) => [k, state[k]])));
