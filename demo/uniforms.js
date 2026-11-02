@@ -4,7 +4,7 @@
 import { BELT_KNOTS, BELT_PRESETS, JUDOGI_BELTS, JUDOGI_BELT_LABELS, beltPreset, judogiFrame } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { segmented, tiles } from "./judogiPick.js";
-import { clamp, fillView, viewSize } from "./judogiView.js";
+import { clamp, fillView, oneAtATime, paced, viewSize } from "./judogiView.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
 import "./kazoku-ui/view-controls/define.js";
 import { GARMENTS } from "./uniformsList.js";
@@ -198,7 +198,7 @@ const quality = () => ({ ratio: clamp(globalThis.devicePixelRatio || 1, 1, 4), s
 const camera = () => ({ zoom: state.zoom, panX: pan.x, panY: pan.y });
 const pitch = () => (state.tilt === 0 ? 0 : -state.tilt);
 
-async function draw() {
+async function drawOnce() {
   const mine = ++drawing;
   const o = { ...dressed(garmentOf(state.garment), state.belt, SHOWS[state.show]), yaw: state.yaw, width: 360 };
   const holder = document.createElement("div");
@@ -225,6 +225,8 @@ async function draw() {
   else $("uni-stage").replaceChildren(canvas.canvas);
   placeStage();
 }
+
+const draw = oneAtATime(drawOnce);
 
 /** The middle of the piece's silhouette at Fit, in CSS pixels from the view's middle: the point the + and - buttons and keys zoom about. */
 function pieceAnchor() {
@@ -263,6 +265,7 @@ function settleQuality() {
 let byHover = false;
 let grabbed = false;
 const view = $("uni-turntable");
+const askPlace = paced(view, placeStage);
 view.addEventListener("pointerenter", (event) => {
   if (event.pointerType === "mouse" && !reduced.matches && !grabbed && !bar.state.turning) {
     bar.play();
@@ -280,7 +283,7 @@ bar.addEventListener("kazoku-viewchange", ({ detail }) => {
   pan.y = panY;
   if (reason === "play" || reason === "pause") byHover = false;
   if (reason === "wheel" || reason === "key") grabbed = true;
-  placeStage();
+  askPlace(final);
   if (final) settleQuality();
 });
 let resizing = 0;

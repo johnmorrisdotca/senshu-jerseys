@@ -8,7 +8,7 @@ import {
 } from "./dist/index.js";
 import { judogiCanvas, judogiTurn } from "./dist/turn-entry.js";
 import { checks, PICTURES, segmented, swatches, tiles, toggle } from "./judogiPick.js";
-import { clamp, fillView, viewSize } from "./judogiView.js";
+import { clamp, fillView, oneAtATime, paced, viewSize } from "./judogiView.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
 import { saveImage } from "./kazoku-ui/save-image/index.js";
 import "./kazoku-ui/view-controls/define.js";
@@ -318,7 +318,7 @@ let drawing = 0;
 let painted;
 
 /** The whole drawing, at the current angle: made off the page and painted on a canvas, then shown. A newer choice wins. */
-async function draw() {
+async function drawOnce() {
   if (state.emblem === "flag") await loadFlag(state.flag);
   const o = options();
   showFontNotes();
@@ -356,6 +356,8 @@ async function draw() {
   if (flat()) bar.pause();
   placeStage();
 }
+
+const draw = oneAtATime(drawOnce);
 
 /** What the size check found, in the page's language: the facts themselves are English, so the Japanese page says only whether the size meets them. */
 function checkText(check) {
@@ -810,6 +812,7 @@ const exportAs = (format) => saveImage(exportable(), { format, name: "senshu-jud
 
 controls();
 const view = $("judo-turntable");
+const askPlace = paced(view, placeStage);
 // Still until a mouse comes over it: then it turns, and stops when the mouse leaves, unless it was set turning with the button. Grabbing it (a press, the wheel, a key) stops the turn for good.
 view.addEventListener("pointerenter", (event) => {
   if (event.pointerType === "mouse" && !reduced.matches && !grabbed && !bar.state.turning) {
@@ -828,7 +831,7 @@ bar.addEventListener("kazoku-viewchange", ({ detail }) => {
   pan.y = panY;
   if (reason === "play" || reason === "pause") byHover = false;
   if (reason === "wheel" || reason === "key") grabbed = true;
-  placeStage();
+  askPlace(final);
   if (final) {
     syncUrl();
     settleQuality();

@@ -398,7 +398,10 @@ function drawStage() {
 function onYaw(yaw) {
   ui.yaw = String(Math.round(yaw));
   $("yaw").value = ui.yaw;
-  $("yaw-out").textContent = `${ui.yaw}°`;
+  // The text node is written in place: replacing it is a change of the page's children, which the family's help script answers with a pass over the whole page, every frame.
+  const out = $("yaw-out");
+  if (out.firstChild?.nodeType === 3) out.firstChild.nodeValue = `${ui.yaw}°`;
+  else out.textContent = `${ui.yaw}°`;
   const facing = Math.abs(yaw) > 90 ? "back" : "front";
   if (attrs.view !== facing && attrs.view !== "both") {
     attrs.view = facing;
@@ -842,7 +845,10 @@ function render() {
   syncControls();
   drawStage();
   $("yaw").value = ui.yaw;
-  $("yaw-out").textContent = `${ui.yaw}°`;
+  // The text node is written in place: replacing it is a change of the page's children, which the family's help script answers with a pass over the whole page, every frame.
+  const out = $("yaw-out");
+  if (out.firstChild?.nodeType === 3) out.firstChild.nodeValue = `${ui.yaw}°`;
+  else out.textContent = `${ui.yaw}°`;
   $("pitch").value = ui.pitch;
   $("pitch-out").textContent = `${ui.pitch}°`;
   syncPlay();

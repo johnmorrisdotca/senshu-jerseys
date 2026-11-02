@@ -27,6 +27,8 @@ export interface TurnOptions extends JerseyOptions {
 }
 
 const SLICES = 6;
+/** The shortest time between two frames of the automatic turn, in milliseconds (about sixty a second). */
+const MIN_FRAME_MS = 15;
 
 /** A turn taken into -180 up to 180; anything that is not a number is 0. */
 export function normalYaw(yaw: unknown): number {
@@ -223,6 +225,8 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
   let want = false;
   let frame = 0;
   let last = 0;
+  let seen = true;
+  let observer: IntersectionObserver | undefined;
   let dragging = false;
   let from = { x: 0, yaw: 0 };
   const reduced = (): boolean => win?.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
@@ -243,7 +247,12 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
   };
   const tick = (now: number): void => {
     frame = 0;
-    if (!alive || !want || dragging || doc.hidden) return;
+    if (!alive || !want || dragging || doc.hidden || !seen) return;
+    // About sixty a second at most, on a screen that draws more: the next frame is asked for, and the time since the last one drawn is kept.
+    if (now - last < MIN_FRAME_MS) {
+      frame = win?.requestAnimationFrame(tick) ?? 0;
+      return;
+    }
     // The time since the last frame, clamped, so that a tab that was away does not jump.
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
@@ -251,7 +260,7 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
     frame = win?.requestAnimationFrame(tick) ?? 0;
   };
   const start = (): void => {
-    if (!alive || !want || dragging || doc.hidden || running() || win === null) return;
+    if (!alive || !want || dragging || doc.hidden || !seen || running() || win === null) return;
     last = win.performance.now();
     frame = win.requestAnimationFrame(tick);
   };
@@ -312,6 +321,15 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
   container.addEventListener("pointercancel", onUp);
   container.addEventListener("keydown", onKey);
   doc.addEventListener("visibilitychange", onVisible);
+  // Out of sight it does not turn: it starts again when it comes back.
+  if (typeof win?.IntersectionObserver === "function") {
+    observer = new win.IntersectionObserver((entries) => {
+      seen = entries[entries.length - 1]?.isIntersecting !== false;
+      if (seen) start();
+      else stopLoop();
+    });
+    observer.observe(container);
+  }
 
   const handle: TurnHandle = {
     yaw: () => yaw,
@@ -354,6 +372,7 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
       container.removeEventListener("pointercancel", onUp);
       container.removeEventListener("keydown", onKey);
       doc.removeEventListener("visibilitychange", onVisible);
+      observer?.disconnect();
       container.replaceChildren();
     },
   };

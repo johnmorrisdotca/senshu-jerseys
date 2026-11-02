@@ -298,6 +298,8 @@ test("the embed frame and the element turn the other way when told to", async ({
     el.setAttribute("speed", "90");
     el.setAttribute("direction", "clockwise");
     document.body.append(el);
+    // an element turns only while it is on the screen
+    el.scrollIntoView();
     const yaw = () => Number(el.shadowRoot.querySelector("svg").getAttribute("data-yaw"));
     await new Promise((r) => setTimeout(r, 40));
     const start = yaw();

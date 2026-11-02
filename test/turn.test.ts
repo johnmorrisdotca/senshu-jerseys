@@ -151,3 +151,48 @@ test("the direction does not change what a drag or setYaw does", () => {
   assert.equal(handle.yaw(), -170);
   handle.destroy();
 });
+
+test("the automatic turn draws about sixty frames a second at most, and keeps one frame asked for", () => {
+  const stage = fakeStage();
+  const seen: number[] = [];
+  const handle = bindTurn(stage.container, { cut: "hockey" }, { autoPlay: true, speed: 40, onChange: (yaw) => seen.push(yaw) });
+  // a screen that asks every 4 ms (250 a second): a frame is drawn about every 16 ms
+  for (let i = 0; i < 250; i++) stage.frame(4);
+  assert.ok(seen.length <= 64 && seen.length >= 55, String(seen.length));
+  // 40 degrees a second for a second, whatever the screen's rate
+  assert.ok(Math.abs((seen.at(-1) ?? 0) - 40) < 1, String(seen.at(-1)));
+  handle.destroy();
+});
+
+test("the automatic turn waits while its container is out of sight and goes on when it is back", () => {
+  let report: ((entries: { isIntersecting: boolean }[]) => void) | undefined;
+  let watched = false;
+  let gone = false;
+  const stage = fakeStage();
+  const doc = (stage.container as unknown as { ownerDocument: { defaultView: Record<string, unknown> } }).ownerDocument;
+  doc.defaultView.IntersectionObserver = class {
+    constructor(callback: (entries: { isIntersecting: boolean }[]) => void) {
+      report = callback;
+    }
+    observe() {
+      watched = true;
+    }
+    disconnect() {
+      gone = true;
+    }
+  };
+  const seen: number[] = [];
+  const handle = bindTurn(stage.container, { cut: "hockey" }, { autoPlay: true, speed: 40, onChange: (yaw) => seen.push(yaw) });
+  assert.equal(watched, true);
+  stage.frame(50);
+  assert.equal(seen.length, 1);
+  report?.([{ isIntersecting: false }]);
+  stage.frame(50);
+  stage.frame(50);
+  assert.equal(seen.length, 1, "nothing is drawn, nothing is asked for");
+  report?.([{ isIntersecting: true }]);
+  stage.frame(50);
+  assert.equal(seen.length, 2);
+  handle.destroy();
+  assert.equal(gone, true);
+});

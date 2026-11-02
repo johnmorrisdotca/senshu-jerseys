@@ -4,15 +4,12 @@
 // under it, on a 2D canvas. The same cells, maps, shades and order as the SVG (pieceVolume.ts): only the way they reach the screen
 // differs. Part of the turning entry: it needs a document.
 import { glPainter, matrixOf, paintOrder, type PaintPiece } from "./judogiGl.ts";
+import { canvasPixels, faceScaleFor, pixelRatioFor } from "./pixels.ts";
 import { FACE_BOX, greyOf, pieceCells, shadeOf, smoothOf } from "./pieceVolume.ts";
 import { normalYaw } from "./turn.ts";
 import { growOf, quadPath, turn as rotate, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-
-/** The most a judogi canvas may hold, in pixels, and its longest side. */
-export const MAX_PIXELS = 6_000_000;
-export const MAX_SIDE = 4096;
 
 /** A judogi on a canvas, and the way to turn it. */
 export interface JudogiCanvas {
@@ -41,9 +38,9 @@ export interface JudogiCamera {
 
 /** What the canvas may be told: how many pixels a unit of a face's picture gets, and how many pixels a CSS pixel of the canvas gets. */
 export interface JudogiCanvasOptions {
-  /** Pixels per unit in the pictures of the faces, 1 to 8 (4 by default: crisp at the size a page shows a judogi). */
+  /** Pixels per unit in the pictures of the faces, 1 to 8 (4 by default: crisp at the size a page shows a judogi). Held smaller when the pieces' pictures together would pass 24 million pixels on the card, or one 4096 across. */
   scale?: number;
-  /** Canvas pixels per CSS pixel (the screen's own density by default). */
+  /** Canvas pixels per CSS pixel (the screen's own density by default), held to 2, and so that the canvas stays within 4096 pixels a side and 6 million in all. */
   pixelRatio?: number;
   /** The canvas's size in CSS pixels where it should be larger than the SVG's (the drawing is set in its middle, whole): a zoomed view needs the room to show the drawing larger. */
   box?: { width: number; height: number };
@@ -71,28 +68,35 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
   const view = (svg.getAttribute("viewBox") ?? "").split(/[\s,]+/).map(Number);
   if (roots.length === 0 || defs === null || view.length !== 4 || view.some((v) => !Number.isFinite(v))) return undefined;
   const [vx, vy, vw, vh] = view as [number, number, number, number];
-  const k = clamp(options.scale ?? 4, 1, 8, 4);
-  const wanted = clamp(options.pixelRatio ?? (globalThis.devicePixelRatio || 1), 1, 4, 1);
+  const k = faceScaleFor(clamp(options.scale ?? 4, 1, 8, 4), roots.length);
   const natW = Number(svg.getAttribute("width")) || vw;
   const natH = Number(svg.getAttribute("height")) || (natW * vh) / vw;
   const filled = options.fill === true && options.box !== undefined && options.box.width >= 1 && options.box.height >= 1;
   const cssW = filled ? options.box!.width : Math.max(natW, options.box?.width ?? 0);
   const cssH = filled ? options.box!.height : Math.max(natH, options.box?.height ?? 0);
-  // The canvas, and each of the two sheets the flat painter builds a layer on, hold width x height x ratio squared pixels: a view as big as a 5K screen at a ratio of 2 would ask for 15 million, three times over. Held to 4096 a side and 6 million pixels.
-  const ratio = Math.max(0.25, Math.min(wanted, MAX_SIDE / Math.max(1, cssW, cssH), Math.sqrt(MAX_PIXELS / Math.max(1, cssW * cssH))));
+  const ratio = pixelRatioFor(cssW, cssH, options.pixelRatio ?? (globalThis.devicePixelRatio || 1));
   // A face is painted from its own defs: the cells\' triangles and clips (a good part of the markup) are for the SVG, not for a picture of a face.
   const faceDefs = defs.innerHTML.replace(/<g data-cells[^>]*>[\s\S]*?<\/g>/g, "");
   const faces = new Map<string, Promise<CanvasImageSource>>();
+  // The pictures of the faces are bitmaps, which a browser keeps until they are closed: dispose() (or a failure here) closes them.
+  const kept = new Set<CanvasImageSource>();
+  const closeFaces = (): void => {
+    for (const face of kept) (face as Partial<ImageBitmap>).close?.();
+    kept.clear();
+  };
   const faceOf = (id: string): Promise<CanvasImageSource> => {
     const known = faces.get(id);
     if (known !== undefined) return known;
-    const made = paintFace(faceDefs, id, k);
+    const made = paintFace(faceDefs, id, k).then((face) => {
+      kept.add(face);
+      return face;
+    });
     faces.set(id, made);
     return made;
   };
   let pieces: Piece[];
   try {
-    pieces = await Promise.all(roots.map(async (root) => {
+    const settled = await Promise.allSettled(roots.map(async (root) => {
       const desc = JSON.parse(root.getAttribute("data-piece") ?? "") as VolumeDesc;
       const cells = pieceCells(desc);
       const ids = faceIds(root, cells);
@@ -100,12 +104,14 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
       const [dx, dy] = offsetOf(root, svg);
       return { desc, cells, smooth: smoothOf(cells), paths: cells.map((c) => new Path2D(quadPath(c.tex, growOf(desc)))), boxes: cells.map((c) => boxOf(c.tex)), front, back, dx, dy };
     }));
+    if (settled.some((r) => r.status === "rejected")) throw new Error("a piece failed");
+    pieces = settled.map((r) => (r as PromiseFulfilledResult<Piece>).value);
   } catch {
+    closeFaces();
     return undefined;
   }
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(cssW * ratio));
-  canvas.height = Math.max(1, Math.round(cssH * ratio));
+  ({ width: canvas.width, height: canvas.height } = canvasPixels(cssW, cssH, ratio));
   canvas.style.width = `${cssW}px`;
   if (filled) canvas.style.height = `${cssH}px`;
   canvas.setAttribute("role", "img");
@@ -184,9 +190,38 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
     framing.dx = -s * ((b.x0 + b.x1) / 2 - W / 2);
     framing.dy = -s * ((b.y0 + b.y1) / 2 - H / 2);
   };
-  const painter = (options.webgl === false ? undefined : glPainter(canvas, pieces, place)) ?? flatPainter(canvas, pieces, place, k);
-  if (painter === undefined) return undefined;
-  canvas.setAttribute("data-painter", painter.kind);
+  // The graphics card paints when it can. If its context is lost the 2D painter takes over at once, from the same canvas, and the card paints again when the context is back.
+  let active: Painter | undefined;
+  let flat: Painter | undefined;
+  let last: { yaw: number; tilt: number; key: string } | undefined;
+  let paints = 0;
+  const show = (painter: Painter): void => {
+    active = painter;
+    canvas.setAttribute("data-painter", painter.kind);
+  };
+  const again = (): void => {
+    if (last === undefined || active === undefined) return;
+    active.paint(last.yaw, last.tilt);
+    canvas.setAttribute("data-paints", String(++paints));
+  };
+  const card = options.webgl === false ? undefined : glPainter(canvas, pieces, place, {
+    lost: () => {
+      flat ??= flatPainter(canvas, pieces, place, k);
+      if (flat !== undefined) show(flat);
+      again();
+    },
+    restored: () => {
+      if (card !== undefined) show(card);
+      again();
+    },
+  });
+  const first = card ?? (flat = flatPainter(canvas, pieces, place, k));
+  if (first === undefined) {
+    closeFaces();
+    return undefined;
+  }
+  show(first);
+  let disposed = false;
   const turn = (yaw: number, tilt = 0, camera?: JudogiCamera): number => {
     if (camera !== undefined) {
       cam.zoom = clamp(camera.zoom ?? 1, 1, 8, 1);
@@ -196,8 +231,13 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
     }
     const a = normalYaw(yaw);
     const t = Math.max(-45, Math.min(45, Number.isFinite(tilt) ? tilt : 0));
+    // Nothing changed since the last paint: nothing is drawn.
+    const key = `${a}|${t}|${cam.zoom}|${cam.panX}|${cam.panY}|${cam.fit}`;
+    if (disposed || last?.key === key) return a;
     frame(a, t);
-    painter.paint(a, t);
+    last = { yaw: a, tilt: t, key };
+    active?.paint(a, t);
+    canvas.setAttribute("data-paints", String(++paints));
     // Where the drawing lies on the canvas as painted (CSS pixels), for a page or a test to see that it is in view.
     const b = boundsAt(a, t);
     const at = (v: number, mid: number, d: number, pan: number): number => (mid + cam.zoom * (framing.scale * (v - mid) + d) + pan * ratio) / ratio;
@@ -207,12 +247,30 @@ export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = 
     canvas.setAttribute("data-tilt", String(t));
     return a;
   };
+  const dispose = (): void => {
+    if (disposed) return;
+    disposed = true;
+    card?.dispose();
+    flat?.dispose();
+    active = undefined;
+    closeFaces();
+    // A browser keeps a canvas's memory while anything holds the canvas.
+    canvas.width = 0;
+    canvas.height = 0;
+  };
   turn(Number(svg.getAttribute("data-yaw")) || 0);
-  return { canvas, turn, dispose: painter.dispose };
+  return { canvas, turn, dispose };
+}
+
+/** A way to put the judogi on the canvas: the graphics card (kind "webgl") or the 2D canvas itself ("2d"). */
+interface Painter {
+  kind: string;
+  paint(yaw: number, tilt?: number): void;
+  dispose(): void;
 }
 
 /** The 2D canvas's painter: each cell a clipped part of its face's picture, each layer's shades multiplied onto it. */
-function flatPainter(canvas: HTMLCanvasElement, pieces: readonly Piece[], place: (p: PaintPiece) => [number, number, number], k: number): { kind: string; paint(yaw: number, tilt?: number): void; dispose(): void } | undefined {
+function flatPainter(canvas: HTMLCanvasElement, pieces: readonly Piece[], place: (p: PaintPiece) => [number, number, number], k: number): Painter | undefined {
   const ctx = canvas.getContext("2d");
   const layer = sheet(canvas.width, canvas.height);
   const shade = sheet(canvas.width, canvas.height);
@@ -225,7 +283,13 @@ function flatPainter(canvas: HTMLCanvasElement, pieces: readonly Piece[], place:
       paintPiece(ctx, layer, shade, p, yaw, job.placed, job.lists, ...place(p), k, tilt);
     }
   };
-  return { kind: "2d", paint, dispose: () => undefined };
+  const dispose = (): void => {
+    for (const s of [layer, shade]) {
+      s.canvas.width = 0;
+      s.canvas.height = 0;
+    }
+  };
+  return { kind: "2d", paint, dispose };
 }
 
 function clamp(v: number, lo: number, hi: number, fallback: number): number {

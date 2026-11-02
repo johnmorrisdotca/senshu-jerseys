@@ -3,6 +3,7 @@
 // frames a second); one draw of a piece's triangles costs about nothing. The cells, the order and the shade are the SVG's
 // (pieceVolume.ts). Each cell's shade multiplies its cloth as it is drawn, not in a layer of its own: a cell is opaque cloth, so where two
 // grown cells overlap the later one simply covers the earlier, and no shade is doubled.
+import { MAX_TEXTURE_SIDE } from "./pixels.ts";
 import { depthOrder, FACE_BOX, halfOrder, isBand, layerOf, shadeOf, type Smooth } from "./pieceVolume.ts";
 import { groupOrder, growOf, nearSleeve, placeCell, type Cell, type Placed, type VolumeDesc } from "./volume.ts";
 
@@ -114,31 +115,159 @@ const GROW = 0.9;
 /** Floats a corner takes: where it is on the canvas, where on the faces' picture, and its shade. */
 const STRIDE = 6;
 
-/** A painter for `canvas`: turn(yaw) draws every piece at that turn. Undefined when the browser has no WebGL 2 or it fails to start. */
-export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece[], place: (p: PaintPiece) => [number, number, number]): { kind: string; paint(yaw: number, tilt?: number): void; dispose(): void } | undefined {
+/** What the shared context keeps: one for the whole page, however many judogi are on it. */
+interface Shared {
+  canvas: HTMLCanvasElement;
+  gl: WebGL2RenderingContext;
+  program: WebGLProgram | undefined;
+  buffer: WebGLBuffer | null;
+  loc: { at: number; uv: number; shade: number; nearz: number; size: WebGLUniformLocation | null; deep: WebGLUniformLocation | null };
+  users: Set<User>;
+  lost: boolean;
+  timer: ReturnType<typeof setTimeout> | undefined;
+}
+
+/** A painter, as the shared context knows it: told when the context is lost and when it is back. */
+interface User {
+  lose(): void;
+  restore(): void;
+}
+
+/** What a painter tells whoever made it: the context was lost (paint another way), or it is back and the pictures are on the card again. */
+export interface GlHooks {
+  lost(): void;
+  restored(): void;
+}
+
+/** How long the context is kept after the last painter lets go: a page that makes and drops many (the picture tiles) reuses it. */
+const KEEP_MS = 4000;
+
+let shared: Shared | undefined;
+
+/**
+ * The page's one WebGL 2 context, on a canvas of its own that is never on the page. A painter draws into it and copies the result onto its own 2D canvas, so any
+ * number of judogi share one context (a browser allows only about sixteen), and a lost context leaves every canvas showing what it last had.
+ */
+function acquire(): Shared | undefined {
+  if (shared !== undefined) {
+    clearTimeout(shared.timer);
+    shared.timer = undefined;
+    return shared.lost ? undefined : shared;
+  }
+  const canvas = document.createElement("canvas");
   const gl = canvas.getContext("webgl2", { antialias: true, premultipliedAlpha: true, alpha: true });
   if (gl === null) return undefined;
+  const made: Shared = { canvas, gl, program: undefined, buffer: null, loc: { at: -1, uv: -1, shade: -1, nearz: -1, size: null, deep: null }, users: new Set(), lost: false, timer: undefined };
+  if (!setup(made)) {
+    free(made);
+    return undefined;
+  }
+  canvas.addEventListener("webglcontextlost", (event) => {
+    event.preventDefault();
+    made.lost = true;
+    for (const user of [...made.users]) user.lose();
+  });
+  canvas.addEventListener("webglcontextrestored", () => {
+    if (!setup(made)) return;
+    made.lost = false;
+    for (const user of [...made.users]) user.restore();
+  });
+  shared = made;
+  return made;
+}
+
+/** Called when a painter lets go: the context is kept a little for the next one, then given back. */
+function release(s: Shared): void {
+  if (s.users.size === 0 && s.timer === undefined && shared === s) s.timer = setTimeout(() => (s.users.size === 0 ? free(s) : undefined), KEEP_MS);
+}
+
+/** The program and the buffer every painter draws with. */
+function setup(s: Shared): boolean {
+  const { gl } = s;
   const program = link(gl);
-  if (program === undefined) return undefined;
-  const buffer = gl.createBuffer();
+  if (program === undefined) return false;
+  s.program = program;
+  s.buffer = gl.createBuffer();
+  s.loc = { at: gl.getAttribLocation(program, "at"), uv: gl.getAttribLocation(program, "uv"), shade: gl.getAttribLocation(program, "shade"), nearz: gl.getAttribLocation(program, "nearz"), size: gl.getUniformLocation(program, "size"), deep: gl.getUniformLocation(program, "deep") };
+  return true;
+}
+
+/** Give the card back what the shared context holds, and the context itself. */
+function free(s: Shared): void {
+  clearTimeout(s.timer);
+  if (!s.gl.isContextLost()) {
+    if (s.program !== undefined) s.gl.deleteProgram(s.program);
+    s.gl.deleteBuffer(s.buffer);
+    s.gl.getExtension("WEBGL_lose_context")?.loseContext();
+  }
+  s.canvas.width = 0;
+  s.canvas.height = 0;
+  if (shared === s) shared = undefined;
+}
+
+/**
+ * A painter for `canvas`: paint(yaw, tilt) draws every piece at that turn on the shared context and copies it onto `canvas` (which gets a 2D context). Undefined when the browser
+ * has no WebGL 2, the context is lost, or the pictures do not fit on the card; then the 2D painter takes over. `hooks` hear of a lost context and of its return.
+ */
+export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece[], place: (p: PaintPiece) => [number, number, number], hooks: GlHooks): { kind: string; paint(yaw: number, tilt?: number): void; dispose(): void } | undefined {
+  const ctx = canvas.getContext("2d");
+  const s = ctx === null ? undefined : acquire();
+  if (ctx === null || s === undefined) return undefined;
+  const { gl } = s;
+  let atlases: WebGLTexture[] = [];
+  let disposed = false;
+  const forget = (): void => {
+    for (const t of atlases) gl.deleteTexture(t);
+    atlases = [];
+  };
   // Each piece's two faces side by side in one picture, so a piece is one draw with its cells in order.
-  const atlases = pieces.map((p) => atlasOf(gl, p));
-  if (atlases.some((t) => t === null)) return undefined;
-  const loc = { at: gl.getAttribLocation(program, "at"), uv: gl.getAttribLocation(program, "uv"), shade: gl.getAttribLocation(program, "shade"), nearz: gl.getAttribLocation(program, "nearz"), size: gl.getUniformLocation(program, "size"), deep: gl.getUniformLocation(program, "deep") };
+  const upload = (): boolean => {
+    forget();
+    for (const p of pieces) {
+      const t = atlasOf(gl, p);
+      if (t === null) {
+        forget();
+        return false;
+      }
+      atlases.push(t);
+    }
+    return true;
+  };
+  if (!upload()) {
+    release(s);
+    return undefined;
+  }
+  const user: User = {
+    lose: () => {
+      // The card has already taken everything back: there is nothing to delete.
+      atlases = [];
+      hooks.lost();
+    },
+    restore: () => {
+      if (upload()) hooks.restored();
+    },
+  };
+  s.users.add(user);
   const [fx, fy, fw, fh] = FACE_BOX;
   const scene = pieces.some((q) => (q.desc.worn ?? 0) > 0);
   let data = new Float32Array(0);
   const paint = (yaw: number, tilt = 0): void => {
+    if (disposed || s.lost || gl.isContextLost() || atlases.length !== pieces.length || s.program === undefined) return;
+    const { loc } = s;
+    if (s.canvas.width !== canvas.width || s.canvas.height !== canvas.height) {
+      s.canvas.width = canvas.width;
+      s.canvas.height = canvas.height;
+    }
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clearDepth(1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.depthFunc(gl.LEQUAL);
-    gl.useProgram(program);
+    gl.useProgram(s.program);
     gl.uniform2f(loc.size, canvas.width, canvas.height);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, s.buffer);
     for (const [at, size, offset] of [[loc.at, 2, 0], [loc.uv, 2, 2], [loc.shade, 1, 4], [loc.nearz, 1, 5]] as const) {
       gl.enableVertexAttribArray(at);
       gl.vertexAttribPointer(at, size, gl.FLOAT, false, STRIDE * 4, offset * 4);
@@ -222,33 +351,51 @@ export function glPainter(canvas: HTMLCanvasElement, pieces: readonly PaintPiece
       gl.bindTexture(gl.TEXTURE_2D, atlases[n]!);
       gl.drawArrays(gl.TRIANGLES, 0, w / STRIDE);
     }
+    // Copied at once, in the same turn of the page's script as the drawing: the shared canvas is not kept between frames.
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(s.canvas, 0, 0);
   };
   const dispose = (): void => {
-    for (const t of atlases) gl.deleteTexture(t);
-    gl.deleteBuffer(buffer);
-    gl.deleteProgram(program);
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    if (disposed) return;
+    disposed = true;
+    if (!s.lost && !gl.isContextLost()) forget();
+    atlases = [];
+    s.users.delete(user);
+    release(s);
   };
   return { kind: "webgl", paint, dispose };
 }
 
 function link(gl: WebGL2RenderingContext): WebGLProgram | undefined {
   const program = gl.createProgram();
+  const shaders: WebGLShader[] = [];
   for (const [kind, source] of [[gl.VERTEX_SHADER, VERTEX], [gl.FRAGMENT_SHADER, FRAGMENT]] as const) {
     const shader = gl.createShader(kind);
-    if (shader === null) return undefined;
+    if (shader === null) break;
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     gl.attachShader(program, shader);
+    shaders.push(shader);
   }
-  gl.linkProgram(program);
-  return gl.getProgramParameter(program, gl.LINK_STATUS) ? program : undefined;
+  if (shaders.length === 2) gl.linkProgram(program);
+  // A linked program keeps its own copy: the shaders are let go at once.
+  for (const shader of shaders) {
+    gl.detachShader(program, shader);
+    gl.deleteShader(shader);
+  }
+  if (shaders.length === 2 && gl.getProgramParameter(program, gl.LINK_STATUS)) return program;
+  gl.deleteProgram(program);
+  return undefined;
 }
 
-/** A piece's front and back pictures side by side on the graphics card, with smaller copies for when it is drawn small. */
+/** A piece's front and back pictures side by side on the graphics card, with smaller copies for when it is drawn small. Null where the card would not take it. */
 function atlasOf(gl: WebGL2RenderingContext, p: PaintPiece): WebGLTexture | null {
-  const w = sizeOf(p.front, "width");
-  const h = sizeOf(p.front, "height");
+  // Held to the card's own limit as well as the package's: a picture too large for the card is made smaller, not left black.
+  gl.getError();
+  const limit = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) as number, MAX_TEXTURE_SIDE);
+  const scale = Math.min(1, limit / (2 * sizeOf(p.front, "width")), limit / sizeOf(p.front, "height"));
+  const w = Math.max(1, Math.floor(sizeOf(p.front, "width") * scale));
+  const h = Math.max(1, Math.floor(sizeOf(p.front, "height") * scale));
   const both = document.createElement("canvas");
   both.width = 2 * w;
   both.height = h;
@@ -257,6 +404,7 @@ function atlasOf(gl: WebGL2RenderingContext, p: PaintPiece): WebGLTexture | null
   g.drawImage(p.front, 0, 0, w, h);
   g.drawImage(p.back, w, 0, w, h);
   const t = gl.createTexture();
+  if (t === null) return null;
   gl.bindTexture(gl.TEXTURE_2D, t);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, both);
@@ -265,6 +413,13 @@ function atlasOf(gl: WebGL2RenderingContext, p: PaintPiece): WebGLTexture | null
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // The card has its own copy: a browser holds a canvas's memory until it is told otherwise.
+  both.width = 0;
+  both.height = 0;
+  if (gl.getError() !== gl.NO_ERROR) {
+    gl.deleteTexture(t);
+    return null;
+  }
   return t;
 }
 
