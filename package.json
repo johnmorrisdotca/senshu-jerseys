@@ -63,6 +63,11 @@
       "import": "./dist/element-entry.js",
       "default": "./dist/element-entry.js"
     },
+    "./brush-kana": {
+      "types": "./dist/brushKana-entry.d.ts",
+      "import": "./dist/brushKana-entry.js",
+      "default": "./dist/brushKana-entry.js"
+    },
     "./define": {
       "types": "./dist/element-define.d.ts",
       "import": "./dist/element-define.js",

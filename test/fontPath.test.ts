@@ -104,6 +104,21 @@ test("a triangle is read, in a path of its own with its top left at 0 0 and the 
   }
 });
 
+test("the em box keeps a glyph's place on the line: its width is the advance, its height the em, and the baseline lies 88 down", () => {
+  const ink = fontToPath(tinyFont(), "A", { precision: 0 });
+  const em = fontToPath(tinyFont(), "A", { precision: 0, box: "em", spacing: 0 });
+  // em 1000: the triangle is 500 wide and 700 high on the baseline, in a box 100 high with the baseline 88 down
+  assert.equal(ink.width, 50);
+  assert.equal(ink.height, 70);
+  assert.equal(em.height, 100);
+  assert.ok(em.width >= 50);
+  assert.match(em.d, /^M0 88/);
+  const two = fontToPath(tinyFont(), "AA", { precision: 0, box: "em", spacing: 0 });
+  assert.equal(two.width, 2 * em.width);
+  // a column takes the ink's box whatever is asked
+  assert.deepEqual(fontToPath(tinyFont(), "A", { precision: 0, box: "em", direction: "down" }), fontToPath(tinyFont(), "A", { precision: 0, direction: "down" }));
+});
+
 test("a shape of off-curve points alone is rounded through the middles of its sides, and its size is the curve's", () => {
   const r = fontToPath(tinyFont(), "O");
   assert.deepEqual([r.width, r.height], [100, 100]);

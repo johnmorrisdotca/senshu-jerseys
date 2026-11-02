@@ -6,6 +6,12 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **A row of every gi besides judo** on the home page, the judogi designer and the Uniforms page: a labelled picture tile for each karate gi (full, three-quarter and short sleeve, kumite cut, kata cut and a new plain one with no text or patches), each jiu-jitsu gi (white, blue and black, plain, with IBJJF-legal patches and covered in patches) and each taekwondo dobok (V-neck, poom collar, dan collar, ITF wrap, black-belt hem, 5th Dan stripes), in English and Japanese. A tile opens the garment on the Uniforms page, turning, with its controls; on the Uniforms page it chooses the garment in place. The pictures are painted one at a time on the one shared graphics context, each only when its tile is near the screen. New picture in the README (`docs/images/gi-desk-*.webp`) and `e2e/gi.demo.mjs`, which checks every tile has its own picture and name, on three pages, in both languages. A jiu-jitsu women's cut is not drawn yet: it waits for reference photos.
+- **`@johnmorrisdotca/senshu-jerseys/brush-kana`** (`brushKana`, `BRUSH_KANA_CHARS`, `BRUSH_KANA_FONT`): the outlines of every hiragana and katakana, the long mark, a few marks of punctuation and the kanji of the arts' names and the numerals one to ten (`一` to `十`), in a pen hand (Klee One, SIL OFL 1.1, credited and the licence kept in the NOTICE), as the same `{ d, width, height, missing }` that `fontToPath` gives, for an embroidery's `path`. No font file to load. It is its own entry: 196 kB of text, 60 kB gzipped, paid only where it is imported. `scripts/make-brush-kana.mjs` cuts such a set from any TrueType font.
+- `fontToPath` takes `box: "em"`: the line's em box (100 high, the baseline 88 down, as wide as the text is set) instead of the ink's, so a glyph keeps its place on the line.
+
 ## [0.33.3] - 2026-11-02
 
 A safety release: the 3D view can no longer ask a lot of the machine (a 3D audit after a screen-freezing draw loop in another package of the family).

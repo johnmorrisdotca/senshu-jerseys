@@ -256,7 +256,7 @@ renderJudogi({
 
 The package ships no Japanese font: a Japanese face is megabytes. A drawing saved as SVG, and the canvas painter (`judogiCanvas`, which draws the SVG as an image), can use only the fonts the computer has or the SVG carries, so pass the font with the text: `font: { family: "Yuji Syuku", css: "@font-face{font-family:'Yuji Syuku';src:url(data:font/woff2;base64,...)}" }`. The CSS must be `@font-face` rules with `data:` sources only (anything else is dropped). To keep it small, take a subset of just the characters you use: Google Fonts serves one when its address ends `&text=山田`, and `pyftsubset` makes one from a font file. Or skip fonts altogether and pass outlines: `{ place, path: { d: "M...Z", width, height } }` is set as thread, scaled to the place, with the same satin rows whatever units the outline is in.
 
-**Text to outlines: `fontToPath`.** `fontToPath(bytes, text, { direction, spacing, precision })` reads a TrueType file (the `.ttf` bytes as an `ArrayBuffer` or a typed array, however you got them: `fetch`, `readFileSync`) and returns the outlines of `text` as one path, `{ d, width, height, missing }`, for an embroidery's `path`. Run it once, keep the result (measured with Yuji Syuku and Klee One: four kanji about 10 kB of path, `TANAKA` 6 to 9 kB, at the default precision; `precision: 0` takes about a third off), and the page needs no font and no `@font-face`: a saved SVG and the canvas painter draw it as it is. It is about 2.7 kB gzipped, with no dependency, and is left out of a bundle that does not import it.
+**Text to outlines: `fontToPath`.** `fontToPath(bytes, text, { direction, spacing, precision, box })` reads a TrueType file (the `.ttf` bytes as an `ArrayBuffer` or a typed array, however you got them: `fetch`, `readFileSync`) and returns the outlines of `text` as one path, `{ d, width, height, missing }`, for an embroidery's `path`. Run it once, keep the result (measured with Yuji Syuku and Klee One: four kanji about 10 kB of path, `TANAKA` 6 to 9 kB, at the default precision; `precision: 0` takes about a third off), and the page needs no font and no `@font-face`: a saved SVG and the canvas painter draw it as it is. It is about 2.7 kB gzipped, with no dependency, and is left out of a bundle that does not import it.
 
 ```js no-run
 import { fontToPath, renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
@@ -266,6 +266,20 @@ renderJudogi({
   mode: "suit",
   embroidery: [{ place: "jacket-chest", path: fontToPath(brush, "柔道", { direction: "down" }), thread: "red" }],
 });
+```
+
+**With no font at all: `brushKana`.** `@johnmorrisdotca/senshu-jerseys/brush-kana` has the outlines of every hiragana and katakana, the long mark, a few marks of punctuation and the kanji of the arts' names and the numerals one to ten (`BRUSH_KANA_CHARS` lists them), in a pen hand: Klee One, a regular-script face drawn after the Japanese school textbook's (SIL OFL 1.1, copyright 2020 The Klee Project Authors, kept in the NOTICE). `brushKana(text, { direction, spacing })` gives the same `{ d, width, height, missing }` as `fontToPath`, for an embroidery's `path`, and needs no file to load. It is its own entry because the outlines are about 200 kB of text (60 kB gzipped): a page that does not import it does not pay for them. It is a plain textbook hand, not a master's brush: it stands for `kaisho` where you have no font, and `fontToPath` with a brush font of your own still gives the real thing. For other characters, cut your own with `fontToPath`, whose `box: "em"` keeps each glyph's place on the line; `scripts/make-brush-kana.mjs` is how this set was cut.
+
+```js
+import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+import { brushKana } from "@johnmorrisdotca/senshu-jerseys/brush-kana";
+
+const svg = renderJudogi({
+  mode: "suit",
+  view: "flat",
+  embroidery: [{ place: "jacket-chest", path: brushKana("じゅうどう"), thread: "red" }],
+});
+console.log(svg.includes("<svg"));
 ```
 
 - `direction: "down"` stands each character upright in a column, as a vertical Japanese line stands (no rotated punctuation); `"across"` (the default) sets a line. `spacing` is extra space between characters as a share of the em (0.04 across, 0.08 down by default). `precision` is the decimals kept (1; the em is 100 units, so that is a thousandth of the em); a path that would pass the 59,000 characters an embroidery takes is rounded more coarsely by itself.

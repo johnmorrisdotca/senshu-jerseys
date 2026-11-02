@@ -11,6 +11,12 @@ export interface FontPathOptions {
   spacing?: number;
   /** Decimal places kept in the path's numbers, 0 to 3 (1 by default; the em is 100 units, so 0.1 is a thousandth of the em). Lowered by itself if the path would be too long to use. */
   precision?: number;
+  /**
+   * `ink` (the default) gives the box the outlines fill, its top left at 0 0. `em` gives the line's em box instead, 100 units high with the baseline 88 units down, as wide as the text is set, so that
+   * a glyph keeps its place on the line (a long mark such as 「ー」 stays at the middle, a small kana at the bottom): the way to cut a font into glyphs and set them again somewhere else.
+   * Along a line only; a column (`direction: "down"`) always takes the ink's box.
+   */
+  box?: "ink" | "em";
 }
 
 export interface FontPath {
@@ -24,6 +30,8 @@ export interface FontPath {
 }
 
 const MAX_CHARS = 64;
+/** Where the baseline lies in the em box of `box: "em"`, as a share of the em from the top (a CJK font's: its ascender line is at the top). */
+const BASELINE = 0.88;
 const MAX_POINTS = 20_000;
 /** The longest path an embroidery takes (see `readMarks`). */
 const MAX_PATH = 59_000;
@@ -341,6 +349,12 @@ export function fontToPath(font: ArrayBuffer | ArrayBufferView, text: string, op
   } catch (e) {
     if (e instanceof RangeError) return fail("the font file is cut short or damaged");
     throw e;
+  }
+  if (options.box === "em" && !down && out.length > 0) {
+    x0 = 0;
+    x1 = pen * s - spacing * 100;
+    y0 = -BASELINE * 100;
+    y1 = y0 + 100;
   }
   if (out.length === 0 || !(x1 > x0) || !(y1 > y0)) return { d: "", width: 0, height: 0, missing };
   const round = (v: number, k: number): number => Math.round(v * k) / k || 0;
