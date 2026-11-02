@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.33.1] - 2026-11-01
+
 ### Changed
 
 - **The judogi designer's view controls are the family's shared `<kazoku-view-controls>`** (`@johnmorrisdotca/kazoku-ui`, a dev dependency used only by the demo; the library stays dependency-free). The angle and tilt sliders, Auto-turn, Front, zoom, Fit, the pan pad, the Move or Turn choice and the pointer, pinch, wheel and key hands now come from that package, and the demo's own copy of them (`bindView`, `bindMoves` use in the designer, and the buttons, sliders and address code that went with them) is gone from `demo/judogi.js` and `demo/judogi.html`. The address keys (`yaw`, `tilt`, `zoom`, `drag`) are the same, so old shared links open the same view. The controls zoom about the piece's middle (`anchor`), Arrow Up goes with the wheel up (`key-tilt="wheel"`), a press, the wheel or a key stops the turn (`stop-turn`) and a drag tips by whole degrees (`tilt-step="1"`), as before. The Uniforms page keeps its own hands for now. The designer's tests reach the controls inside the element's shadow root; a touch test and a first-screen test were added.
