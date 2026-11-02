@@ -374,12 +374,25 @@ function checkText(check) {
 }
 
 /** The stage's zoom and pan: a transform only, so a drag or a pinch costs no drawing. Pan is kept so that the picture still covers the view. */
+/** The middle of the piece's silhouette at Fit, in CSS pixels from the view's middle: the point the + and - buttons and keys zoom about. */
+function pieceAnchor() {
+  const c = painted?.canvas;
+  const b = (c?.getAttribute("data-bounds") ?? "").split(" ").map(Number);
+  const [w, h] = (c?.getAttribute("data-size") ?? "").split(" ").map(Number);
+  if (c === undefined || b.length !== 4 || b.some((v) => !Number.isFinite(v)) || !(w > 0) || !(h > 0)) return undefined;
+  const r = $("judo-turntable").getBoundingClientRect();
+  const cr = c.getBoundingClientRect();
+  return { x: (cr.left + (((b[0] + b[2]) / 2) * cr.width) / w - (r.left + r.width / 2) - pan.x) / state.zoom, y: (cr.top + (((b[1] + b[3]) / 2) * cr.height) / h - (r.top + r.height / 2) - pan.y) / state.zoom };
+}
+
 function placeStage() {
   // A canvas zooms inside itself (sharp, and the same cost at any zoom); a flat drawing is an SVG, scaled by a transform.
   if (painted !== undefined) {
     $("judo-stage").style.transform = "";
     painted.turn(shownYaw(), shownTilt(), camera());
+    bar.anchor = pieceAnchor();
   } else {
+    bar.anchor = undefined;
     $("judo-stage").style.transform = state.zoom === 1 ? "" : `translate(${pan.x.toFixed(1)}px, ${pan.y.toFixed(1)}px) scale(${state.zoom.toFixed(3)})`;
     const svg = $("judo-stage").querySelector("svg");
     if (svg !== null && !flat()) judogiTurn(svg, state.yaw + (state.view === "back" ? 180 : 0), pitchOf());
@@ -833,18 +846,14 @@ view.addEventListener("pointerenter", (event) => {
 view.addEventListener("pointerleave", () => {
   if (byHover) bar.pause();
 });
-const grab = () => {
-  grabbed = true;
-  bar.pause();
-};
-view.addEventListener("pointerdown", grab);
+view.addEventListener("pointerdown", () => { grabbed = true; });
 bar.addEventListener("kazoku-viewchange", ({ detail }) => {
   const { yaw, tilt, zoom, panX, panY, drag, reason, final } = detail;
-  Object.assign(state, { yaw, tilt: Math.round(tilt), zoom, drag });
+  Object.assign(state, { yaw, tilt, zoom, drag });
   pan.x = panX;
   pan.y = panY;
   if (reason === "play" || reason === "pause") byHover = false;
-  if (reason === "wheel" || reason === "key") grab();
+  if (reason === "wheel" || reason === "key") grabbed = true;
   placeStage();
   if (final) {
     syncUrl();
