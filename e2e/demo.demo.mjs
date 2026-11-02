@@ -297,9 +297,9 @@ test("the embed frame and the element turn the other way when told to", async ({
     el.setAttribute("autoplay", "");
     el.setAttribute("speed", "90");
     el.setAttribute("direction", "clockwise");
+    // an element turns only while it is on the screen: pinned there, whatever the page below it does while it fills
+    el.style.cssText = "position: fixed; top: 0; left: 0; z-index: 9";
     document.body.append(el);
-    // an element turns only while it is on the screen
-    el.scrollIntoView();
     const yaw = () => Number(el.shadowRoot.querySelector("svg").getAttribute("data-yaw"));
     await new Promise((r) => setTimeout(r, 40));
     const start = yaw();
