@@ -362,6 +362,12 @@ renderJudogi({ mode: "jacket", branding: { name: "KAZE", kanji: "chikara", line:
 
 **The brush mark** is drawn here as tapered strokes (no font): `te` `手` (hand, as in `選手`, an athlete; the default), `chikara` `力` (strength) or `kokoro` `心` (heart, spirit). Give `kanji` any other text and it is set in a system font instead (the same `font` rules as embroidery apply: the font has to be on the computer or in the drawing). **Swapping:** `name`, `line` and `sizeTag` are your words; `colour` is a cloth variant (`navy`, `forest`, `black`, `wine`, `cream`) or `#rrggbb` and `thread` a thread preset or `#rrggbb`; `logo` is your artwork (SVG text or a `data:image/` address) in place of the S; `neckLabel: false` and `logos: false` turn a part off. Nothing here is a real maker's or federation's mark, and the package ships no other brand.
 
+## Every gi besides judo, at a glance
+
+![Every gi besides judo in three groups, each a picture over its name: six karate gi (full, three-quarter and short sleeve, kumite cut, kata cut, plain), nine jiu-jitsu gi (white, blue and black, each plain, with IBJJF-legal patches and covered in patches) and six taekwondo dobok (V-neck, poom collar, dan collar, ITF wrap, black-belt hem, 5th Dan stripes)](images/gi-desk-light.webp)
+
+The same row is on the demo's home page, the designer and the Uniforms page, in English and Japanese (`demo/giRow.js`; the garments are the list in `demo/uniformsList.js`, so a new gi is one entry there and its words). Each tile opens the garment on the Uniforms page, turning, with its controls. The jiu-jitsu gi has no women's cut yet.
+
 ## The karate gi
 
 `karate` turns the judogi into a karate gi (karategi) on the same jacket, trousers and belt volumes: `renderJudogi({ mode: "suit", belt: "black", karate: true })`. Open it in the [designer](https://johnmorrisdotca.github.io/senshu-jerseys/judogi.html?kg=1&ks=three-quarter&mode=suit&belt=black) (the Karate gi switch) or as a [tile on the Uniforms page](https://johnmorrisdotca.github.io/senshu-jerseys/uniforms.html?garment=karate-three-quarter&belt=black), which has a tile for each sleeve and for the kumite and kata cuts. The belt is the judogi's: every colour, stripe and width works, and `judogiCheck` reports the karate gi's own measures in place of the IJF's.

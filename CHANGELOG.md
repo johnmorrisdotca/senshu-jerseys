@@ -6,6 +6,10 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+### Changed (repository)
+
+- CI no longer passes the software-GL switch to Chromium (`playwright.config.mjs` uses it off CI only): with it the hosted runners were too slow and the demo job timed out. CI has no graphics card, so it draws in software anyway.
+
 ### Added
 
 - **A row of every gi besides judo** on the home page, the judogi designer and the Uniforms page: a labelled picture tile for each karate gi (full, three-quarter and short sleeve, kumite cut, kata cut and a new plain one with no text or patches), each jiu-jitsu gi (white, blue and black, plain, with IBJJF-legal patches and covered in patches) and each taekwondo dobok (V-neck, poom collar, dan collar, ITF wrap, black-belt hem, 5th Dan stripes), in English and Japanese. A tile opens the garment on the Uniforms page, turning, with its controls; on the Uniforms page it chooses the garment in place. The pictures are painted one at a time on the one shared graphics context, each only when its tile is near the screen. New picture in the README (`docs/images/gi-desk-*.webp`) and `e2e/gi.demo.mjs`, which checks every tile has its own picture and name, on three pages, in both languages. A jiu-jitsu women's cut is not drawn yet: it waits for reference photos.
