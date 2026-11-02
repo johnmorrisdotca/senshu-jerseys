@@ -8,13 +8,25 @@ All notable changes to this project are written here. The format follows
 
 ## [0.33.3] - 2026-11-02
 
+A safety release: the 3D view can no longer ask a lot of the machine (a 3D audit after a screen-freezing draw loop in another package of the family).
+
 ### Fixed
 
-- **`judogiCanvas` holds its canvas to 6 million pixels and 4096 a side** (`MAX_PIXELS`, `MAX_SIDE`). A view as large as a 5K screen at a pixel ratio of 2 made a canvas of 5120 x 2736 (14 million pixels), and the flat painter builds a layer on two more sheets of the same size. The ratio is lowered until it fits; a canvas on an ordinary view is unchanged.
+- **The canvas had no size limit** but a ratio of 4: a box as wide as a 5K screen at a ratio of 4 was 59 million pixels. `judogiCanvas` now holds the canvas to 4096 pixels a side, 6 million in all and a ratio of 2 (`src/pixels.ts`), and the faces' pictures to 4096 across each and 24 million together on the graphics card (`scale` 8 made two pictures of 4480 x 2560 for each piece, past some phones' limit and about 200 megabytes for a suit).
+- **Every `judogiCanvas` made its own WebGL context** (a browser keeps about sixteen, and the Uniforms page made one per picture tile). All of them now share one hidden WebGL 2 context and copy each paint onto their own 2D canvas.
+- **A lost WebGL context left a blank canvas.** The canvas keeps its picture, the 2D painter takes over at once and the graphics card paints again when the context is back.
+- **`dispose` left things behind**: the bitmaps of the faces (never closed), the shaders (two for every canvas made: 152 left over after twenty changes in the test), and the canvases' memory. They are given back, and `turn` after `dispose` does nothing. A failed start closes what it made, and a card that fails to take the pictures no longer leaves the 2D painter without a context.
+- **`turn` painted again for what it already showed.** It now paints nothing when the angle, tip, zoom and move are the same; `data-paints` counts the paints.
+- **`bindTurn` kept turning out of sight** (a `<senshu-jersey autoplay>` scrolled away drew every frame) and drew at the screen's rate, 120 a second on a fast one. It waits while its container is out of sight (an `IntersectionObserver`), and draws about 60 a second at most.
+
+### Changed
+
+- The demo's judogi designer and Uniforms page ask the canvas to paint at most about 60 times a second, never in a hidden tab or out of sight (and once when back), and make one drawing at a time: a choice made while one is being made waits and the newest wins, so the graphics card is never asked for two suits at once.
+- New browser tests (`e2e/freeze.demo.mjs`): nothing drawn or asked for at rest; one frame loop and a paint a frame while turning; nothing out of sight, in a hidden tab, or under reduced motion; one context over a whole load; graphics objects, textures and script memory flat over twenty changes and a soak (a minute in CI; ten minutes measured: the heap moves between 7.7 and 16.2 MB with what is on show and does not climb, 3 to 6 graphics objects, one context, one canvas); a lost and restored context; the canvas within budget on a 5K screen at zoom 1 to 8 and for the library called with any box and ratio. Unit tests for the budget and for `bindTurn`'s frame cap and sight.
 
 ### Added (repository)
 
-- `e2e/freeze.demo.mjs` and `pnpm test:freeze`: the designer, played in headless Chromium that draws WebGL in software, draws nothing at rest or out of sight, asks for one frame at a time while it turns, leaves no WebGL context, buffer or texture behind over eighteen changes, and keeps its canvas inside the pixel budget on a 5K screen. `playwright.config.mjs` draws every Chromium project in software (SwiftShader) and, off CI, leaves the pages that draw WebGL to CI in WebKit, which has no software switch.
+- `pnpm test:freeze` plays `e2e/freeze.demo.mjs` alone. `playwright.config.mjs` draws every Chromium project in software (SwiftShader), never on the machine's graphics card (a test run once panicked a Mac's graphics driver), and, off CI, leaves the pages that draw WebGL to CI in WebKit, which has no software switch.
 
 ## [0.33.2] - 2026-11-02
 
