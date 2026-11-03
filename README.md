@@ -58,7 +58,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
 </picture>
 </p>
 
-- **Officials**: referees, linesmen and umpires of seven sports ([officials](./docs/officials.md)).
+- **Officials**: referees, linesmen and umpires of seven sports, with armbands, a chest pocket, a plain badge spot and a few historic looks ([docs/officials.md](./docs/officials.md)).
 
 <p align="center">
 <picture>
@@ -155,7 +155,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Ten patterns**: solid, stripes, hoops, halves, quarters, sash, chevron, pinstripes, yoke and chest band; stripes and hoops take any repeat of widths and colours.
 - **Front, back, or both**, in three styles: `cloth` (soft folds, stitched numbers, a self-toned edge), `flat`, and `line` (one colour, legible at 16 pixels).
 - **Numbers and names that read**: each gets an ink with 4.5 to 1 contrast against what is behind it, and an outline over stripes. The letters are drawn here, as block strokes: no font file and no system font. A Japanese name is set as system text.
-- **Caps, helmets and banners**: a solid or two-tone cap with a contrast brim; football, hockey and batting helmets; retired-number banners as a rectangle, a pennant or a shield, with an optional sweater filling the cloth (number and last name on the back, years below), or `kind: "hanging"` for a plate with last name, number and a caller-supplied logo; championship pennants and garden flags through `renderTitleBanner`.
+- **Caps, helmets and banners**: a solid or two-tone cap, football, hockey and batting helmets, retired-number banners as a rectangle, a pennant or a shield (with an optional sweater, or a hanging plate), and championship pennants and garden flags through `renderTitleBanner`.
 - **A matchup and a lineup**: two kits side by side that say whether they clash; a formation of shirts, `4-4-2`, with names and numbers.
 - **Whole uniforms**: the pants or shorts, the socks and the helmet that go with the jersey.
 - **Presets**: more than fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
@@ -203,9 +203,40 @@ import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
 writeFileSync(new URL("./shirt.svg", import.meta.url), renderJersey({ cut: "basketball", colors: ["#1f3a8a", "#f4f0e4"], number: 23, view: "back" }));
 ```
 
+### In TypeScript
+
+```ts
+import { renderJersey, type JerseyOptions } from "@johnmorrisdotca/senshu-jerseys";
+
+// The options are typed, so an editor lists every cut, pattern and collar; a value that is not allowed is a type error.
+const options: JerseyOptions = { cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9 };
+console.log(renderJersey(options).startsWith("<svg")); // true
+```
+
+### In React and Vue
+
+```tsx
+// React: import the element in an effect, so that a server render never reaches it.
+import { useEffect } from "react";
+
+export const Shirt = () => {
+  useEffect(() => void import("@johnmorrisdotca/senshu-jerseys/define"), []);
+  return <senshu-jersey cut="hockey" colors="#af1e2d,#ffffff,#192168" number={9} />;
+};
+```
+
+```vue
+<!-- Vue: the same, once the component is mounted. -->
+<script setup>
+import { onMounted } from "vue";
+onMounted(() => import("@johnmorrisdotca/senshu-jerseys/define"));
+</script>
+<template><senshu-jersey cut="hockey" colors="#af1e2d,#ffffff,#192168" number="9"></senshu-jersey></template>
+```
+
 ### Every way to use it
 
-Each of these is a file in [`examples/`](./examples), built, type-checked or run by `pnpm test:usage` against the package as npm packs it, and the guides hold the text word for word. The guides are in English and in Japanese: [the documentation site](https://johnmorrisdotca.github.io/senshu-jerseys/docs/).
+Each of these is a file in [`examples/`](./examples), built, type-checked or run by `pnpm test:usage` against the package as npm packs it, and the guides hold the text word for word. The guides are in English and in Japanese: [the documentation site](https://johnmorrisdotca.github.io/senshu-jerseys/docs/). Beyond the ways in, [presets, whole uniforms and lineups](./docs/guides/presets-and-uniforms.md) and [the architecture](./docs/guides/architecture.md) have their own guides.
 
 | Way | Where |
 | --- | --- |
@@ -543,7 +574,7 @@ The four `presets/hockey-patterns` sweaters show the shrinking sleeve bands, the
 </picture>
 </p>
 
-The colours and layouts are facts taken from the uniform sections of Wikipedia articles, Wikidata and the clubs' published colour codes, and recorded as data here; no picture is copied. Treat them as a first reading, not a proof: where a source gave only colour names the layout is the plainest one that fits, and a row that could not be confirmed is marked `unsure` in its source. Corrections with a source are welcome.
+The colours are facts taken from Wikipedia, Wikidata and the clubs' published colour codes, recorded as data here; no picture is copied, and a row that could not be confirmed is marked `unsure`. [Presets, whole uniforms and lineups](./docs/guides/presets-and-uniforms.md) has the code.
 
 ## Roadmap
 

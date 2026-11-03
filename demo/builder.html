@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Senshu Jerseys: build a jersey and copy the code</title>
+  <meta name="description" content="Choose the cut, the pattern, the colours, the number and the name, see the jersey, and copy the code that puts it in a page: a custom element, a frame, a module, an SVG or a data address." />
+  <style>
+    :root { color-scheme: light dark; --bg: #f6f4ee; --ink: #10151b; --muted: #434b54; --card: #fff; --line: #b9b3a3; --accent: #1f5fa8; --tab: #10151b; --tab-ink: #fff; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0d1218; --ink: #f6f3ea; --muted: #bcc3cb; --card: #18212a; --line: #475463; --accent: #7fb2ee; --tab: #f6f3ea; --tab-ink: #0d1218; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
+    main { max-width: 1100px; margin: 0 auto; padding: 12px 16px 32px; }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    p { margin: 0 0 10px; max-width: 70ch; }
+    .lede, .note { color: var(--muted); }
+    a { color: var(--accent); }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+    @media (min-width: 900px) { .layout { grid-template-columns: 320px minmax(0, 1fr); align-items: start; } .controls { position: sticky; top: 8px; } }
+    .controls { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+    .row { margin: 0 0 8px; }
+    .row b { display: block; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 3px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { font: inherit; font-size: .9rem; font-weight: 700; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+    .chips button[aria-pressed="true"] { border-color: var(--tab); background: var(--tab); color: var(--tab-ink); }
+    .chips button.swatch { display: inline-flex; gap: 0; padding: 0; width: 64px; overflow: hidden; }
+    .chips button.swatch i { flex: 1; align-self: stretch; }
+    .fields { display: flex; gap: 8px; }
+    .fields label { display: grid; gap: 2px; font-size: .8rem; color: var(--muted); flex: 1; }
+    .fields input { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-height: 44px; width: 100%; }
+    .stage { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; justify-items: center; min-height: 260px; overflow-x: auto; }
+    .stage svg { max-width: 100%; height: auto; }
+    .tabs { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 3px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; margin: 12px 0 8px; }
+    .tabs button { font: inherit; font-weight: 700; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+    .tabs button[aria-selected="true"] { background: var(--tab); color: var(--tab-ink); }
+    pre { margin: 0 0 8px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; font-size: .82rem; max-height: 20rem; white-space: pre-wrap; word-break: break-all; }
+    .copy { font: inherit; font-weight: 800; min-height: 48px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--tab); color: var(--tab-ink); cursor: pointer; }
+    #status { margin-left: 10px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <p><a href="./">← The demo</a></p>
+    <h1>Build a jersey, copy the code</h1>
+    <p class="lede">Choose what you want and the jersey is drawn here by the package. The code under it puts the same jersey in a page.</p>
+    <div class="layout">
+      <div class="controls" id="controls" data-testid="controls"></div>
+      <div>
+        <div class="stage" id="stage" data-testid="stage"></div>
+        <div class="tabs" role="tablist" id="tabs" aria-label="The code"></div>
+        <pre><code id="code" data-testid="code"></code></pre>
+        <button type="button" class="copy" id="copy" data-testid="copy">Copy the code</button><span id="status" role="status" aria-live="polite"></span>
+        <p class="note" style="margin-top:12px"><a href="https://github.com/johnmorrisdotca/senshu-jerseys/blob/main/docs/guides/getting-started.md">Getting started</a> · <a href="https://github.com/johnmorrisdotca/senshu-jerseys/blob/main/docs/guides/architecture.md">Architecture</a> · <a href="./judogi.html">The judogi designer</a> · <a href="./uniforms.html">Uniforms</a></p>
+      </div>
+    </div>
+  </main>
+  <script type="module">
+    // The builder: the cut, the pattern, the colours, the look and the view are rows of buttons, the number and the name two fields; the jersey is drawn by the package's own build beside this
+    // page, and the code under it is what `embedCode` writes for the same options. Nothing is sent or stored.
+    import { CUT_IDS, CUT_NAMES, EMBED_KINDS, LOOK_IDS, PATTERN_IDS, PATTERN_NAMES, VIEW_IDS, embedCode, renderJersey } from "./dist/index.js";
+
+    const PALETTES = {
+      "Red and navy": ["#af1e2d", "#ffffff", "#192168"],
+      "Blue and white": ["#1f3a8a", "#f4f0e4", "#d52b1e"],
+      "Green and gold": ["#0b6e4f", "#e8b900", "#f4f0e4"],
+      "Black and orange": ["#14181c", "#f58220", "#ffffff"],
+      "Sky and white": ["#6cace4", "#ffffff", "#1c2c5b"],
+    };
+    const CHOICES = {
+      cut: { label: "Cut", values: CUT_IDS, name: (id) => CUT_NAMES[id].en, default: "hockey" },
+      pattern: { label: "Pattern", values: PATTERN_IDS, name: (id) => PATTERN_NAMES[id].en, default: "stripes" },
+      palette: { label: "Colours", values: Object.keys(PALETTES), swatch: true, default: "Red and navy" },
+      look: { label: "Style", values: LOOK_IDS, default: "cloth" },
+      view: { label: "View", values: VIEW_IDS, default: "both" },
+    };
+    const state = Object.fromEntries(Object.entries(CHOICES).map(([key, one]) => [key, one.default]));
+    state.number = "9";
+    state.name = "Beaumont";
+    const query = new URLSearchParams(location.search);
+    for (const [key, one] of Object.entries(CHOICES)) if (one.values.includes(query.get(key))) state[key] = query.get(key);
+    let way = "element";
+    const $ = (id) => document.getElementById(id);
+    const options = () => {
+      const out = { cut: state.cut, colors: PALETTES[state.palette], pattern: state.pattern, look: state.look, view: state.view };
+      if (/^\d{1,2}$/.test(state.number)) out.number = Number(state.number);
+      if (state.name.trim() !== "") out.name = state.name.trim().slice(0, 14);
+      return out;
+    };
+    function draw() {
+      const o = options();
+      $("stage").innerHTML = renderJersey(o);
+      $("code").textContent = embedCode(o, way);
+      for (const group of document.querySelectorAll("[data-choice]")) for (const button of group.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.value === state[group.dataset.choice]));
+      for (const button of $("tabs").querySelectorAll("button")) button.setAttribute("aria-selected", String(button.dataset.way === way));
+      document.body.dataset.ready = "true";
+    }
+    const rows = Object.entries(CHOICES).map(([key, one]) => {
+      const row = document.createElement("div");
+      row.className = "row";
+      const label = document.createElement("b");
+      label.textContent = one.label;
+      const chips = document.createElement("div");
+      chips.className = "chips";
+      chips.dataset.choice = key;
+      chips.setAttribute("role", "group");
+      chips.setAttribute("aria-label", one.label);
+      for (const value of one.values) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.value = value;
+        if (one.swatch) {
+          button.className = "swatch";
+          button.title = value;
+          button.setAttribute("aria-label", value);
+          button.innerHTML = PALETTES[value].map((colour) => `<i style="background:${colour}"></i>`).join("");
+        } else button.textContent = one.name ? one.name(value) : value;
+        button.addEventListener("click", () => { state[key] = value; draw(); });
+        chips.append(button);
+      }
+      row.append(label, chips);
+      return row;
+    });
+    const fields = document.createElement("div");
+    fields.className = "fields";
+    for (const [key, label, extra] of [["number", "Number", 'inputmode="numeric" maxlength="2"'], ["name", "Name", 'maxlength="14"']]) {
+      const wrap = document.createElement("label");
+      wrap.innerHTML = `<span>${label}</span><input id="f-${key}" data-testid="${key}" ${extra} value="${state[key]}" />`;
+      wrap.querySelector("input").addEventListener("input", (event) => { state[key] = event.target.value; draw(); });
+      fields.append(wrap);
+    }
+    $("controls").replaceChildren(...rows, fields);
+    for (const kind of EMBED_KINDS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.role = "tab";
+      button.dataset.way = kind;
+      button.textContent = { element: "Element", iframe: "Frame", module: "Module", svg: "SVG", data: "Data address" }[kind] ?? kind;
+      button.addEventListener("click", () => { way = kind; draw(); });
+      $("tabs").append(button);
+    }
+    $("copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("code").textContent);
+        $("status").textContent = "Copied to the clipboard.";
+      } catch {
+        $("status").textContent = "Could not copy: select the code and copy it.";
+      }
+    });
+    draw();
+  </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+- Docs only (MODULES-247): two more guides, with Japanese twins: architecture (the pipeline from options to an SVG string, the rules and the checks) and presets, whole uniforms and lineups; `demo/builder.html`, a page where the cut, the pattern, the colours, the style, the view, the number and the name are chosen and the code that puts the jersey in a page is copied (`embedCode`), with `e2e/builder.demo.mjs`; three more README examples (TypeScript, React, Vue).
 - The README opens with the package's thumbnail, and the demo carries it as its link preview (og:image) and publishes the card, a dark card and an icon on Pages at `thumbnail.png`, `thumbnail-dark.png` and `icon.png`.
 
 ## [0.35.0] - 2026-11-03
