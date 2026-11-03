@@ -14,6 +14,8 @@ import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
 const bar = $("uni-bar");
+// The bar is horizontal, with the zoom as a slider with marks; a phone keeps the classic bar, which fits its width.
+if (!globalThis.matchMedia("(max-width: 600px)").matches) bar.setAttribute("layout", "horizontal");
 const params = new URLSearchParams(location.search);
 const lang = () => window.senshuLanguage?.lang ?? "en";
 const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
@@ -188,6 +190,27 @@ function pieceAnchor() {
   return { x: (cr.left + (((b[0] + b[2]) / 2) * cr.width) / w - (r.left + r.width / 2) - pan.x) / state.zoom, y: (cr.top + (((b[1] + b[3]) / 2) * cr.height) / h - (r.top + r.height / 2) - pan.y) / state.zoom };
 }
 
+/** The piece's size at Fit in CSS pixels, told to the view controls so a pan keeps a quarter of it in view and the Centre button has something to bring back. */
+function holdPiece() {
+  const c = painted?.canvas;
+  const b = (c?.getAttribute("data-bounds") ?? "").split(" ").map(Number);
+  const [w, h] = (c?.getAttribute("data-size") ?? "").split(" ").map(Number);
+  let size;
+  if (c !== undefined && b.length === 4 && b.every((v) => Number.isFinite(v)) && w > 0 && h > 0) {
+    const cr = c.getBoundingClientRect();
+    size = { width: ((b[2] - b[0]) * cr.width) / w / state.zoom, height: ((b[3] - b[1]) * cr.height) / h / state.zoom };
+  } else {
+    const svg = $("uni-stage").querySelector("svg");
+    if (svg !== null) {
+      const r = svg.getBoundingClientRect();
+      size = { width: r.width / state.zoom, height: r.height / state.zoom };
+    }
+  }
+  if (size === undefined || !(size.width > 0) || !(size.height > 0)) return;
+  const value = `${Math.round(size.width)},${Math.round(size.height)}`;
+  if (bar.getAttribute("object-size") !== value) bar.setAttribute("object-size", value);
+}
+
 function placeStage() {
   if (painted !== undefined) {
     $("uni-stage").style.transform = "";
@@ -199,6 +222,7 @@ function placeStage() {
     const svg = $("uni-stage").querySelector("svg");
     if (svg !== null) judogiTurn(svg, state.yaw, pitch());
   }
+  holdPiece();
 }
 
 let crisp = 0;

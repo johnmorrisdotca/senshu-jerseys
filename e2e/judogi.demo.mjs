@@ -9,6 +9,11 @@ const PARTS = { yaw: "#yaw", tilt: "#tilt", angle: ".angle", tiltfield: ".tilt",
 const vc = (page, name) => page.locator(`kazoku-view-controls ${PARTS[name]}`);
 /** The zoom the controls hold, as the old Back-to-1x button showed it. */
 const zoomText = (page) => page.locator("kazoku-view-controls").evaluate((el) => `${Number(el.state.zoom.toFixed(1))}×`);
+// The controls open at their basic level (the angle, Auto-turn and the zoom): these tests use the rest (tilt, Front, pan, Move and Turn), which a reader has asked for with More, and the controls remember that.
+test.beforeEach(({ page }) => page.addInitScript(() => { try { window.localStorage.setItem("kazoku-view-controls", "advanced"); } catch { /* a page with no storage */ } }));
+
+/** A test that zooms with the + button on a phone needs the bar as short as it opens (one row): the rest of the controls, open under More, change the room the view has. */
+const basicBar = (page) => page.addInitScript(() => { try { window.localStorage.setItem("kazoku-view-controls", "basic"); } catch { /* a page with no storage */ } });
 /** Choose an option of a swatch, tile or segmented picker. */
 const pick = (page, id, value) => page.locator(`[data-testid="${id}"] [data-value="${value}"]`).click();
 const yawOf = (page) => page.locator("#judo-stage canvas").getAttribute("data-yaw").then(Number);
@@ -77,10 +82,13 @@ test("the controls are in the page's own style, beside the view, and a finger wi
 });
 
 test("the view controls are in the first screen with the view, on a desk and on a phone", async ({ page }) => {
+  const phone = (page.viewportSize()?.width ?? 0) < 600;
+  if (phone) await basicBar(page);
   await page.goto("/judogi.html");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const vh = page.viewportSize()?.height ?? 0;
-  for (const name of ["yaw", "tilt", "play", "front", "out", "in", "fit"]) {
+  // A phone opens the bar as one short row (Auto-turn, zoom out and in, More); the rest is under More.
+  for (const name of phone ? ["play", "out", "in"] : ["yaw", "tilt", "play", "front", "out", "in", "fit"]) {
     const box = await vc(page, name).boundingBox();
     expect(box !== null && box.y >= 0 && box.y + box.height <= vh, `${name} is in the first screen`).toBe(true);
   }
@@ -617,6 +625,7 @@ test("at 1x every piece fits the view with a margin at every angle and tilt, ext
 });
 
 test("John's case on the designer: the belt at -179 degrees and -30 tilt, zoomed in twice with +, stays centred on its own middle", async ({ page }) => {
+  await basicBar(page);
   await page.goto("/judogi.html?mode=belt&belt=red-white&sb=gold&sbn=4&ss=blue&sc=orange&st=white&yaw=-179&tilt=-30");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const read = () => page.locator("#judo-stage canvas").evaluate((c) => ({ b: (c.getAttribute("data-bounds") ?? "").split(" ").map(Number), s: (c.getAttribute("data-size") ?? "").split(" ").map(Number) }));

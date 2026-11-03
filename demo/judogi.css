@@ -1,4 +1,5 @@
 .judo-layout { align-items: start; }
+.judo-layout .stagepin { align-self: stretch; }
 .judo-layout .controls { display: grid; gap: 14px; align-content: start; }
 .judo-layout .controls h3 { margin: 6px 0 -4px; padding-top: 10px; border-top: 1px solid var(--rule); }
 .judo-layout .controls h3:first-child { margin-top: 0; padding-top: 0; border-top: 0; }

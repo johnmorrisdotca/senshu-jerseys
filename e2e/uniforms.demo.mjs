@@ -9,6 +9,9 @@ const PARTS = { yaw: "#yaw", tilt: "#tilt", play: '[data-b="play"]', in: '[data-
 const vc = (page, name) => page.locator(`kazoku-view-controls ${PARTS[name]}`);
 const yawOf = (page) => page.locator("#uni-stage canvas").getAttribute("data-yaw").then(Number);
 
+// The controls open at their basic level (the angle, Auto-turn and the zoom): these tests use the rest (tilt, Front, pan, Move and Turn), which a reader has asked for with More, and the controls remember that.
+test.beforeEach(({ page }) => page.addInitScript(() => { try { window.localStorage.setItem("kazoku-view-controls", "advanced"); } catch { /* a page with no storage */ } }));
+
 test("the page loads, the large view is drawn and every tile has its picture", async ({ page }) => {
   test.slow();
   const errors = [];
