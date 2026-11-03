@@ -26,7 +26,7 @@ jsDelivr は、パッケージのファイルをそのまま返します。こ�
 </html>
 ```
 
-このスクリプトが `<senshu-jersey>` を登録します。アドレスにバージョンを書かないと最新が使われます。内容が変わっては困るページでは、`@johnmorrisdotca/senshu-jerseys@0.36.0/dist/element-define.js` のようにバージョンを固定してください。
+このスクリプトが `<senshu-jersey>` を登録します。アドレスにバージョンを書かないと最新が使われます。内容が変わっては困るページでは、`@johnmorrisdotca/senshu-jerseys@0.37.0/dist/element-define.js` のようにバージョンを固定してください。
 
 ## unpkg から
 

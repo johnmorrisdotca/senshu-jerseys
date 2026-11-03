@@ -5,7 +5,7 @@ order: 12
 description: What changed between versions and what to do about it. The package is 0.x: read this before a minor version.
 ---
 
-The package is at 0.x, so a minor version (0.35 to 0.36) may change behaviour. Each release's notes are in the [changelog](../../CHANGELOG.md); this page lists what needs your action.
+The package is at 0.x, so a minor version (0.36 to 0.37) may change behaviour. Each release's notes are in the [changelog](../../CHANGELOG.md); this page lists what needs your action.
 
 ## To 0.37: speed buttons
 

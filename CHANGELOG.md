@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-11-03
+
 - New: `bindTurn`'s handle has `speed()` and `setSpeed(degreesASecond)`: it changes how fast the jersey turns by itself while it turns, at once and from where it is; a number that is not finite or not above 0 is left out. A unit test holds it, with a bad speed and the default of 40.
 - Demo: Auto-turn's speeds are the family's speed buttons, 0.5×, 1× and 2× (`<kazoku-speed-buttons>`, kazoku-ui 0.14, `^0.14.0`), beside Auto-turn and Reverse (which stays the demo's own). They multiply the demo's 20 degrees a second, and the choice is kept in the address as `pace=2` (1× leaves it off). The Judogi designer and the Uniforms page, which use the family's view controls, have the same three buttons from kazoku-ui 0.14, and their address key is `pace`, not `speed`. Browser tests hold the buttons, the speed each sets while Auto-turn runs and the address.
 - Test: the Judogi designer's wheel test follows kazoku-ui 0.13, which the new range brings: the wheel over the view zooms it about the pointer (a sideways swipe still turns it, and Ctrl and the wheel still zoom); it no longer tips a focused view.
