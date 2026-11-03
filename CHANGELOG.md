@@ -6,6 +6,22 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-11-03
+
+The package meets the family's must-have list: a documentation site in English and Japanese, a guide and a tested example for every way of using it.
+
+### Added
+
+- **A documentation site** at https://johnmorrisdotca.github.io/senshu-jerseys/docs/ (`scripts/docs-site.mjs`, the family's generator): a reference page for every export of every entry point, nine guides (getting started, a plain page from a CDN, Vite and webpack, React, Vue, Svelte and Angular, an iframe, TypeScript and Node, how it works, troubleshooting, upgrading) and a Japanese twin of each in `docs/guides/ja/`, search, `llms.txt`. Every export has a doc comment with a summary, `@param`, `@returns` and an `@example` that is type-checked and run when the site is built.
+- **`examples/`** and `pnpm test:usage`: a script tag from jsDelivr and from unpkg, an ES module import, Vite, webpack, React (also rendered on a server), Vue, Svelte, Angular, an iframe of the embed page, TypeScript and Node, each built, type-checked or run against the package as npm packs it and opened in a browser where it has a page. The guides hold the examples' text word for word; CI runs it.
+- `scripts/check-standard.mjs`, the family's check of the must-have list, run by `pnpm test`.
+- The README's "Every way to use it" table.
+
+### Changed
+
+- The npm description starts with the plain words for the job, as the family's titles do.
+- No change to what any function draws.
+
 ## [0.34.0] - 2026-11-02
 
 ### Changed (repository)
