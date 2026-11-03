@@ -6,6 +6,20 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-11-03
+
+The demo's view controls are kazoku-ui 0.12: a Centre button, a pan that cannot lose the piece, and the zoom as a slider with marks. The package is unchanged.
+
+### Changed
+
+- **The designer and the Uniforms page take `@johnmorrisdotca/kazoku-ui` 0.12** (a dev dependency of the demo only; was 0.7). On a desk the bar is `layout="horizontal"`: the turn on one row and the zoom as a slider marked at 1x, 2x, 3x and 5x under it (a phone keeps the classic bar, which fits its width, and now has the pinned view the full width of the page instead of the width of its bar). Once the view is zoomed or moved a **Centre** button comes into the bar and puts the piece back in the middle at Fit and the resting angle; the Home key does it without the move. The demo tells the controls the piece's size at Fit (`object-size`, taken from the canvas's `data-bounds`, or the SVG's box for a flat drawing), so a pan keeps at least a quarter of the piece in view at any angle and tilt. Exact grab (`grab-radius`) is left out on purpose: a jacket, a pair of trousers and a belt are not round, so a drag keeps the controls' fixed angle across the view. The 2x button of the controls is gone in kazoku-ui 0.10 (a double press still goes to 2x). This release also carries the demo fix made after 0.35.0: Arrow Up tips the way a drag up does.
+
+### Added
+
+- **`e2e/centre.demo.mjs`**: on the designer and on the Uniforms page, with a real pointer, Centre is hidden at Fit, comes in after a zoom, a drag of thousands of pixels in every direction leaves a quarter of the piece in view, and Centre puts it back (zoom 1, no pan, angle and tilt 0, the piece in the middle); and the Home key. `e2e/ground.demo.mjs` (the family's drag rule, with `e2e/ground.mjs`) is unchanged and still passes.
+
+### Also in this release
+
 - Docs only (MODULES-247): two more guides, with Japanese twins: architecture (the pipeline from options to an SVG string, the rules and the checks) and presets, whole uniforms and lineups; `demo/builder.html`, a page where the cut, the pattern, the colours, the style, the view, the number and the name are chosen and the code that puts the jersey in a page is copied (`embedCode`), with `e2e/builder.demo.mjs`; three more README examples (TypeScript, React, Vue).
 - The README opens with the package's thumbnail, and the demo carries it as its link preview (og:image) and publishes the card, a dark card and an icon on Pages at `thumbnail.png`, `thumbnail-dark.png` and `icon.png`.
 

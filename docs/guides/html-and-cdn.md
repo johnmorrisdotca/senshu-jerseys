@@ -26,7 +26,7 @@ jsDelivr serves each file of the package as it is. The package has no dependenci
 </html>
 ```
 
-The script registers `<senshu-jersey>`. With no version in the address you get the latest; pin one for a page that must not change under you, as in `@johnmorrisdotca/senshu-jerseys@0.35.0/dist/element-define.js`.
+The script registers `<senshu-jersey>`. With no version in the address you get the latest; pin one for a page that must not change under you, as in `@johnmorrisdotca/senshu-jerseys@0.36.0/dist/element-define.js`.
 
 ## From unpkg
 
