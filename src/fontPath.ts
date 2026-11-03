@@ -4,6 +4,17 @@
 // .ttf: cmap (formats 4 and 12), head, hhea, hmtx, loca and glyf, with composite glyphs. No kerning, no ligatures, no hinting, no variations (a
 // variable font gives its default look). A CFF font (.otf with PostScript outlines), WOFF and WOFF2 are refused with a message that says so. Original code.
 
+/**
+ * How `fontToPath` sets text: its direction, spacing, precision and box.
+ *
+ * @example
+ * ```ts
+ * import type { FontPathOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: FontPathOptions = { direction: "down", spacing: 0.1, precision: 1 };
+ * console.log(options);
+ * ```
+ */
 export interface FontPathOptions {
   /** `across` (the default) sets the text on a line; `down` stands each character upright in a column, one under the next, as a vertical Japanese line stands. */
   direction?: "across" | "down";
@@ -19,6 +30,18 @@ export interface FontPathOptions {
   box?: "ink" | "em";
 }
 
+/**
+ * Outlines set as one path, with its size and the characters that had none.
+ *
+ * @example
+ * ```ts
+ * import type { FontPath } from "@johnmorrisdotca/senshu-jerseys";
+ * import { brushKana } from "@johnmorrisdotca/senshu-jerseys/brush-kana";
+ *
+ * const path: FontPath = brushKana("さ");
+ * console.log(path.width, path.missing);
+ * ```
+ */
 export interface FontPath {
   /** The outlines, filled with the non-zero rule, y down, its top left at 0 0. Empty when nothing could be set. */
   d: string;
@@ -278,6 +301,17 @@ function segments(contour: Contour, put: (c: Seg["c"], ...p: number[]) => void):
 /**
  * The outlines of `text` set in `font` (the bytes of a .ttf), as one path for an embroidery's `path`, in a box of its own with its top left at 0 0.
  * Characters the font lacks are left out and listed in `missing`. At most 64 characters.
+ *
+ * @param font - the bytes of a .ttf file
+ * @param text - the text to set
+ * @param options - the direction, the spacing, the decimal places and whether the box is the ink or the em
+ * @returns one path with its size, and the characters the font has no outline for
+ * @example
+ * ```ts
+ * import { fontToPath } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(typeof fontToPath);
+ * ```
  */
 export function fontToPath(font: ArrayBuffer | ArrayBufferView, text: string, options: FontPathOptions = {}): FontPath {
   let f: Font;

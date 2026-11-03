@@ -6,11 +6,64 @@ import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 import { drawRun, layout } from "./text.ts";
 
+/**
+ * The kinds of helmet.
+ *
+ * @example
+ * ```ts
+ * import { HELMET_KINDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(HELMET_KINDS.length, HELMET_KINDS[0]);
+ * ```
+ */
 export const HELMET_KINDS = ["football", "hockey", "batting"] as const;
+/**
+ * The kind of helmet.
+ *
+ * @example
+ * ```ts
+ * import { HELMET_KINDS, type HelmetKind } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: HelmetKind | undefined = HELMET_KINDS[0];
+ * console.log(first);
+ * ```
+ */
 export type HelmetKind = (typeof HELMET_KINDS)[number];
+/**
+ * The marks a helmet carries on its side.
+ *
+ * @example
+ * ```ts
+ * import { HELMET_MARKS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(HELMET_MARKS.length, HELMET_MARKS[0]);
+ * ```
+ */
 export const HELMET_MARKS = ["none", "number", "ring", "star", "bar"] as const;
+/**
+ * The mark on a helmet's side.
+ *
+ * @example
+ * ```ts
+ * import { HELMET_MARKS, type HelmetMark } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: HelmetMark | undefined = HELMET_MARKS[0];
+ * console.log(first);
+ * ```
+ */
 export type HelmetMark = (typeof HELMET_MARKS)[number];
 
+/**
+ * A helmet: its kind, colours, mark, number, facing and look.
+ *
+ * @example
+ * ```ts
+ * import { renderHelmet, type HelmetOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: HelmetOptions = { kind: "hockey", colors: ["#af1e2d", "#ffffff"], mark: "number", number: 9, facing: "left" };
+ * console.log(renderHelmet(options).startsWith("<svg"));
+ * ```
+ */
 export interface HelmetOptions {
   kind?: HelmetKind;
   /** `[shell, stripe?, facemask?, mark?]`: the shell, the stripe over its crown, the facemask or the cage, and the side mark. */
@@ -123,6 +176,18 @@ export function helmetParts(options?: HelmetOptions): { id: string; defs: string
   return { id: uid, defs, body: final, title, size, w: 200, h: 170 };
 }
 
+/**
+ * A helmet as an SVG document: football, hockey or batting, with a mark and a number.
+ *
+ * @param options - the helmet: its kind, colours, mark, number and the side it faces
+ * @returns an SVG document of the helmet
+ * @example
+ * ```ts
+ * import { renderHelmet } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(renderHelmet({ kind: "football", colors: ["#192168", "#ffffff"], number: 12 }).startsWith("<svg"));
+ * ```
+ */
 export function renderHelmet(options?: HelmetOptions): string {
   const p = helmetParts(options);
   return wrapSvg({ id: p.id, w: p.w, h: p.h, width: p.size, title: p.title, defs: p.defs, body: p.body });

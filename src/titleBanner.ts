@@ -8,9 +8,41 @@ import { LANGUAGE_IDS, LOOK_IDS, type LanguageId, type LookId } from "./options.
 import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 
+/**
+ * The kinds of championship banner.
+ *
+ * @example
+ * ```ts
+ * import { TITLE_BANNER_KINDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(TITLE_BANNER_KINDS.length, TITLE_BANNER_KINDS[0]);
+ * ```
+ */
 export const TITLE_BANNER_KINDS = ["pennant", "garden"] as const;
+/**
+ * The kind of championship banner.
+ *
+ * @example
+ * ```ts
+ * import { TITLE_BANNER_KINDS, type TitleBannerKind } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: TitleBannerKind | undefined = TITLE_BANNER_KINDS[0];
+ * console.log(first);
+ * ```
+ */
 export type TitleBannerKind = (typeof TITLE_BANNER_KINDS)[number];
 
+/**
+ * A championship banner: kind, colours, club, title and years.
+ *
+ * @example
+ * ```ts
+ * import { renderTitleBanner, type TitleBannerOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: TitleBannerOptions = { kind: "garden", colors: ["#192168", "#ffffff"], club: "Reds", title: "Champions", years: [2019, 2021] };
+ * console.log(renderTitleBanner(options).startsWith("<svg"));
+ * ```
+ */
 export interface TitleBannerOptions {
   /** `"pennant"` (the default): hangs from a rod with gold knobs. `"garden"`: a vertical flag from a pole, with a stars bar. */
   kind?: TitleBannerKind;
@@ -40,7 +72,18 @@ export interface TitleBannerOptions {
 
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T => (typeof v === "string" && (list as readonly string[]).includes(v) ? (v as T) : fallback);
 
-/** Split championship years into one or two lines of space-separated years. */
+/**
+ * Split championship years into one or two lines of space-separated years.
+ *
+ * @param years - the years, as text or a list
+ * @returns one or two lines of years, separated by spaces; an empty list for none
+ * @example
+ * ```ts
+ * import { yearLines } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(yearLines([1999, 2001, 2004]));
+ * ```
+ */
 export function yearLines(years: TitleBannerOptions["years"]): string[] {
   const raw = Array.isArray(years) ? years.map((y) => String(y)) : typeof years === "string" ? years.split(/[\s,;/]+/) : [];
   const list = raw.map((y) => y.replace(/\D/g, "").slice(0, 4)).filter((y) => y.length === 4);
@@ -98,6 +141,18 @@ function starPath(cx: number, cy: number, r: number): string {
 const gold: Rgb = [212, 175, 55];
 const rod: Rgb = [28, 28, 28];
 
+/**
+ * A championship banner as an SVG document: a pennant or a garden banner with the club, the title and the years.
+ *
+ * @param options - the banner: its kind, colours, city, club, title and years
+ * @returns an SVG document of the banner
+ * @example
+ * ```ts
+ * import { renderTitleBanner } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(renderTitleBanner({ colors: ["#192168", "#ffffff"], club: "Reds", title: "Champions", years: [2019, 2021] }).startsWith("<svg"));
+ * ```
+ */
 export function renderTitleBanner(options?: TitleBannerOptions): string {
   const o: TitleBannerOptions = options !== null && typeof options === "object" ? options : {};
   const kind = pick(TITLE_BANNER_KINDS, o.kind, "pennant");

@@ -8,7 +8,19 @@ import type { BeltBars, BeltTipStyle, JudogiBeltStyle } from "./judogiStripes.ts
 
 const NAMED: readonly string[] = ["white", "yellow", "orange", "green", "blue", "brown", "black", "red"];
 
-/** The `belt` and `beltStyle` that draw a grade. */
+/**
+ * The `belt` and `beltStyle` that draw a grade.
+ *
+ * @param grade - a grade of a belt system
+ * @returns the `belt` and `beltStyle` that draw the grade
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS, gradeBelt } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const grade = BELT_SYSTEMS[0]?.grades[0];
+ * console.log(grade ? gradeBelt(grade) : undefined);
+ * ```
+ */
 export function gradeBelt(grade: BeltGrade): { belt: JudogiBelt; beltStyle: JudogiBeltStyle } {
   const style: JudogiBeltStyle = {};
   const [first, second] = grade.body as readonly BeltColour[];

@@ -9,17 +9,77 @@ import { readThread, satinDefs, satinRun, satinShape, satinStroke, type ThreadCo
 import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
 
+/**
+ * The shapes of a patch.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_SHAPES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_SHAPES.length, PATCH_SHAPES[0]);
+ * ```
+ */
 export const PATCH_SHAPES = ["rectangle", "rounded", "circle", "shield", "custom"] as const;
+/**
+ * The shape of a patch.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_SHAPES, type PatchShape } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatchShape | undefined = PATCH_SHAPES[0];
+ * console.log(first);
+ * ```
+ */
 export type PatchShape = (typeof PATCH_SHAPES)[number];
 
-/** The generic placeholder art a patch may carry: nobody's badge. */
+/**
+ * The generic placeholder art a patch may carry: nobody's badge.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_ARTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_ARTS.length, PATCH_ARTS[0]);
+ * ```
+ */
 export const PATCH_ARTS = ["star", "chevrons", "rings", "wave", "diamond", "bolt"] as const;
+/**
+ * The placeholder art on a patch.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_ARTS, type PatchArt } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatchArt | undefined = PATCH_ARTS[0];
+ * console.log(first);
+ * ```
+ */
 export type PatchArt = (typeof PATCH_ARTS)[number];
 
-/** The most characters a patch's lettering has. */
+/**
+ * The most characters a patch's lettering has.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_TEXT_MAX } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_TEXT_MAX);
+ * ```
+ */
 export const PATCH_TEXT_MAX = 14;
 
-/** What a person asks of one patch: every field but the zone is optional. */
+/**
+ * What a person asks of one patch: every field but the zone is optional.
+ *
+ * @example
+ * ```ts
+ * import type { BjjPatch } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const patch: BjjPatch = { zone: "back", widthCm: 20, text: "TEAM" };
+ * console.log(patch);
+ * ```
+ */
 export interface BjjPatch {
   /** Where it is sewn: one of `BJJ_ZONES`. */
   zone: string;

@@ -10,11 +10,64 @@ import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 import { drawRun, layout } from "./text.ts";
 
+/**
+ * The shapes of a retired-number banner.
+ *
+ * @example
+ * ```ts
+ * import { BANNER_SHAPES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BANNER_SHAPES.length, BANNER_SHAPES[0]);
+ * ```
+ */
 export const BANNER_SHAPES = ["rectangle", "pennant", "shield"] as const;
+/**
+ * The shape of a banner.
+ *
+ * @example
+ * ```ts
+ * import { BANNER_SHAPES, type BannerShape } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BannerShape | undefined = BANNER_SHAPES[0];
+ * console.log(first);
+ * ```
+ */
 export type BannerShape = (typeof BANNER_SHAPES)[number];
+/**
+ * How a retired-number banner hangs.
+ *
+ * @example
+ * ```ts
+ * import { BANNER_KINDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BANNER_KINDS.length, BANNER_KINDS[0]);
+ * ```
+ */
 export const BANNER_KINDS = ["rafter", "hanging"] as const;
+/**
+ * How a banner hangs.
+ *
+ * @example
+ * ```ts
+ * import { BANNER_KINDS, type BannerKind } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BannerKind | undefined = BANNER_KINDS[0];
+ * console.log(first);
+ * ```
+ */
 export type BannerKind = (typeof BANNER_KINDS)[number];
 
+/**
+ * A retired-number banner: shape, kind, colours, number, name and years.
+ *
+ * @example
+ * ```ts
+ * import { renderBanner, type BannerOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: BannerOptions = { shape: "pennant", kind: "rafter", colors: ["#af1e2d", "#ffffff"], number: 9, name: "RICHARD", years: "1944-60" };
+ * console.log(renderBanner(options).startsWith("<svg"));
+ * ```
+ */
 export interface BannerOptions {
   shape?: BannerShape;
   /** `"rafter"` (the default): a pennant from the rafters, with an optional sweater. `"hanging"`: last name, number and a caller-supplied logo, no years. */
@@ -40,7 +93,18 @@ export interface BannerOptions {
 
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T => (typeof v === "string" && (list as readonly string[]).includes(v) ? (v as T) : fallback);
 
-/** An image `href` from a caller-supplied logo, or `undefined` when the value is not a safe SVG, data address, or http(s)/root-relative URL. */
+/**
+ * An image `href` from a caller-supplied logo, or `undefined` when the value is not a safe SVG, data address, or http(s)/root-relative URL.
+ *
+ * @param value - an image address from the caller, or anything else
+ * @returns the address when it is a safe SVG or a data or https image, and `undefined` when it is not
+ * @example
+ * ```ts
+ * import { logoHref } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(logoHref("javascript:alert(1)"), logoHref(12));
+ * ```
+ */
 export function logoHref(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const text = value.trim();
@@ -62,6 +126,18 @@ const markAt = (text: string, cx: number, cy: number, h: number, w: number, weig
   return drawRun(run, fill, outline, undefined);
 };
 
+/**
+ * A retired-number banner as an SVG document: a rectangle, a pennant or a shield, hung from the rafters or in a hall.
+ *
+ * @param options - the banner: its shape, colours, number, name and years
+ * @returns an SVG document of the banner
+ * @example
+ * ```ts
+ * import { renderBanner } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(renderBanner({ colors: ["#af1e2d", "#ffffff"], number: 9, name: "RICHARD" }).startsWith("<svg"));
+ * ```
+ */
 export function renderBanner(options?: BannerOptions): string {
   const o: BannerOptions = options !== null && typeof options === "object" ? options : {};
   const kind = pick(BANNER_KINDS, o.kind, "rafter");

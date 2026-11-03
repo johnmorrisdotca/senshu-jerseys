@@ -5,7 +5,18 @@ export type Rgb = readonly [number, number, number];
 
 const clamp = (n: number): number => Math.max(0, Math.min(255, Math.round(n)));
 
-/** A colour read from a string, or `undefined` when it is not `#rgb`, `#rrggbb` or `rgb(r, g, b)`. */
+/**
+ * A colour read from a string, or `undefined` when it is not `#rgb`, `#rrggbb` or `rgb(r, g, b)`.
+ *
+ * @param value - a colour as text, or anything else
+ * @returns the colour as red, green and blue, or `undefined` when it is not `#rgb`, `#rrggbb` or `rgb(r, g, b)`
+ * @example
+ * ```ts
+ * import { readColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(readColour("#af1e2d"), readColour("red"));
+ * ```
+ */
 export function readColour(value: unknown): Rgb | undefined {
   if (typeof value !== "string") return undefined;
   const text = value.trim().toLowerCase();
@@ -33,7 +44,19 @@ const channel = (v: number): number => {
 /** Relative luminance, 0 (black) to 1 (white). */
 export const lum = (c: Rgb): number => 0.2126 * channel(c[0]) + 0.7152 * channel(c[1]) + 0.0722 * channel(c[2]);
 
-/** The WCAG contrast ratio of two colours, 1 to 21. */
+/**
+ * The WCAG contrast ratio of two colours, 1 to 21.
+ *
+ * @param a - one colour as red, green and blue
+ * @param b - the other colour
+ * @returns the ratio, from 1 (the same) to 21 (black on white)
+ * @example
+ * ```ts
+ * import { contrast } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(contrast([0, 0, 0], [255, 255, 255]));
+ * ```
+ */
 export function contrast(a: Rgb, b: Rgb): number {
   const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);

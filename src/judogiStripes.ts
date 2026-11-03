@@ -15,8 +15,28 @@ const CM = 2.63;
 /** How far each hanging end runs from where it leaves the knot to its cut end, in drawing units: the left (the picture's) and the right. */
 export const END_LENGTH = [65.97, 60.52] as const;
 
-/** The colours a stripe may be: the belt colours and a few more, or any `#rrggbb`. */
+/**
+ * The colours a stripe may be: the belt colours and a few more, or any `#rrggbb`.
+ *
+ * @example
+ * ```ts
+ * import { STRIPE_COLOURS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(STRIPE_COLOURS.length, STRIPE_COLOURS[0]);
+ * ```
+ */
 export const STRIPE_COLOURS = ["white", "yellow", "orange", "green", "blue", "brown", "black", "red", "grey", "purple", "gold", "silver"] as const;
+/**
+ * The colour of a belt stripe.
+ *
+ * @example
+ * ```ts
+ * import { STRIPE_COLOURS, type StripeColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: StripeColour | undefined = STRIPE_COLOURS[0];
+ * console.log(first);
+ * ```
+ */
 export type StripeColour = (typeof STRIPE_COLOURS)[number];
 
 const EXTRA_RGB: Record<string, Rgb> = { grey: [138, 140, 146], purple: [104, 52, 140], gold: [201, 160, 48], silver: [196, 199, 206] };
@@ -30,7 +50,17 @@ export function stripeHex(colour: unknown): string | undefined {
   return /^#[0-9a-f]{6}$/.test(c) ? c : undefined;
 }
 
-/** A stripe running the length of the belt. */
+/**
+ * A stripe running the length of the belt.
+ *
+ * @example
+ * ```ts
+ * import type { BeltAlong } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const stripe: BeltAlong = { colour: "white", at: "centre", widthCm: 1 };
+ * console.log(stripe);
+ * ```
+ */
 export interface BeltAlong {
   colour: string;
   /** Where across the belt: its `centre` (the default), the two `edges`, the `top` or `bottom` edge, or a number from 0 (the top edge) to 1 (the bottom). */
@@ -39,7 +69,17 @@ export interface BeltAlong {
   widthCm?: number;
 }
 
-/** Bars across the belt, a number of them near a cut end. */
+/**
+ * Bars across the belt, a number of them near a cut end.
+ *
+ * @example
+ * ```ts
+ * import type { BeltBars } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const bars: BeltBars = { colour: "white", ends: "both", count: 2 };
+ * console.log(bars);
+ * ```
+ */
 export interface BeltBars {
   colour: string;
   /** Which hanging ends carry them: `both` (the default), `left` or `right` as seen from the front. */
@@ -53,7 +93,17 @@ export interface BeltBars {
   fromEndCm?: number;
 }
 
-/** A block of one colour over the last part of an end, with bars across it if asked: a rank bar's tip. */
+/**
+ * A block of one colour over the last part of an end, with bars across it if asked: a rank bar's tip.
+ *
+ * @example
+ * ```ts
+ * import type { BeltTipStyle } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const tip: BeltTipStyle = { colour: "black", lengthCm: 10, bars: { colour: "white", count: 2 } };
+ * console.log(tip);
+ * ```
+ */
 export interface BeltTipStyle {
   colour: string;
   /** Which ends (`both` by default) and how long a block, centimetres (6 by default). */
@@ -69,6 +119,14 @@ export interface BeltTipStyle {
  * A degree in Roman numerals stitched across one end, as the ITF's black belts show it: "in gold coloured Roman Numerals, positioned transversally across one end of the
  * belt" (ITF Umpire Rules, Appendix 2, Approved Clothing, in force January 1st, 2015). The numerals read across the belt with their tops toward the knot, so they stand upright
  * on an end that hangs. Drawn as the package's own straight satin strokes (I, V and X need no font).
+ *
+ * @example
+ * ```ts
+ * import type { BeltNumeral } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const numeral: BeltNumeral = { value: 3, colour: "gold", end: "right" };
+ * console.log(numeral);
+ * ```
  */
 export interface BeltNumeral {
   /** The degree, 1 to 10 (I to X). */
@@ -81,7 +139,17 @@ export interface BeltNumeral {
   fromEndCm?: number;
 }
 
-/** Everything that can be drawn on a belt's cloth besides its colour and the embroidery. Every part is optional and they combine. */
+/**
+ * Everything that can be drawn on a belt's cloth besides its colour and the embroidery. Every part is optional and they combine.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiBeltStyle } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const style: JudogiBeltStyle = { base: "red", alternate: "white", numeral: { value: 2 } };
+ * console.log(style);
+ * ```
+ */
 export interface JudogiBeltStyle {
   /** The belt's own colour where it is none of the grade colours (a jiu-jitsu kid's grey, a purple belt): a colour name or `#rrggbb`, taking the place of `belt`'s. */
   base?: string;
@@ -163,7 +231,18 @@ export function readStyle(style: JudogiBeltStyle | undefined): ReadStyle | undef
   return { base, alternate, split, along, bars, tip, ...(numeral === undefined ? {} : { numeral }) };
 }
 
-/** A number 1 to 10 in Roman numerals. */
+/**
+ * A number 1 to 10 in Roman numerals.
+ *
+ * @param v - a number from 1 to 10
+ * @returns the Roman numerals; `I` for a number out of range
+ * @example
+ * ```ts
+ * import { roman } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(roman(4), roman(10));
+ * ```
+ */
 export function roman(v: number): string {
   return ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][v] ?? "I";
 }
@@ -279,7 +358,17 @@ function marks(style: ReadStyle | undefined, end: 0 | 1, half: number, bleed: nu
 const rgbOf = (hex: string): Rgb => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 const n = (v: number): string => String(Math.round(v * 100) / 100);
 
-/** A named, real-world arrangement: the belt it goes on and its style. `source` names the page in docs/judogi.md that backs it. */
+/**
+ * A named, real-world arrangement: the belt it goes on and its style. `source` names the page in docs/judogi.md that backs it.
+ *
+ * @example
+ * ```ts
+ * import { BELT_PRESETS, type BeltPreset } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BeltPreset | undefined = BELT_PRESETS[0];
+ * console.log(first?.id, first?.system);
+ * ```
+ */
 export interface BeltPreset {
   id: string;
   label: string;
@@ -317,7 +406,16 @@ const itfDan = (n: number, junior = false): BeltPreset => ({
   style: { numeral: { value: n }, ...(junior ? { along: [{ colour: "white", widthCm: 1 }] } : {}) }, system: "ITF black belts (degree in gold Roman numerals)", source: "itf-app2", art: "taekwondo", tie: ITF_TIE,
 });
 
-/** The common real systems, by id. The designer fills its controls from one, and `renderJudogi({ belt, beltStyle })` takes the same pair. */
+/**
+ * The common real systems, by id. The designer fills its controls from one, and `renderJudogi({ belt, beltStyle })` takes the same pair.
+ *
+ * @example
+ * ```ts
+ * import { BELT_PRESETS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_PRESETS.length);
+ * ```
+ */
 export const BELT_PRESETS: readonly BeltPreset[] = [
   // Judo Canada's half grades (6+, 5+, 4+, 3+, 2+): the next grade's colour beside the one held.
   half("white", "yellow", "White-yellow (6+)", "Judo Canada kyu", "judo-canada"),
@@ -358,5 +456,17 @@ export const BELT_PRESETS: readonly BeltPreset[] = [
   { id: "wt-dan-bars-3", label: "Taekwondo: black, three gold bars (3rd dan)", belt: "black", style: { bars: [{ colour: "gold", count: 3, ends: "left", widthCm: 0.6, gapCm: 0.5, fromEndCm: 4 }] }, system: "Taekwondo dan bars (a lead)", source: "chart-arts", art: "taekwondo", tie: WT_TIE },
 ];
 
-/** The preset of an id, or undefined. */
+/**
+ * The preset of an id, or undefined.
+ *
+ * @param id - a preset's id
+ * @returns the preset, or `undefined` when there is none of that id
+ * @example
+ * ```ts
+ * import { BELT_PRESETS, beltPreset } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first = BELT_PRESETS[0];
+ * console.log(first ? beltPreset(first.id)?.label : undefined, beltPreset("none"));
+ * ```
+ */
 export const beltPreset = (id: string): BeltPreset | undefined => BELT_PRESETS.find((p) => p.id === id);

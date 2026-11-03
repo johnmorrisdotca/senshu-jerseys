@@ -7,6 +7,16 @@ import { band, fold, smooth, toneOf, type BeltPaint, type Face, type Tone } from
 import { n2, poly, type Pt } from "./path.ts";
 import { END_LENGTH_25, tieEnds, wrapsOf, type BeltTie } from "./beltTie.ts";
 
+/**
+ * The colour of each belt, as red, green and blue.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_BELT_RGB } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(JUDOGI_BELT_RGB));
+ * ```
+ */
 export const BELT_RGB: Record<string, Rgb> = {
   white: [244, 242, 234],
   yellow: [232, 196, 16],

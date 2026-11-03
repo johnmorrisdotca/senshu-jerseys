@@ -9,11 +9,32 @@ import { n2 } from "./path.ts";
 import { wrapSvg } from "./svg.ts";
 import { drawRun, layout } from "./text.ts";
 
-/** A side in a matchup: the shirt's options, and the name under it. */
+/**
+ * A side in a matchup: the shirt's options, and the name under it.
+ *
+ * @example
+ * ```ts
+ * import type { KitSide } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const side: KitSide = { cut: "soccer", colors: ["#af1e2d", "#ffffff"], label: "Home" };
+ * console.log(side.label);
+ * ```
+ */
 export interface KitSide extends JerseyOptions {
   label?: string;
 }
 
+/**
+ * A match-up: the away and home shirts, the view and the words between.
+ *
+ * @example
+ * ```ts
+ * import { kitMatchup, type MatchupOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: MatchupOptions = { away: { cut: "soccer", colors: ["#ffffff", "#192168"] }, home: { cut: "soccer", colors: ["#af1e2d", "#ffffff"] }, versus: "v" };
+ * console.log(kitMatchup(options).startsWith("<svg"));
+ * ```
+ */
 export interface MatchupOptions {
   away?: KitSide;
   home?: KitSide;
@@ -28,7 +49,20 @@ export interface MatchupOptions {
   title?: string;
 }
 
-/** True when two shirts are too alike to tell apart: their body colours read at under `limit` to 1 of each other and neither is clearly lighter. */
+/**
+ * True when two shirts are too alike to tell apart: their body colours read at under `limit` to 1 of each other and neither is clearly lighter.
+ *
+ * @param a - one shirt
+ * @param b - the other shirt
+ * @param limit - the contrast, 1 to 21, under which they clash
+ * @returns `true` when the two shirts' body colours read as too alike to tell apart
+ * @example
+ * ```ts
+ * import { kitClash } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(kitClash({ colors: ["#ff0000"] }, { colors: ["#fa0505"] }));
+ * ```
+ */
 export function kitClash(a: JerseyOptions, b: JerseyOptions, limit = 1.6): boolean {
   const ra = resolve(a);
   const rb = resolve(b);
@@ -46,6 +80,19 @@ function caption(text: string, cx: number, cy: number, h: number, w: number): st
   return drawRun(run, "currentColor", undefined, undefined);
 }
 
+/**
+ * Two teams' shirts side by side with the names under them, as one SVG document.
+ *
+ * @param options - the away and home shirts, the view and the words between them
+ * @returns an SVG document of the match-up
+ * @example
+ * ```ts
+ * import { kitMatchup } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const svg = kitMatchup({ away: { cut: "soccer", colors: ["#ffffff", "#192168"], label: "Away" }, home: { cut: "soccer", colors: ["#af1e2d", "#ffffff"], label: "Home" } });
+ * console.log(svg.startsWith("<svg"));
+ * ```
+ */
 export function kitMatchup(options?: MatchupOptions): string {
   const o: MatchupOptions = options !== null && typeof options === "object" ? options : {};
   const view = o.view === "back" || o.view === "both" ? o.view : "front";
@@ -85,6 +132,17 @@ export function kitMatchup(options?: MatchupOptions): string {
   return wrapSvg({ id: `sk${hashOf(JSON.stringify(overlap > 0 ? [sides, view, versus, overlap] : [sides, view, versus]))}`, w: W, h: H, width: size, title, defs, body });
 }
 
+/**
+ * One player in a lineup: the shirt's options with a name and a role.
+ *
+ * @example
+ * ```ts
+ * import type { LineupPlayer } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const player: LineupPlayer = { number: 9, name: "Striker", role: "forward" };
+ * console.log(player);
+ * ```
+ */
 export interface LineupPlayer extends JerseyOptions {
   number?: string | number;
   name?: string;
@@ -92,6 +150,17 @@ export interface LineupPlayer extends JerseyOptions {
   role?: string;
 }
 
+/**
+ * How a lineup is laid out: rows or a formation, the shirt, the labels and the field.
+ *
+ * @example
+ * ```ts
+ * import type { LineupOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: LineupOptions = { formation: "4-4-2", jersey: { cut: "soccer", colors: ["#192168", "#ffffff"] }, labels: "number", field: true };
+ * console.log(options.formation);
+ * ```
+ */
 export interface LineupOptions {
   /** How many players in each row, from the top row down: `[2, 4, 4, 1]`. */
   rows?: readonly number[];
@@ -111,13 +180,38 @@ export interface LineupOptions {
   title?: string;
 }
 
-/** The row lengths a formation string means, top row first: `"4-4-2"` is `[2, 4, 4, 1]`. */
+/**
+ * The row lengths a formation string means, top row first: `"4-4-2"` is `[2, 4, 4, 1]`.
+ *
+ * @param formation - a formation such as `4-4-2`
+ * @returns the row lengths, top row first, with the keeper last; `undefined` when the text is not a formation
+ * @example
+ * ```ts
+ * import { formationRows } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(formationRows("4-4-2"), formationRows("x"));
+ * ```
+ */
 export function formationRows(formation: string): number[] | undefined {
   const parts = formation.split("-").map((p) => Number(p));
   if (parts.length < 2 || parts.length > 6 || parts.some((n) => !Number.isInteger(n) || n < 1 || n > 6)) return undefined;
   return [...parts].reverse().concat([1]);
 }
 
+/**
+ * A team's players laid out on a field in rows, each in their own shirt, as one SVG document.
+ *
+ * @param players - the players, each with a number, a name and a role
+ * @param options - the rows or formation, the shirt they share, the labels and the size
+ * @returns an SVG document of the lineup
+ * @example
+ * ```ts
+ * import { jerseyLineup } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const svg = jerseyLineup([{ number: 1, name: "Keeper" }, { number: 9, name: "Striker" }], { formation: "1-1", jersey: { cut: "soccer", colors: ["#192168", "#ffffff"] } });
+ * console.log(svg.startsWith("<svg"));
+ * ```
+ */
 export function jerseyLineup(players: readonly LineupPlayer[], options?: LineupOptions): string {
   const o: LineupOptions = options !== null && typeof options === "object" ? options : {};
   const list = Array.isArray(players) ? players.filter((p) => typeof p === "object" && p !== null).slice(0, 40) : [];

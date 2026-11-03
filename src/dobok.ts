@@ -30,12 +30,65 @@ import { hemOf, hipOutline, hipsOf, onLeg } from "./judogiPants.ts";
 import { n2, poly, type Pt } from "./path.ts";
 import { drawRun, layout } from "./text.ts";
 
+/**
+ * The cuts of a dobok: the World Taekwondo's and the ITF's.
+ *
+ * @example
+ * ```ts
+ * import { DOBOK_CUTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(DOBOK_CUTS.length, DOBOK_CUTS[0]);
+ * ```
+ */
 export const DOBOK_CUTS = ["wt", "itf"] as const;
+/**
+ * The cut of a dobok.
+ *
+ * @example
+ * ```ts
+ * import { DOBOK_CUTS, type DobokCut } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: DobokCut | undefined = DOBOK_CUTS[0];
+ * console.log(first);
+ * ```
+ */
 export type DobokCut = (typeof DOBOK_CUTS)[number];
 
+/**
+ * The grades a dobok is cut for: `kup` (colour belts), `poom` (junior black) and `dan` (black).
+ *
+ * @example
+ * ```ts
+ * import { DOBOK_GRADES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(DOBOK_GRADES.length, DOBOK_GRADES[0]);
+ * ```
+ */
 export const DOBOK_GRADES = ["kup", "poom", "dan"] as const;
+/**
+ * The grade a dobok is cut for.
+ *
+ * @example
+ * ```ts
+ * import { DOBOK_GRADES, type DobokGrade } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: DobokGrade | undefined = DOBOK_GRADES[0];
+ * console.log(first);
+ * ```
+ */
 export type DobokGrade = (typeof DOBOK_GRADES)[number];
 
+/**
+ * A dobok: its cut, grade, lettering and flags.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiDobok } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const dobok: JudogiDobok = { cut: "wt", grade: "dan", dan: 2 };
+ * console.log(dobok);
+ * ```
+ */
 export interface JudogiDobok {
   /** `wt` (the default): the pullover with a V-neck. `itf`: the jacket that wraps left over right and ties at the side. */
   cut?: DobokCut;

@@ -1,7 +1,18 @@
 import { CUT_NAMES, TITLE_WORDS } from "./names.ts";
 import type { Resolved } from "./options.ts";
 
-/** The accessible title of a jersey: the cut, the number and the view, in the language asked for. */
+/**
+ * The accessible title of a jersey: the cut, the number and the view, in the language asked for.
+ *
+ * @param r - the jersey's resolved options
+ * @returns the title, in the language of the options
+ * @example
+ * ```ts
+ * import { jerseyBox, titleOf } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(typeof titleOf, jerseyBox("hockey").w);
+ * ```
+ */
 export function titleOf(r: Resolved): string {
   if (r.title !== undefined) return r.title;
   const w = TITLE_WORDS[r.language];

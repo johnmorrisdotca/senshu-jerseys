@@ -36,10 +36,28 @@ const HEM = 262;
 /**
  * How far above the outer ankle bone the trousers' hem stops, in centimetres. The IJF's rule is a limit: no more than 5 cm (the default, the drawing as it always was);
  * the IBJJF's is no more than 2 cm. `min` and `max` bound what is drawn: 2 cm is the longest the drawing's box holds, 10 cm a cropped leg.
+ *
+ * @example
+ * ```ts
+ * import { PANTS_HEM_CM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(PANTS_HEM_CM));
+ * ```
  */
 export const PANTS_HEM_CM = { min: 2, max: 10, default: 5, ijf: 5, ibjjf: 2 } as const;
 
-/** A hem height from outside, brought into range; the default when it is not a number. */
+/**
+ * A hem height from outside, brought into range; the default when it is not a number.
+ *
+ * @param v - a height in centimetres, or anything else
+ * @returns the height held to the allowed range; the default when it is not a number
+ * @example
+ * ```ts
+ * import { pantsHemCm } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(pantsHemCm(30), pantsHemCm("x"));
+ * ```
+ */
 export const pantsHemCm = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(PANTS_HEM_CM.min, Math.min(PANTS_HEM_CM.max, v)) : PANTS_HEM_CM.default);
 
 /** The y of the hem for a hem `cm` above the ankle bone: the default's 262, a centimetre higher or lower moving it by one centimetre of the drawing. */

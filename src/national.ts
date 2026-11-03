@@ -5,18 +5,78 @@ import { clean, type Rgb } from "./colour.ts";
 import type { CutSpec } from "./cuts.ts";
 import { n2, type Pt } from "./path.ts";
 
+/**
+ * The layouts of a national mark on the chest.
+ *
+ * @example
+ * ```ts
+ * import { NATIONAL_LAYOUTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(NATIONAL_LAYOUTS.length, NATIONAL_LAYOUTS[0]);
+ * ```
+ */
 export const NATIONAL_LAYOUTS = ["quadrant", "diagonal", "centred", "arched", "serrated", "stepped", "wordmark", "flag"] as const;
+/**
+ * A layout of a national mark.
+ *
+ * @example
+ * ```ts
+ * import { NATIONAL_LAYOUTS, type NationalLayout } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: NationalLayout | undefined = NATIONAL_LAYOUTS[0];
+ * console.log(first);
+ * ```
+ */
 export type NationalLayout = (typeof NATIONAL_LAYOUTS)[number];
 
-/** The countries that have a mark and a flag, in the order the style sheet shows them. */
+/**
+ * The countries that have a mark and a flag, in the order the style sheet shows them.
+ *
+ * @example
+ * ```ts
+ * import { NATIONAL_COUNTRIES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(NATIONAL_COUNTRIES.length, NATIONAL_COUNTRIES[0]);
+ * ```
+ */
 export const NATIONAL_COUNTRIES = ["canada", "usa", "sweden", "finland", "czechia", "slovakia", "switzerland", "germany", "latvia", "norway", "japan", "france"] as const;
+/**
+ * A country that has a mark and a flag.
+ *
+ * @example
+ * ```ts
+ * import { NATIONAL_COUNTRIES, type NationalCountry } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: NationalCountry | undefined = NATIONAL_COUNTRIES[0];
+ * console.log(first);
+ * ```
+ */
 export type NationalCountry = (typeof NATIONAL_COUNTRIES)[number];
 
-/** The way the diagonal layout's name runs: `down` (the default) starts high on the chest and runs down toward the hem, `up` rises from the lower left to the upper right. */
+/**
+ * The way the diagonal layout's name runs: `down` (the default) starts high on the chest and runs down toward the hem, `up` rises from the lower left to the upper right.
+ *
+ * @example
+ * ```ts
+ * import { NATIONAL_DIRECTIONS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(NATIONAL_DIRECTIONS.length, NATIONAL_DIRECTIONS[0]);
+ * ```
+ */
 export const NATIONAL_DIRECTIONS = ["down", "up"] as const;
 export type NationalDirection = (typeof NATIONAL_DIRECTIONS)[number];
 
-/** What a caller may say: `"canada:diagonal"` (or `"canada:diagonal:up"`), or the country, the layout, the direction of the diagonal and the words to set (the country's own name by default). */
+/**
+ * What a caller may say: `"canada:diagonal"` (or `"canada:diagonal:up"`), or the country, the layout, the direction of the diagonal and the words to set (the country's own name by default).
+ *
+ * @example
+ * ```ts
+ * import type { NationalOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: NationalOptions = "canada:diagonal:up";
+ * console.log(value);
+ * ```
+ */
 export type NationalOptions = string | { country?: string; layout?: string; direction?: string; text?: string };
 
 /** The layout, read. */
@@ -27,7 +87,16 @@ export interface NationalR {
   text: string;
 }
 
-/** The words set on the chest, by country. */
+/**
+ * The words set on the chest, by country.
+ *
+ * @example
+ * ```ts
+ * import { NATIONAL_NAMES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(NATIONAL_NAMES).length);
+ * ```
+ */
 export const NATIONAL_NAMES: Readonly<Record<NationalCountry, string>> = {
   canada: "CANADA", usa: "USA", sweden: "SWEDEN", finland: "FINLAND", czechia: "CZECHIA", slovakia: "SLOVAKIA", switzerland: "SWITZERLAND", germany: "GERMANY", latvia: "LATVIA", norway: "NORWAY", japan: "JAPAN", france: "FRANCE",
 };

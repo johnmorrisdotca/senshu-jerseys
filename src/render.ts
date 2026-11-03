@@ -27,6 +27,16 @@ export function viewsOf(r: Resolved, emblems?: EmblemRenderer): { id: "front" | 
 /**
  * The jersey as an SVG document, in the box of its cut (`jerseyBox`): `size` is the width of the shirt's 200 units, so the document is `size` wide for a cut that fits them and a little wider for one whose sleeves
  * reach past, and a bit over twice that for both views. The box does not change with the sleeve, the look or a turn.
+ *
+ * @param options - the jersey: its cut, colours, pattern, number, name and the rest
+ * @returns an SVG document of the jersey
+ * @example
+ * ```ts
+ * import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const svg = renderJersey({ cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9, name: "TREMBLAY" });
+ * console.log(svg.startsWith("<svg"));
+ * ```
  */
 export function renderJersey(options?: JerseyOptions & RenderExtras): string {
   const r = resolve(options);

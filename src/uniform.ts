@@ -38,7 +38,18 @@ function hemBands(b: Bands, bottom: number, x0: number, x1: number, colour: (i: 
   return out;
 }
 
-/** The set's drawing as one SVG; `view` picks front, back, or (both) a column each. */
+/**
+ * The set's drawing as one SVG; `view` picks front, back, or (both) a column each.
+ *
+ * @param options - the set: the shirt's options, with `emblems` to draw a crest from its id
+ * @returns an SVG document of the set
+ * @example
+ * ```ts
+ * import { renderKit } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(renderKit({ cut: "soccer", colors: ["#192168", "#ffffff"], view: "both" }).startsWith("<svg"));
+ * ```
+ */
 export function renderKit(options?: JerseyOptions & { emblems?: EmblemRenderer }): string {
   const r: Resolved = resolve({ ...options, kit: true });
   const cols: ("front" | "back")[] = r.view === "both" ? ["front", "back"] : [r.view];

@@ -5,9 +5,41 @@ import { jerseyBox } from "./jersey.ts";
 import { resolve, type JerseyOptions } from "./options.ts";
 import { renderJersey } from "./render.ts";
 
+/**
+ * The kinds of embed `embedCode` writes.
+ *
+ * @example
+ * ```ts
+ * import { EMBED_KINDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(EMBED_KINDS.length, EMBED_KINDS[0]);
+ * ```
+ */
 export const EMBED_KINDS = ["element", "iframe", "module", "svg", "data"] as const;
+/**
+ * The kind of embed.
+ *
+ * @example
+ * ```ts
+ * import { EMBED_KINDS, type EmbedKind } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: EmbedKind | undefined = EMBED_KINDS[0];
+ * console.log(first);
+ * ```
+ */
 export type EmbedKind = (typeof EMBED_KINDS)[number];
 
+/**
+ * Where an embed points: the site and the CDN, and whether it can be turned or turns by itself.
+ *
+ * @example
+ * ```ts
+ * import { embedCode, type EmbedSettings } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const settings: EmbedSettings = { turnable: true, autoplay: true };
+ * console.log(embedCode({ cut: "hockey" }, "iframe", settings));
+ * ```
+ */
 export interface EmbedSettings {
   /** The address of the published demo, where `embed.html` is. */
   site?: string;
@@ -18,12 +50,45 @@ export interface EmbedSettings {
   autoplay?: boolean;
 }
 
+/**
+ * The address of the demo site, which hosts the embed page.
+ *
+ * @example
+ * ```ts
+ * import { SITE } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(SITE);
+ * ```
+ */
 export const SITE = "https://johnmorrisdotca.github.io/senshu-jerseys/";
+/**
+ * The CDN address the embed code loads the package from.
+ *
+ * @example
+ * ```ts
+ * import { CDN } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(CDN);
+ * ```
+ */
 export const CDN = "https://cdn.jsdelivr.net/npm/@johnmorrisdotca/senshu-jerseys@0";
 
 const attr = (k: string, v: string): string => `${k}="${esc(v)}"`;
 
-/** The text of one embed for a set of options. The `module` one imports the package; the `data` one is a `data:image/svg+xml` address for an `<img>`. */
+/**
+ * The text of one embed for a set of options. The `module` one imports the package; the `data` one is a `data:image/svg+xml` address for an `<img>`.
+ *
+ * @param o - the jersey options
+ * @param kind - `element`, `iframe`, `module`, `svg` or `data`
+ * @param s - the site and CDN to name, and whether it can be turned or turns by itself
+ * @returns the text to paste into a page
+ * @example
+ * ```ts
+ * import { embedCode } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(embedCode({ cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9 }, "iframe", {}));
+ * ```
+ */
 export function embedCode(o: JerseyOptions, kind: EmbedKind = "element", s: EmbedSettings = {}): string {
   const site = s.site ?? SITE;
   const cdn = s.cdn ?? CDN;

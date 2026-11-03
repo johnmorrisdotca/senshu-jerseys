@@ -11,10 +11,40 @@ import { satinDefs, satinRun, satinShape } from "./judogiThread.ts";
 import { n2, type Pt } from "./path.ts";
 import { layout } from "./text.ts";
 
-/** The brush kanji drawn here, offered for the brand's mark: 手 (te, "hand", the hand of 選手, an athlete), 力 (chikara, "strength") and 心 (kokoro, "heart, spirit"). */
+/**
+ * The brush kanji drawn here, offered for the brand's mark: 手 (te, "hand", the hand of 選手, an athlete), 力 (chikara, "strength") and 心 (kokoro, "heart, spirit").
+ *
+ * @example
+ * ```ts
+ * import { BRAND_KANJI } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BRAND_KANJI.length, BRAND_KANJI[0]);
+ * ```
+ */
 export const BRAND_KANJI = ["te", "chikara", "kokoro"] as const;
+/**
+ * A brand kanji.
+ *
+ * @example
+ * ```ts
+ * import { BRAND_KANJI, type BrandKanji } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BrandKanji | undefined = BRAND_KANJI[0];
+ * console.log(first);
+ * ```
+ */
 export type BrandKanji = (typeof BRAND_KANJI)[number];
 
+/**
+ * Each brand kanji with its reading and meaning in English.
+ *
+ * @example
+ * ```ts
+ * import { BRAND_KANJI_LABELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BRAND_KANJI_LABELS));
+ * ```
+ */
 export const BRAND_KANJI_LABELS: Record<BrandKanji, { char: string; en: string }> = {
   te: { char: "手", en: "Hand (as in 選手, an athlete)" },
   chikara: { char: "力", en: "Strength" },
@@ -110,7 +140,17 @@ export const kanjiPath = (k: BrandKanji): string => KANJI[k].map(brush).join("")
 const S_STROKE: Stroke = [[[78, 22], [58, 9], [32, 13], [22, 31], [38, 46], [62, 54], [79, 68], [71, 87], [46, 92], [22, 80]], [4, 11, 16, 15, 12, 12, 16, 16, 11, 4]];
 export const sPath = (): string => brush(S_STROKE);
 
-/** The brand as a person sets it. */
+/**
+ * The brand as a person sets it.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiBranding } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const branding: JudogiBranding = { name: "Senshu", kanji: "te", sizeTag: "A4" };
+ * console.log(branding);
+ * ```
+ */
 export interface JudogiBranding {
   /** The name on the labels, in Latin letters: SENSHU by default. */
   name?: string;

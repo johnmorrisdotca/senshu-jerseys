@@ -3,37 +3,262 @@ import { COLLAR_IDS, CUT_IDS, cutSpec, FIT_IDS, type CollarId, type CutId, type 
 import { clean, lum, readColour, type Rgb } from "./colour.ts";
 import { NATIONAL_TEXT, nationalOf, type NationalOptions, type NationalR } from "./national.ts";
 
+/**
+ * The patterns of a jersey's body.
+ *
+ * @example
+ * ```ts
+ * import { PATTERN_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATTERN_IDS.length, PATTERN_IDS[0]);
+ * ```
+ */
 export const PATTERN_IDS = ["solid", "stripes", "hoops", "halves", "quarters", "sash", "chevron", "pinstripes", "yoke", "chest-band"] as const;
+/**
+ * A pattern of the body.
+ *
+ * @example
+ * ```ts
+ * import { PATTERN_IDS, type PatternId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatternId | undefined = PATTERN_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type PatternId = (typeof PATTERN_IDS)[number];
+/**
+ * The yokes of a jersey.
+ *
+ * @example
+ * ```ts
+ * import { YOKE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(YOKE_IDS.length, YOKE_IDS[0]);
+ * ```
+ */
 export const YOKE_IDS = ["none", "curved", "square", "pointed", "full-arm"] as const;
+/**
+ * A yoke of a jersey.
+ *
+ * @example
+ * ```ts
+ * import { YOKE_IDS, type YokeId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: YokeId | undefined = YOKE_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type YokeId = (typeof YOKE_IDS)[number];
+/**
+ * How a jersey closes: buttons, over the head, or a vest.
+ *
+ * @example
+ * ```ts
+ * import { CLOSURE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(CLOSURE_IDS.length, CLOSURE_IDS[0]);
+ * ```
+ */
 export const CLOSURE_IDS = ["button", "pullover", "vest"] as const;
+/**
+ * How a jersey closes.
+ *
+ * @example
+ * ```ts
+ * import { CLOSURE_IDS, type ClosureId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: ClosureId | undefined = CLOSURE_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type ClosureId = (typeof CLOSURE_IDS)[number];
+/**
+ * Which side of the jersey to draw: the front, the back or both.
+ *
+ * @example
+ * ```ts
+ * import { VIEW_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(VIEW_IDS.length, VIEW_IDS[0]);
+ * ```
+ */
 export const VIEW_IDS = ["front", "back", "both"] as const;
+/**
+ * Which side of the jersey to draw.
+ *
+ * @example
+ * ```ts
+ * import { VIEW_IDS, type ViewId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: ViewId | undefined = VIEW_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type ViewId = (typeof VIEW_IDS)[number];
+/**
+ * How a drawing is rendered: as cloth, as flat colour or as line.
+ *
+ * @example
+ * ```ts
+ * import { LOOK_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(LOOK_IDS.length, LOOK_IDS[0]);
+ * ```
+ */
 export const LOOK_IDS = ["cloth", "flat", "line"] as const;
+/**
+ * How a drawing is rendered.
+ *
+ * @example
+ * ```ts
+ * import { LOOK_IDS, type LookId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: LookId | undefined = LOOK_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type LookId = (typeof LOOK_IDS)[number];
+/**
+ * How a name on the back is set: on an arch or straight.
+ *
+ * @example
+ * ```ts
+ * import { ARCH_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(ARCH_IDS.length, ARCH_IDS[0]);
+ * ```
+ */
 export const ARCH_IDS = ["arched", "straight"] as const;
+/**
+ * How a name is set on the back.
+ *
+ * @example
+ * ```ts
+ * import { ARCH_IDS, type ArchId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: ArchId | undefined = ARCH_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type ArchId = (typeof ARCH_IDS)[number];
+/**
+ * How the text on the chest runs.
+ *
+ * @example
+ * ```ts
+ * import { TEXT_ANGLE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(TEXT_ANGLE_IDS.length, TEXT_ANGLE_IDS[0]);
+ * ```
+ */
 export const TEXT_ANGLE_IDS = ["straight", "arch", "diagonal-up", "diagonal-down"] as const;
+/**
+ * How the text on the chest runs.
+ *
+ * @example
+ * ```ts
+ * import { TEXT_ANGLE_IDS, type TextAngleId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: TextAngleId | undefined = TEXT_ANGLE_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type TextAngleId = (typeof TEXT_ANGLE_IDS)[number];
+/**
+ * The old captain's patches: none, `C` or `A`.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_IDS.length, PATCH_IDS[0]);
+ * ```
+ */
 export const PATCH_IDS = ["", "C", "A"] as const;
+/**
+ * An old captain's patch.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_IDS, type PatchId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatchId | undefined = PATCH_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type PatchId = (typeof PATCH_IDS)[number];
-/** The plain shape of a badge spot: the licence patch an official wears on the chest, drawn empty. */
+/**
+ * The plain shape of a badge spot: the licence patch an official wears on the chest, drawn empty.
+ *
+ * @example
+ * ```ts
+ * import { BADGE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BADGE_IDS.length, BADGE_IDS[0]);
+ * ```
+ */
 export const BADGE_IDS = ["round", "shield", "square"] as const;
+/**
+ * The shape of a badge.
+ *
+ * @example
+ * ```ts
+ * import { BADGE_IDS, type BadgeId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BadgeId | undefined = BADGE_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type BadgeId = (typeof BADGE_IDS)[number];
+/**
+ * The languages of the titles and descriptions.
+ *
+ * @example
+ * ```ts
+ * import { LANGUAGE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(LANGUAGE_IDS.length, LANGUAGE_IDS[0]);
+ * ```
+ */
 export const LANGUAGE_IDS = ["en", "ja"] as const;
+/**
+ * A language of the titles and descriptions.
+ *
+ * @example
+ * ```ts
+ * import { LANGUAGE_IDS, type LanguageId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: LanguageId | undefined = LANGUAGE_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type LanguageId = (typeof LANGUAGE_IDS)[number];
 
 /**
  * Bands as a flat list of numbers read in pairs: a width in drawing units and a colour (0 the body, 1 the trim, 2 the second trim), from the edge they start at inward.
  * `[6, 0, 5, 1, 2, 2, 5, 1]` is a gap of 6, a band of 5, a thin line of 2 and a band of 5.
+ *
+ * @example
+ * ```ts
+ * import type { Bands } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: Bands = [10, 1, 10, 0];
+ * console.log(value);
+ * ```
  */
 export type Bands = readonly number[];
 
 /**
  * What one sleeve carries, in the wearer's own terms: `sleeveLeft` is the sleeve on the wearer's left arm (the picture's right in the front view and its left in the back view), `sleeveRight` the other.
  * A number or a patch is placed on the sleeve itself: in the turning view with volume it is drawn on the arm's surface and turns with it.
+ *
+ * @example
+ * ```ts
+ * import type { SleeveDetail } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const sleeve: SleeveDetail = { number: 9, size: 20, patch: "round", patchText: "C" };
+ * console.log(sleeve);
+ * ```
  */
 export interface SleeveDetail {
   /** The digits on this sleeve (up to two): the jersey's number when absent and `sleeveNumbers` asks for one, none when `false`. */
@@ -55,10 +280,31 @@ export interface SleeveDetail {
   patchOutline?: string;
 }
 
+/**
+ * The kinds of badge on the chest: a captain's `C`, an assistant's `A`, a patch or a flag.
+ *
+ * @example
+ * ```ts
+ * import { CHEST_KINDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(CHEST_KINDS.length, CHEST_KINDS[0]);
+ * ```
+ */
 export const CHEST_KINDS = ["C", "A", "patch", "flag"] as const;
 /** How a captain's C or A is drawn: the bare `letter` in a heavy block face with a thick outline, as it is sewn on a hockey sweater, or on a `disc`. */
 export const CAPTAIN_STYLES = ["letter", "disc"] as const;
 export type CaptainStyle = (typeof CAPTAIN_STYLES)[number];
+/**
+ * The kind of badge on the chest.
+ *
+ * @example
+ * ```ts
+ * import { CHEST_KINDS, type ChestKind } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: ChestKind | undefined = CHEST_KINDS[0];
+ * console.log(first);
+ * ```
+ */
 export type ChestKind = (typeof CHEST_KINDS)[number];
 
 /**
@@ -74,6 +320,17 @@ export interface SleeveTeeth {
   direction?: "shoulder" | "cuff";
 }
 
+/**
+ * A badge on the chest: a captain's letter, a flag or a patch.
+ *
+ * @example
+ * ```ts
+ * import type { ChestBadge } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const badge: ChestBadge = { kind: "C", side: "left" };
+ * console.log(badge);
+ * ```
+ */
 export interface ChestBadge {
   kind?: ChestKind;
   /** The wearer's side: the one the cut puts its C on by default. */
@@ -100,6 +357,17 @@ export interface ChestBadge {
   nudge?: boolean;
 }
 
+/**
+ * A jersey: its cut, colours, pattern, collar, number, name and everything else that can be drawn.
+ *
+ * @example
+ * ```ts
+ * import { renderJersey, type JerseyOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: JerseyOptions = { cut: "soccer", colors: ["#192168", "#ffffff"], pattern: "hoops", collar: "polo", number: 10, name: "PLAYER" };
+ * console.log(renderJersey(options).startsWith("<svg"));
+ * ```
+ */
 export interface JerseyOptions {
   cut?: CutId;
   /** `"mens"` (the default: straight, boxy) or `"womens"`: shorter in the body, narrower in the shoulders and sleeves, tapered at the waist, and every pattern, stripe and mark follows that outline, flat and in volume. */

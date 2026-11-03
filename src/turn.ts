@@ -11,6 +11,17 @@ import { esc } from "./colour.ts";
 import { n2 } from "./path.ts";
 import { applyVolume, cellsOf, volumeDesc, volumeDetails, volumeMarkup, type VolumeDesc } from "./volume.ts";
 
+/**
+ * A jersey to turn: the options of `renderJersey` with the angle, the thickness of the cloth, whether to draw it with depth and how far to tip it.
+ *
+ * @example
+ * ```ts
+ * import type { TurnOptions } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const options: TurnOptions = { cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9, yaw: 45, volume: true };
+ * console.log(options.yaw);
+ * ```
+ */
 export interface TurnOptions extends JerseyOptions {
   /** The turn about the vertical axis in degrees: 0 the front, 90 the edge, 180 the back. Any number; it is taken round. */
   yaw?: number;
@@ -30,14 +41,35 @@ const SLICES = 6;
 /** The shortest time between two frames of the automatic turn, in milliseconds (about sixty a second). */
 const MIN_FRAME_MS = 15;
 
-/** A turn taken into -180 up to 180; anything that is not a number is 0. */
+/**
+ * A turn taken into -180 up to 180; anything that is not a number is 0.
+ *
+ * @param yaw - an angle in degrees, or anything else
+ * @returns the angle from -180 up to 180; 0 when it is not a finite number
+ * @example
+ * ```ts
+ * import { normalYaw } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * console.log(normalYaw(270), normalYaw("x"));
+ * ```
+ */
 export function normalYaw(yaw: unknown): number {
   if (typeof yaw !== "number" || !Number.isFinite(yaw)) return 0;
   const t = ((((yaw + 180) % 360) + 360) % 360) - 180;
   return Object.is(t, -0) ? 0 : t;
 }
 
-/** What one angle looks like: which face shows, each face's matrix, how dark the foreshortened face is, and the matrix of each slice of the edge. */
+/**
+ * What one angle looks like: which face shows, each face's matrix, how dark the foreshortened face is, and the matrix of each slice of the edge.
+ *
+ * @example
+ * ```ts
+ * import { turnState, type TurnState } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const state: TurnState = turnState(60);
+ * console.log(state.front.visible, state.slab);
+ * ```
+ */
 export interface TurnState {
   yaw: number;
   front: { visible: boolean; matrix: string; shade: number };
@@ -47,6 +79,20 @@ export interface TurnState {
   slab: { x: number; width: number };
 }
 
+/**
+ * Where each part of a flat jersey is at one angle: which face shows, its matrix and shade, the matrices of the slices of the edge and the slab between.
+ *
+ * @param yawDeg - the angle in degrees, 0 the front and 180 the back
+ * @param thickness - how thick the cloth is, 0 to 40 (14 by default)
+ * @returns the state of the turn at that angle
+ * @example
+ * ```ts
+ * import { turnState } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const state = turnState(90);
+ * console.log(state.yaw, state.front.visible, state.slices.length);
+ * ```
+ */
 export function turnState(yawDeg: unknown, thickness = 14): TurnState {
   const yaw = normalYaw(yawDeg);
   const t = Math.max(0, Math.min(40, Number.isFinite(thickness) ? thickness : 14));
@@ -71,7 +117,19 @@ export function turnState(yawDeg: unknown, thickness = 14): TurnState {
   };
 }
 
-/** The jersey at one angle as an SVG document. */
+/**
+ * The jersey at one angle as an SVG document.
+ *
+ * @param options - the jersey as for `renderJersey`, with `yaw` (the angle in degrees), `thickness`, `volume` (a garment with depth) and `pitch`
+ * @returns an SVG document of the jersey at that angle
+ * @example
+ * ```ts
+ * import { jerseyFrame } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const svg = jerseyFrame({ cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9, yaw: 45 });
+ * console.log(svg.startsWith("<svg"));
+ * ```
+ */
 export function jerseyFrame(options?: TurnOptions): string {
   const o: TurnOptions = options !== null && typeof options === "object" ? options : {};
   const base = { ...o, view: "front" as const };
@@ -137,7 +195,23 @@ function volumeFrame(o: TurnOptions, rf: ReturnType<typeof resolve>, front: View
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${n2(box.x)} ${-up} ${n2(box.w)} ${JERSEY_HEIGHT + up + down}" width="${w}" height="${h}" role="img" aria-labelledby="${id}T" data-yaw="${n2(yaw)}" data-vol="${JSON.stringify(desc).replace(/"/g, "&quot;")}"><title id="${id}T">${esc(titleOf(rf))}</title><defs>${front.defs}${back.defs}<g id="${id}F">${front.body}</g><g id="${id}B">${back.body}</g>${mk.defs}</defs>${mk.body}</svg>`;
 }
 
-/** Move an SVG made by `jerseyFrame` to an angle without redrawing it: only the transforms change. */
+/**
+ * Move an SVG made by `jerseyFrame` to an angle without redrawing it: only the transforms change.
+ *
+ * @param svg - the SVG element `jerseyFrame` made, on the page
+ * @param yawDeg - the angle in degrees, 0 the front and 180 the back; anything that is not a number is 0
+ * @param thickness - how thick the cloth is, 0 to 40 (14 by default); only a flat drawing uses it
+ * @returns the angle it was set to, taken into -180 up to 180
+ * @example
+ * ```ts no-run
+ * import { applyTurn, jerseyFrame } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const host = document.createElement("div");
+ * host.innerHTML = jerseyFrame({ cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9 });
+ * const svg = host.querySelector("svg");
+ * if (svg) console.log(applyTurn(svg, 90));
+ * ```
+ */
 export function applyTurn(svg: Element, yawDeg: unknown, thickness = 14): number {
   if (svg.hasAttribute("data-vol")) {
     const yaw = normalYaw(yawDeg);
@@ -168,14 +242,44 @@ export function applyTurn(svg: Element, yawDeg: unknown, thickness = 14): number
  * Which way the jersey turns by itself, seen from above. `"counterclockwise"` is how it has always turned: the front swings to the viewer's right and the wearer's right side comes round to face
  * the viewer. `"clockwise"` is the other way: the front swings to the viewer's left and the wearer's left side comes round. Dragging, the keys and `setYaw` are not affected: a drag to the right
  * always swings the front to the right.
+ *
+ * @example
+ * ```ts
+ * import type { TurnDirection } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const value: TurnDirection = "clockwise";
+ * console.log(value);
+ * ```
  */
 export type TurnDirection = "clockwise" | "counterclockwise";
 
-/** A direction from anything: `"clockwise"` is clockwise, and everything else is the default, `"counterclockwise"`. */
+/**
+ * A direction from anything: `"clockwise"` is clockwise, and everything else is the default, `"counterclockwise"`.
+ *
+ * @param value - a direction, or anything else
+ * @returns `"clockwise"` for `"clockwise"` and `"counterclockwise"` for everything else
+ * @example
+ * ```ts
+ * import { turnDirection } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * console.log(turnDirection("clockwise"), turnDirection(undefined));
+ * ```
+ */
 export function turnDirection(value: unknown): TurnDirection {
   return value === "clockwise" ? "clockwise" : "counterclockwise";
 }
 
+/**
+ * How a turn behaves: where it starts, whether and how fast it turns by itself, its direction, and what to call on a change.
+ *
+ * @example
+ * ```ts
+ * import type { TurnSettings } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const settings: TurnSettings = { autoPlay: true, speed: 30, direction: "clockwise" };
+ * console.log(settings);
+ * ```
+ */
 export interface TurnSettings {
   /** The angle to start at. */
   yaw?: number;
@@ -193,6 +297,17 @@ export interface TurnSettings {
   onPlay?: (playing: boolean) => void;
 }
 
+/**
+ * What `bindTurn` gives back: read and set the angle, start and stop the turn, change its direction, draw again and take it down.
+ *
+ * @example
+ * ```ts
+ * import type { TurnHandle } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const spin = (turn: TurnHandle) => turn.setYaw(turn.yaw() + 90);
+ * console.log(typeof spin);
+ * ```
+ */
 export interface TurnHandle {
   yaw(): number;
   setYaw(yaw: number): void;
@@ -212,6 +327,21 @@ export interface TurnHandle {
 /**
  * A jersey you can turn, in a container: drag it, press the left and right arrows (15 degrees; Shift for 45), Home to face the front, Space to start and stop it, or turn it by
  * itself. It does nothing while nobody has asked: no timer runs while it is still, it stops when the tab is hidden, and it starts still under `prefers-reduced-motion`.
+ *
+ * @param container - the element to draw the jersey in
+ * @param options - the jersey, as for `jerseyFrame`
+ * @param settings - the angle to start at, whether it turns by itself, how fast, which way and what to call when it changes
+ * @returns a handle to read and set the angle, start and stop the turn, change the direction, draw again with new options and take it all down
+ * @example
+ * ```ts no-run
+ * import { bindTurn } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const box = document.querySelector<HTMLElement>("#jersey");
+ * if (box) {
+ *   const turn = bindTurn(box, { cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9 }, { autoPlay: true });
+ *   turn.setYaw(180);
+ * }
+ * ```
  */
 export function bindTurn(container: HTMLElement, options?: TurnOptions, settings: TurnSettings = {}): TurnHandle {
   const doc = container.ownerDocument;

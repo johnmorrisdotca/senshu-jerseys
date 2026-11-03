@@ -3,7 +3,16 @@ import { readColour } from "./colour.ts";
 import { CUT_IDS, type CutId } from "./cuts.ts";
 import { bandsOf, type Bands, type ChestBadge, type JerseyOptions, type SleeveDetail } from "./options.ts";
 
-/** Every attribute that sets an option; the element watches these. */
+/**
+ * Every attribute that sets an option; the element watches these.
+ *
+ * @example
+ * ```ts
+ * import { OPTION_ATTRIBUTES } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * console.log(OPTION_ATTRIBUTES.length, OPTION_ATTRIBUTES[0]);
+ * ```
+ */
 export const OPTION_ATTRIBUTES = [
   "cut", "fit", "colors", "body", "trim", "accent", "number-fill", "number-outline", "pattern", "collar", "sleeve", "yoke", "closure", "raglan", "piping",
   "sleeve-stripes", "hem-stripes", "chest-band", "chest-y", "collar-color", "sleeve-color", "panels", "number", "name", "name-arch", "front-text", "front-number",
@@ -111,7 +120,19 @@ export function chestToText(badges: ChestBadge | readonly ChestBadge[], hash = t
 
 const list = (v: string): number[] => v.split(/[\s,]+/).filter((s) => s !== "").map(Number);
 
-/** The options `read` finds, a function from an attribute's name to its text or `null`. Nothing here is trusted: `renderJersey` checks every value again. */
+/**
+ * The options `read` finds, a function from an attribute's name to its text or `null`. Nothing here is trusted: `renderJersey` checks every value again.
+ *
+ * @param read - a function from an attribute's name to its text, or `null` when it is not set
+ * @returns the jersey options the attributes say; a value that is not valid is left out
+ * @example
+ * ```ts
+ * import { optionsFromAttributes } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * const attributes: Record<string, string> = { cut: "hockey", colors: "af1e2d,ffffff", number: "9" };
+ * console.log(optionsFromAttributes((name) => attributes[name] ?? null));
+ * ```
+ */
 export function optionsFromAttributes(read: (name: string) => string | null): JerseyOptions {
   const o: Record<string, unknown> = {};
   const text = (name: string, key = name.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())): void => {
@@ -189,7 +210,19 @@ export function optionsFromAttributes(read: (name: string) => string | null): Je
 
 const strip = (c: string): string => (/^#[0-9a-f]{3,6}$/i.test(c) ? c.slice(1) : c);
 
-/** The attributes (and the query) that say these options: only what is set. The reverse of `optionsFromAttributes`. */
+/**
+ * The attributes (and the query) that say these options: only what is set. The reverse of `optionsFromAttributes`.
+ *
+ * @param o - the jersey options
+ * @param hash - whether to write the colours with their `#` (the default is without, for an address)
+ * @returns the attributes, by name, for only the options that are set
+ * @example
+ * ```ts
+ * import { attributesFromOptions } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * console.log(attributesFromOptions({ cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9 }));
+ * ```
+ */
 export function attributesFromOptions(o: JerseyOptions, hash = true): Record<string, string> {
   const out: Record<string, string> = {};
   const c = hash ? (v: string): string => v : strip;
@@ -232,7 +265,19 @@ export function attributesFromOptions(o: JerseyOptions, hash = true): Record<str
   return out;
 }
 
-/** The options as a query string for `embed.html`: colours without their `#`. */
+/**
+ * The options as a query string for `embed.html`: colours without their `#`.
+ *
+ * @param o - the jersey options
+ * @param extra - more parameters to add, by name
+ * @returns the query string, with the colours written without their `#`
+ * @example
+ * ```ts
+ * import { jerseyToParams } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(String(jerseyToParams({ cut: "hockey", colors: ["#af1e2d", "#ffffff"], number: 9 }, { view: "back" })));
+ * ```
+ */
 export function jerseyToParams(o: JerseyOptions, extra: Record<string, string> = {}): URLSearchParams {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(attributesFromOptions(o, false))) q.set(k, v);
@@ -240,7 +285,18 @@ export function jerseyToParams(o: JerseyOptions, extra: Record<string, string> =
   return q;
 }
 
-/** The options a query string says. */
+/**
+ * The options a query string says.
+ *
+ * @param q - the query string of an address
+ * @returns the jersey options the query says; a value that is not valid is left out
+ * @example
+ * ```ts
+ * import { jerseyFromParams } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(jerseyFromParams(new URLSearchParams("cut=hockey&colors=af1e2d,ffffff&number=9")));
+ * ```
+ */
 export function jerseyFromParams(q: URLSearchParams): JerseyOptions {
   return optionsFromAttributes((name) => q.get(name));
 }

@@ -11,7 +11,17 @@ import { growOf, quadPath, turn as rotate, type Cell, type Placed, type VolumeDe
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-/** A judogi on a canvas, and the way to turn it. */
+/**
+ * A judogi on a canvas, and the way to turn it.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiCanvas } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const spin = (canvas: JudogiCanvas) => canvas.turn(30);
+ * console.log(typeof spin);
+ * ```
+ */
 export interface JudogiCanvas {
   /** The canvas, sized like the SVG it was made from: put it on the page in its place. */
   readonly canvas: HTMLCanvasElement;
@@ -24,7 +34,17 @@ export interface JudogiCanvas {
   dispose(): void;
 }
 
-/** Where the camera looks: a zoom (1 is the whole drawing in the canvas) and how far the drawing is moved from the middle, in CSS pixels. */
+/**
+ * Where the camera looks: a zoom (1 is the whole drawing in the canvas) and how far the drawing is moved from the middle, in CSS pixels.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiCamera } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const camera: JudogiCamera = { zoom: 2, panX: 10, panY: 0 };
+ * console.log(camera);
+ * ```
+ */
 export interface JudogiCamera {
   zoom?: number;
   panX?: number;
@@ -36,7 +56,17 @@ export interface JudogiCamera {
   fit?: boolean;
 }
 
-/** What the canvas may be told: how many pixels a unit of a face's picture gets, and how many pixels a CSS pixel of the canvas gets. */
+/**
+ * What the canvas may be told: how many pixels a unit of a face's picture gets, and how many pixels a CSS pixel of the canvas gets.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiCanvasOptions } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const options: JudogiCanvasOptions = { scale: 2, webgl: false };
+ * console.log(options);
+ * ```
+ */
 export interface JudogiCanvasOptions {
   /** Pixels per unit in the pictures of the faces, 1 to 8 (4 by default: crisp at the size a page shows a judogi). Held smaller when the pieces' pictures together would pass 24 million pixels on the card, or one 4096 across. */
   scale?: number;
@@ -60,6 +90,22 @@ interface Piece extends PaintPiece {
  * Paint the judogi drawn in `svg` (renderJudogi or judogiFrame markup, on the page or not) on a canvas that turns it quickly. Resolves
  * to undefined when `svg` holds no turning judogi (a flat view) or the browser cannot paint it; the SVG then stays as it is. The canvas
  * carries the SVG's title as its accessible name. Saving or printing still wants the SVG: the canvas is a picture of it.
+ *
+ * @param svg - a judogi drawing, from `renderJudogi` or `judogiFrame`, on the page or not
+ * @param options - the scale, the pixel ratio, the box to fill and whether to draw with WebGL
+ * @returns a promise of the canvas and its `turn` and `dispose`, or `undefined` when the drawing is not a judogi or the browser cannot make the canvas
+ * @example
+ * ```ts no-run
+ * import { judogiFrame } from "@johnmorrisdotca/senshu-jerseys";
+ * import { judogiCanvas } from "@johnmorrisdotca/senshu-jerseys/turn";
+ *
+ * const host = document.createElement("div");
+ * host.innerHTML = judogiFrame({ mode: "suit", view: "front" });
+ * const svg = host.querySelector("svg");
+ * const painted = svg ? await judogiCanvas(svg, {}) : undefined;
+ * painted?.turn(30);
+ * painted?.dispose();
+ * ```
  */
 export async function judogiCanvas(svg: Element, options: JudogiCanvasOptions = {}): Promise<JudogiCanvas | undefined> {
   if (typeof document === "undefined") return undefined;

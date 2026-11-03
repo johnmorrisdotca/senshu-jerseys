@@ -2,6 +2,16 @@
 import type { CutId } from "./cuts.ts";
 import type { LanguageId, PatternId } from "./options.ts";
 
+/**
+ * Each cut's name in English and Japanese.
+ *
+ * @example
+ * ```ts
+ * import { CUT_NAMES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(CUT_NAMES));
+ * ```
+ */
 export const CUT_NAMES: Readonly<Record<CutId, { en: string; ja: string }>> = {
   hockey: { en: "Hockey sweater", ja: "アイスホッケーのジャージ" },
   baseball: { en: "Baseball jersey", ja: "野球のユニフォーム" },
@@ -12,6 +22,16 @@ export const CUT_NAMES: Readonly<Record<CutId, { en: string; ja: string }>> = {
   handball: { en: "Handball shirt", ja: "ハンドボールのユニフォーム" },
 };
 
+/**
+ * Each pattern's name in English and Japanese.
+ *
+ * @example
+ * ```ts
+ * import { PATTERN_NAMES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(PATTERN_NAMES).length);
+ * ```
+ */
 export const PATTERN_NAMES: Readonly<Record<PatternId, { en: string; ja: string }>> = {
   solid: { en: "Solid", ja: "無地" },
   stripes: { en: "Stripes", ja: "縦縞" },

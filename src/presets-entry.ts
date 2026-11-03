@@ -18,7 +18,16 @@ import type { Preset } from "./presets/core.ts";
 export { decode, defineLeague } from "./presets/core.ts";
 export type { Preset, Row, Teams } from "./presets/core.ts";
 
-/** The leagues in the order a page lists them: `id` is the module's name. */
+/**
+ * The leagues in the order a page lists them: `id` is the module's name.
+ *
+ * @example
+ * ```ts
+ * import { LEAGUES } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * console.log(LEAGUES.length);
+ * ```
+ */
 export const LEAGUES: readonly { id: string; presets: readonly Preset[] }[] = [
   { id: "nhl-classic", presets: NHL_CLASSIC },
   { id: "nhl", presets: NHL },
@@ -36,5 +45,14 @@ export const LEAGUES: readonly { id: string; presets: readonly Preset[] }[] = [
   { id: "officials", presets: OFFICIALS },
 ];
 
-/** Every preset of every league. */
+/**
+ * Every preset of every league.
+ *
+ * @example
+ * ```ts
+ * import { PRESETS } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * console.log(PRESETS.length);
+ * ```
+ */
 export const PRESETS: readonly Preset[] = LEAGUES.flatMap((l) => l.presets);

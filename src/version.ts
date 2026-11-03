@@ -1,1 +1,11 @@
-export const VERSION = "0.34.0";
+/**
+ * The version of the package.
+ *
+ * @example
+ * ```ts
+ * import { VERSION } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(VERSION);
+ * ```
+ */
+export const VERSION = "0.35.0";

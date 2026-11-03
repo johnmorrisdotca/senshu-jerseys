@@ -26,17 +26,91 @@ import { areasFor, CM, obstaclesFor, pack, type Area, type Item, type Obstacle, 
 import { END_LENGTH, type ReadStyle } from "./judogiStripes.ts";
 import { onLeg } from "./judogiPants.ts";
 
+/**
+ * The places on a judogi an embroidered mark may go.
+ *
+ * @example
+ * ```ts
+ * import { EMBROIDERY_PLACES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(EMBROIDERY_PLACES.length, EMBROIDERY_PLACES[0]);
+ * ```
+ */
 export const EMBROIDERY_PLACES = [
   "jacket-hem", "jacket-chest", "sleeve-left", "sleeve-right", "shoulder-left", "shoulder-right",
   "belt-end-left", "belt-end-right", "pants-left", "pants-right", "pants-thigh-left", "pants-thigh-right",
 ] as const;
+/**
+ * A place on a judogi for an embroidered mark.
+ *
+ * @example
+ * ```ts
+ * import { EMBROIDERY_PLACES, type EmbroideryPlace } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: EmbroideryPlace | undefined = EMBROIDERY_PLACES[0];
+ * console.log(first);
+ * ```
+ */
 export type EmbroideryPlace = (typeof EMBROIDERY_PLACES)[number];
 
+/**
+ * The places on a judogi a logo may go.
+ *
+ * @example
+ * ```ts
+ * import { LOGO_PLACES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(LOGO_PLACES.length, LOGO_PLACES[0]);
+ * ```
+ */
 export const LOGO_PLACES = ["jacket-hem", "jacket-shoulder-left", "jacket-shoulder-right", "belt-end-left", "belt-end-right", "pants-waist-left", "pants-waist-right", "pants-thigh-left", "pants-thigh-right", "pants-leg-left", "pants-leg-right"] as const;
+/**
+ * A place on a judogi for a logo.
+ *
+ * @example
+ * ```ts
+ * import { LOGO_PLACES, type LogoPlace } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: LogoPlace | undefined = LOGO_PLACES[0];
+ * console.log(first);
+ * ```
+ */
 export type LogoPlace = (typeof LOGO_PLACES)[number];
 
+/**
+ * The lettering styles of an embroidered mark.
+ *
+ * @example
+ * ```ts
+ * import { EMBROIDERY_FONTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(EMBROIDERY_FONTS.length, EMBROIDERY_FONTS[0]);
+ * ```
+ */
 export const EMBROIDERY_FONTS = ["block", "gothic", "kaisho", "gyosho", "cursive"] as const;
+/**
+ * A lettering style of an embroidered mark.
+ *
+ * @example
+ * ```ts
+ * import { EMBROIDERY_FONTS, type EmbroideryFontName } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: EmbroideryFontName | undefined = EMBROIDERY_FONTS[0];
+ * console.log(first);
+ * ```
+ */
 export type EmbroideryFontName = (typeof EMBROIDERY_FONTS)[number];
+/**
+ * A font for an embroidered mark: its family and the CSS that loads it.
+ *
+ * @example
+ * ```ts
+ * import type { EmbroideryFontFace } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const face: EmbroideryFontFace = { family: "Klee One" };
+ * console.log(face.family);
+ * ```
+ */
 export interface EmbroideryFontFace {
   /** The family the text is set in. */
   family: string;
@@ -44,11 +118,54 @@ export interface EmbroideryFontFace {
   css?: string;
 }
 
+/**
+ * The rules a mark is checked against: the IJF's and the All Japan Judo Federation's.
+ *
+ * @example
+ * ```ts
+ * import { MARK_RULES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(MARK_RULES.length, MARK_RULES[0]);
+ * ```
+ */
 export const MARK_RULES = ["ijf", "ajjf"] as const;
+/**
+ * The rules a mark is checked against.
+ *
+ * @example
+ * ```ts
+ * import { MARK_RULES, type MarkRules } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: MarkRules | undefined = MARK_RULES[0];
+ * console.log(first);
+ * ```
+ */
 export type MarkRules = (typeof MARK_RULES)[number];
 
+/**
+ * Which way embroidered text runs: across, down, or along a line.
+ *
+ * @example
+ * ```ts
+ * import type { EmbroideryDirection } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: EmbroideryDirection = "down";
+ * console.log(value);
+ * ```
+ */
 export type EmbroideryDirection = "across" | "down" | "along";
 
+/**
+ * A mark embroidered on a judogi: its words or path, thread, font and place.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiEmbroidery } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const mark: JudogiEmbroidery = { place: "jacket-hem", text: "選手", font: "kaisho", heightCm: 6 };
+ * console.log(mark);
+ * ```
+ */
 export interface JudogiEmbroidery {
   place: EmbroideryPlace;
   /** What is stitched, in Latin or Japanese. */
@@ -70,6 +187,17 @@ export interface JudogiEmbroidery {
   stitching?: EmbroideryStitching;
 }
 
+/**
+ * A logo on a judogi: its picture, thread and place.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiLogo } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const logo: JudogiLogo = { place: "jacket-hem", svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>', widthCm: 8 };
+ * console.log(logo.place);
+ * ```
+ */
 export interface JudogiLogo {
   place: LogoPlace;
   /** Artwork as SVG text (or a `data:image/` address in `href`); without either, a neutral placeholder is drawn. */
@@ -84,6 +212,17 @@ export interface JudogiLogo {
 
 export type { JudogiLabel, JudogiNation };
 
+/**
+ * An emblem on a judogi: an SVG, a mark or a picture, with its frame and place.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiEmblem } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const emblem: JudogiEmblem = { mark: "kodokan", place: "chest", frame: "patch" };
+ * console.log(emblem);
+ * ```
+ */
 export interface JudogiEmblem {
   /** The national emblem on the left chest: SVG text (a flag from Hata, say) or a `data:image/` address; a neutral placeholder without either. */
   svg?: string;
@@ -107,7 +246,16 @@ export interface JudogiEmblem {
   style?: "flag" | "named" | "square";
 }
 
-/** The system-font stacks. Open fonts named first are suggestions the page may load; the rest are what a computer has. */
+/**
+ * The system-font stacks. Open fonts named first are suggestions the page may load; the rest are what a computer has.
+ *
+ * @example
+ * ```ts
+ * import { FONT_STACKS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(FONT_STACKS));
+ * ```
+ */
 export const FONT_STACKS: Record<Exclude<EmbroideryFontName, "block">, string> = {
   gothic: "'Hiragino Sans','Noto Sans JP','Yu Gothic','Meiryo','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic','Nanum Gothic',system-ui,sans-serif",
   kaisho: "'Yuji Syuku','Klee One','Klee','UD Digi Kyokasho NK-R','HGKyokashotai','Kaiti SC','Hiragino Mincho ProN','Yu Mincho','Apple SD Gothic Neo','Nanum Myeongjo','Noto Serif KR','Batang',serif",

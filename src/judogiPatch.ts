@@ -16,17 +16,88 @@ import { mapPath, n2 } from "./path.ts";
 /** The drawing's scale: units to the centimetre, for a 170 cm size (the jacket is 78 cm long and 200 units across its box). */
 export const CM = 2.63;
 
+/**
+ * The kinds of back patch: none, the IJF's number or the Japanese zekken.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_STYLES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_STYLES.length, PATCH_STYLES[0]);
+ * ```
+ */
 export const PATCH_STYLES = ["none", "ijf", "zekken"] as const;
+/**
+ * The kind of back patch.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_STYLES, type PatchStyle } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatchStyle | undefined = PATCH_STYLES[0];
+ * console.log(first);
+ * ```
+ */
 export type PatchStyle = (typeof PATCH_STYLES)[number];
 
-/** Band colours of the IJF-style back number: blue is the standard, gold an Olympic champion's and red a world champion's (IJF Judogi Rules, C1.8). */
+/**
+ * Band colours of the IJF-style back number: blue is the standard, gold an Olympic champion's and red a world champion's (IJF Judogi Rules, C1.8).
+ *
+ * @example
+ * ```ts
+ * import { PATCH_COLOURS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_COLOURS.length, PATCH_COLOURS[0]);
+ * ```
+ */
 export const PATCH_COLOURS = ["blue", "gold", "red", "black", "white"] as const;
+/**
+ * The colour of the band on a back patch.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_COLOURS, type PatchColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatchColour | undefined = PATCH_COLOURS[0];
+ * console.log(first);
+ * ```
+ */
 export type PatchColour = (typeof PATCH_COLOURS)[number];
 
-/** Zekken ink: black (men) or vermilion (women), as the All Japan Judo Federation's rule has it. */
+/**
+ * Zekken ink: black (men) or vermilion (women), as the All Japan Judo Federation's rule has it.
+ *
+ * @example
+ * ```ts
+ * import { ZEKKEN_INKS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(ZEKKEN_INKS.length, ZEKKEN_INKS[0]);
+ * ```
+ */
 export const ZEKKEN_INKS = ["black", "vermilion"] as const;
+/**
+ * The ink of a zekken.
+ *
+ * @example
+ * ```ts
+ * import { ZEKKEN_INKS, type ZekkenInk } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: ZekkenInk | undefined = ZEKKEN_INKS[0];
+ * console.log(first);
+ * ```
+ */
 export type ZekkenInk = (typeof ZEKKEN_INKS)[number];
 
+/**
+ * Each back-patch colour's name in English and Japanese.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_COLOUR_LABELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(PATCH_COLOUR_LABELS));
+ * ```
+ */
 export const PATCH_COLOUR_LABELS: Record<PatchColour, { en: string; ja: string }> = {
   blue: { en: "Blue", ja: "青" },
   gold: { en: "Gold", ja: "金" },
@@ -35,12 +106,32 @@ export const PATCH_COLOUR_LABELS: Record<PatchColour, { en: string; ja: string }
   white: { en: "White", ja: "白" },
 };
 
+/**
+ * Each zekken ink's name in English and Japanese.
+ *
+ * @example
+ * ```ts
+ * import { ZEKKEN_INK_LABELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(ZEKKEN_INK_LABELS));
+ * ```
+ */
 export const ZEKKEN_INK_LABELS: Record<ZekkenInk, { en: string; ja: string }> = {
   black: { en: "Black", ja: "黒" },
   vermilion: { en: "Vermilion", ja: "朱色" },
 };
 
-/** The back patch as a person sets it: every word and colour is theirs. */
+/**
+ * The back patch as a person sets it: every word and colour is theirs.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiBackPatch } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const patch: JudogiBackPatch = { style: "zekken", name: "ヤマダ", code: "JPN", ink: "vermilion" };
+ * console.log(patch);
+ * ```
+ */
 export interface JudogiBackPatch {
   style?: PatchStyle;
   /** IJF-style: the name band's text, usually "N. SURNAME". Zekken: the surname. */
@@ -93,6 +184,16 @@ const BAND: Record<PatchColour, Rgb> = {
 /** The lowest a patch's bottom edge may be drawn: 1.3 cm above the top edge of the belt tied at the waist, whatever the belt's width (it hangs down from that edge). */
 export const PATCH_LIMIT = BELT_TOP - 1.3 * CM;
 
+/**
+ * The measures of the back patches, in centimetres, from the IJF's and the All Japan Judo Federation's rules.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_FACTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(PATCH_FACTS));
+ * ```
+ */
 export const PATCH_FACTS = {
   ijf: { top: 3, widthCm: 25, heightCm: 29 },
   zekken: { top: 5, topMin: 5, topMax: 10, widthMin: 30, widthMax: 35, heightMin: 25, heightMax: 30, widthCm: 30, heightCm: 25 },
@@ -147,10 +248,39 @@ export function patchNotes(p: PatchSpec): { id: string; met: boolean; fact: stri
 /** The id of everything a patch's drawing needs, so two patches on one page never share one. */
 const idOf = (uid: string, p: PatchSpec): string => `${uid}pt${hashOf(JSON.stringify(p))}`;
 
-/** A sewn patch's thickness in millimetres: an embroidered or woven patch on its backing, stitched on (John's spec, 2026-10-30: 3 to 4 mm). */
+/**
+ * A sewn patch's thickness in millimetres: an embroidered or woven patch on its backing, stitched on (John's spec, 2026-10-30: 3 to 4 mm).
+ *
+ * @example
+ * ```ts
+ * import { PATCH_MM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(PATCH_MM));
+ * ```
+ */
 export const PATCH_MM = { min: 3, max: 4, default: 3.5 } as const;
-/** How a patch's edge is stitched: `running`, a stitch line near the edge (a back number, a zekken); `satin`, a dense satin border (a woven emblem). */
+/**
+ * How a patch's edge is stitched: `running`, a stitch line near the edge (a back number, a zekken); `satin`, a dense satin border (a woven emblem).
+ *
+ * @example
+ * ```ts
+ * import { PATCH_EDGES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(PATCH_EDGES.length, PATCH_EDGES[0]);
+ * ```
+ */
 export const PATCH_EDGES = ["running", "satin"] as const;
+/**
+ * How a patch's edge is stitched.
+ *
+ * @example
+ * ```ts
+ * import { PATCH_EDGES, type PatchEdge } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: PatchEdge | undefined = PATCH_EDGES[0];
+ * console.log(first);
+ * ```
+ */
 export type PatchEdge = (typeof PATCH_EDGES)[number];
 /** What a sewn patch is made of. `cloth` takes it: the thickness and the edge stitch are set here and nowhere else. */
 export interface PatchBuild {
@@ -225,10 +355,31 @@ export function cloth(id: string, x: number, y: number, w: number, h: number, ba
   return { defs, under, over };
 }
 
-/** The shapes `shapedCloth` cuts: a rectangle, a rounded one, a circle (an ellipse in a box that is not square), a heater shield, or `{ path }`, a custom outline. */
+/**
+ * The shapes `shapedCloth` cuts: a rectangle, a rounded one, a circle (an ellipse in a box that is not square), a heater shield, or `{ path }`, a custom outline.
+ *
+ * @example
+ * ```ts
+ * import type { ClothShape } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: ClothShape = { path: "M 0 0 L 10 0 L 10 10 Z" };
+ * console.log(value);
+ * ```
+ */
 export type ClothShape = "rectangle" | "rounded" | "circle" | "shield" | { path: string };
 
-/** A custom outline is a path of absolute commands (`M L C Q Z`) and numbers only, at most 400 characters, starting with `M`, drawn in a 100 by 100 box and stretched to the cloth's box. */
+/**
+ * A custom outline is a path of absolute commands (`M L C Q Z`) and numbers only, at most 400 characters, starting with `M`, drawn in a 100 by 100 box and stretched to the cloth's box.
+ *
+ * @param v - a path from the caller, or anything else
+ * @returns the path when it is safe, and an empty string when it is not
+ * @example
+ * ```ts
+ * import { clothPath } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(clothPath("M 0 0 L 10 0 L 10 10 Z"), JSON.stringify(clothPath("<script>")));
+ * ```
+ */
 export const clothPath = (v: unknown): string => (typeof v === "string" && v.length <= 400 && /^[MLCQZ0-9eE.,\s-]+$/.test(v) && /^\s*M/.test(v) ? v.trim() : "");
 
 /** One ellipse as four cubic curves (a path `mapPath` can scale about its middle), centred on the origin. */
@@ -250,7 +401,20 @@ function shieldPath(w: number, h: number): string {
   return `M${n2(-x)} ${n2(-y + 1.2)}Q${n2(-x)} ${n2(-y)} ${n2(-x + 1.2)} ${n2(-y)}L${n2(x - 1.2)} ${n2(-y)}Q${n2(x)} ${n2(-y)} ${n2(x)} ${n2(-y + 1.2)}L${n2(x)} ${n2(h * 0.08)}C${n2(x)} ${n2(h * 0.3)} ${n2(x * 0.45)} ${n2(y * 0.8)} 0 ${n2(y)}C${n2(-x * 0.45)} ${n2(y * 0.8)} ${n2(-x)} ${n2(h * 0.3)} ${n2(-x)} ${n2(h * 0.08)}Z`;
 }
 
-/** A shape's outline in a box `w` by `h` centred on the origin, as one path (`M L C Q Z` only). A custom path that is not safe (see `clothPath`) is cut as a rounded rectangle. */
+/**
+ * A shape's outline in a box `w` by `h` centred on the origin, as one path (`M L C Q Z` only). A custom path that is not safe (see `clothPath`) is cut as a rounded rectangle.
+ *
+ * @param shape - the shape
+ * @param w - the width of the box
+ * @param h - the height of the box
+ * @returns the outline as one path of `M L C Q Z` commands
+ * @example
+ * ```ts
+ * import { clothOutline } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(clothOutline("circle", 40, 40).startsWith("M"));
+ * ```
+ */
 export function clothOutline(shape: ClothShape, w: number, h: number): string {
   if (shape === "circle") return ellipse(w, h);
   if (shape === "rounded") return roundRect(w, h, Math.min(w, h) * 0.24);
@@ -267,6 +431,23 @@ export function clothOutline(shape: ClothShape, w: number, h: number): string {
  * garment as a wall of layers with a lift of shadow, a lit line along the upper left, and its edge stitched as `build.edge`: a running stitch or a satin border), cut to `shape`
  * in the box `x, y, w, h` of the drawing. `id` must be unique on the page. Returns `cloth`'s three parts: `defs`, `under` (drawn before what is printed on the patch) and `over`
  * (the face's weave, edge and stitching, drawn after it). The shape `"rectangle"` is `cloth` itself.
+ *
+ * @param id - an id that is not used elsewhere in the drawing
+ * @param shape - the shape of the cloth
+ * @param x - the left edge
+ * @param y - the top edge
+ * @param w - the width
+ * @param h - the height
+ * @param base - the cloth's colour as red, green and blue
+ * @param thread - the stitching's colour as red, green and blue
+ * @param build - the drawing's helpers: stitches, weave and shading
+ * @returns the SVG for the cloth: its `defs`, the `under` layer and the `over` layer
+ * @example
+ * ```ts
+ * import { shapedCloth } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(typeof shapedCloth);
+ * ```
  */
 export function shapedCloth(id: string, shape: ClothShape, x: number, y: number, w: number, h: number, base: Rgb, thread: Rgb, build: PatchBuild = {}): { defs: string; under: string; over: string } {
   if (shape === "rectangle") return cloth(id, x, y, w, h, base, thread, build);

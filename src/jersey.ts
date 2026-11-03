@@ -8,10 +8,40 @@ import { cubic, lerp, n2, poly, quad, rounded, type Pt } from "./path.ts";
 import { flagGrounds, nationalPlan, type Layer, type NationalArm } from "./national.ts";
 import { drawRun, layout } from "./text.ts";
 
+/**
+ * The width of the usual jersey's drawing, in drawing units.
+ *
+ * @example
+ * ```ts
+ * import { JERSEY_WIDTH } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JERSEY_WIDTH);
+ * ```
+ */
 export const JERSEY_WIDTH = 200;
+/**
+ * The height of every jersey's drawing, in drawing units.
+ *
+ * @example
+ * ```ts
+ * import { JERSEY_HEIGHT } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JERSEY_HEIGHT);
+ * ```
+ */
 export const JERSEY_HEIGHT = 232;
 
-/** The box a cut is drawn in, from y = 0 down `JERSEY_HEIGHT`: the 200 by 232 body with `reach` units more on each side, where the cut's sleeves go (still, and at every turn, thick cloth included). */
+/**
+ * The box a cut is drawn in, from y = 0 down `JERSEY_HEIGHT`: the 200 by 232 body with `reach` units more on each side, where the cut's sleeves go (still, and at every turn, thick cloth included).
+ *
+ * @example
+ * ```ts
+ * import { jerseyBox, type JerseyBox } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const box: JerseyBox = jerseyBox("football");
+ * console.log(box.w);
+ * ```
+ */
 export interface JerseyBox {
   /** The left edge in the body's own units: minus the reach. The middle of the shirt is x = 100 whatever the box. */
   x: number;
@@ -22,6 +52,15 @@ export interface JerseyBox {
 /**
  * The view box of a cut. A sleeve of a football, rugby, soccer or baseball shirt, and a turn of any of them, reaches past the 200 units of the body, so these cuts have a wider box (`CUTS[cut].reach` on each
  * side); a hockey, basketball and handball shirt almost never need more, so theirs is the body itself. It is one box per cut, whatever the sleeve, look or angle, so that a drawing does not change size.
+ *
+ * @param cut - the cut
+ * @returns the left edge and width of the box the cut is drawn in
+ * @example
+ * ```ts
+ * import { jerseyBox } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(jerseyBox("baseball"));
+ * ```
  */
 export function jerseyBox(cut: CutId): JerseyBox {
   const reach = CUTS[cut].reach ?? 0;

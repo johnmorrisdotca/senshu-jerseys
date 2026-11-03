@@ -3,6 +3,16 @@
 // and its belt guide on 2026-10-27; the IJF Judogi Rules (09 03 2022) give a belt's thickness and the hang of its ends but, in the text, no width. Used as
 // specifications only: no maker's mark, name or label is drawn.
 
+/**
+ * Where the belt facts were read, by id.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SPEC_SOURCES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BELT_SPEC_SOURCES).length);
+ * ```
+ */
 export const BELT_SPEC_SOURCES = {
   guide: { title: "KuSakura, How to choose your judo belt (sizing and belt types)", url: "https://www.kusakurashop.com/pages/how-to-choose-your-judo-belt", read: "2026-10-27" },
   jrwz: { title: "KuSakura, Kohaku Obi Kata Official Kata, red and white (JRWZ)", url: "https://www.kusakurashop.com/products/judo-belts-white-red-jrwz", read: "2026-10-27" },
@@ -16,27 +26,139 @@ export const BELT_SPEC_SOURCES = {
   ijf: { title: "IJF Judogi Rules (09 03 2022)", url: "https://78884ca60822a34fb0e6-082b8fd5551e97bc65e327988b444396.ssl.cf3.rackcdn.com/up/2022/04/IJF_Judogi_rules_-_09_03_2022_-1649423105.pdf", read: "2026-10-27" },
 } as const;
 
-/** The belts the package draws, by name (as `JUDOGI_BELTS`, without `none`). */
+/**
+ * The belts the package draws, by name (as `JUDOGI_BELTS`, without `none`).
+ *
+ * @example
+ * ```ts
+ * import type { BeltColourName } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: BeltColourName = "red-white";
+ * console.log(value);
+ * ```
+ */
 export type BeltColourName = "white" | "yellow" | "orange" | "green" | "blue" | "brown" | "black" | "red-white" | "red";
 
-/** How many lengthwise rows of top-stitching a belt has: the maker's options run from 8 to 16. */
+/**
+ * How many lengthwise rows of top-stitching a belt has: the maker's options run from 8 to 16.
+ *
+ * @example
+ * ```ts
+ * import type { BeltStitchLines } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: BeltStitchLines = 13;
+ * console.log(value);
+ * ```
+ */
 export type BeltStitchLines = 8 | 10 | 13 | 14 | 15 | 16;
+/**
+ * The counts of stitch lines a belt can have.
+ *
+ * @example
+ * ```ts
+ * import { BELT_STITCH_LINES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_STITCH_LINES.length, BELT_STITCH_LINES[0]);
+ * ```
+ */
 export const BELT_STITCH_LINES: readonly BeltStitchLines[] = [8, 10, 13, 14, 15, 16];
 
-/** How a mark is put on the cloth: `applied` is sewn on afterwards and shows reversed on the other face; `integrated` is made in during the weaving or stitching of the belt, flatter, with nothing on the other face. */
+/**
+ * How a mark is put on the cloth: `applied` is sewn on afterwards and shows reversed on the other face; `integrated` is made in during the weaving or stitching of the belt, flatter, with nothing on the other face.
+ *
+ * @example
+ * ```ts
+ * import type { EmbroideryStitching } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: EmbroideryStitching = "integrated";
+ * console.log(value);
+ * ```
+ */
 export type EmbroideryStitching = "applied" | "integrated";
+/**
+ * The ways a mark is put on a belt.
+ *
+ * @example
+ * ```ts
+ * import { EMBROIDERY_STITCHINGS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(EMBROIDERY_STITCHINGS.length, EMBROIDERY_STITCHINGS[0]);
+ * ```
+ */
 export const EMBROIDERY_STITCHINGS: readonly EmbroideryStitching[] = ["applied", "integrated"];
 
-/** How thick a belt is: the maker's three grades (standard, thick, extra thick). No maker publishes millimetres; the IJF allows 4 to 5 mm. */
+/**
+ * How thick a belt is: the maker's three grades (standard, thick, extra thick). No maker publishes millimetres; the IJF allows 4 to 5 mm.
+ *
+ * @example
+ * ```ts
+ * import type { BeltThickness } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: BeltThickness = "thick";
+ * console.log(value);
+ * ```
+ */
 export type BeltThickness = "standard" | "thick" | "extra-thick";
+/**
+ * The thickness grades of a belt.
+ *
+ * @example
+ * ```ts
+ * import { BELT_THICKNESSES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_THICKNESSES.length, BELT_THICKNESSES[0]);
+ * ```
+ */
 export const BELT_THICKNESSES: readonly BeltThickness[] = ["standard", "thick", "extra-thick"];
-/** The thickness a model's rigidity rating says: 1 to 3 standard, 4 thick, 5 extra thick (a silk kohaku is 4, so thick). */
+/**
+ * The thickness a model's rigidity rating says: 1 to 3 standard, 4 thick, 5 extra thick (a silk kohaku is 4, so thick).
+ *
+ * @param rigidity - a model's rigidity, 1 to 5
+ * @returns the thickness grade
+ * @example
+ * ```ts
+ * import { beltThicknessOf } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltThicknessOf(2), beltThicknessOf(5));
+ * ```
+ */
 export const beltThicknessOf = (rigidity: 1 | 2 | 3 | 4 | 5): BeltThickness => (rigidity >= 5 ? "extra-thick" : rigidity === 4 ? "thick" : "standard");
 
-/** What covers the belt: plain cotton, shusu (satin-covered cotton, glossy, finer and flatter stitch rows) or silk. */
+/**
+ * What covers the belt: plain cotton, shusu (satin-covered cotton, glossy, finer and flatter stitch rows) or silk.
+ *
+ * @example
+ * ```ts
+ * import type { BeltCover } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: BeltCover = "shusu";
+ * console.log(value);
+ * ```
+ */
 export type BeltCover = "cotton" | "shusu" | "silk";
+/**
+ * The covers a belt can have.
+ *
+ * @example
+ * ```ts
+ * import { BELT_COVERS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_COVERS.length, BELT_COVERS[0]);
+ * ```
+ */
 export const BELT_COVERS: readonly BeltCover[] = ["cotton", "shusu", "silk"];
 
+/**
+ * One model of belt in the maker's comparison table.
+ *
+ * @example
+ * ```ts
+ * import { BELT_MODELS, type BeltModel } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BeltModel | undefined = BELT_MODELS[0];
+ * console.log(first?.code, first?.widthCm);
+ * ```
+ */
 export interface BeltModel {
   /** The cover of the outer layer. */
   cover: BeltCover;
@@ -64,7 +186,16 @@ const m = (cover: BeltCover, code: string, name: string, belts: BeltModel["belts
 
 const COLOURED = ["yellow", "orange", "green", "blue", "brown"] as const;
 
-/** The models of the maker's comparison table (belt guide). */
+/**
+ * The models of the maker's comparison table (belt guide).
+ *
+ * @example
+ * ```ts
+ * import { BELT_MODELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_MODELS.length);
+ * ```
+ */
 export const BELT_MODELS: readonly BeltModel[] = [
   m("cotton", "JWB", "Classic white belt", ["white"], 4.2, 8, 2, "white cotton, semi-rigid soft core", "no", ["applied"], false, "guide"),
   m("cotton", "JOWIB", "Deluxe white belt (follows the IJF rules)", ["white"], 4.5, 10, 2, "white cotton, felt-like core", "approved", ["applied"], false, "guide"),
@@ -84,26 +215,81 @@ export const BELT_MODELS: readonly BeltModel[] = [
   m("shusu", "JGRK", "Kodokan black belt for women", ["black"], 4.5, 16, 4, "black shusu cotton over a cotton core, white line down the middle", "no", ["applied", "integrated"], true, "jgrk", "Marketed as a Kodokan belt with the Kodokan mark on one side."),
 ];
 
-/** The widths a belt colour is made in, narrowest first. */
+/**
+ * The widths a belt colour is made in, narrowest first.
+ *
+ * @param belt - a belt colour
+ * @returns the widths in centimetres, narrowest first
+ * @example
+ * ```ts
+ * import { beltWidthsFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltWidthsFor("black"));
+ * ```
+ */
 export function beltWidthsFor(belt: string): number[] {
   return [...new Set(BELT_MODELS.filter((x) => (x.belts as readonly string[]).includes(belt)).map((x) => x.widthCm))].sort((a, b) => a - b);
 }
 
-/** The width a belt of this colour has when none is asked for: the common one of its models (4.2 cm for white and rank colours, 4.5 cm for black, red-white and red). */
+/**
+ * The width a belt of this colour has when none is asked for: the common one of its models (4.2 cm for white and rank colours, 4.5 cm for black, red-white and red).
+ *
+ * @param belt - a belt colour
+ * @returns the usual width in centimetres
+ * @example
+ * ```ts
+ * import { beltDefaultWidthCm } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltDefaultWidthCm("black"));
+ * ```
+ */
 export function beltDefaultWidthCm(belt: string): number {
   const rank = ["white", "yellow", "orange", "green", "blue", "brown"];
   return rank.includes(belt) ? 4.2 : 4.5;
 }
 
-/** The stitch-line counts a belt colour is made with, fewest first. */
+/**
+ * The stitch-line counts a belt colour is made with, fewest first.
+ *
+ * @param belt - a belt colour
+ * @returns the stitch-line counts, fewest first
+ * @example
+ * ```ts
+ * import { beltStitchLinesFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltStitchLinesFor("black"));
+ * ```
+ */
 export function beltStitchLinesFor(belt: string): BeltStitchLines[] {
   return [...new Set(BELT_MODELS.filter((x) => (x.belts as readonly string[]).includes(belt)).map((x) => x.stitchLines))].sort((a, b) => a - b);
 }
 
-/** Whether a belt of this colour is made in this width (within 0.5 mm). */
+/**
+ * Whether a belt of this colour is made in this width (within 0.5 mm).
+ *
+ * @param belt - a belt colour
+ * @param cm - a width in centimetres
+ * @returns `true` when the belt is made in that width, within half a millimetre
+ * @example
+ * ```ts
+ * import { beltWidthIsReal } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltWidthIsReal("black", 4.5), beltWidthIsReal("black", 9));
+ * ```
+ */
 export const beltWidthIsReal = (belt: string, cm: number): boolean => beltWidthsFor(belt).some((w) => Math.abs(w - cm) < 0.05);
 
-/** Belt lengths by size number: men's and mixed, women's (5 cm shorter, with a white line; Japan only), the waist or hips each fits, and how it is supplied. */
+/**
+ * Belt lengths by size number: men's and mixed, women's (5 cm shorter, with a white line; Japan only), the waist or hips each fits, and how it is supplied.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SIZES, type BeltSize } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BeltSize | undefined = BELT_SIZES[0];
+ * console.log(first?.size, first?.cm);
+ * ```
+ */
 export interface BeltSize {
   size: number;
   /** Men's and mixed length in centimetres. */
@@ -114,6 +300,16 @@ export interface BeltSize {
   note?: "ijf" | "order";
 }
 
+/**
+ * The belt lengths by size number, with the waist each fits.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SIZES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_SIZES.length);
+ * ```
+ */
 export const BELT_SIZES: readonly BeltSize[] = [
   { size: 1, cm: 215, womenCm: 210, waistCm: [55, 60] },
   { size: 2, cm: 235, womenCm: 230, waistCm: [60, 70] },
@@ -131,13 +327,42 @@ export const BELT_SIZES: readonly BeltSize[] = [
   { size: 8, cm: 355, womenCm: 350, waistCm: [125, 135], note: "order" },
 ];
 
-/** The rule of thumb on the guide: twice the waist (or hips) plus 90 to 100 cm, leaving 20 to 30 cm each end. Handmade lengths vary by 1 to 1.5 percent. */
+/**
+ * The rule of thumb on the guide: twice the waist (or hips) plus 90 to 100 cm, leaving 20 to 30 cm each end. Handmade lengths vary by 1 to 1.5 percent.
+ *
+ * @param waistCm - the waist or hips in centimetres
+ * @returns the length of belt to choose, in centimetres
+ * @example
+ * ```ts
+ * import { beltLengthFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltLengthFor(80));
+ * ```
+ */
 export const beltLengthFor = (waistCm: number): number => 2 * waistCm + 95;
 
-/** A kohaku (red-and-white) belt: red and white sections each 12 to 18 cm, longer with the size, spread evenly along the belt, both ends always red. */
+/**
+ * A kohaku (red-and-white) belt: red and white sections each 12 to 18 cm, longer with the size, spread evenly along the belt, both ends always red.
+ *
+ * @example
+ * ```ts
+ * import { KOHAKU } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(KOHAKU));
+ * ```
+ */
 export const KOHAKU = { sectionCm: { min: 12, max: 18 }, bothEndsRed: true, source: "jrwz" } as const;
 
-/** The embroidery a maker offers: both ways of putting it on, the fonts, the colours, the longest run and grade lines. */
+/**
+ * The embroidery a maker offers: both ways of putting it on, the fonts, the colours, the longest run and grade lines.
+ *
+ * @example
+ * ```ts
+ * import { MAKER_EMBROIDERY } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(MAKER_EMBROIDERY).length);
+ * ```
+ */
 export const MAKER_EMBROIDERY = {
   /** `applied` shows reversed on the other face; `integrated` shows nothing there and is flatter. This package offers both on every belt; the maker's own limit is black belts and not its IJF models. */
   makerLimit: "integrated: black belts only (a kohaku and a red belt included on the models above), not the maker's IJF models; applied: any belt",
@@ -155,7 +380,18 @@ export const MAKER_EMBROIDERY = {
   source: "embroidery",
 } as const;
 
-/** The thickness grades a belt colour is made in. */
+/**
+ * The thickness grades a belt colour is made in.
+ *
+ * @param belt - a belt colour
+ * @returns the thickness grades it is made in
+ * @example
+ * ```ts
+ * import { beltThicknessesFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltThicknessesFor("black"));
+ * ```
+ */
 export const beltThicknessesFor = (belt: string): BeltThickness[] =>
   BELT_THICKNESSES.filter((t) => BELT_MODELS.some((x) => (x.belts as readonly string[]).includes(belt) && beltThicknessOf(x.rigidity) === t));
 
@@ -164,13 +400,60 @@ export const beltThicknessesFor = (belt: string): BeltThickness[] =>
  * number, and under it by default three tiny kanji, `BELT_SIZE_TAG_LINE`, which the user may change or remove), and under that a small white tag that almost every belt has: where the size tag shows, the white tag shows
  * too. What a real one carries is not known, so it is drawn blank (a fine woven texture), with optional text from the user, never wording made up here. The
  * label is neutral placeholder art in this package, never a maker's mark.
+ *
+ * @example
+ * ```ts
+ * import { BELT_END_TAGS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_END_TAGS.length, BELT_END_TAGS[0]);
+ * ```
  */
 export const BELT_END_TAGS = ["maker-label", "size-tag", "white-tag"] as const;
+/**
+ * A tag near the end of a belt.
+ *
+ * @example
+ * ```ts
+ * import { BELT_END_TAGS, type BeltEndTag } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BeltEndTag | undefined = BELT_END_TAGS[0];
+ * console.log(first);
+ * ```
+ */
 export type BeltEndTag = (typeof BELT_END_TAGS)[number];
-/** The line under the number on a size tag by default: the three kanji for "made in Japan", in very small type; a user may change it or remove it. */
+/**
+ * The line under the number on a size tag by default: the three kanji for "made in Japan", in very small type; a user may change it or remove it.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SIZE_TAG_LINE } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_SIZE_TAG_LINE);
+ * ```
+ */
 export const BELT_SIZE_TAG_LINE = "日本製";
-/** A tag that needs another: the white tag goes with the size tag. */
+/**
+ * A tag that needs another: the white tag goes with the size tag.
+ *
+ * @example
+ * ```ts
+ * import { BELT_TAG_NEEDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BELT_TAG_NEEDS));
+ * ```
+ */
 export const BELT_TAG_NEEDS: Readonly<Record<BeltEndTag, BeltEndTag | undefined>> = { "maker-label": undefined, "size-tag": "maker-label", "white-tag": "size-tag" };
 
-/** The covers a belt colour is made with. */
+/**
+ * The covers a belt colour is made with.
+ *
+ * @param belt - a belt colour
+ * @returns the covers it is made with
+ * @example
+ * ```ts
+ * import { beltCoversFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltCoversFor("black"));
+ * ```
+ */
 export const beltCoversFor = (belt: string): BeltCover[] => BELT_COVERS.filter((c) => BELT_MODELS.some((x) => x.cover === c && (x.belts as readonly string[]).includes(belt)));

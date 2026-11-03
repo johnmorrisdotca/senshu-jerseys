@@ -12,14 +12,54 @@ import { patchEdge } from "./judogiPatch.ts";
 import { layout } from "./text.ts";
 import { readThread, satinDefs, satinRun, satinStroke, type ThreadColour } from "./judogiThread.ts";
 
-/** A woven label's thickness in millimetres: 2 to 4, 3 by default (a woven label is thinner than a sewn patch, `PATCH_MM`). */
+/**
+ * A woven label's thickness in millimetres: 2 to 4, 3 by default (a woven label is thinner than a sewn patch, `PATCH_MM`).
+ *
+ * @example
+ * ```ts
+ * import { LABEL_MM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(LABEL_MM));
+ * ```
+ */
 export const LABEL_MM = { min: 2, max: 4, default: 3 } as const;
 /** A label's thickness kept to `LABEL_MM`; the default when none is given. */
 export const labelMm = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? Math.max(LABEL_MM.min, Math.min(LABEL_MM.max, v)) : LABEL_MM.default);
 
+/**
+ * The colours of a woven label.
+ *
+ * @example
+ * ```ts
+ * import { LABEL_COLOURS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(LABEL_COLOURS.length, LABEL_COLOURS[0]);
+ * ```
+ */
 export const LABEL_COLOURS = ["navy", "forest", "black", "wine", "cream"] as const;
+/**
+ * A colour of a woven label.
+ *
+ * @example
+ * ```ts
+ * import { LABEL_COLOURS, type LabelColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: LabelColour | undefined = LABEL_COLOURS[0];
+ * console.log(first);
+ * ```
+ */
 export type LabelColour = (typeof LABEL_COLOURS)[number];
 
+/**
+ * Each label colour's name in English and Japanese.
+ *
+ * @example
+ * ```ts
+ * import { LABEL_COLOUR_LABELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(LABEL_COLOUR_LABELS));
+ * ```
+ */
 export const LABEL_COLOUR_LABELS: Record<LabelColour, { en: string; ja: string }> = {
   navy: { en: "Navy", ja: "紺" },
   forest: { en: "Forest green", ja: "深緑" },
@@ -37,6 +77,17 @@ const VARIANT: Record<LabelColour, { cloth: Rgb; thread: ThreadColour }> = {
   cream: { cloth: [240, 235, 222], thread: "navy" },
 };
 
+/**
+ * The woven label inside a judogi: its colour, thread and thickness.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiLabel } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const label: JudogiLabel = { colour: "navy", thread: "gold", thicknessMm: 3 };
+ * console.log(label);
+ * ```
+ */
 export interface JudogiLabel {
   /** One of the five variants, or `#rrggbb` for the cloth. Navy by default. */
   colour?: LabelColour | string;

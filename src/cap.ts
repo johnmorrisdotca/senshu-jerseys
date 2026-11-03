@@ -5,6 +5,17 @@ import { LANGUAGE_IDS, LOOK_IDS, type LanguageId, type LookId } from "./options.
 import { wrapSvg } from "./svg.ts";
 import { drawRun, layout } from "./text.ts";
 
+/**
+ * A cap: its colours, tone, initials, view, look, size and language.
+ *
+ * @example
+ * ```ts
+ * import { renderCap, type CapOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: CapOptions = { colors: ["#192168", "#ffffff"], tone: "two-tone", initials: "TB", view: "side" };
+ * console.log(renderCap(options).startsWith("<svg"));
+ * ```
+ */
 export interface CapOptions {
   /** `[crown, brim?, front panel?, button?]`; the brim is the crown's by default. */
   colors?: readonly string[];
@@ -116,6 +127,18 @@ export function capParts(options?: CapOptions): { id: string; defs: string; body
   return { id: uid, defs, body, title, size, w: W, h: H };
 }
 
+/**
+ * A cap as an SVG document: solid or two-tone, with initials, from the front or the side.
+ *
+ * @param options - the cap: its colours, tone, initials, view and size
+ * @returns an SVG document of the cap
+ * @example
+ * ```ts
+ * import { renderCap } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(renderCap({ colors: ["#192168", "#ffffff"], initials: "TB" }).startsWith("<svg"));
+ * ```
+ */
 export function renderCap(options?: CapOptions): string {
   const p = capParts(options);
   return wrapSvg({ id: p.id, w: p.w, h: p.h, width: p.size, title: p.title, defs: p.defs, body: p.body });

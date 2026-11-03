@@ -27,15 +27,64 @@ import type { Mark } from "./judogiCloth.ts";
 import { n2 } from "./path.ts";
 import { layout } from "./text.ts";
 
+/**
+ * The sleeve lengths of a karate gi.
+ *
+ * @example
+ * ```ts
+ * import { KARATE_SLEEVES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(KARATE_SLEEVES.length, KARATE_SLEEVES[0]);
+ * ```
+ */
 export const KARATE_SLEEVES = ["full", "three-quarter", "short"] as const;
+/**
+ * The sleeve length of a karate gi.
+ *
+ * @example
+ * ```ts
+ * import { KARATE_SLEEVES, type KarateSleeve } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: KarateSleeve | undefined = KARATE_SLEEVES[0];
+ * console.log(first);
+ * ```
+ */
 export type KarateSleeve = (typeof KARATE_SLEEVES)[number];
 
+/**
+ * The cuts of a karate gi: for training, for kumite (sparring) and for kata (forms).
+ *
+ * @example
+ * ```ts
+ * import { KARATE_CUTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(KARATE_CUTS.length, KARATE_CUTS[0]);
+ * ```
+ */
 export const KARATE_CUTS = ["training", "kumite", "kata"] as const;
+/**
+ * The cut of a karate gi.
+ *
+ * @example
+ * ```ts
+ * import { KARATE_CUTS, type KarateCut } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: KarateCut | undefined = KARATE_CUTS[0];
+ * console.log(first);
+ * ```
+ */
 export type KarateCut = (typeof KARATE_CUTS)[number];
 
 /**
  * How far down the full sleeve each length goes: to the bend of the wrist; halfway down the forearm, the shortest the WKF allows; just above the elbow. The sleeve is drawn from
  * where it leaves the body, so the elbow falls at about 0.76 of it and the middle of the forearm at about 0.88.
+ *
+ * @example
+ * ```ts
+ * import { KARATE_SLEEVE_SHARE } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(KARATE_SLEEVE_SHARE));
+ * ```
  */
 export const KARATE_SLEEVE_SHARE: Record<KarateSleeve, number> = { full: 1, "three-quarter": 0.88, short: 0.68 };
 
@@ -49,17 +98,56 @@ const CUTS: Record<KarateCut, { hem: number; soft: number }> = {
   kata: { hem: 211, soft: 0.85 },
 };
 
-/** The round patches' size across, in centimetres: a sleeve badge as karate gis carry them, about 9 to 10 cm, and the leg's the same. */
+/**
+ * The round patches' size across, in centimetres: a sleeve badge as karate gis carry them, about 9 to 10 cm, and the leg's the same.
+ *
+ * @example
+ * ```ts
+ * import { SLEEVE_PATCH_CM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(SLEEVE_PATCH_CM);
+ * ```
+ */
 export const SLEEVE_PATCH_CM = 9;
+/**
+ * The size across of the round patch on a karate gi's trouser leg, in centimetres.
+ *
+ * @example
+ * ```ts
+ * import { LEG_PATCH_CM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(LEG_PATCH_CM);
+ * ```
+ */
 export const LEG_PATCH_CM = 9;
 
-/** What is stitched down the lapel when none is asked for: "karate" in two characters. */
+/**
+ * What is stitched down the lapel when none is asked for: "karate" in two characters.
+ *
+ * @example
+ * ```ts
+ * import { KARATE_TEXT } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(KARATE_TEXT);
+ * ```
+ */
 export const KARATE_TEXT = "空手";
 /** The most characters, one over the next: four fit between the lapel and the sleeve's head. */
 const TEXT_MAX = 4;
 /** The height of the chest the column may use, in the drawing's units: from under the collar to above the belt. */
 const TEXT_ROOM = 66;
 
+/**
+ * A karate gi: its sleeve, cut, lapel text, thread and patches.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiKarate } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const karate: JudogiKarate = { cut: "kumite", sleeve: "three-quarter", text: "空手" };
+ * console.log(karate);
+ * ```
+ */
 export interface JudogiKarate {
   /** How far down the arm the sleeve goes: `full` (to the wrist), `three-quarter` (halfway down the forearm) or `short` (the elbow). Full by default. */
   sleeve?: KarateSleeve;

@@ -31,19 +31,71 @@ import { n2, poly, type Pt } from "./path.ts";
 /** How far above the ankle bone the jiu-jitsu trousers stop unless asked otherwise: the IBJJF's 2 cm (`hemAboveAnkleCm` overrides it). */
 export const BJJ_HEM_CM: number = PANTS_HEM_CM.ibjjf;
 
+/**
+ * The colours of a Brazilian jiu-jitsu gi.
+ *
+ * @example
+ * ```ts
+ * import { BJJ_COLOURS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BJJ_COLOURS.length, BJJ_COLOURS[0]);
+ * ```
+ */
 export const BJJ_COLOURS = ["white", "blue", "black"] as const;
+/**
+ * The colour of a Brazilian jiu-jitsu gi.
+ *
+ * @example
+ * ```ts
+ * import { BJJ_COLOURS, type BjjColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BjjColour | undefined = BJJ_COLOURS[0];
+ * console.log(first);
+ * ```
+ */
 export type BjjColour = (typeof BJJ_COLOURS)[number];
 
 /** The cloths, as the IBJJF's manual shows them (8.1): white, royal blue (PMS royal blue, not navy) and black. */
 export const BJJ_CLOTH: Record<BjjColour, Rgb> = { white: [248, 247, 243], blue: [30, 78, 146], black: [30, 31, 35] };
 
+/**
+ * The patch presets of a Brazilian jiu-jitsu gi: none, the IBJJF's places, or every patch covered.
+ *
+ * @example
+ * ```ts
+ * import { BJJ_PRESETS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BJJ_PRESETS.length, BJJ_PRESETS[0]);
+ * ```
+ */
 export const BJJ_PRESETS = ["none", "ibjjf", "covered"] as const;
+/**
+ * A patch preset of a Brazilian jiu-jitsu gi.
+ *
+ * @example
+ * ```ts
+ * import { BJJ_PRESETS, type BjjPreset } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BjjPreset | undefined = BJJ_PRESETS[0];
+ * console.log(first);
+ * ```
+ */
 export type BjjPreset = (typeof BJJ_PRESETS)[number];
 
 /** The faces a patch is sewn on. */
 export type BjjFace = "jacket-front" | "jacket-back" | "pants-front" | "pants-back";
 
-/** A named place on the gi for a patch, in centimetres at a 170 cm wearer (the drawing's 2.63 units to the centimetre). */
+/**
+ * A named place on the gi for a patch, in centimetres at a 170 cm wearer (the drawing's 2.63 units to the centimetre).
+ *
+ * @example
+ * ```ts
+ * import { BJJ_ZONES, type BjjZone } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BjjZone | undefined = BJJ_ZONES[0];
+ * console.log(first?.id, first?.room);
+ * ```
+ */
 export interface BjjZone {
   id: string;
   face: BjjFace;
@@ -61,6 +113,13 @@ const z = (id: string, face: BjjFace, room: [number, number], legal: [number, nu
  * Every zone, left and right the wearer's. The first of each pair of sizes is across, the second along the cloth (an arm's length, a leg's length, the width of a back).
  * The IBJJF's authorized locations (manual, section 6): upper arm, shoulder, left lapel, right chest, skirt front, upper back, skirt back, thigh and shin on the front of each
  * leg, thigh and calf on its back. The rest (forearm, back of the arm, back of the shoulder, lower back, hip, knee, the skirt's other side) are the "covered" look's.
+ *
+ * @example
+ * ```ts
+ * import { BJJ_ZONES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BJJ_ZONES.length);
+ * ```
  */
 export const BJJ_ZONES: readonly BjjZone[] = [
   z("upper-arm-left", "jacket-front", [8, 17], [5, 17]), z("upper-arm-right", "jacket-front", [8, 17], [5, 17]),
@@ -79,12 +138,40 @@ export const BJJ_ZONES: readonly BjjZone[] = [
   z("thigh-back-left", "pants-back", [9, 15], [9, 15]), z("thigh-back-right", "pants-back", [9, 15], [9, 15]),
   z("calf-back-left", "pants-back", [9, 16], [9, 16]), z("calf-back-right", "pants-back", [9, 16], [9, 16]),
 ];
+/**
+ * The ids of the places a patch may go on a Brazilian jiu-jitsu gi.
+ *
+ * @example
+ * ```ts
+ * import { BJJ_ZONE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BJJ_ZONE_IDS.length, BJJ_ZONE_IDS[0]);
+ * ```
+ */
 export const BJJ_ZONE_IDS: readonly string[] = BJJ_ZONES.map((q) => q.id);
 
-/** The pants' hem and the least distance a patch keeps from it: 15 cm (manual, section 6). */
+/**
+ * The pants' hem and the least distance a patch keeps from it: 15 cm (manual, section 6).
+ *
+ * @example
+ * ```ts
+ * import { HEM_CLEAR_CM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(HEM_CLEAR_CM);
+ * ```
+ */
 export const HEM_CLEAR_CM = 15;
 
-/** The IBJJF's measures of the collar, in centimetres (manual, 2.1): thickness 1 to 1.3, width 4.5 to 5. */
+/**
+ * The IBJJF's measures of the collar, in centimetres (manual, 2.1): thickness 1 to 1.3, width 4.5 to 5.
+ *
+ * @example
+ * ```ts
+ * import { COLLAR_CM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(COLLAR_CM));
+ * ```
+ */
 export const COLLAR_CM = { thick: [1, 1.3], width: [4.5, 5] } as const;
 
 /** The jiu-jitsu jacket's cut (giCut.ts): shorter and fitted, a thick wide lapel stitched in rows, tapered sleeves, a pearl-weave cloth. */
@@ -92,6 +179,17 @@ export const BJJ_CUT: GiCut = {
   sleeve: 1, hem: 187, lapel: 12.8, collar: 3.4, plain: true, soft: 0.9, cuff: 0.8, vent: 8 * CM, fit: 0.92, skirtDepth: 3.5, weave: "pearl", lapelRows: 7,
 };
 
+/**
+ * A Brazilian jiu-jitsu gi: its colour and patches.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiBjj } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const bjj: JudogiBjj = { colour: "blue", patches: "ibjjf" };
+ * console.log(bjj);
+ * ```
+ */
 export interface JudogiBjj {
   /** The gi's colour: `white`, `blue` (royal) or `black`. By default the judogi's own `colour` (white or blue). */
   colour?: BjjColour;
@@ -153,6 +251,16 @@ const PALETTES: Record<BjjColour, { a: Look; b: Look; c: Look }> = {
 /**
  * The patches a preset sews. `ibjjf`: a patch in each authorized location (manual, section 6) at a size inside the location's own. `covered`: every zone, the zones' full room, shapes and
  * colours alternating, the way a competition team's gi is covered. The words are generic ("TEAM", "ACADEMY") and the art neutral.
+ *
+ * @param preset - `ibjjf` or `covered`
+ * @param colour - the colour of the gi
+ * @returns the patches the preset sews, one for each place
+ * @example
+ * ```ts
+ * import { presetPatches } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(presetPatches("ibjjf", "white").length);
+ * ```
  */
 export function presetPatches(preset: "ibjjf" | "covered", colour: BjjColour): BjjPatch[] {
   const k = PALETTES[colour];

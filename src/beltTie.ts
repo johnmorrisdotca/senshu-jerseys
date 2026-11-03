@@ -7,16 +7,56 @@
 
 import type { Pt } from "./path.ts";
 
-/** `spread`: tied twice round, the ends parting from the knot in a V (judo's). `hanging`: tied twice round, the ends hanging down side by side (a long karate or WT belt). `single`: once round, the ends hanging (the ITF's rule). */
+/**
+ * `spread`: tied twice round, the ends parting from the knot in a V (judo's). `hanging`: tied twice round, the ends hanging down side by side (a long karate or WT belt). `single`: once round, the ends hanging (the ITF's rule).
+ *
+ * @example
+ * ```ts
+ * import { BELT_KNOTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_KNOTS.length, BELT_KNOTS[0]);
+ * ```
+ */
 export const BELT_KNOTS = ["spread", "hanging", "single"] as const;
+/**
+ * How a belt is tied.
+ *
+ * @example
+ * ```ts
+ * import { BELT_KNOTS, type BeltKnot } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BeltKnot | undefined = BELT_KNOTS[0];
+ * console.log(first);
+ * ```
+ */
 export type BeltKnot = (typeof BELT_KNOTS)[number];
 
-/** How far the ends hang from the knot, in centimetres: what can be drawn (the shortest the WKF allows to a little past the knee). */
+/**
+ * How far the ends hang from the knot, in centimetres: what can be drawn (the shortest the WKF allows to a little past the knee).
+ *
+ * @example
+ * ```ts
+ * import { BELT_TAIL_CM } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BELT_TAIL_CM));
+ * ```
+ */
 export const BELT_TAIL_CM = { min: 15, max: 55 } as const;
 
 /** The judogi's own: the IJF's 25 cm (20 to 30), in a V. */
 export const JUDO_TIE = { knot: "spread", tailCm: 25 } as const satisfies BeltTie;
 
+/**
+ * How a belt is tied and how far its ends hang.
+ *
+ * @example
+ * ```ts
+ * import type { BeltTie } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const tie: BeltTie = { knot: "spread", tailCm: 25 };
+ * console.log(tie);
+ * ```
+ */
 export interface BeltTie {
   knot: BeltKnot;
   tailCm: number;
@@ -75,6 +115,13 @@ export function tieReach(t: BeltTie | undefined): number {
  * Each garment's own tie, as the belt is worn with it: the judogi's ends 25 cm in a V; the karate gi's hanging side by side to just above the knee, about 50 cm (John's
  * reference photograph; the WKF's least is 15 cm), and in the kumite and kata cuts 25 cm, inside the WKF's 15 cm to three-quarters of the thigh; the WT dobok's twice round and hanging about 38 cm; the ITF dobok's once round, its ends the longer for it, about 40 cm.
  * The lengths past the rules' least are the package's reading of the photographs, not a rule.
+ *
+ * @example
+ * ```ts
+ * import { GARMENT_TIES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(GARMENT_TIES));
+ * ```
  */
 export const GARMENT_TIES = {
   judogi: JUDO_TIE,

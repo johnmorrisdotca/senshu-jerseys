@@ -2,10 +2,30 @@
 // `renderEmblem` of @johnmorrisdotca/dougu-sports/emblems (or any function with its shape); `useEmblems(renderEmblem)` plugs it in for the page, and `emblems: renderEmblem`
 // (an option of `renderJersey`, `renderCap`, `renderHelmet` and `renderBanner`) for one drawing.
 
-/** The styles an emblem is drawn in. */
+/**
+ * The styles an emblem is drawn in.
+ *
+ * @example
+ * ```ts
+ * import type { EmblemStyleName } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: EmblemStyleName = "line";
+ * console.log(value);
+ * ```
+ */
 export type EmblemStyleName = "metal" | "line" | "color";
 
-/** What a jersey asks of a renderer: a subset of dougu-sports' `EmblemOptions`. */
+/**
+ * What a jersey asks of a renderer: a subset of dougu-sports' `EmblemOptions`.
+ *
+ * @example
+ * ```ts
+ * import type { EmblemDrawOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: EmblemDrawOptions = { style: "line", tint: "#192168", size: 64 };
+ * console.log(options);
+ * ```
+ */
 export interface EmblemDrawOptions {
   style?: EmblemStyleName;
   tint?: string;
@@ -15,7 +35,19 @@ export interface EmblemDrawOptions {
   size?: number;
 }
 
-/** A function that draws an emblem from its id as a document of SVG, and throws for an id it does not know. */
+/**
+ * A function that draws an emblem from its id as a document of SVG, and throws for an id it does not know.
+ *
+ * @example
+ * ```ts
+ * import { useEmblems, type EmblemRenderer } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const render: EmblemRenderer = (id) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><title>${id}</title><circle cx="5" cy="5" r="4"/></svg>`;
+ * useEmblems(render);
+ * console.log(render("star").includes("<title>star"));
+ * useEmblems(undefined);
+ * ```
+ */
 export type EmblemRenderer = (id: string, options?: EmblemDrawOptions) => string;
 
 let plugged: EmblemRenderer | undefined;
@@ -23,12 +55,15 @@ let plugged: EmblemRenderer | undefined;
 /**
  * Plug a renderer of ready-made emblems in, for every drawing on the page: after this `crest: "crest:shield"` draws that crest. Call it once, at start-up.
  * Without one an id is not a crest and is left out. `useEmblems(undefined)` unplugs it.
+ *
  * @example
- * ```ts no-run
+ * ```ts no-check
  * import { useEmblems } from "@johnmorrisdotca/senshu-jerseys";
  * import { renderEmblem } from "@johnmorrisdotca/dougu-sports/emblems";
  * useEmblems(renderEmblem);
  * ```
+ *
+ * @param render - a function from an emblem's id to an SVG document, or `undefined` to take it out
  */
 export function useEmblems(render: EmblemRenderer | undefined): void {
   plugged = typeof render === "function" ? render : undefined;

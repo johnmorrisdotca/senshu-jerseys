@@ -1,18 +1,100 @@
 // The cuts: each is a table of measures in a drawing 200 units wide (the middle of the shirt is x = 100) and what its sport's shirt carries: the sleeves it can have, the collars
 // and where the number, the name, a crest and the patches go. A measure called `u` is a distance from the middle; `y` is down from the top.
 
+/**
+ * The cuts of jersey, by id.
+ *
+ * @example
+ * ```ts
+ * import { CUT_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(CUT_IDS.length, CUT_IDS[0]);
+ * ```
+ */
 export const CUT_IDS = ["hockey", "baseball", "basketball", "football", "soccer", "rugby", "handball"] as const;
+/**
+ * A cut of jersey.
+ *
+ * @example
+ * ```ts
+ * import { CUT_IDS, type CutId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: CutId | undefined = CUT_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type CutId = (typeof CUT_IDS)[number];
 
-/** The fit of a cut: `mens` is the straight, boxy shirt cut for pads; `womens` the tailored one, with a shorter body, narrower shoulders and sleeves, and a waist that tapers in and flares out again to the hem. */
+/**
+ * The fit of a cut: `mens` is the straight, boxy shirt cut for pads; `womens` the tailored one, with a shorter body, narrower shoulders and sleeves, and a waist that tapers in and flares out again to the hem.
+ *
+ * @example
+ * ```ts
+ * import { FIT_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(FIT_IDS.length, FIT_IDS[0]);
+ * ```
+ */
 export const FIT_IDS = ["mens", "womens"] as const;
+/**
+ * The fit of a cut: men's or women's.
+ *
+ * @example
+ * ```ts
+ * import { FIT_IDS, type FitId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: FitId | undefined = FIT_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type FitId = (typeof FIT_IDS)[number];
 
+/**
+ * The sleeve lengths of a jersey.
+ *
+ * @example
+ * ```ts
+ * import { SLEEVE_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(SLEEVE_IDS.length, SLEEVE_IDS[0]);
+ * ```
+ */
 export const SLEEVE_IDS = ["long", "elbow", "short", "none"] as const;
+/**
+ * The sleeve length of a jersey.
+ *
+ * @example
+ * ```ts
+ * import { SLEEVE_IDS, type SleeveId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: SleeveId | undefined = SLEEVE_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type SleeveId = (typeof SLEEVE_IDS)[number];
 
-/** `zip` is a stand collar over a zipper (the hockey official's), and `point` a polo's long-pointed leaves over a placket (the dress collar of an umpire's or a referee's shirt). */
+/**
+ * `zip` is a stand collar over a zipper (the hockey official's), and `point` a polo's long-pointed leaves over a placket (the dress collar of an umpire's or a referee's shirt).
+ *
+ * @example
+ * ```ts
+ * import { COLLAR_IDS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(COLLAR_IDS.length, COLLAR_IDS[0]);
+ * ```
+ */
 export const COLLAR_IDS = ["crew", "v", "lace-up", "polo", "round", "wishbone", "band", "zip", "point"] as const;
+/**
+ * A collar of a jersey.
+ *
+ * @example
+ * ```ts
+ * import { COLLAR_IDS, type CollarId } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: CollarId | undefined = COLLAR_IDS[0];
+ * console.log(first);
+ * ```
+ */
 export type CollarId = (typeof COLLAR_IDS)[number];
 
 /** A sleeve: its direction (degrees below the level, outward), its length along the outer edge and its width at the cuff. */
@@ -22,7 +104,17 @@ export interface SleeveSpec {
   cw: number;
 }
 
-/** A place on the shirt: the centre, and the largest box (`w`, `h`) a thing placed there may fill. */
+/**
+ * A place on the shirt: the centre, and the largest box (`w`, `h`) a thing placed there may fill.
+ *
+ * @example
+ * ```ts
+ * import type { Spot } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const chest: Spot = { x: 100, y: 60, w: 80, h: 40 };
+ * console.log(chest);
+ * ```
+ */
 export interface Spot {
   x: number;
   y: number;
@@ -30,6 +122,17 @@ export interface Spot {
   h: number;
 }
 
+/**
+ * The table of one cut: its sizes, sleeves, collars and the places on it.
+ *
+ * @example
+ * ```ts
+ * import { cutSpec, type CutSpec } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const spec: CutSpec = cutSpec("baseball", "mens");
+ * console.log(spec.id, spec.collars);
+ * ```
+ */
 export interface CutSpec {
   id: CutId;
   /** The room the drawing needs beyond its 200 units on each side, so that no sleeve of the cut, still or turned, is cut off by the box: the drawing is made in `-reach 0 (200 + 2 reach) 232`. Measured by `scripts/jersey-boxes.mjs`; none (absent) for a cut that fits the body. */
@@ -66,6 +169,16 @@ export interface CutSpec {
 
 const spot = (x: number, y: number, w: number, h: number): Spot => ({ x, y, w, h });
 
+/**
+ * The table of each cut: its sizes, sleeves, collars and the places on it.
+ *
+ * @example
+ * ```ts
+ * import { CUTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(CUTS));
+ * ```
+ */
 export const CUTS: Readonly<Record<CutId, CutSpec>> = {
   hockey: {
     id: "hockey", ny: 24, su: 62, sy: 37, au: 51, ay: 86, wu: 48, hu: 54, hy: 208, drop: 0,
@@ -158,5 +271,17 @@ function womensOf(m: CutSpec): CutSpec {
 
 const WOMENS = Object.fromEntries(CUT_IDS.map((id) => [id, womensOf(CUTS[id])])) as Readonly<Record<CutId, CutSpec>>;
 
-/** The table of a cut in a fit: `CUTS[cut]` for `mens`, the tailored one for `womens`. */
+/**
+ * The table of a cut in a fit: `CUTS[cut]` for `mens`, the tailored one for `womens`.
+ *
+ * @param cut - the cut
+ * @param fit - `mens` or `womens`
+ * @returns the table of the cut in that fit
+ * @example
+ * ```ts
+ * import { cutSpec } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(cutSpec("hockey", "womens").id);
+ * ```
+ */
 export const cutSpec = (cut: CutId, fit: FitId = "mens"): CutSpec => (fit === "womens" ? WOMENS[cut] : CUTS[cut]);

@@ -27,25 +27,139 @@ import { wrapSvg } from "./svg.ts";
 import { FACE_BOX, pieceMarkup, type Draw } from "./pieceVolume.ts";
 import type { VolumeDesc } from "./volume.ts";
 
+/**
+ * The colours of a judogi.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_COLOURS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JUDOGI_COLOURS.length, JUDOGI_COLOURS[0]);
+ * ```
+ */
 export const JUDOGI_COLOURS = ["white", "blue"] as const;
+/**
+ * The colour of a judogi.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_COLOURS, type JudogiColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: JudogiColour | undefined = JUDOGI_COLOURS[0];
+ * console.log(first);
+ * ```
+ */
 export type JudogiColour = (typeof JUDOGI_COLOURS)[number];
 
+/**
+ * The belts a judogi can wear: `none` or a colour.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_BELTS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JUDOGI_BELTS.length, JUDOGI_BELTS[0]);
+ * ```
+ */
 export const JUDOGI_BELTS = ["none", "white", "yellow", "orange", "green", "blue", "brown", "black", "red-white", "red"] as const;
+/**
+ * A judogi belt: `none` or a colour.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_BELTS, type JudogiBelt } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: JudogiBelt | undefined = JUDOGI_BELTS[0];
+ * console.log(first);
+ * ```
+ */
 export type JudogiBelt = (typeof JUDOGI_BELTS)[number];
 
+/**
+ * What a judogi drawing shows: the pieces apart, the suit, the jacket, the trousers, the belt, the belt folded or the belt in its box.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_MODES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JUDOGI_MODES.length, JUDOGI_MODES[0]);
+ * ```
+ */
 export const JUDOGI_MODES = ["pieces", "suit", "jacket", "pants", "belt", "folded", "box"] as const;
+/**
+ * What a judogi drawing shows.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_MODES, type JudogiMode } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: JudogiMode | undefined = JUDOGI_MODES[0];
+ * console.log(first);
+ * ```
+ */
 export type JudogiMode = (typeof JUDOGI_MODES)[number];
 
+/**
+ * The views of a judogi: the front, the back, and the cloth laid out flat from each side.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_VIEWS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JUDOGI_VIEWS.length, JUDOGI_VIEWS[0]);
+ * ```
+ */
 export const JUDOGI_VIEWS = ["front", "back", "flat", "flat-back"] as const;
+/**
+ * Which side of a judogi to draw.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_VIEWS, type JudogiView } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: JudogiView | undefined = JUDOGI_VIEWS[0];
+ * console.log(first);
+ * ```
+ */
 export type JudogiView = (typeof JUDOGI_VIEWS)[number];
 
-/** Traditional 1–7 and the IJF height sizes in centimetres (150–200, every 5). */
+/**
+ * Traditional 1–7 and the IJF height sizes in centimetres (150–200, every 5).
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_SIZES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(JUDOGI_SIZES.length, JUDOGI_SIZES[0]);
+ * ```
+ */
 export const JUDOGI_SIZES = [
   "1", "2", "3", "4", "5", "6", "7",
   "150", "155", "160", "165", "170", "175", "180", "185", "190", "195", "200",
 ] as const;
+/**
+ * A judogi size: 1 to 7, or a height in centimetres.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_SIZES, type JudogiSize } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: JudogiSize | undefined = JUDOGI_SIZES[0];
+ * console.log(first);
+ * ```
+ */
 export type JudogiSize = (typeof JUDOGI_SIZES)[number];
 
+/**
+ * Each belt colour's name in English and Japanese.
+ *
+ * @example
+ * ```ts
+ * import { JUDOGI_BELT_LABELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(JUDOGI_BELT_LABELS).length);
+ * ```
+ */
 export const JUDOGI_BELT_LABELS: Record<Exclude<JudogiBelt, "none">, { en: string; ja: string }> = {
   white: { en: "White", ja: "白" },
   yellow: { en: "Yellow", ja: "黄" },
@@ -58,6 +172,17 @@ export const JUDOGI_BELT_LABELS: Record<Exclude<JudogiBelt, "none">, { en: strin
   red: { en: "Red", ja: "赤" },
 };
 
+/**
+ * A judogi: colour, belt, size, mode, view, patches, embroidery, logos and the rest.
+ *
+ * @example
+ * ```ts
+ * import { renderJudogi, type JudogiOptions } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const options: JudogiOptions = { colour: "blue", belt: "brown", mode: "suit", view: "back", language: "ja" };
+ * console.log(renderJudogi(options).startsWith("<svg"));
+ * ```
+ */
 export interface JudogiOptions {
   colour?: JudogiColour;
   belt?: JudogiBelt;
@@ -153,12 +278,34 @@ const BELT_SIZE_FOR: Record<JudogiSize, number> = {
   "150": 2, "155": 2.5, "160": 3, "165": 3, "170": 3.5, "175": 4, "180": 4.5, "185": 5, "190": 5.5, "195": 6, "200": 6.5,
 };
 
-/** The belt size number a judogi size defaults to. */
+/**
+ * The belt size number a judogi size defaults to.
+ *
+ * @param size - a judogi size
+ * @returns the belt size number
+ * @example
+ * ```ts
+ * import { beltSizeForJudogi } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltSizeForJudogi("180"));
+ * ```
+ */
 export const beltSizeForJudogi = (size: JudogiSize): number => BELT_SIZE_FOR[size];
 
 /** The belt width asked for, in centimetres, or undefined for the grade's own. */
 const readBeltCm = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
+/**
+ * What `judogiCheck` found: whether the size meets the cited facts, and each fact.
+ *
+ * @example
+ * ```ts
+ * import { judogiCheck, type JudogiCheck } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const check: JudogiCheck = judogiCheck({ size: "180" });
+ * console.log(check.ok, check.notes.length);
+ * ```
+ */
 export interface JudogiCheck {
   ok: boolean;
   size: JudogiSize;
@@ -179,12 +326,35 @@ const HEIGHT_OF: Record<JudogiSize, number> = {
 const pick = <T extends string>(list: readonly T[], v: unknown, fallback: T): T =>
   typeof v === "string" && (list as readonly string[]).includes(v) ? (v as T) : fallback;
 
-/** The height in centimetres a named size stands for. */
+/**
+ * The height in centimetres a named size stands for.
+ *
+ * @param size - a size: 1 to 7, or a height in centimetres from 150 to 195
+ * @returns the height in centimetres
+ * @example
+ * ```ts
+ * import { judogiHeightCm } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(judogiHeightCm("5"), judogiHeightCm("180"));
+ * ```
+ */
 export function judogiHeightCm(size: JudogiSize): number {
   return HEIGHT_OF[size];
 }
 
-/** Whether a named size meets the cited IJF length facts (09 03 2022). */
+/**
+ * Whether a named size meets the cited IJF length facts (09 03 2022).
+ *
+ * @param options - the judogi: its size is the one checked
+ * @returns whether every cited length fact is met, with each fact and the height the size stands for
+ * @example
+ * ```ts
+ * import { judogiCheck } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const check = judogiCheck({ size: "180" });
+ * console.log(check.ok, check.heightCm);
+ * ```
+ */
 export function judogiCheck(options?: JudogiOptions): JudogiCheck {
   const size = pick(JUDOGI_SIZES, options?.size, "170");
   const h = HEIGHT_OF[size];
@@ -268,7 +438,19 @@ function tieFor(o: JudogiOptions, karate: ReadKarate | undefined, dobok: ReadDob
 /** The belt size asked for, or undefined: 1 to 8 in halves. */
 const readBeltSize = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? Math.max(1, Math.min(8, Math.round(v * 2) / 2)) : undefined);
 
-/** A judogi as SVG. Front and back are a garment with volume; flat is the cloth laid out. The library does not read the clock. */
+/**
+ * A judogi as SVG. Front and back are a garment with volume; flat is the cloth laid out. The library does not read the clock.
+ *
+ * @param options - the judogi: colour, belt, size, mode, view, patches, embroidery and the rest
+ * @returns an SVG document of the judogi
+ * @example
+ * ```ts
+ * import { renderJudogi } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const svg = renderJudogi({ colour: "white", belt: "black", mode: "suit", view: "front" });
+ * console.log(svg.startsWith("<svg"));
+ * ```
+ */
 export function renderJudogi(options?: JudogiOptions): string {
   const o = read(options);
   const drawn = compose(o);
@@ -278,7 +460,18 @@ export function renderJudogi(options?: JudogiOptions): string {
   });
 }
 
-/** The same drawing as `renderJudogi`, including its turn. */
+/**
+ * The same drawing as `renderJudogi`, including its turn.
+ *
+ * @param options - the judogi, as for `renderJudogi`, with `yaw` and `thickness`
+ * @returns an SVG document of the judogi at that angle
+ * @example
+ * ```ts
+ * import { judogiFrame } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(judogiFrame({ mode: "suit", view: "front", yaw: 30 }).startsWith("<svg"));
+ * ```
+ */
 export function judogiFrame(options?: JudogiOptions): string {
   return renderJudogi(options);
 }

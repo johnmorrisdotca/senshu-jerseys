@@ -3,7 +3,17 @@
 import type { CutId } from "../cuts.ts";
 import { bandsOf, type JerseyOptions } from "../options.ts";
 
-/** One preset, decoded. `id` is `league:team-years-way` (`nhl:montreal-1950s-home`). */
+/**
+ * One preset, decoded. `id` is `league:team-years-way` (`nhl:montreal-1950s-home`).
+ *
+ * @example
+ * ```ts
+ * import { PRESETS, type Preset } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * const first: Preset | undefined = PRESETS[0];
+ * console.log(first?.id, first?.options.cut);
+ * ```
+ */
 export interface Preset {
   id: string;
   league: string;
@@ -17,8 +27,29 @@ export interface Preset {
   options: JerseyOptions;
 }
 
-/** `[team key, years, way, spec]`: the spec is described in `docs/presets.md`. */
+/**
+ * `[team key, years, way, spec]`: the spec is described in `docs/presets.md`.
+ *
+ * @example
+ * ```ts
+ * import type { Row } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * const row: Row = ["reds", "2020-", "home", "body:af1e2d trim:ffffff"];
+ * console.log(row[0]);
+ * ```
+ */
 export type Row = readonly [team: string, years: string, way: string, spec: string];
+/**
+ * A league's teams: each key with its English and Japanese name.
+ *
+ * @example
+ * ```ts
+ * import type { Teams } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * const teams: Teams = { reds: ["Reds", "レッズ"] };
+ * console.log(Object.keys(teams));
+ * ```
+ */
 export type Teams = Readonly<Record<string, readonly [en: string, ja: string]>>;
 
 const CUT_CODES: Record<string, CutId> = { h: "hockey", b: "baseball", k: "basketball", f: "football", s: "soccer", r: "rugby", d: "handball" };
@@ -48,7 +79,19 @@ const teeth = (t: string): JerseyOptions["sleeveTeeth"] => {
   return { at, colour: colour === 2 ? 2 : 1, count, depth, ...(dir === "c" ? { direction: "cuff" as const } : {}) };
 };
 
-/** The options a spec says, on top of `base`. Unknown words are ignored. */
+/**
+ * The options a spec says, on top of `base`. Unknown words are ignored.
+ *
+ * @param spec - a preset's spec, as in `docs/presets.md`
+ * @param base - the options to start from
+ * @returns the options the spec says, on top of `base`
+ * @example
+ * ```ts
+ * import { decode } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * console.log(decode("body:af1e2d trim:ffffff", { cut: "hockey" }));
+ * ```
+ */
 export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
   const o: Record<string, unknown> = { ...base };
   const colours: (string | undefined)[] = [];
@@ -116,7 +159,23 @@ export function decode(spec: string, base: JerseyOptions = {}): JerseyOptions {
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-/** A league's presets from its teams' names and its rows. */
+/**
+ * A league's presets from its teams' names and its rows.
+ *
+ * @param league - the league's id
+ * @param cut - the cut every team of the league wears
+ * @param teams - each team's key, with its English and Japanese name
+ * @param rows - one row for each look: team key, years, way and spec
+ * @param base - the options every look starts from
+ * @returns the presets, one for each row
+ * @example
+ * ```ts
+ * import { defineLeague } from "@johnmorrisdotca/senshu-jerseys/presets";
+ *
+ * const presets = defineLeague("club", "hockey", { reds: ["Reds", "レッズ"] }, [["reds", "2020-", "home", "body:af1e2d trim:ffffff"]]);
+ * console.log(presets[0]?.id);
+ * ```
+ */
 export function defineLeague(league: string, cut: CutId, teams: Teams, rows: readonly Row[], base: JerseyOptions = {}): Preset[] {
   return rows.map(([key, years, way, spec]) => {
     const team = teams[key];

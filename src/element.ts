@@ -5,9 +5,28 @@ import { presetOptions } from "./registry.ts";
 import { renderJersey } from "./render.ts";
 import { bindTurn, jerseyFrame, turnDirection, type TurnHandle } from "./turn.ts";
 
-/** The tag of the element. */
+/**
+ * The tag of the element.
+ *
+ * @example
+ * ```ts
+ * import { SENSHU_TAG } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * console.log(SENSHU_TAG);
+ * ```
+ */
 export const SENSHU_TAG = "senshu-jersey";
 
+/**
+ * Every attribute of the `<senshu-jersey>` element: the option attributes and the ones for turning and the controls.
+ *
+ * @example
+ * ```ts
+ * import { SENSHU_ATTRIBUTES } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * console.log(SENSHU_ATTRIBUTES.length, SENSHU_ATTRIBUTES[0]);
+ * ```
+ */
 export const SENSHU_ATTRIBUTES = [...OPTION_ATTRIBUTES, "preset", "turnable", "autoplay", "speed", "direction", "yaw", "volume", "pitch"] as const;
 
 // Importing the module in a server or a test with no DOM must not fail: the class stands on an empty base there.
@@ -15,6 +34,19 @@ const Base: typeof HTMLElement = typeof HTMLElement === "undefined" ? (class {} 
 
 const STYLE = ":host{display:inline-block;line-height:0;max-width:100%}.box{display:block;outline-offset:3px}.box:focus-visible{outline:2px solid currentColor;border-radius:6px}svg{max-width:100%;height:auto}";
 
+/**
+ * The `<senshu-jersey>` element: a jersey drawn from its attributes, turnable by hand or by itself.
+ *
+ * @example
+ * ```ts no-run
+ * import { SenshuJersey, defineSenshuJersey } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * defineSenshuJersey();
+ * const jersey = document.createElement("senshu-jersey") as SenshuJersey;
+ * jersey.setAttribute("cut", "hockey");
+ * document.body.append(jersey);
+ * ```
+ */
 export class SenshuJersey extends Base {
   static observedAttributes = SENSHU_ATTRIBUTES;
   #box: HTMLElement | undefined;
@@ -108,7 +140,19 @@ export class SenshuJersey extends Base {
   }
 }
 
-/** Register the element under a tag (`senshu-jersey` unless told otherwise). Safe to call twice; does nothing without a DOM. */
+/**
+ * Register the element under a tag (`senshu-jersey` unless told otherwise). Safe to call twice; does nothing without a DOM.
+ *
+ * @param tag - the tag to register (`senshu-jersey` by default)
+ * @param registry - the custom elements registry to use (the page's by default)
+ * @example
+ * ```ts no-run
+ * import { defineSenshuJersey } from "@johnmorrisdotca/senshu-jerseys/element";
+ *
+ * defineSenshuJersey();
+ * document.body.insertAdjacentHTML("beforeend", '<senshu-jersey cut="hockey" colors="af1e2d,ffffff" number="9"></senshu-jersey>');
+ * ```
+ */
 export function defineSenshuJersey(tag: string = SENSHU_TAG, registry: CustomElementRegistry | undefined = typeof customElements === "undefined" ? undefined : customElements): void {
   if (registry === undefined || registry.get(tag) !== undefined) return;
   registry.define(tag, SenshuJersey);

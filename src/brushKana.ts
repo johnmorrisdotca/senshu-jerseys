@@ -4,6 +4,17 @@
 import type { FontPath } from "./fontPath.ts";
 import { BRUSH_GLYPHS } from "./brushKanaData.ts";
 
+/**
+ * The direction and spacing of kana set by `brushKana`.
+ *
+ * @example
+ * ```ts
+ * import { brushKana, type BrushKanaOptions } from "@johnmorrisdotca/senshu-jerseys/brush-kana";
+ *
+ * const options: BrushKanaOptions = { direction: "down", spacing: 0.1 };
+ * console.log(brushKana("さむ", options).height > 0);
+ * ```
+ */
 export interface BrushKanaOptions {
   /** `across` (the default) sets the text on a line; `down` stands each character upright in a column, one under the next. */
   direction?: "across" | "down";
@@ -11,10 +22,28 @@ export interface BrushKanaOptions {
   spacing?: number;
 }
 
-/** The font the outlines come from, for a credit line. */
+/**
+ * The font the outlines come from, for a credit line.
+ *
+ * @example
+ * ```ts
+ * import { BRUSH_KANA_FONT } from "@johnmorrisdotca/senshu-jerseys/brush-kana";
+ *
+ * console.log(BRUSH_KANA_FONT);
+ * ```
+ */
 export const BRUSH_KANA_FONT = "Klee One (SIL Open Font License 1.1)";
 
-/** The characters `brushKana` has outlines for, as one string. */
+/**
+ * The characters `brushKana` has outlines for, as one string.
+ *
+ * @example
+ * ```ts
+ * import { BRUSH_KANA_CHARS } from "@johnmorrisdotca/senshu-jerseys/brush-kana";
+ *
+ * console.log(BRUSH_KANA_CHARS);
+ * ```
+ */
 export const BRUSH_KANA_CHARS: string = Object.keys(BRUSH_GLYPHS).join("");
 
 const MAX_CHARS = 64;
@@ -32,6 +61,17 @@ function shift(d: string, dx: number, dy: number): string {
 /**
  * `text` in a pen hand, as one path for an embroidery's `path`: filled with the non-zero rule, y down, its top left at 0 0 in a box of `width` x `height` (the em is 100). Characters it has no outline
  * for (`BRUSH_KANA_CHARS` are the ones it has) are left out and listed in `missing`. At most 64 characters.
+ *
+ * @param text - hiragana or katakana
+ * @param options - the direction the text runs (`across` or `down`) and the spacing
+ * @returns one path with its width and height, and the characters it has no outline for
+ * @example
+ * ```ts
+ * import { brushKana } from "@johnmorrisdotca/senshu-jerseys/brush-kana";
+ *
+ * const path = brushKana("せんしゅ");
+ * console.log(path.missing.length, path.width > 0);
+ * ```
  */
 export function brushKana(text: string, options: BrushKanaOptions = {}): FontPath {
   const down = options.direction === "down";

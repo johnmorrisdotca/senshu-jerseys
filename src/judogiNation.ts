@@ -11,12 +11,65 @@ import { readThread, type ThreadColour } from "./judogiThread.ts";
 import { n2 } from "./path.ts";
 import { langAttr, layout, type Run } from "./text.ts";
 
+/**
+ * The places a nation's mark may go on a judogi.
+ *
+ * @example
+ * ```ts
+ * import { NATION_PLACES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(NATION_PLACES.length, NATION_PLACES[0]);
+ * ```
+ */
 export const NATION_PLACES = ["shoulder-left", "shoulder-right", "shoulders"] as const;
+/**
+ * A place for a nation's mark.
+ *
+ * @example
+ * ```ts
+ * import { NATION_PLACES, type NationPlace } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: NationPlace | undefined = NATION_PLACES[0];
+ * console.log(first);
+ * ```
+ */
 export type NationPlace = (typeof NATION_PLACES)[number];
 
+/**
+ * How a nation's mark is made: embroidered or printed.
+ *
+ * @example
+ * ```ts
+ * import { NATION_STYLES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(NATION_STYLES.length, NATION_STYLES[0]);
+ * ```
+ */
 export const NATION_STYLES = ["embroidery", "print"] as const;
+/**
+ * How a nation's mark is made.
+ *
+ * @example
+ * ```ts
+ * import { NATION_STYLES, type NationStyle } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: NationStyle | undefined = NATION_STYLES[0];
+ * console.log(first);
+ * ```
+ */
 export type NationStyle = (typeof NATION_STYLES)[number];
 
+/**
+ * A nation's code, name and flag sewn on a judogi.
+ *
+ * @example
+ * ```ts
+ * import type { JudogiNation } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const nation: JudogiNation = { code: "JPN", place: "shoulders", style: "embroidery" };
+ * console.log(nation);
+ * ```
+ */
 export interface JudogiNation {
   /** The country's letters as the team uses them (`CAN`, `USA`, an IOC or ISO code): 2 to 4 letters, set in capitals. Anything else is left out. */
   code: string;

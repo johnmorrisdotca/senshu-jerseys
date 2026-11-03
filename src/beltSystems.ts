@@ -3,7 +3,17 @@
 // the pages it was read from and the day, and says whether each is a governing body's own text (`primary`) or only a lead (a retailer's chart, a picture).
 // Original data; nothing is copied from a chart's artwork.
 
-/** Where a fact was read: a governing body's own text, or a lead (a retailer's or club's chart, a picture) to be confirmed. */
+/**
+ * Where a fact was read: a governing body's own text, or a lead (a retailer's or club's chart, a picture) to be confirmed.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SOURCES, type BeltSource } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BeltSource | undefined = Object.values(BELT_SOURCES)[0];
+ * console.log(first?.kind, first?.title);
+ * ```
+ */
 export interface BeltSource {
   id: string;
   title: string;
@@ -15,10 +25,30 @@ export interface BeltSource {
   note: string;
 }
 
-/** A belt colour by name; the drawing code maps the names to its own colours. */
+/**
+ * A belt colour by name; the drawing code maps the names to its own colours.
+ *
+ * @example
+ * ```ts
+ * import type { BeltColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const value: BeltColour = "purple";
+ * console.log(value);
+ * ```
+ */
 export type BeltColour = "white" | "grey" | "yellow" | "orange" | "green" | "blue" | "purple" | "brown" | "black" | "red" | "silver" | "gold";
 
-/** A block at one end of the belt in its own colour (the black tip of a jiu-jitsu belt) with bars across it. */
+/**
+ * A block at one end of the belt in its own colour (the black tip of a jiu-jitsu belt) with bars across it.
+ *
+ * @example
+ * ```ts
+ * import type { BeltTip } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const tip: BeltTip = { colour: "black", lengthCm: 10, fromEndCm: 0 };
+ * console.log(tip);
+ * ```
+ */
 export interface BeltTip {
   colour: BeltColour;
   /** Length of the block along the belt, in centimetres. */
@@ -29,7 +59,17 @@ export interface BeltTip {
   bars?: { colour: BeltColour; max: number; widthCm: number };
 }
 
-/** Short bars across the belt near an end (a taekwondo tip, a judo tag): `count` of them in `colour`. */
+/**
+ * Short bars across the belt near an end (a taekwondo tip, a judo tag): `count` of them in `colour`.
+ *
+ * @example
+ * ```ts
+ * import type { BeltTags } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const tags: BeltTags = { colour: "white", count: 2, form: "tip" };
+ * console.log(tags);
+ * ```
+ */
 export interface BeltTags {
   colour: BeltColour;
   count: number;
@@ -37,6 +77,17 @@ export interface BeltTags {
   form: "tag" | "tip";
 }
 
+/**
+ * One grade of a belt system: its colours, tip and tags.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS, type BeltGrade } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const grade: BeltGrade | undefined = BELT_SYSTEMS[0]?.grades[0];
+ * console.log(grade?.name, grade?.rankKind);
+ * ```
+ */
 export interface BeltGrade {
   /** Stable key within the system, e.g. `kyu-6`, `dan-1`, `mon-4`, `grey-white`. */
   id: string;
@@ -57,6 +108,17 @@ export interface BeltGrade {
   note?: string;
 }
 
+/**
+ * How a belt's ends hang and how wide it is, with the range each can take and where it is worn.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS, type BeltEnds } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const ends: BeltEnds | undefined = BELT_SYSTEMS[0]?.ends;
+ * console.log(ends?.hangCm.usual);
+ * ```
+ */
 export interface BeltEnds {
   /** How far each end hangs from the knot, in centimetres: the range the rules or the custom give, and the usual. */
   hangCm: { min: number; max: number; usual: number };
@@ -66,6 +128,17 @@ export interface BeltEnds {
   worn: "waist" | "hips";
 }
 
+/**
+ * The words customarily stitched on a belt of a system: the text, its script and lettering, and whether it is from a primary source.
+ *
+ * @example
+ * ```ts
+ * import type { BeltTextCustom } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const custom: BeltTextCustom = { text: "柔道", script: "kanji", font: "kaisho", basis: "lead" };
+ * console.log(custom.text);
+ * ```
+ */
 export interface BeltTextCustom {
   /** What is customarily embroidered on a belt end here. */
   text: string;
@@ -78,6 +151,17 @@ export interface BeltTextCustom {
   basis: "primary" | "lead";
 }
 
+/**
+ * A belt system: an art's grades, its sources and notes.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS, type BeltSystem } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const system: BeltSystem | undefined = BELT_SYSTEMS[0];
+ * console.log(system?.id, system?.grades.length);
+ * ```
+ */
 export interface BeltSystem {
   id: string;
   /** The art and the body or style the system is of. */
@@ -95,6 +179,16 @@ export interface BeltSystem {
 
 const READ = "2026-10-27";
 
+/**
+ * The sources of the belt systems' facts, by id.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SOURCES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BELT_SOURCES).length);
+ * ```
+ */
 export const BELT_SOURCES: Record<string, BeltSource> = {
   ijfJudogi: { id: "ijfJudogi", title: "IJF Judogi Rules (09 03 2022)", url: "https://78884ca60822a34fb0e6-082b8fd5551e97bc65e327988b444396.ssl.cf3.rackcdn.com/up/2022/04/IJF_Judogi_rules_-_09_03_2022_-1649423105.pdf", read: READ, kind: "primary", note: "Belt thickness 4 to 5 mm; ends 20 to 30 cm from the central knot; worn on the waist above the hip bone, tied tightly; name on one side of a belt only; maker logo at one of the two edges." },
   ijfHistory: { id: "ijfHistory", title: "IJF, Judo culture: the belts", url: "https://www.ijf.org/history/judo-culture/2250", read: READ, kind: "primary", note: "Coloured belts from England in the mid-1920s; kyu split into white and brown in 1913 (purple for the young); red and white for 6th to 9th dan from 1931, red for 9th dan from 1943; two-tone belts introduced in France in 1990 for young judoka's intermediate grades." },
@@ -177,6 +271,16 @@ itfGrades.push(g("dan-1", "Black (1st to 9th degree)", 1, "dan", ["black"], { no
 
 const leadKyu = (rows: [string, number, BeltColour][], kind: BeltGrade["rankKind"] = "kyu"): BeltGrade[] => rows.map(([name, n, c]) => g(`${kind}-${n}`, name, n, kind, [c]));
 
+/**
+ * The belt systems of the martial arts the package draws, with their grades.
+ *
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BELT_SYSTEMS.length);
+ * ```
+ */
 export const BELT_SYSTEMS: BeltSystem[] = [
   {
     id: "judo-ijf",
@@ -307,8 +411,32 @@ export const BELT_SYSTEMS: BeltSystem[] = [
   },
 ];
 
-/** A system by id, or `undefined`. */
+/**
+ * A system by id, or `undefined`.
+ *
+ * @param id - a system's id
+ * @returns the system, or `undefined` when there is none of that id
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS, beltSystem } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first = BELT_SYSTEMS[0];
+ * console.log(first ? beltSystem(first.id)?.name : undefined, beltSystem("none"));
+ * ```
+ */
 export const beltSystem = (id: string): BeltSystem | undefined => BELT_SYSTEMS.find((s) => s.id === id);
 
-/** The sources a system cites, in full. */
+/**
+ * The sources a system cites, in full.
+ *
+ * @param s - a belt system
+ * @returns the sources the system cites, in full
+ * @example
+ * ```ts
+ * import { BELT_SYSTEMS, beltSystemSources } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first = BELT_SYSTEMS[0];
+ * console.log(first ? beltSystemSources(first).length : 0);
+ * ```
+ */
 export const beltSystemSources = (s: BeltSystem): BeltSource[] => s.sources.map((id) => BELT_SOURCES[id] as BeltSource);

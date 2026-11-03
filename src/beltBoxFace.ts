@@ -42,6 +42,18 @@ function rng(seed: number): () => number {
 /**
  * Where the lid's words go on the lid's top, in the top's own units (x along the lid from its top end, y across): the characters stacked down the lid, each upright
  * toward the lid's top end, the block centred across the width and a little above the middle of the length. Pure: the same numbers the test checks.
+ *
+ * @param length - the lid's length
+ * @param width - the lid's width
+ * @param text - the words
+ * @param near - how far from the top end the words start
+ * @returns the size of the letters, where the words sit across the lid, and where each letter goes
+ * @example
+ * ```ts
+ * import { lidTextLayout } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(lidTextLayout(40, 7, "御帯", 4).chars.length);
+ * ```
  */
 export function lidTextLayout(length: number, width: number, text: string, near = 0.4): { size: number; y: number; chars: { c: string; x: number }[] } {
   // `x` is measured on the picture from its left edge; the lid's top end is its right edge (the far end when it lies at its base angle), so the words read from there.

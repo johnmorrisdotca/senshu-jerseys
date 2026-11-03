@@ -7,13 +7,43 @@ import { blend, esc, hexOf, readColour, type Rgb } from "./colour.ts";
 import { n2 } from "./path.ts";
 import { langAttr, type Run } from "./text.ts";
 
+/**
+ * The named thread colours.
+ *
+ * @example
+ * ```ts
+ * import { THREAD_COLOURS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(THREAD_COLOURS.length, THREAD_COLOURS[0]);
+ * ```
+ */
 export const THREAD_COLOURS = [
   "red", "gold-brown", "green", "black", "gold", "fluo-pink", "pink", "blue", "yellow-green", "white", "silver", "fluo-orange",
   "wine", "navy", "yellow", "purple", "grey", "fluo-yellow", "brown", "dark-navy", "indigo", "light-blue", "silver-grey", "fluo-green",
 ] as const;
+/**
+ * A named thread colour.
+ *
+ * @example
+ * ```ts
+ * import { THREAD_COLOURS, type ThreadColour } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: ThreadColour | undefined = THREAD_COLOURS[0];
+ * console.log(first);
+ * ```
+ */
 export type ThreadColour = (typeof THREAD_COLOURS)[number];
 
-/** The named presets: English name, Japanese name and the colour of the thread. */
+/**
+ * The named presets: English name, Japanese name and the colour of the thread.
+ *
+ * @example
+ * ```ts
+ * import { THREAD_LABELS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(THREAD_LABELS).length);
+ * ```
+ */
 export const THREAD_LABELS: Record<ThreadColour, { en: string; ja: string }> = {
   red: { en: "Red", ja: "赤" },
   "gold-brown": { en: "Gold-brown", ja: "金茶" },
@@ -41,6 +71,16 @@ export const THREAD_LABELS: Record<ThreadColour, { en: string; ja: string }> = {
   "fluo-green": { en: "Fluo green", ja: "蛍光グリーン" },
 };
 
+/**
+ * Each thread colour as red, green and blue.
+ *
+ * @example
+ * ```ts
+ * import { THREAD_RGB } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(THREAD_RGB).length);
+ * ```
+ */
 export const THREAD_RGB: Record<ThreadColour, Rgb> = {
   red: [200, 16, 46],
   "gold-brown": [166, 116, 44],

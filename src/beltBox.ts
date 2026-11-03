@@ -11,29 +11,152 @@ import { APART, type Cell } from "./volume.ts";
 
 type Vec = [number, number, number];
 
+/**
+ * The kinds of belt box.
+ *
+ * @example
+ * ```ts
+ * import { BOX_TYPES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BOX_TYPES.length, BOX_TYPES[0]);
+ * ```
+ */
 export const BOX_TYPES = ["kiri", "silver"] as const;
+/**
+ * The kind of belt box.
+ *
+ * @example
+ * ```ts
+ * import { BOX_TYPES, type BoxType } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BoxType | undefined = BOX_TYPES[0];
+ * console.log(first);
+ * ```
+ */
 export type BoxType = (typeof BOX_TYPES)[number];
-/** `closed`: the lid on; `open`: the lid beside it (the silver one lying across it) and the belt in it; `empty`: the lid off and nothing in it. */
+/**
+ * `closed`: the lid on; `open`: the lid beside it (the silver one lying across it) and the belt in it; `empty`: the lid off and nothing in it.
+ *
+ * @example
+ * ```ts
+ * import { BOX_STATES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BOX_STATES.length, BOX_STATES[0]);
+ * ```
+ */
 export const BOX_STATES = ["closed", "open", "empty"] as const;
+/**
+ * Whether a belt box is closed, open or empty.
+ *
+ * @example
+ * ```ts
+ * import { BOX_STATES, type BoxState } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BoxState | undefined = BOX_STATES[0];
+ * console.log(first);
+ * ```
+ */
 export type BoxState = (typeof BOX_STATES)[number];
-/** The tone of the wood: pale, natural kiri, and an aged honey. */
+/**
+ * The tone of the wood: pale, natural kiri, and an aged honey.
+ *
+ * @example
+ * ```ts
+ * import { KIRI_WOODS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(KIRI_WOODS.length, KIRI_WOODS[0]);
+ * ```
+ */
 export const KIRI_WOODS = ["light", "natural", "honey"] as const;
+/**
+ * The tone of the wood of a kiri box.
+ *
+ * @example
+ * ```ts
+ * import { KIRI_WOODS, type KiriWood } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: KiriWood | undefined = KIRI_WOODS[0];
+ * console.log(first);
+ * ```
+ */
 export type KiriWood = (typeof KIRI_WOODS)[number];
-/** The words on the lid: o-obi, "belt" (honorific). */
+/**
+ * The words on the lid: o-obi, "belt" (honorific).
+ *
+ * @example
+ * ```ts
+ * import { BOX_TEXT_DEFAULT } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BOX_TEXT_DEFAULT);
+ * ```
+ */
 export const BOX_TEXT_DEFAULT = "御帯";
+/**
+ * The sizes of the belt boxes.
+ *
+ * @example
+ * ```ts
+ * import { BOX_SIZES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(BOX_SIZES.length, BOX_SIZES[0]);
+ * ```
+ */
 export const BOX_SIZES = [2, 3, 4, 5, 6] as const;
+/**
+ * The size of a belt box.
+ *
+ * @example
+ * ```ts
+ * import { BOX_SIZES, type BoxSize } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const first: BoxSize | undefined = BOX_SIZES[0];
+ * console.log(first);
+ * ```
+ */
 export type BoxSize = (typeof BOX_SIZES)[number];
 
-/** How many layers a belt is doubled into in a box: fixed, so a box's length follows from the longest belt it holds. On its own a belt is folded in six, so that both its free ends lie at the same end of the bundle, the label end on top. */
+/**
+ * How many layers a belt is doubled into in a box: fixed, so a box's length follows from the longest belt it holds. On its own a belt is folded in six, so that both its free ends lie at the same end of the bundle, the label end on top.
+ *
+ * @example
+ * ```ts
+ * import { FOLD_LAYERS } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(FOLD_LAYERS);
+ * ```
+ */
 export const FOLD_LAYERS = 8;
 /** How many layers a belt on its own is doubled into: an even number, so that both free ends lie at the same end of the bundle, the label end on top. A shop folds a belt in half three times (8); a short one in six, a long one in ten. */
 export const FOLDED_LAYERS = 8;
-/** The layers of a belt `cm` long and `w` wide, folded flat: the bundle stays about seven belt widths long (six to ten layers, always even). */
+/**
+ * The layers of a belt `cm` long and `w` wide, folded flat: the bundle stays about seven belt widths long (six to ten layers, always even).
+ *
+ * @param cm - the belt's length in centimetres
+ * @param w - its width in centimetres
+ * @returns the number of layers, an even number from 6 to 10
+ * @example
+ * ```ts
+ * import { foldedLayersFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(foldedLayersFor(280, 4.5));
+ * ```
+ */
 export const foldedLayersFor = (cm: number, w: number): number => Math.max(6, Math.min(10, 2 * Math.round(cm / (15 * w))));
 /** Room left at each end of the box, in centimetres. */
 export const BOX_SLACK_CM = 2.5;
 
-/** The length of a belt by its size number, men's and mixed, from the package's own size table (`BELT_SIZES`: size 2 is 235 cm and every half size 10 cm more, to size 8 at 355 cm); between two listed sizes, in proportion. */
+/**
+ * The length of a belt by its size number, men's and mixed, from the package's own size table (`BELT_SIZES`: size 2 is 235 cm and every half size 10 cm more, to size 8 at 355 cm); between two listed sizes, in proportion.
+ *
+ * @param size - a belt size number
+ * @returns the length in centimetres, worked out between two sizes
+ * @example
+ * ```ts
+ * import { beltCmOfSize } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(beltCmOfSize(4));
+ * ```
+ */
 export function beltCmOfSize(size: number): number {
   const list = BELT_SIZES;
   const exact = list.find((s) => s.size === size);
@@ -48,21 +171,72 @@ export function beltCmOfSize(size: number): number {
   return Math.round(a.cm + ((b.cm - a.cm) * (size - a.size)) / (b.size - a.size));
 }
 
-/** The largest belt each box size holds (the maker's box menu: box 2 takes belts up to 2.5, box 3 up to 3.5, box 4 up to 4.5, box 5 size 5, box 6 up to 6.5). */
+/**
+ * The largest belt each box size holds (the maker's box menu: box 2 takes belts up to 2.5, box 3 up to 3.5, box 4 up to 4.5, box 5 size 5, box 6 up to 6.5).
+ *
+ * @example
+ * ```ts
+ * import { BOX_TAKES } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BOX_TAKES));
+ * ```
+ */
 export const BOX_TAKES: Record<BoxSize, number> = { 2: 2.5, 3: 3.5, 4: 4.5, 5: 5, 6: 6.5 };
-/** The largest belt a box of each kind is sold for: the wooden box fits a belt of size 6 at most, the silver one 6.5. */
+/**
+ * The largest belt a box of each kind is sold for: the wooden box fits a belt of size 6 at most, the silver one 6.5.
+ *
+ * @example
+ * ```ts
+ * import { BOX_MAX_BELT } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(Object.keys(BOX_MAX_BELT));
+ * ```
+ */
 export const BOX_MAX_BELT: Record<BoxType, number> = { kiri: 6, silver: 6.5 };
 
-/** The box size for a belt size, or undefined when no box of that kind holds it (a belt longer than the maker's boxes). */
+/**
+ * The box size for a belt size, or undefined when no box of that kind holds it (a belt longer than the maker's boxes).
+ *
+ * @param beltSize - a belt size number
+ * @param type - `kiri` (the default) or `silver`
+ * @returns the box size, or `undefined` when no box of that kind holds the belt
+ * @example
+ * ```ts
+ * import { boxSizeFor } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(boxSizeFor(4), boxSizeFor(9));
+ * ```
+ */
 export function boxSizeFor(beltSize: number, type: BoxType = "kiri"): BoxSize | undefined {
   if (!(beltSize > 0) || beltSize > BOX_MAX_BELT[type]) return undefined;
   return BOX_SIZES.find((s) => beltSize <= BOX_TAKES[s]);
 }
 
-/** The inside length of a box of this size: the folded length of the longest belt it takes, and a little room at each end. */
+/**
+ * The inside length of a box of this size: the folded length of the longest belt it takes, and a little room at each end.
+ *
+ * @param size - the box size
+ * @returns the length inside the box, in centimetres
+ * @example
+ * ```ts
+ * import { boxInnerCm } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(boxInnerCm(4));
+ * ```
+ */
 export const boxInnerCm = (size: BoxSize): number => Math.round((beltCmOfSize(BOX_TAKES[size]) / FOLD_LAYERS + 2 * BOX_SLACK_CM) * 10) / 10;
 
-/** The figures of a box, in centimetres. */
+/**
+ * The figures of a box, in centimetres.
+ *
+ * @example
+ * ```ts
+ * import { boxDims, type BoxDims } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const dims: BoxDims = boxDims(4, "kiri", { w: 4.5, t: 0.5 });
+ * console.log(dims.length, dims.innerH);
+ * ```
+ */
 export interface BoxDims {
   type: BoxType;
   /** Outer width and height of the closed box. */
@@ -81,7 +255,17 @@ export interface BoxDims {
   innerH: number;
 }
 
-/** The belt a box is made to hold: its width and the thickness of one turn of it folded, both in centimetres. The default is a standard 4.5 cm belt. */
+/**
+ * The belt a box is made to hold: its width and the thickness of one turn of it folded, both in centimetres. The default is a standard 4.5 cm belt.
+ *
+ * @example
+ * ```ts
+ * import type { BoxFit } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const fit: BoxFit = { w: 4.5, t: 0.5 };
+ * console.log(fit);
+ * ```
+ */
 export interface BoxFit {
   w: number;
   t: number;
@@ -111,6 +295,20 @@ export interface ClosedBundle {
   gap: number;
   height: number;
 }
+/**
+ * The figures of the folded belt in a box with its lid on.
+ *
+ * @param innerH - the height inside the box, in centimetres
+ * @param fit - the width and thickness of the belt
+ * @returns the layers of the bundle with their positions
+ * @example
+ * ```ts
+ * import { boxInnerHeight, closedBundle } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const fit = { w: 4.5, t: 0.5 };
+ * console.log(typeof closedBundle(boxInnerHeight("kiri", fit), fit));
+ * ```
+ */
 export function closedBundle(innerH: number, fit: BoxFit = BOX_FIT): ClosedBundle {
   const n = FOLD_LAYERS;
   // The layers keep their thickness when the box is roomy enough for them with their gaps shut; otherwise they are pressed to fit.
@@ -128,6 +326,20 @@ export interface OpenBundle {
   proud: number;
   proudMid: number;
 }
+/**
+ * The figures of the folded belt in a box with its lid off.
+ *
+ * @param innerH - the height inside the box, in centimetres
+ * @param fit - the width and thickness of the belt
+ * @returns the layers of the bundle with their positions
+ * @example
+ * ```ts
+ * import { boxInnerHeight, openBundle } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * const fit = { w: 4.5, t: 0.5 };
+ * console.log(typeof openBundle(boxInnerHeight("kiri", fit), fit));
+ * ```
+ */
 export function openBundle(innerH: number, fit: BoxFit = BOX_FIT): OpenBundle {
   const n = FOLD_LAYERS;
   const c = closedBundle(innerH, fit);
@@ -139,19 +351,54 @@ export function openBundle(innerH: number, fit: BoxFit = BOX_FIT): OpenBundle {
   return { t, gapMid, gapEnd, proud: n * t + (n - 1) * gapEnd - innerH, proudMid: n * t + (n - 1) * gapMid - innerH };
 }
 
-/** How tall a box of this kind is inside, for the belt it holds: the maker's own size (7 x 7 outside for the wooden box) unless a thicker belt, pressed as far as it goes, needs more. */
+/**
+ * How tall a box of this kind is inside, for the belt it holds: the maker's own size (7 x 7 outside for the wooden box) unless a thicker belt, pressed as far as it goes, needs more.
+ *
+ * @param type - `kiri` or `silver`
+ * @param fit - the width and thickness of the belt it holds
+ * @returns the height inside, in centimetres
+ * @example
+ * ```ts
+ * import { boxInnerHeight } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(boxInnerHeight("kiri", { w: 4.5, t: 0.5 }));
+ * ```
+ */
 export function boxInnerHeight(type: BoxType, fit: BoxFit = BOX_FIT): number {
   if (type === "kiri") return Math.max(KIRI_OUTER.h - 1 - 0.6, innerNeeded(fit.t));
   return Math.max(SILVER_BASE.h - 0.12, innerNeeded(fit.t));
 }
 
-/** How tall the folded belt in a box stands with the lid shut (centimetres): the box's inside height, to which the pressed layers fit exactly. */
+/**
+ * How tall the folded belt in a box stands with the lid shut (centimetres): the box's inside height, to which the pressed layers fit exactly.
+ *
+ * @param fit - the width and thickness of the belt
+ * @param type - `kiri` or `silver`
+ * @returns the height in centimetres
+ * @example
+ * ```ts
+ * import { bundleHeight } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(bundleHeight({ w: 4.5, t: 0.5 }, "kiri"));
+ * ```
+ */
 export const bundleHeight = (fit: BoxFit = BOX_FIT, type: BoxType = "kiri"): number => closedBundle(boxInnerHeight(type, fit), fit).height;
 
 /**
  * The figures of a box of `size` and `type` for the belt it holds (`fit`). Its length is the size's. Its outside is the maker's: the wooden box 7 x 7 cm with a 4.5 cm belt
  * (walls 6 mm, a 1 cm lid slab sliding on the tray, so 5.4 cm inside), the silver one 5 cm wide with a 5.5 cm base. A box grows only for a belt that needs more: wider than it
  * takes with a little play, or so thick that pressed as far as it goes it still does not fit. The lid closes on the belt and presses it (`closedBundle`).
+ *
+ * @param size - the box size
+ * @param type - `kiri` or `silver`
+ * @param fit - the width and thickness of the belt it holds
+ * @returns the figures of the box in centimetres
+ * @example
+ * ```ts
+ * import { boxDims } from "@johnmorrisdotca/senshu-jerseys";
+ *
+ * console.log(boxDims(4, "kiri", { w: 4.5, t: 0.5 }).length);
+ * ```
  */
 export function boxDims(size: BoxSize, type: BoxType, fit: BoxFit = BOX_FIT): BoxDims {
   const inner = boxInnerCm(size);
