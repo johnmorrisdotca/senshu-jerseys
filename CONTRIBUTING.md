@@ -27,6 +27,7 @@ Bug reports and ideas go in the
 - **Docs pages are single-language.** Every page of the README and of `docs/` is in one language: one page per language, made from one source where that is practical, the Japanese one named `<name>.ja.md`, and the two linked at the top with a line such as `日本語 · English`. No page mixes English and Japanese in a table or in its prose, and a demo switches language with a control. Proper nouns and code identifiers (an id such as `gear:judogi`, a constant) stay as they are on both pages, and a Japanese term that is itself the subject (the package's own name, a knot) may appear once on an English page as a quoted name. The exception is a page about the translations themselves (`docs/strings-ja.md`, a terminology reference), which may show both languages side by side. A test, `docs-language.test`, holds the docs to this and lists each exception with its reason.
 - **Test what you change.** Tests sit in `test/`. A rule you change has a test that would have caught it. `test/size.test.ts` holds
   the drawing, a cap, a helmet, a banner, the turn, the element and one league of presets to a size.
+- **The docs.** Every export has a TSDoc summary, `@param`, `@returns` and an `@example` that imports the package by its name (`pnpm docs:check` runs them). Guides are Markdown in `docs/guides/` with their Japanese twins in `docs/guides/ja/`: one language to a page. A way of using the package is a file in `examples/`, listed in `scripts/check-usage.mjs`, and the guides hold its text word for word. `scripts/docs-site.mjs`, `scripts/check-standard.mjs`, `scripts/family-*.mjs` and `demo/family.css` are the family's shared files: never edit them here.
 - **The README's examples run**: `pnpm test:readme` runs every `js` block of the README and of `docs/` against the built
   package, and checks that the README names every export and that `docs/presets.md` is what the package makes (`pnpm presets:doc`).
 - **Option values and names are kebab case where they are words** (`"lace-up"`, `"full-arm"`).
@@ -52,6 +53,9 @@ pnpm check          # lint, types, tests, the build and the packed package
 pnpm test:package   # pack it as npm does, install it in an empty project, import every entry, bundle one item
 pnpm test:demo      # build the demo and play it in a real browser at a phone's width and a desk's
 pnpm test:readme    # run the examples of the README and of docs/ against the built package
+pnpm test:usage     # every way to use the package (CDN, ESM, Vite, webpack, React, Vue, Svelte, Angular, iframe, TypeScript, Node), built or run from the package as npm packs it
+pnpm docs:check     # the doc comments, the guides and their examples
+pnpm docs:site      # the documentation site into site/docs (after pnpm site)
 pnpm presets:doc    # rewrite docs/presets.md from the built package
 pnpm screenshots    # the README's pictures, into docs/images
 pnpm sheets         # contact sheets of every cut, pattern, cap, helmet and banner

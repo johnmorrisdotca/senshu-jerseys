@@ -10,7 +10,7 @@ Hockey, baseball, basketball, football, soccer, rugby and handball cuts in strip
   <img alt="TypeScript" src="https://img.shields.io/badge/types-TypeScript-3178c6">
 </p>
 
-<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/cuffs-and-text.md">Cuffs and text</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a> · <a href="./docs/judogi.md">Judogi</a> · <a href="https://johnmorrisdotca.github.io/senshu-jerseys/uniforms.html">Uniforms page</a></p>
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><strong>Open the demo →</strong></a> · <a href="https://johnmorrisdotca.github.io/senshu-jerseys/docs/">Documentation (English and Japanese)</a> · <a href="https://johnmorrisdotca.github.io/senshu-jerseys/embed.html">Embed page</a> · <a href="./docs/presets.md">Presets</a> · <a href="./docs/turning.md">Turning</a> · <a href="./docs/sleeves.md">Sleeves</a> · <a href="./docs/chest.md">Chest badges</a> · <a href="./docs/hockey-styles.md">National styles</a> · <a href="./docs/national.md">National layouts</a> · <a href="./docs/hockey-patterns.md">Hockey patterns</a> · <a href="./docs/cuffs-and-text.md">Cuffs and text</a> · <a href="./docs/element.md">Element and embed</a> · <a href="./docs/references.md">References</a> · <a href="./docs/judogi.md">Judogi</a> · <a href="https://johnmorrisdotca.github.io/senshu-jerseys/uniforms.html">Uniforms page</a></p>
 
 <p align="center">
 <picture>
@@ -199,6 +199,25 @@ import { writeFileSync } from "node:fs";
 import { renderJersey } from "@johnmorrisdotca/senshu-jerseys";
 
 writeFileSync(new URL("./shirt.svg", import.meta.url), renderJersey({ cut: "basketball", colors: ["#1f3a8a", "#f4f0e4"], number: 23, view: "back" }));
+```
+
+### Every way to use it
+
+Each of these is a file in [`examples/`](./examples), built, type-checked or run by `pnpm test:usage` against the package as npm packs it, and the guides hold the text word for word. The guides are in English and in Japanese: [the documentation site](https://johnmorrisdotca.github.io/senshu-jerseys/docs/).
+
+| Way | Where |
+| --- | --- |
+| A script tag from jsDelivr or unpkg | [In a plain HTML page](./docs/guides/html-and-cdn.md) |
+| An ES module import (`import { renderJersey } from "@johnmorrisdotca/senshu-jerseys"`) | [Getting started](./docs/guides/getting-started.md) |
+| Vite or webpack | [With Vite or webpack](./docs/guides/bundlers.md) |
+| React, Vue, Svelte, Angular | [In React, Vue, Svelte and Angular](./docs/guides/frameworks.md) |
+| An iframe of the [embed page](https://johnmorrisdotca.github.io/senshu-jerseys/embed.html) | [In an iframe](./docs/guides/embed-in-an-iframe.md) |
+| TypeScript types, Node and servers | [TypeScript and Node](./docs/guides/typescript-and-node.md) |
+
+The shortest of them, a page with an iframe:
+
+```html
+<iframe src="https://johnmorrisdotca.github.io/senshu-jerseys/embed.html?cut=hockey&colors=af1e2d,ffffff,192168&number=9&view=both" title="A hockey sweater, front and back" width="420" height="232" style="border: 0"></iframe>
 ```
 
 ## Examples

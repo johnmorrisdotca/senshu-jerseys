@@ -42,7 +42,7 @@ This repo is one of the family of John Morris's npm packages. The rules every pa
 | Board | `senshu-jerseys` (its own board; see the one-home table in spx-stats `docs/package-work.md`) |
 | Title prefix and `--area` | `senshu-jerseys` |
 | Ports | 7300 to 7399: 7300 the demo, 7301 the tests, 7302 the picture script, 7303 and up for a worktree |
-| Checks before a push | `pnpm check`, `pnpm test:readme`, `pnpm test:demo` |
+| Checks before a push | `pnpm check`, `pnpm test:readme`, `pnpm test:usage`, `pnpm test:demo` |
 | Release | `release.yml` → `reusable-release.yml`; trusted publisher entry: `release.yml` |
 | Hand-off project | `senshu-jerseys` |
 

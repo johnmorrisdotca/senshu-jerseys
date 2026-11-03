@@ -1,0 +1,20 @@
+{
+  "job": "Sports jerseys and judogi as SVG for JavaScript",
+  "pitch": {
+    "en": "Sports jerseys, sweaters, kits, caps, helmets, retired-number banners and judogi as SVG strings, front and back, in stripes, hoops, halves and pinstripes, with numbers and names drawn as vectors and optional turning.",
+    "ja": "スポーツのユニフォーム、帽子、ヘルメット、永久欠番のバナー、柔道着を SVG で描きます。縞やフープの柄、背番号や名前、回転表示も使えます。"
+  },
+  "name": {
+    "en": "Senshu is the Japanese word 選手 for an athlete.",
+    "ja": "「選手」(せんしゅ) は、スポーツをする人のことです。"
+  },
+  "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231f2f55'/%3E%3Cpath d='M32 22l12-4q6 7 12 0l12 4 14 14-10 10-6-6v38H34V40l-6 6-10-10z' fill='%23f4efe3'/%3E%3Cpath d='M34 52h32M34 64h32' stroke='%23af1e2d' stroke-width='6'/%3E%3C/svg%3E",
+  "entries": {
+    ".": { "en": "Jerseys, kits, caps, helmets, banners and judogi as SVG", "ja": "ユニフォーム・帽子・ヘルメット・バナー・柔道着の SVG", "platform": "node" },
+    "./turn": { "en": "Turning a jersey or a judogi", "ja": "ユニフォームや柔道着を回す", "platform": "browser" },
+    "./element": { "en": "The <senshu-jersey> element", "ja": "<senshu-jersey> 要素", "platform": "browser" },
+    "./define": { "en": "Registering <senshu-jersey>", "ja": "<senshu-jersey> の登録", "platform": "browser" },
+    "./brush-kana": { "en": "Kana outlines for embroidery", "ja": "刺しゅう用のかなの輪郭", "platform": "node" },
+    "./presets": { "en": "Presets of real teams' colours", "ja": "実在のチームの色のプリセット", "platform": "node" }
+  }
+}

@@ -1,5 +1,5 @@
 // The docs are single-language (CONTRIBUTING.md, "Docs pages are single-language"): an English page has no Japanese outside code, a Japanese page
-// (`<name>.ja.md`) has no English prose outside code, and the two of a pair link to each other at the top. What is allowed to be otherwise is
+// (`<name>.ja.md`, or a guide's twin in `docs/guides/ja/`) has no English prose outside code, and the two of a pair link to each other at the top. What is allowed to be otherwise is
 // listed in ALLOWED, each with its reason; an entry that no longer applies fails, so the list cannot go stale.
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -20,13 +20,18 @@ const ALLOWED: Allowed[] = [
     quoted: ["<sub>選手</sub>", "選手, せんしゅ"],
     reason: "The package's own name in Japanese, in the title and once in the section that says what the name means.",
   },
+  {
+    file: "docs/guides/ja/troubleshooting.md",
+    quoted: ["HTMLElement is not defined", "Maximum call stack size exceeded", "Failed to resolve component: senshu-jersey"],
+    reason: "The error messages as the browser and Vue print them in English: a reader searches for them as written.",
+  },
 ];
 
 const JAPANESE = /[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uff00-\uffef]/;
 /** Four Latin words in a row are English prose; a name of one to three words (`Dougu Sports`, `World Aquatics Rules`) is not. */
 const ENGLISH_PROSE = /[A-Za-z][A-Za-z'’-]*(?:[ ,.;:!?]+[A-Za-z][A-Za-z'’-]*){3,}/;
 
-const SKIP_DIRECTORIES = new Set(["node_modules", "dist", "site", "test-results", "playwright-report", ".git", ".github", ".readme-examples", "scripts"]);
+const SKIP_DIRECTORIES = new Set(["node_modules", "dist", "site", "test-results", "playwright-report", ".git", ".github", ".readme-examples", ".usage", ".docs-examples", "scripts", "examples"]);
 
 /** The Markdown files whose language is held: the root's, and everything under docs/ and src/. */
 function pages(directory = ".", out: string[] = []): string[] {
@@ -93,7 +98,8 @@ function proseOf(text: string, allowed: Allowed[]): string[] {
 }
 
 const all = pages();
-const japanesePages = all.filter((file) => file.endsWith(".ja.md"));
+const isJapanese = (file: string) => file.endsWith(".ja.md") || file.startsWith("docs/guides/ja/");
+const japanesePages = all.filter(isJapanese);
 const allowedOf = (file: string) => ALLOWED.filter((entry) => entry.file === file);
 
 describe("the docs are single-language", () => {
@@ -104,7 +110,7 @@ describe("the docs are single-language", () => {
   it("have an English page with no Japanese outside code, except what ALLOWED names", () => {
     const found: string[] = [];
     for (const file of all) {
-      if (file.endsWith(".ja.md")) continue;
+      if (isJapanese(file)) continue;
       const allowed = allowedOf(file);
       if (allowed.some((entry) => entry.both)) continue;
       proseOf(readFileSync(file, "utf8"), allowed).forEach((line, index) => {
@@ -129,7 +135,7 @@ describe("the docs are single-language", () => {
 
   it("link the two pages of a pair to each other, at the top", () => {
     const found: string[] = [];
-    for (const file of japanesePages) {
+    for (const file of japanesePages.filter((one) => one.endsWith(".ja.md"))) {
       const twin = file.replace(/\.ja\.md$/, ".md");
       if (!existsSync(twin)) {
         found.push(`${file} has no English twin ${twin}`);
