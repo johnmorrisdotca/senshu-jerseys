@@ -271,10 +271,10 @@ test("the arrow keys turn and tip the view and plus and minus zoom it", async ({
   await page.locator('[data-testid="judo-turntable"]').focus();
   await page.keyboard.press("ArrowRight");
   expect(await attr(page, "data-yaw")).toBe(15);
-  // SPX-750: Arrow Up goes with the wheel up, as it did before the drag fix: the package's tilt is positive.
+  // Arrow Up tips the surface up, as a drag up does (the family's drag rule): the controls' tilt is positive and the package's is its opposite.
   await page.keyboard.press("ArrowUp");
-  expect(await attr(page, "data-tilt")).toBe(5);
-  await expect(vc(page, "tilt")).toHaveValue("-5");
+  expect(await attr(page, "data-tilt")).toBe(-5);
+  await expect(vc(page, "tilt")).toHaveValue("5");
   await page.keyboard.press("+");
   await expect.poll(() => zoomText(page)).not.toBe("1×");
   await page.keyboard.press("0");

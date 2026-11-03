@@ -8,7 +8,7 @@ const phone = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile:
 // Every WebGL page is drawn in software (SwiftShader), never on the machine's graphics card: a test run once panicked a Mac's graphics driver. CI has no graphics card, so it needs no switch (with the switch its runners were too slow and the demo job timed out).
 const gl = process.env.CI ? {} : { launchOptions: { args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } };
 // WebKit has no software switch, so on a developer's machine it skips the pages that draw WebGL; CI (a hosted runner, no graphics card) plays them.
-const webglPages = /(judogi|uniforms|freeze|gi)\.demo/;
+const webglPages = /(judogi|uniforms|freeze|gi|ground)\.demo/;
 
 export default defineConfig({
   testDir: "e2e",

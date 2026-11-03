@@ -17,6 +17,10 @@ The package meets the family's must-have list: a documentation site in English a
 - `scripts/check-standard.mjs`, the family's check of the must-have list, run by `pnpm test`.
 - The README's "Every way to use it" table.
 
+### Fixed
+
+- **Arrow Up on the judogi designer and the Uniforms page tips the surface up, as a drag up does** (the family's drag rule: the surface under the pointer follows the pointer, and the arrow keys agree). The two pages had `key-tilt="wheel"`, which made Arrow Up tip it the other way. A drag, the other arrow keys and Auto-turn already moved the surface the way the hand does; `e2e/ground.demo.mjs` now measures it on the judogi, with kazoku-ui's shared check (`e2e/ground.mjs`).
+
 ### Changed
 
 - The npm description starts with the plain words for the job, as the family's titles do.
