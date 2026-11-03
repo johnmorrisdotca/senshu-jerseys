@@ -319,6 +319,10 @@ export interface TurnHandle {
   direction(): TurnDirection;
   /** Change which way it turns by itself, at once and without stopping it. */
   setDirection(direction: TurnDirection): void;
+  /** Degrees a second while it turns by itself. */
+  speed(): number;
+  /** Change how fast it turns by itself (degrees a second, a finite number above 0), at once and without stopping it. Anything else is left as it was. */
+  setSpeed(speed: number): void;
   /** Draw again with new options, keeping the angle. */
   update(options: TurnOptions): void;
   destroy(): void;
@@ -348,7 +352,7 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
   const win = doc.defaultView;
   let opts: TurnOptions = { ...options };
   let yaw = normalYaw(settings.yaw ?? opts.yaw ?? 0);
-  const speed = typeof settings.speed === "number" && Number.isFinite(settings.speed) ? settings.speed : 40;
+  let speed = typeof settings.speed === "number" && Number.isFinite(settings.speed) ? settings.speed : 40;
   let way = turnDirection(settings.direction);
   let svg: Element | null = null;
   let alive = true;
@@ -484,6 +488,10 @@ export function bindTurn(container: HTMLElement, options?: TurnOptions, settings
     direction: () => way,
     setDirection(next) {
       way = turnDirection(next);
+    },
+    speed: () => speed,
+    setSpeed(next) {
+      if (typeof next === "number" && Number.isFinite(next) && next > 0) speed = next;
     },
     update(next) {
       if (!alive) return;

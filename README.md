@@ -484,6 +484,7 @@ import { bindTurn } from "@johnmorrisdotca/senshu-jerseys/turn";
 const turn = bindTurn(document.querySelector("#shirt"), { cut: "hockey", number: 9, name: "Gray" }, { autoPlay: false });
 turn.play(); // or turn.pause(), turn.togglePlay(), turn.setYaw(180)
 turn.setDirection("clockwise"); // seen from above: the other way (the default, `"counterclockwise"`, swings the front to the viewer's right)
+turn.setSpeed(80); // degrees a second while it turns by itself (40 by default), changed at once
 ```
 
 See [turning](./docs/turning.md) for the pointer, the keys, the direction and `prefers-reduced-motion`, and for `volume: true`, which turns the shirt as a garment with depth (a body, sleeves, a hem) instead of a flat card.

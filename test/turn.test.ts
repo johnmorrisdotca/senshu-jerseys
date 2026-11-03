@@ -141,6 +141,30 @@ test("the automatic turn goes counterclockwise by default and clockwise when ask
   }
 });
 
+test("the speed can change while it turns, at once and from where it was, and a bad speed is left out", () => {
+  const seen: number[] = [];
+  const stage = fakeStage();
+  const handle = bindTurn(stage.container, { cut: "hockey" }, { autoPlay: true, speed: 40, onChange: (yaw) => seen.push(yaw) });
+  assert.equal(handle.speed(), 40);
+  stage.frame(50);
+  assert.deepEqual(seen, [2]);
+  handle.setSpeed(80);
+  assert.equal(handle.speed(), 80);
+  stage.frame(50);
+  assert.equal(seen.at(-1), 6, "a twentieth of a second at 80 degrees a second is four degrees more");
+  handle.setSpeed(20);
+  stage.frame(50);
+  assert.equal(seen.at(-1), 7);
+  for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY, "40", undefined, null]) {
+    handle.setSpeed(bad as number);
+    assert.equal(handle.speed(), 20, String(bad));
+  }
+  assert.equal(handle.playing(), true, "changing the speed does not stop it");
+  handle.destroy();
+  // the default is 40
+  assert.equal(bindTurn(fakeStage().container, { cut: "hockey" }).speed(), 40);
+});
+
 test("the direction does not change what a drag or setYaw does", () => {
   const stage = fakeStage();
   const handle = bindTurn(stage.container, { cut: "hockey" }, { direction: "clockwise" });
