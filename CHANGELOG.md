@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+- The README opens with the package's thumbnail, and the demo carries it as its link preview (og:image) and publishes the card, a dark card and an icon on Pages at `thumbnail.png`, `thumbnail-dark.png` and `icon.png`.
+
 ## [0.35.0] - 2026-11-03
 
 The package meets the family's must-have list: a documentation site in English and Japanese, a guide and a tested example for every way of using it.

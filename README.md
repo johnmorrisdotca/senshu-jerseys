@@ -1,3 +1,5 @@
+<p align="center"><a href="https://johnmorrisdotca.github.io/senshu-jerseys/"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/thumbnail-dark.png"><img src="https://raw.githubusercontent.com/johnmorrisdotca/senshu-jerseys/main/docs/images/thumbnail.png" alt="Senshu Jerseys: a soccer shirt in stripes, a baseball jersey in pinstripes, a hockey sweater from the back with its name and number, a basketball jersey and a cap, drawn as SVG." width="1200"></picture></a></p>
+
 <h1 align="center">Senshu Jerseys <sub>選手</sub></h1>
 
 <p align="center"><strong>Sports jerseys, sweaters and kits as SVG strings, front and back, with optional 2.5D turning.</strong><br>

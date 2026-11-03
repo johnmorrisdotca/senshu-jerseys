@@ -4,6 +4,7 @@
 // background returns, so they read. The grid runs edge to edge, every row is full, and a sheet may be cut into zones that each have a background of their own (the cuts, one ground per sport).
 // It serves the demo on port 7302, or TEST_PORT (this package's own block, tests and tools from 7301 up) and stops the server it started. It needs a build (`pnpm screenshots` builds first).
 // IMAGES_OUT writes somewhere else than docs/images; ONLY=name,name takes some; PRESET=name puts one background behind every zone of the sheets taken (to try them: use it with IMAGES_OUT).
+// It also takes the family's thumbnail, dark thumbnail and icon (docs/images/thumbnail.png, thumbnail-dark.png, icon.png; scripts/family-thumbnail.mjs): `--thumbnail` (or ONLY=thumbnail) takes only those three.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import process from "node:process";
@@ -11,10 +12,11 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 import { BACKGROUND_PRESETS, backgroundSvg } from "./family-backgrounds.ts";
+import { captureDrawing, composeThumbnails } from "./family-thumbnail.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out = process.env.IMAGES_OUT ?? `${root}docs/images`;
-const only = process.env.ONLY ? process.env.ONLY.split(",") : null;
+const only = process.argv.includes("--thumbnail") ? ["thumbnail"] : process.env.ONLY ? process.env.ONLY.split(",") : null;
 const override = process.env.PRESET;
 if (override !== undefined && !BACKGROUND_PRESETS.includes(override)) throw new Error(`PRESET ${override} is not one of the family's backgrounds`);
 mkdirSync(out, { recursive: true });
@@ -209,6 +211,37 @@ try {
     await page.waitForFunction(() => document.querySelectorAll("#gi-row .gi-tile[data-ready='1']").length >= 21, null, { timeout: 120000 });
     await webp(await page.locator("#gi").screenshot({ type: "png" }), `${out}/gi-desk-${scheme}.webp`);
     await context.close();
+  }
+  // The family's thumbnail: a row of the package's own drawings with no background (a soccer shirt, a baseball jersey, the hockey sweater from the back with its name and
+  // number, biggest, a basketball jersey and a cap), laid by scripts/family-thumbnail.mjs on the family's paper and its black cloth; the icon is the hockey sweater alone, from the front.
+  const thumbnailRow = async (scheme, items) => {
+    const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 2, colorScheme: scheme, reducedMotion: "reduce" });
+    await page.goto(`http://127.0.0.1:${port}/`);
+    await page.waitForSelector("#stage svg");
+    await page.evaluate(async (items) => {
+      const S = await import("/dist/index.js");
+      const row = document.createElement("div");
+      row.id = "thumbnail-stage";
+      row.style.cssText = "display:flex;align-items:center;gap:6px;padding:8px;width:max-content";
+      row.innerHTML = items.map(([kind, options]) => (kind === "cap" ? S.renderCap(options) : S.renderJersey(options))).join("");
+      document.body.replaceChildren(row);
+    }, items);
+    return { page, drawing: await captureDrawing(page, "#thumbnail-stage") };
+  };
+  if (!only || only.includes("thumbnail")) {
+    const hockey = { cut: "hockey", colors: ["#af1e2d", "#ffffff", "#192168"], number: 9, name: "Beaumont" };
+    const row = [
+      ["jersey", { cut: "soccer", colors: ["#6cace4", "#ffffff"], pattern: "stripes", stripeCount: 9, number: 10, size: 240 }],
+      ["jersey", { cut: "baseball", colors: ["#f4f0e4", "#1b2a6b"], pattern: "pinstripes", number: 3, size: 240 }],
+      ["jersey", { ...hockey, view: "back", size: 320 }],
+      ["jersey", { cut: "basketball", colors: ["#1f3a8a", "#f4f0e4", "#e8b900"], number: 23, size: 240 }],
+      ["cap", { colors: ["#0b6e4f", "#ffffff", "#e8b900"], tone: "two-tone", size: 200 }],
+    ];
+    const light = await thumbnailRow("light", row);
+    const dark = await thumbnailRow("dark", row);
+    const icon = await thumbnailRow("light", [["jersey", { ...hockey, size: 460 }]]);
+    for (const picture of await composeThumbnails({ page: icon.page, root, light: light.drawing, dark: dark.drawing, icon: icon.drawing, label: "Senshu Jerseys 選手" })) console.log(picture.file, `${Math.round(picture.bytes / 1024)} KB`);
+    for (const one of [light, dark, icon]) await one.page.close();
   }
   await browser.close();
   console.log(`pictures written to ${out}`);
