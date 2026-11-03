@@ -195,6 +195,54 @@ test("the jersey turns the other way on request: the button, the address, and th
   await expect.poll(async () => gap(first, await yawOf(page)), { timeout: 8000 }).toBeLessThan(-3);
 });
 
+test("the speed buttons are the family's 0.5×, 1× and 2×: they set how fast Auto-turn goes, kept in the address as pace", async ({ page, context }) => {
+  // The page's clock is the test's, so a second is a second however busy the machine is.
+  const open = async (tab, url) => {
+    await tab.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+    await tab.goto(url);
+    await expect(tab.locator("#stage svg")).toBeVisible();
+    await tab.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
+  };
+  // degrees turned in two seconds
+  const turned = async (tab) => {
+    const from = await yawOf(tab);
+    await tab.clock.runFor(2000);
+    return gap(from, await yawOf(tab));
+  };
+  await open(page, "/?turn=1&vol=0");
+  const buttons = page.locator('[data-testid="pace"] button');
+  await expect(buttons).toHaveText(["0.5×", "1×", "2×"]);
+  await expect(buttons.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('[data-testid="direction"]')).toHaveAttribute("aria-pressed", "false");
+  await page.clock.runFor(500);
+  expect(Math.abs((await turned(page)) - 40)).toBeLessThan(4);
+  await buttons.nth(2).click();
+  await expect(buttons.nth(2)).toHaveAttribute("aria-pressed", "true");
+  expect(Math.abs((await turned(page)) - 80)).toBeLessThan(6);
+  await page.clock.runFor(1000);
+  await expect(page).toHaveURL(/pace=2/);
+  expect(page.url()).not.toMatch(/speed=/);
+  // the other way keeps the speed, and half is half
+  await page.locator('[data-testid="direction"]').click();
+  await buttons.nth(0).click();
+  expect(Math.abs((await turned(page)) + 20)).toBeLessThan(3);
+  await page.clock.runFor(1000);
+  await expect(page).toHaveURL(/pace=0\.5/);
+  await buttons.nth(1).click();
+  await page.clock.runFor(1000);
+  await expect(page).not.toHaveURL(/pace=/);
+  // an address opens at its speed
+  const second = await context.newPage();
+  await open(second, "/?turn=1&vol=0&pace=2&dir=cw");
+  await expect(second.locator('[data-testid="pace"] button').nth(2)).toHaveAttribute("aria-pressed", "true");
+  await second.clock.runFor(500);
+  expect(Math.abs((await turned(second)) + 80)).toBeLessThan(6);
+  // one that is none of the steps is the nearest
+  const third = await context.newPage();
+  await third.goto("/?pace=1.9&turn=0");
+  await expect(third.locator('[data-testid="pace"] button').nth(2)).toHaveAttribute("aria-pressed", "true");
+});
+
 test("an address with turn=0 or with an angle opens still", async ({ page }) => {
   await page.goto("/?turn=0");
   await expect(page.locator("#stage svg")).toBeVisible();

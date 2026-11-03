@@ -3,6 +3,7 @@
 import { CUT_IDS, FIT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
+import "./kazoku-ui/speed-buttons/define.js";
 import { saveImage } from "./kazoku-ui/save-image/index.js";
 import { giRow, keepRow, rowOptions } from "./giRow.js";
 import { WORDS } from "./words.js";
@@ -14,7 +15,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", turn: "0", dir: "ccw", vol: "1", pitch: "8", cmp: "0", sw: "home" };
+const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", turn: "0", dir: "ccw", pace: "1", vol: "1", pitch: "8", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -26,6 +27,9 @@ for (const [k, v] of params) {
     else attrs[k] = v;
   }
 }
+// The speed buttons snap an address that is none of their steps to the nearest.
+$("pace").value = Number(ui.pace) || 1;
+ui.pace = String($("pace").value);
 const options = () => optionsFromAttributes((name) => (name in attrs ? attrs[name] : null));
 let presetsApi; // { PRESETS, LEAGUES, byId }
 
@@ -316,8 +320,9 @@ function syncControls() {
 let turn;
 /** True while the jersey turns only because the mouse is over it (leaving stops it); Auto-turn and `?turn=1` are the reader's own and are not undone by leaving. */
 let hoverPlay = false;
-/** The angle the automatic turn runs at, in degrees a second: half of what the first version ran at. */
+/** The angle the automatic turn runs at at 1×, in degrees a second: half of what the first version ran at. The speed buttons (0.5×, 1×, 2×) multiply it. */
 const TURN_SPEED = 20;
+const paceNow = () => Number($("pace").value) || 1;
 const direction = () => (ui.dir === "cw" ? "clockwise" : "counterclockwise");
 let backgrounds;
 const dark = matchMedia("(prefers-color-scheme: dark)");
@@ -390,7 +395,7 @@ function drawStage() {
   if (turn === undefined) {
     // The jersey waits still when the page opens and turns while the mouse is over it; `?turn=1` has it turn by itself from the start (not for a reader who prefers reduced motion), unless the address holds an angle.
     const autoPlay = ui.turn === "1" && !params.has("yaw");
-    turn = bindTurn(stage, stageOptions(), { yaw, speed: TURN_SPEED, direction: direction(), autoPlay, onChange: onYaw, onPlay: (on) => { ui.turn = on && !hoverPlay ? "1" : "0"; syncPlay(); syncUrl(); } });
+    turn = bindTurn(stage, stageOptions(), { yaw, speed: TURN_SPEED * paceNow(), direction: direction(), autoPlay, onChange: onYaw, onPlay: (on) => { ui.turn = on && !hoverPlay ? "1" : "0"; syncPlay(); syncUrl(); } });
   } else {
     turn.update({ ...stageOptions(), yaw: turn.yaw() });
   }
@@ -875,6 +880,12 @@ $("play").addEventListener("click", () => {
   hoverPlay = false;
   turn?.togglePlay();
   syncPlay();
+});
+$("pace").addEventListener("kazoku-speedchange", (event) => {
+  if (event.detail.reason === "init") return;
+  ui.pace = String(event.detail.value);
+  turn?.setSpeed(TURN_SPEED * event.detail.value);
+  syncUrl();
 });
 $("direction").addEventListener("click", () => {
   ui.dir = ui.dir === "cw" ? "ccw" : "cw";

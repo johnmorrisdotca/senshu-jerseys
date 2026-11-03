@@ -7,6 +7,10 @@ description: What changed between versions and what to do about it. The package 
 
 The package is at 0.x, so a minor version (0.35 to 0.36) may change behaviour. Each release's notes are in the [changelog](../../CHANGELOG.md); this page lists what needs your action.
 
+## To 0.37: speed buttons
+
+New: `bindTurn`'s handle has `speed()` and `setSpeed(degreesASecond)`, to change how fast it turns by itself while it turns. Nothing you have breaks. The demo takes kazoku-ui 0.14: Auto-turn's speeds are the family's buttons, 0.5×, 1× and 2× (Slow, Medium and Fast are gone), kept in the address as `pace` (`?pace=2`) and not `speed`; the jersey's own Reverse button stays.
+
 ## To 0.36: Centre in the demo
 
 Nothing in the package changed. The demo's designer and Uniforms page take kazoku-ui 0.12: a Centre button, a pan that cannot lose the piece, and a zoom slider with marks.

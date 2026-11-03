@@ -215,34 +215,27 @@ test("the tilt slider tips the view by up to 30 degrees and the address keeps it
   expect(await attr(page, "data-tilt")).toBe(-30);
 });
 
-test("a sideways swipe turns the view, an up and down wheel is the page's unless the view has focus, Ctrl and the wheel zooms", async ({ page }) => {
+test("a sideways swipe turns the view, the wheel over it zooms about the pointer (kazoku-ui 0.13), and Ctrl and the wheel zooms too", async ({ page }) => {
   await page.goto("/judogi.html?mode=jacket&belt=black");
   await expect(page.locator("#judo-stage canvas")).toBeVisible();
   const m = await middle(page);
   await page.mouse.move(m.x, m.y);
   await page.mouse.wheel(120, 0);
   await expect.poll(() => attr(page, "data-yaw")).toBeGreaterThan(20);
-  // Up and down with no focus is left to the page: nothing turned or tipped.
+  // Up and down over the view zooms it (the wheel in, the other way out) and tips nothing.
   const yaw = await attr(page, "data-yaw");
-  await page.mouse.wheel(0, 100);
-  await page.waitForTimeout(150);
-  expect(await attr(page, "data-yaw")).toBe(yaw);
-  expect(await attr(page, "data-tilt")).toBe(0);
-  // With focus the wheel tips it.
-  await page.locator('[data-testid="judo-turntable"]').focus();
-  await page.mouse.move(m.x, m.y);
-  await page.mouse.wheel(0, 100);
-  // SPX-750: the wheel's direction is the original one (John 2026-10-28: "you changed the wheel behaviour... fix that back"): a wheel DOWN gives the package a
-  // negative tilt (seen from below), the Tilt slider's value a positive one. Only the drag was meant to change sign (a drag up lifts the front).
-  await expect.poll(() => attr(page, "data-tilt")).toBeLessThan(0);
-  expect(await vc(page, "tilt").inputValue()).toBe("15");
+  await expect.poll(() => zoomText(page)).toBe("1×");
   await page.mouse.wheel(0, -200);
-  await expect.poll(() => attr(page, "data-tilt")).toBeGreaterThan(0);
+  await expect(page).toHaveURL(/zoom=\d/);
+  await expect.poll(() => zoomText(page)).not.toBe("1×");
+  expect(await attr(page, "data-tilt")).toBe(0);
+  expect(await attr(page, "data-yaw")).toBe(yaw);
+  await page.mouse.wheel(0, 400);
+  await expect.poll(() => zoomText(page)).toBe("1×");
   // Ctrl and the wheel is a pinch on a trackpad: zoom.
   await page.keyboard.down("Control");
   await page.mouse.wheel(0, -200);
   await page.keyboard.up("Control");
-  await expect(page).toHaveURL(/zoom=\d/);
   await expect.poll(() => zoomText(page)).not.toBe("1×");
 });
 
