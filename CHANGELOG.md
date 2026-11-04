@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+- **Test only**: the gift box's e2e test loads the judogi page four times in software WebGL, so on a slow WebKit runner it ran past its 30 s and failed at a `page.goto`; it is marked slow like the demo's other heavy tests (it failed at 0.4 CPU every time before, passes after).
+
 ## [0.38.0] - 2026-11-04
 
 "Put it in your page" is the family's embed panel (SENSHU-JERSEYS-9).

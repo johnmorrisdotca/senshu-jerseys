@@ -543,6 +543,7 @@ test("the folded belt and the belt's gift box are Display choices with their own
 });
 
 test("the belt's gift box is a Display choice with its own controls, keeps them in the address, and a belt too long for it says so", async ({ page }) => {
+  test.slow();
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
