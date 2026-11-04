@@ -201,7 +201,7 @@ test("the speed buttons are the family's 0.5×, 1× and 2×: they set how fast A
     await tab.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
     await tab.goto(url);
     await expect(tab.locator("#stage svg")).toBeVisible();
-    await tab.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
+    await tab.clock.pauseAt(new Date("2026-01-01T00:00:30Z"));
   };
   // degrees turned in two seconds
   const turned = async (tab) => {
