@@ -79,3 +79,13 @@ test("the builder keeps its five tabs and Copy, and adds the frameworks, the doc
   await expect(panel.locator('[part="open"]')).toHaveText("Open the embed page");
   await expect(panel.locator('[part="credits"]')).toContainText("Senshu Jerseys");
 });
+
+test("the page stays still when it opens and when the language changes, whatever the panel draws", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await page.getByRole("button", { name: "日本語", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ja");
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
