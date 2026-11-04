@@ -6,6 +6,8 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-11-04
+
 "Put it in your page" is the family's embed panel (SENSHU-JERSEYS-9).
 
 - **The demo's "Put it in your page" and the builder's code section are kazoku-ui's `<kazoku-embed-panel>`** (kazoku-ui ^0.15.1). Nothing they had is gone, and a test counts it: the five ways (the tag as the HTML tab, iframe, JavaScript as the ES module tab, SVG, Data URI), a note for each in English and Japanese, Turnable, Copy (now "Copy code"), and Download SVG, which shows on the SVG tab.
