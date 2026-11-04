@@ -6,6 +6,13 @@ All notable changes to this project are written here. The format follows
 
 ## [Unreleased]
 
+"Put it in your page" is the family's embed panel (SENSHU-JERSEYS-9).
+
+- **The demo's "Put it in your page" and the builder's code section are kazoku-ui's `<kazoku-embed-panel>`** (kazoku-ui ^0.15.1). Nothing they had is gone, and a test counts it: the five ways (the tag as the HTML tab, iframe, JavaScript as the ES module tab, SVG, Data URI), a note for each in English and Japanese, Turnable, Copy (now "Copy code"), and Download SVG, which shows on the SVG tab.
+- **Added by the panel**: React, Vue, Angular and Svelte tabs, a size (160, 200, 320, 480; 200 is the drawing's own and stays out of the code), the drawing beside the code (it never turns by itself, so it adds no frame loop), Open the embed page, Read the docs and the credit line. The address keeps the tab (`et=`; `element` still opens the HTML tab) and the size (`es=`).
+- `demo/embedPanel.js` writes the framework tabs from the tag `embedCode` writes, and `test/embed-panel.test.ts` holds the five ways to the package's own text, the attributes to ones the element reads and the imports to the package's exports, and compiles the React, Vue, Angular and Svelte code.
+- `scripts/check-standard.mjs` is kazoku-ui 0.15's (the `embed-panel` item); the demo moves to `@johnmorrisdotca/kazoku-ui` ^0.15.1.
+
 ## [0.37.0] - 2026-11-03
 
 - New: `bindTurn`'s handle has `speed()` and `setSpeed(degreesASecond)`: it changes how fast the jersey turns by itself while it turns, at once and from where it is; a number that is not finite or not above 0 is left out. A unit test holds it, with a bad speed and the default of 40.

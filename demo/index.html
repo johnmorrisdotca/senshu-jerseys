@@ -151,12 +151,11 @@
     <h2 id="embed-h" data-say="embedTitle"></h2>
     <p data-say="embedText"></p>
     <div class="fam-panels embed">
-      <div class="fam-tabs" role="tablist" id="embed-tabs" data-testid="embed-tabs"></div>
       <div class="fam-panel">
-        <p class="fam-fine" id="embed-note"></p>
-        <div class="fam-row"><button type="button" class="fam-button" id="embed-turnable" aria-pressed="false" data-say="turnable"></button></div>
-        <pre class="codebox" id="embed-box"><code id="embed-code" data-testid="embed-code"></code></pre>
-        <div class="fam-actions"><button type="button" class="fam-button" data-primary="true" id="embed-copy" data-testid="embed-copy" data-say="copy"></button><button type="button" class="fam-button" id="embed-download" data-say="download" hidden></button><span class="fam-fine" id="embed-status" role="status" aria-live="polite"></span></div>
+        <kazoku-embed-panel id="embed-panel" data-testid="embed-panel" docs-href="docs/" aspect="1.16">
+          <div slot="options" class="fam-row"><button type="button" class="fam-button" id="embed-turnable" data-testid="embed-turnable" aria-pressed="false" data-say="turnable"></button></div>
+          <button slot="actions" type="button" class="fam-button" id="embed-download" data-testid="embed-download" data-say="download" hidden></button>
+        </kazoku-embed-panel>
       </div>
     </div>
   </section>

@@ -5,7 +5,7 @@ order: 5
 description: Show a jersey in a page that cannot run script, with the embed page and an iframe.
 ---
 
-Some places will not run a script: a CMS, a forum, a document. They can often show an `<iframe>`. The demo site has a page for that, `embed.html`, that draws what its address says and nothing else.
+Some places will not run a script: a CMS, a forum, a document. They can often show an `<iframe>`. The demo site has a page for that, `embed.html`, that draws what its address says and nothing else. The demo's "Put it in your page" panel writes the iframe for the jersey you have set up (with Turnable), beside the code for HTML, an ES module, React, Vue, Angular, Svelte, the SVG and a data URI.
 
 ```html
 <!doctype html>

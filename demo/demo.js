@@ -1,11 +1,14 @@
 // The demo's script: a jersey to try (every option, turned by a drag or by itself), the wall of every preset, the retired-number banners, title banners, a matchup and a lineup,
 // caps and helmets, and the code that puts it in a page. Everything the controls say is in the address. The words are in words.js.
-import { CUT_IDS, FIT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
+import { CUT_IDS, FIT_IDS, NATIONAL_LAYOUTS, PATTERN_IDS, CUTS, attributesFromOptions, embedCode, jerseyLineup, jerseyToParams, kitClash, kitMatchup, optionsFromAttributes, renderBanner, renderCap, renderHelmet, renderJersey, renderTitleBanner, usePresets } from "./dist/index.js";
 import { bindTurn, jerseyFrame } from "./dist/turn-entry.js";
 import { createAddressState } from "./kazoku-ui/address-state/index.js";
 import "./kazoku-ui/speed-buttons/define.js";
+import "./kazoku-ui/embed-panel/define.js";
+import { embedSnippet } from "./kazoku-ui/embed-panel/index.js";
 import { saveImage } from "./kazoku-ui/save-image/index.js";
 import { giRow, keepRow, rowOptions } from "./giRow.js";
+import { canTurn, DEFAULT_SIZE, KINDS, LABELS, panelCode, pictureOf, SIZES } from "./embedPanel.js";
 import { WORDS } from "./words.js";
 
 const $ = (id) => document.getElementById(id);
@@ -15,7 +18,7 @@ const say = (key) => WORDS[lang()][key] ?? WORDS.en[key] ?? key;
 
 // ----- The state: the jersey's options as attributes (the same words as <senshu-jersey>), and the page's own choices.
 const DEFAULTS = { cut: "hockey", body: "#c8102e", trim: "#f4f0e4", accent: "#1b2a6b", number: "23", name: "Morris", "name-arch": "arched", view: "front", look: "cloth", pattern: "solid" };
-const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "element", etn: "0", preset: "", background: "", turn: "0", dir: "ccw", pace: "1", vol: "1", pitch: "8", cmp: "0", sw: "home" };
+const UI_DEFAULTS = { nl: "quadrant", yaw: "0", wl: "all", we: "all", wq: "", os: "all", ma: "", mh: "", mv: "front", lt: "", lf: "4-4-2", ll: "name", lfield: "0", et: "html", etn: "0", es: "200", preset: "", background: "", turn: "0", dir: "ccw", pace: "1", vol: "1", pitch: "8", cmp: "0", sw: "home" };
 const BACKGROUNDS = [...document.querySelectorAll("#background option")].map((o) => o.value);
 const attrs = { ...DEFAULTS };
 const ui = { ...UI_DEFAULTS };
@@ -564,40 +567,42 @@ function drawBuilders() {
   $("l-out").innerHTML = jerseyLineup(players, { formation: ui.lf, jersey: { ...base, cut: "soccer" }, labels: ui.ll, field: ui.lfield === "1", size: 440 });
 }
 
-// ----- Put it in your page.
-const TABS = ["element", "iframe", "module", "svg", "data"];
-let fullCode = "";
+// ----- Put it in your page: the family's <kazoku-embed-panel>, filled with this jersey's choices and code.
+const api = { embedSnippet, embedCode, attributesFromOptions };
+const panel = $("embed-panel");
+const here = new URL(".", location.href).href;
+const NOTE_KEYS = { html: "embedElementNote", iframe: "embedIframeNote", module: "embedModuleNote", svg: "embedSvgNote", data: "embedDataNote" };
+panel.kinds = KINDS;
+panel.labels = LABELS;
+panel.sizes = SIZES;
+panel.kind = KINDS.includes(ui.et) ? ui.et : "html";
+panel.size = SIZES.includes(Number(ui.es)) ? Number(ui.es) : DEFAULT_SIZE;
+panel.generate = ({ kind, size, preview }) => panelCode(api, kind, options(), { size, turnable: ui.etn === "1", ...(preview ? { site: here } : {}) });
+// The picture is the drawing itself: no turning of its own, no frame loop.
+panel.preview = ({ size }) => {
+  const holder = document.createElement("div");
+  holder.innerHTML = embedCode({ ...options(), size }, "svg");
+  return pictureOf(holder);
+};
+panel.note = ({ kind }) => say(NOTE_KEYS[kind] ?? "embedFrameworkNote");
+panel.credits = () => say("embedCredit");
+panel.addEventListener("kazoku-embedchange", ({ detail }) => {
+  if (detail.reason === "kind" || detail.reason === "size") {
+    ui.et = detail.kind;
+    ui.es = String(detail.size);
+    drawEmbed();
+    syncUrl();
+  }
+});
 function drawEmbed() {
-  const tabs = $("embed-tabs");
-  if (tabs.children.length === 0) {
-    for (const t of TABS) tabs.append(el("button", { type: "button", role: "tab", "data-tab": t, "data-testid": `tab-${t}`, onclick: () => { ui.et = t; drawEmbed(); syncUrl(); } }));
-  }
-  for (const b of tabs.children) {
-    b.textContent = say(`embed_${b.dataset.tab}`);
-    b.setAttribute("aria-selected", String(b.dataset.tab === ui.et));
-  }
   const turnable = ui.etn === "1";
+  panel.setAttribute("lang", lang());
   $("embed-turnable").setAttribute("aria-pressed", String(turnable));
-  $("embed-turnable").hidden = ui.et !== "element" && ui.et !== "iframe";
-  $("embed-note").textContent = say(`embed${ui.et[0].toUpperCase()}${ui.et.slice(1)}Note`);
-  const o = options();
-  // A crest drawn from a string is long: the code says the options without it.
-  const shown = { ...o };
-  fullCode = embedCode(shown, ui.et, { turnable });
-  $("embed-code").textContent = fullCode.length > 1400 ? `${fullCode.slice(0, 1400)}…` : fullCode;
-  $("embed-download").hidden = ui.et !== "svg";
+  $("embed-turnable").parentElement.hidden = !canTurn(panel.kind);
+  $("embed-download").hidden = panel.kind !== "svg";
+  panel.openHref = `embed.html?${jerseyToParams(options()).toString()}`;
+  panel.update();
 }
-async function copyText(t) {
-  try { await navigator.clipboard.writeText(t); } catch {
-    const a = el("textarea", { readonly: true, style: "position:fixed;opacity:0" });
-    a.value = t;
-    document.body.append(a);
-    a.select();
-    document.execCommand("copy");
-    a.remove();
-  }
-}
-
 // ----- The wall.
 let wallBuilt = false;
 const PAGE = 96;
@@ -942,11 +947,6 @@ $("l-form").value = ui.lf;
 $("l-form").addEventListener("change", () => { ui.lf = $("l-form").value; drawBuilders(); syncUrl(); });
 $("wall-more").addEventListener("click", () => { wallLimit += PAGE; filterWall(); });
 $("embed-turnable").addEventListener("click", () => { ui.etn = ui.etn === "1" ? "0" : "1"; drawEmbed(); syncUrl(); });
-$("embed-copy").addEventListener("click", async () => {
-  await copyText(fullCode);
-  $("embed-status").textContent = say("copied");
-  setTimeout(() => { $("embed-status").textContent = ""; }, 2400);
-});
 $("embed-download").addEventListener("click", () => {
   saveImage(new globalThis.DOMParser().parseFromString(embedCode(options(), "svg"), "image/svg+xml").documentElement, { format: "svg", name: "senshu-jersey", inlineStyles: false });
 });

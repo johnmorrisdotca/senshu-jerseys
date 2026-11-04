@@ -161,7 +161,7 @@ Put the string in a page (`element.innerHTML = svg`), write it to a file, or sen
 - **Presets**: more than fifteen hundred eras of the NHL (more than four hundred, with its defunct teams), MLB, the NBA, the NFL, the CFL, soccer clubs and nations, rugby, and national hockey teams, as colours and stripes only.
 - **Officials**: referees, linesmen and umpires of hockey, basketball, football, soccer, baseball, rugby and lacrosse, with armbands, a chest pocket, a plain badge spot, zip and long-point collars, and a few historic looks ([docs/officials.md](./docs/officials.md)).
 - **Turning** (`./turn`): drag, arrow keys, Home and Space, or an automatic turn that waits for you, in either direction (`direction: "clockwise"` or `"counterclockwise"`).
-- **A custom element** (`./element`) and an **embed page** for sites that cannot run script.
+- **A custom element** (`./element`) and an **embed page** for sites that cannot run script. The demo's "Put it in your page" and the builder (the family's `<kazoku-embed-panel>`) write the code for HTML, an ES module, React, Vue, Angular, Svelte, an iframe, the SVG and a data URI, with the size, Turnable, the drawing beside the code, Open the embed page and Read the docs.
 - English and Japanese labels. TypeScript types. No dependencies.
 
 ### What's in it

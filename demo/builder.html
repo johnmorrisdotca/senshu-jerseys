@@ -31,12 +31,6 @@
     .fields input { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-height: 44px; width: 100%; }
     .stage { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; justify-items: center; min-height: 260px; overflow-x: auto; }
     .stage svg { max-width: 100%; height: auto; }
-    .tabs { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 3px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; margin: 12px 0 8px; }
-    .tabs button { font: inherit; font-weight: 700; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
-    .tabs button[aria-selected="true"] { background: var(--tab); color: var(--tab-ink); }
-    pre { margin: 0 0 8px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; font-size: .82rem; max-height: 20rem; white-space: pre-wrap; word-break: break-all; }
-    .copy { font: inherit; font-weight: 800; min-height: 48px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--tab); color: var(--tab-ink); cursor: pointer; }
-    #status { margin-left: 10px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -48,9 +42,7 @@
       <div class="controls" id="controls" data-testid="controls"></div>
       <div>
         <div class="stage" id="stage" data-testid="stage"></div>
-        <div class="tabs" role="tablist" id="tabs" aria-label="The code"></div>
-        <pre><code id="code" data-testid="code"></code></pre>
-        <button type="button" class="copy" id="copy" data-testid="copy">Copy the code</button><span id="status" role="status" aria-live="polite"></span>
+        <kazoku-embed-panel id="embed-panel" data-testid="embed-panel" no-size no-preview docs-href="docs/"></kazoku-embed-panel>
         <p class="note" style="margin-top:12px"><a href="https://github.com/johnmorrisdotca/senshu-jerseys/blob/main/docs/guides/getting-started.md">Getting started</a> · <a href="https://github.com/johnmorrisdotca/senshu-jerseys/blob/main/docs/guides/architecture.md">Architecture</a> · <a href="./judogi.html">The judogi designer</a> · <a href="./uniforms.html">Uniforms</a></p>
       </div>
     </div>
@@ -58,7 +50,10 @@
   <script type="module">
     // The builder: the cut, the pattern, the colours, the look and the view are rows of buttons, the number and the name two fields; the jersey is drawn by the package's own build beside this
     // page, and the code under it is what `embedCode` writes for the same options. Nothing is sent or stored.
-    import { CUT_IDS, CUT_NAMES, EMBED_KINDS, LOOK_IDS, PATTERN_IDS, PATTERN_NAMES, VIEW_IDS, embedCode, renderJersey } from "./dist/index.js";
+    import { CUT_IDS, CUT_NAMES, LOOK_IDS, PATTERN_IDS, PATTERN_NAMES, VIEW_IDS, attributesFromOptions, embedCode, jerseyToParams, renderJersey } from "./dist/index.js";
+    import "./kazoku-ui/embed-panel/define.js";
+    import { embedSnippet } from "./kazoku-ui/embed-panel/index.js";
+    import { KINDS, LABELS, panelCode } from "./embedPanel.js";
 
     const PALETTES = {
       "Red and navy": ["#af1e2d", "#ffffff", "#192168"],
@@ -79,7 +74,6 @@
     state.name = "Beaumont";
     const query = new URLSearchParams(location.search);
     for (const [key, one] of Object.entries(CHOICES)) if (one.values.includes(query.get(key))) state[key] = query.get(key);
-    let way = "element";
     const $ = (id) => document.getElementById(id);
     const options = () => {
       const out = { cut: state.cut, colors: PALETTES[state.palette], pattern: state.pattern, look: state.look, view: state.view };
@@ -87,12 +81,18 @@
       if (state.name.trim() !== "") out.name = state.name.trim().slice(0, 14);
       return out;
     };
+    const api = { embedSnippet, embedCode, attributesFromOptions };
+    const panel = $("embed-panel");
+    panel.kinds = KINDS;
+    panel.labels = LABELS;
+    panel.generate = ({ kind }) => panelCode(api, kind, options());
+    panel.credits = "Senshu Jerseys by John Morris (MIT). Every jersey is drawn for this package.";
     function draw() {
       const o = options();
       $("stage").innerHTML = renderJersey(o);
-      $("code").textContent = embedCode(o, way);
+      panel.openHref = `embed.html?${jerseyToParams(o).toString()}`;
+      panel.update();
       for (const group of document.querySelectorAll("[data-choice]")) for (const button of group.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.value === state[group.dataset.choice]));
-      for (const button of $("tabs").querySelectorAll("button")) button.setAttribute("aria-selected", String(button.dataset.way === way));
       document.body.dataset.ready = "true";
     }
     const rows = Object.entries(CHOICES).map(([key, one]) => {
@@ -130,23 +130,6 @@
       fields.append(wrap);
     }
     $("controls").replaceChildren(...rows, fields);
-    for (const kind of EMBED_KINDS) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.role = "tab";
-      button.dataset.way = kind;
-      button.textContent = { element: "Element", iframe: "Frame", module: "Module", svg: "SVG", data: "Data address" }[kind] ?? kind;
-      button.addEventListener("click", () => { way = kind; draw(); });
-      $("tabs").append(button);
-    }
-    $("copy").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText($("code").textContent);
-        $("status").textContent = "Copied to the clipboard.";
-      } catch {
-        $("status").textContent = "Could not copy: select the code and copy it.";
-      }
-    });
     draw();
   </script>
 </body>

@@ -486,21 +486,22 @@ test("the hall of rafters, the matchup, the lineup and the caps draw", async ({ 
 test("the copy tabs show the code for the jersey, and copy it", async ({ page, context, browserName }) => {
   if (browserName === "chromium") await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/?cut=hockey&number=9");
-  const code = page.locator('[data-testid="embed-code"]');
+  const panel = page.locator("#embed-panel");
+  const code = panel.locator('[part="code"]');
   await expect(code).toContainText("<senshu-jersey");
   await expect(code).toContainText('cut="hockey"');
-  await page.locator('[data-testid="tab-iframe"]').click();
+  await panel.locator('button[data-kind="iframe"]').click();
   await expect(code).toContainText("embed.html?");
   await expect(code).toContainText("cut=hockey");
-  await page.locator('[data-testid="tab-module"]').click();
+  await panel.locator('button[data-kind="module"]').click();
   await expect(code).toContainText("renderJersey(");
-  await page.locator('[data-testid="tab-svg"]').click();
+  await panel.locator('button[data-kind="svg"]').click();
   await expect(code).toContainText("<svg");
-  await page.locator('[data-testid="tab-data"]').click();
+  await panel.locator('button[data-kind="data"]').click();
   await expect(code).toContainText("data:image/svg+xml");
-  await page.locator('[data-testid="tab-element"]').click();
-  await page.locator('[data-testid="embed-copy"]').click();
-  await expect(page.locator("#embed-status")).toHaveText("Copied");
+  await panel.locator('button[data-kind="html"]').click();
+  await panel.locator('[part="copy"]').click();
+  await expect(panel.locator(".status")).toHaveText("Copied");
   expect(await noSideways(page)).toBe(true);
 });
 
