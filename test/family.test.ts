@@ -28,8 +28,8 @@ const pkg = JSON.parse(read("package.json")) as { name: string };
 const id = pkg.name.replace(/^@[^/]+\//, "");
 
 // The template of 2026-11-02 lists thirty-two packages, in eight groups.
-const TEMPLATE = { version: "2026-11-02", sha256: "56db78c8053d66424ce513fe9ef6523d3c228ae04cb03081c9877e7d42bde512" };
-const WRITER_SHA256 = "0ca8badd4d54e393f723b5a625e76caf4b96a01bb79d087448748a358e834afc";
+const TEMPLATE = { version: "2026-11-09", sha256: "75ca7e7da99092f360e5a539e34b109b14c92e9c04e7ad98f9e4b1e715c9240e" };
+const WRITER_SHA256 = "dfd4c27b70fe5d7d5f82724180cc739812f0dd13d209c41c053dbdc61bf90188";
 
 test("the family template is the one file, byte for byte, as recorded", () => {
   assert.equal(template.FAMILY_TEMPLATE_VERSION, TEMPLATE.version);
@@ -38,7 +38,7 @@ test("the family template is the one file, byte for byte, as recorded", () => {
 });
 
 test("it lists every package of the family, in order, each with its Japanese name and a line on it", () => {
-  assert.equal(template.FAMILY.length, 32);
+  assert.equal(template.FAMILY.length, 41);
   assert.deepEqual(template.FAMILY_GROUPS.flatMap((group) => group.members), template.FAMILY.map((one) => one.id));
   for (const group of template.FAMILY_GROUPS) assert.deepEqual(group.members, [...group.members].sort());
   for (const one of template.FAMILY) {
